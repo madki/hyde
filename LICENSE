@@ -1,0 +1,35 @@
+Copyright (c) 2026 madki. All rights reserved.
+
+This repository is source-available, not open source.
+
+The source code, scenes, shaders, designs, text and other original content in
+this repository (the "Work") are published so that the Work can be viewed and
+evaluated, including as an entry to GitHub Game Off 2026.
+
+You may:
+
+  - view and read the Work;
+  - download and run it, unmodified, for your own personal, non-commercial
+    use, including to play, rate and review the game;
+  - fork the repository on GitHub solely as permitted by the GitHub Terms of
+    Service.
+
+Except as stated above, no licence or other right is granted, whether
+expressly, by implication or otherwise. In particular, without prior written
+permission from the copyright holder you may not:
+
+  - copy, modify, adapt or create derivative works of the Work;
+  - redistribute, publish, sublicense or sell the Work or any part of it;
+  - use the Work or any part of it in another project or product;
+  - use the Work for any commercial purpose.
+
+Third-party components are not covered by this notice and remain under their
+own licences. They are listed in CREDITS.md and include the Godot Engine (MIT)
+and the editor plugin in addons/godot_mcp/ (MIT, see addons/godot_mcp/LICENSE).
+
+THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE WORK OR THE USE OF OR OTHER DEALINGS IN THE WORK.
