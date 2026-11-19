@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(godot --version)",
+      "Bash(godot --headless *)",
+      "Bash(./tools/check.sh)",
+      "Bash(./tools/shot.sh *)",
+      "Bash(./tools/export_web.sh)",
+      "Bash(./tools/serve_web.sh *)",
+      "Bash(./tools/mcp_filter.sh *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git ls-files *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.p12)",
+      "Read(./.godot/export_credentials.cfg)"
+    ]
+  }
+}
