@@ -10,6 +10,26 @@ Work in progress. The game description, controls and play instructions will be a
 - Web: `tools/export_web.sh`, then `tools/serve_web.sh` and open <http://localhost:8060>
   (needs the Godot 4.7.2 web export templates installed).
 
+## Development setup (optional)
+
+The game needs nothing beyond Godot. For AI-assisted development with Claude
+Code, the [godot-mcp](https://github.com/satelliteoflove/godot-mcp) editor
+plugin lets the assistant take screenshots, read the error log and run the
+game through the open editor. It is not committed to this repository.
+
+1. Close the Godot editor.
+2. Run `tools/install_mcp.sh` (needs Node.js for `npx`). It downloads the
+   plugin into `addons/godot_mcp/`, enables it in `project.godot`, and sets up
+   a git filter so those local `project.godot` entries are never committed.
+3. Open the project in Godot, then start (or restart) Claude Code in this
+   folder and approve the `godot` MCP server.
+
+Run the script again to update the plugin. To remove it, delete
+`addons/godot_mcp/` and run `git checkout project.godot`.
+
+Other scripts: `tools/check.sh` reports script and scene errors headlessly;
+`tools/shot.sh /abs/path.png` saves a screenshot of the running game.
+
 ## How it was made
 
 - **Code:** written with AI assistance (Claude Code).

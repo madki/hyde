@@ -10,9 +10,10 @@ Written during GitHub Game Off 2026 with AI assistance (Claude Code).
 
 ## Development tools
 
-`addons/godot_mcp/` — editor plugin from
-[satelliteoflove/godot-mcp](https://github.com/satelliteoflove/godot-mcp),
-MIT licence (`addons/godot_mcp/LICENSE`). Used for AI-assisted development.
+[satelliteoflove/godot-mcp](https://github.com/satelliteoflove/godot-mcp)
+(MIT licence) — editor plugin used for AI-assisted development. It is installed
+locally with `tools/install_mcp.sh` and is not part of this repository or of
+the game build.
 
 ## Art, audio and fonts
 

@@ -1,2 +1,6 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Local-only Godot MCP plugin entries are stripped from project.godot on commit
+# (no effect unless tools/install_mcp.sh has been run).
+project.godot filter=godot-mcp

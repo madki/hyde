@@ -2,6 +2,9 @@
 .godot/
 /android/
 
+# Godot MCP editor plugin - local only, install with tools/install_mcp.sh
+/addons/godot_mcp/
+
 # Export output (builds are uploaded to itch.io, not committed)
 /build/*
 !/build/.gdignore

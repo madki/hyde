@@ -9,6 +9,7 @@
       "Bash(./tools/shot.sh *)",
       "Bash(./tools/export_web.sh)",
       "Bash(./tools/serve_web.sh *)",
+      "Bash(./tools/mcp_filter.sh *)",
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",

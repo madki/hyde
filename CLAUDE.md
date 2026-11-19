@@ -63,8 +63,15 @@ describe the project as open source.
   before the shot) so any game state can be reached from the command line.
 - `tools/` — dev scripts, hidden from Godot by `.gdignore`. `build/` — export
   output, ignored by git and by Godot.
-- `addons/godot_mcp/` — third-party editor plugin (MIT). Don't edit it; update
-  with `npx -y @satelliteoflove/godot-mcp --install-addon .`.
+- `addons/godot_mcp/` — third-party editor plugin (MIT), **local only and
+  ignored by git**. Install or update it with `tools/install_mcp.sh`; don't
+  edit it and never commit it.
+- The plugin adds entries to `project.godot` (`MCPGameBridge` autoload,
+  `[editor_plugins]`, `[godot_mcp]`). A git filter (`tools/mcp_filter.sh`, set
+  up by the install script) strips them on `git add`, so the working copy has
+  them and commits do not. If `git diff --cached project.godot` ever shows
+  those entries, stop: the filter is not configured; run
+  `tools/install_mcp.sh --no-download`.
 - Keep this section current: when a scene, script or shader is added, add one
   line here saying what it owns.
 
@@ -80,14 +87,17 @@ describe the project as open source.
   parallel the windows fight over the size. Write shots to a temp directory,
   not into the repo.
 - **Web build:** `tools/export_web.sh`, then `tools/serve_web.sh` →
-  http://localhost:8060 (web export templates for 4.7.2 are installed).
+  http://localhost:8060 (web export templates for 4.7.2 are installed). The
+  export leaves the MCP plugin out of the build by swapping `project.godot`
+  for a stripped copy while it runs, so close the editor first.
 - Do not run the project headlessly (`--quit`, `--quit-after`) until a main
   scene is set: Godot prints "no main scene defined" and hangs instead of
   exiting. Always put a time limit on headless runs.
 - **`godot` MCP server** (`.mcp.json`, satelliteoflove/godot-mcp) talks to the
   `addons/godot_mcp` editor plugin: screenshots, error log, run/stop, input
-  injection, runtime state. **The Godot editor must be open** for it to work;
-  otherwise fall back to `tools/shot.sh`.
+  injection, runtime state. It needs the plugin installed
+  (`tools/install_mcp.sh`) and **the Godot editor open**; otherwise fall back
+  to `tools/shot.sh`.
 
 ## Working with the editor open
 
