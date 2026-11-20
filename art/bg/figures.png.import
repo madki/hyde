@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkqbq0oi0t53s"
-path="res://.godot/imported/jekyll_c.png-6e5d4d9c22abb2f9d42b6ebc20f4d7ac.ctex"
+uid="uid://b1ll6qrdxb824"
+path="res://.godot/imported/figures.png-555d5aea7436195ef1aae3ebe35f9db2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/bg/jekyll_c.png"
-dest_files=["res://.godot/imported/jekyll_c.png-6e5d4d9c22abb2f9d42b6ebc20f4d7ac.ctex"]
+source_file="res://art/bg/figures.png"
+dest_files=["res://.godot/imported/figures.png-555d5aea7436195ef1aae3ebe35f9db2.ctex"]
 
 [params]
 

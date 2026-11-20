@@ -4,7 +4,18 @@ shader_type canvas_item;
 //
 //   *_a   R = key lamp   G = wall lanterns   B = ambient
 //   *_b   R = lit windows   G = mist (distance + ground fog)   B = sky mask
-//   *_c   the figure: R = mask + form shading   G = left rim   B = right rim
+//
+// The streets are baked with nobody in them. The men are a layer of their own, drawn over the
+// street and under its mist and glow (see studio/figure_bake.gd):
+//
+//   figures        RGB = drawing data: form shading, light from the key lamp's side, light
+//                  from the wall lanterns' side;  A = how much of the pixel the figure covers.
+//                  One sheet: the flipbook of one man turning into the other, and under it the
+//                  two men standing still. scripts/background.gd picks what is shown.
+//   figures_depth  how far the figure is from the camera, same layout at half the size
+//
+// A canvas shader gets eight textures in the Compatibility renderer (this one uses seven): a
+// ninth silently breaks the others.
 //
 // Mipmaps of the pass textures double as a free blur: they tint the mist and make the glow.
 // Every look setting is a parameter: edit them on shaders/background_material.tres.
@@ -81,8 +92,11 @@ uniform float figure_rim : hint_range(0.0, 3.0) = 1.0;
 uniform float figure_rim_edge : hint_range(0.0, 1.0) = 0.4;
 /** 0 = hard comic-book edge on the highlights, higher = airbrushed. */
 uniform float figure_rim_soft : hint_range(0.005, 0.5) = 0.05;
-/** How much of the real lamp light stays on the figure, under the inked look. */
-uniform float figure_baked_light : hint_range(0.0, 1.0) = 0.3;
+/** How much of the lamps' glow the figure hides where he stands in front of it. */
+uniform float figure_blocks_glow : hint_range(0.0, 1.0) = 0.85;
+/** How quickly distance hazes the figure and slows its parallax. Matches the fog the streets
+ * were baked with, so a figure sits in the mist like the things beside it. */
+uniform float figure_haze : hint_range(0.0, 0.2) = 0.028;
 /** Pen hatching in the figure's shadows. */
 uniform float figure_hatch : hint_range(0.0, 1.0) = 0.5;
 
@@ -96,21 +110,13 @@ uniform float breathing : hint_range(0.0, 0.02) = 0.004;
 /** How far near things slide when `sway` moves. */
 uniform float parallax_depth : hint_range(0.0, 0.02) = 0.006;
 
-group_uniforms transition;
-/** Width of the glowing front where one face bleeds into the other. */
-uniform float front_softness : hint_range(0.005, 0.3) = 0.05;
-uniform float front_glow : hint_range(0.0, 2.0) = 0.7;
-uniform float front_warp : hint_range(0.0, 0.1) = 0.02;
-/** 0 = the change spreads as scattered blots, 1 = as a ring from the middle. */
-uniform float front_from_centre : hint_range(0.0, 1.0) = 0.48;
-
 group_uniforms textures;
 uniform sampler2D jekyll_a : filter_linear_mipmap, repeat_disable;
 uniform sampler2D jekyll_b : filter_linear_mipmap, repeat_disable;
-uniform sampler2D jekyll_c : filter_linear, repeat_disable;
 uniform sampler2D hyde_a : filter_linear_mipmap, repeat_disable;
 uniform sampler2D hyde_b : filter_linear_mipmap, repeat_disable;
-uniform sampler2D hyde_c : filter_linear, repeat_disable;
+uniform sampler2D figures : filter_linear, repeat_disable;
+uniform sampler2D figures_depth : filter_linear, repeat_disable;
 uniform sampler2D noise_tex : filter_linear, repeat_enable;
 
 group_uniforms set_by_script;
@@ -118,6 +124,24 @@ group_uniforms set_by_script;
 uniform vec2 uv_scale = vec2(1.0);
 /** Small view offset (-1..1 on each axis) for parallax, e.g. from the mouse. */
 uniform vec2 sway = vec2(0.0);
+/** Which man each street shows: -1 = its own, 0 = Jekyll in both, 1 = Hyde in both. */
+uniform float figure_face = -1.0;
+/** How far the figure's outline wanders, as a fraction of the picture. 0 = still. */
+uniform float figure_wobble = 0.0;
+/** 0 = the still man chosen above, 1 = the flipbook frame below. */
+uniform float morph_mix = 0.0;
+/** Which flipbook frame: a whole number shows that frame, between two it blends them. */
+uniform float morph_frame = 0.0;
+uniform float morph_frames = 36.0;
+/** Flipbook frames across and down the figure sheet. */
+uniform vec2 morph_grid = vec2(6.0, 6.0);
+/** Width of one flipbook frame, and of one still man, on the figure sheet in pixels. */
+uniform float morph_frame_px = 512.0;
+uniform float figure_still_px = 768.0;
+/** The part of the picture the figure layer covers: x, y, width, height. */
+uniform vec4 figure_rect = vec4(0.0, 0.0, 1.0, 1.0);
+/** Distances from the camera, in metres, that the depth sheet's 0 and 1 stand for. */
+uniform vec2 figure_depth_range = vec2(1.0, 6.0);
 
 // Flame flicker, worked out once per vertex instead of per pixel.
 varying vec3 flicker;
@@ -127,6 +151,65 @@ void vertex() {
 	flicker = vec3(texture(noise_tex, vec2(t * 0.11, 0.37)).r,
 			texture(noise_tex, vec2(t * 0.17, 0.71)).g,
 			texture(noise_tex, vec2(t * 0.05, 0.13)).b);
+}
+
+// Where on the figure sheet to read a picture `size` pixels wide whose corner is at `corner`,
+// for the point `f` (0..1 across the figure layer's part of the picture).
+vec2 on_sheet(vec2 corner, float size, vec2 f) {
+	float edge = 0.5 / size; // keep the neighbouring pictures from bleeding in
+	return (corner + clamp(f, edge, 1.0 - edge) * size) / vec2(textureSize(figures, 0));
+}
+
+// Where the figure layer keeps what it shows at `uv`: the still man (`own` = this street's:
+// 0 Jekyll, 1 Hyde) and the current flipbook frame. Returns 0 outside the layer.
+float figure_places(float own, vec2 uv, out vec2 still, out vec2 frame, out vec2 next) {
+	vec2 f = (uv - figure_rect.xy) / figure_rect.zw;
+	float face = figure_face < 0.0 ? own : figure_face;
+	still = on_sheet(vec2(step(0.5, face) * figure_still_px, morph_grid.y * morph_frame_px),
+			figure_still_px, f);
+	float a = floor(morph_frame);
+	float b = min(a + 1.0, morph_frames - 1.0);
+	frame = on_sheet(vec2(mod(a, morph_grid.x), floor(a / morph_grid.x)) * morph_frame_px,
+			morph_frame_px, f);
+	next = on_sheet(vec2(mod(b, morph_grid.x), floor(b / morph_grid.x)) * morph_frame_px,
+			morph_frame_px, f);
+	// Beside and above the layer there is no figure; below it the last row carries on.
+	return step(0.0, f.x) * step(f.x, 1.0) * step(0.0, f.y);
+}
+
+// How deep into the street's haze the figure is at `uv` (0 = at the camera): the same measure
+// the streets' mist pass gives for everything else.
+float figure_haze_at(float own, vec2 uv) {
+	vec2 still;
+	vec2 frame;
+	vec2 next;
+	figure_places(own, uv, still, frame, next);
+	float d = texture(figures_depth, still).r;
+	if (morph_mix > 0.0) {
+		d = mix(d, mix(texture(figures_depth, frame).r, texture(figures_depth, next).r,
+				fract(morph_frame)), morph_mix);
+	}
+	return 1.0 - exp(-figure_haze * mix(figure_depth_range.x, figure_depth_range.y, d));
+}
+
+// The figure layer at `uv`: rgb = drawing data, a = how much of the pixel the figure covers.
+vec4 figure(float own, vec2 uv) {
+	if (figure_wobble > 0.0) {
+		// Redrawn twelve times a second, like the grain: the outline boils instead of sliding.
+		vec2 drift = floor(TIME * 12.0) * vec2(0.071, 0.043);
+		uv += (texture(noise_tex, uv * vec2(2.6, 1.5) + drift).rg - 0.5) * figure_wobble;
+	}
+	vec2 still;
+	vec2 frame;
+	vec2 next;
+	float inside = figure_places(own, uv, still, frame, next);
+	vec4 c = texture(figures, still);
+	if (morph_mix > 0.0) {
+		c = mix(c, mix(texture(figures, frame), texture(figures, next), fract(morph_frame)), morph_mix);
+	}
+	c *= inside;
+	c.rgb /= max(c.a, 0.001); // the sheet holds data already scaled by coverage
+	return c;
 }
 
 // Removes the haze the bake leaves in the lamp passes, so unlit areas stay dark.
@@ -139,9 +222,13 @@ vec3 ramp(float l, vec3 hue) {
 	return hue * l * (1.0 - 0.3 * l) + vec3(1.0) * smoothstep(0.75, 1.15, l) * 0.9;
 }
 
-vec3 street(sampler2D tex_a, sampler2D tex_b, sampler2D tex_c, vec2 uv, float s) {
+// `own` is the man who belongs in this street: 0 = Jekyll, 1 = Hyde.
+vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	// Parallax: near things slide more than far ones.
 	float depth = textureLod(tex_b, uv, 2.0).g; // mist is thicker with distance
+	// The figure is a layer of its own, so it slides by its own depth, across the street.
+	float fig_haze = figure_haze_at(own, uv);
+	vec2 fig_uv = uv + sway * (1.0 - fig_haze) * parallax_depth;
 	uv += sway * (1.0 - depth) * parallax_depth;
 	uv += (texture(noise_tex, uv * vec2(7.1, 4.0)).rg - 0.5) * wobble;
 
@@ -182,21 +269,23 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, sampler2D tex_c, vec2 uv, float s)
 	col *= line;
 	col += window_hue * b.r * (1.0 + (flicker.g - 0.5) * waver);
 
-	// The figure: an ink silhouette with banded form shading, pen hatching in the shadows
-	// and hard rim highlights in the colour of the lamp on each side.
-	vec3 c = texture(tex_c, uv).rgb;
-	float fig_mask = smoothstep(0.1, 0.25, c.r);
+	// The figure layer: an ink silhouette with banded form shading, pen hatching in the
+	// shadows and hard-edged light in the colour of the lamp on each side.
+	vec4 c = figure(own, fig_uv);
+	float fig_mask = c.a;
 	float shade = clamp((c.r - 0.35) / 0.65, 0.0, 1.0);
 	vec3 fig = ink * 0.45 + ambient_hue * (0.22 * step(0.5, shade) + 0.2 * step(0.8, shade));
-	float pen = step(0.5, fract((uv.x * 1.78 + uv.y) * 150.0));
+	float pen = step(0.5, fract((fig_uv.x * 1.78 + fig_uv.y) * 150.0));
 	fig *= 1.0 - figure_hatch * pen * (1.0 - step(0.5, shade)) * 0.7;
-	fig = mix(fig, col, figure_baked_light);
 	float rim_k = smoothstep(figure_rim_edge - figure_rim_soft, figure_rim_edge + figure_rim_soft, c.g);
 	float rim_w = smoothstep(figure_rim_edge - figure_rim_soft, figure_rim_edge + figure_rim_soft, c.b);
 	rim_k += smoothstep(0.75, 0.8, c.g) * 0.5;
 	rim_w += smoothstep(0.75, 0.8, c.b) * 0.5;
 	fig += ramp(rim_k * 0.8 * key_power, key_hue) * figure_rim + ramp(rim_w * 0.8 * wall_power, wall_hue) * figure_rim;
 	col = mix(col, fig, fig_mask);
+	// From here on the mist, the glow and the wash go over street and figure alike; the mist
+	// is as thick as the distance to whichever of them is in front.
+	b.g = mix(b.g, fig_haze, fig_mask);
 
 	// Sky: ink wash clouds.
 	float t = TIME * cloud_speed;
@@ -238,10 +327,12 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, sampler2D tex_c, vec2 uv, float s)
 	col = mix(col, fog_col, clamp(fog, 0.0, 1.0) * mist);
 
 	// Glow around the lamps and a wide wash of their colour.
+	// A man standing in front of a lamp hides most of its halo.
+	float halo_seen = 1.0 - fig_mask * figure_blocks_glow;
 	col += (key_hue * soft.r * soft.r * key_power * stroke.r
-			+ wall_hue * soft.g * soft.g * wall_power * stroke.g) * glow;
+			+ wall_hue * soft.g * soft.g * wall_power * stroke.g) * glow * halo_seen;
 	col += (key_hue * wide.r * key_power * stroke.r
-			+ wall_hue * wide.g * wall_power * stroke.g) * bloom;
+			+ wall_hue * wide.g * wall_power * stroke.g) * bloom * halo_seen;
 	// Watercolour: the wash pools unevenly on the paper.
 	col *= mix(1.0, 0.62 + 0.8 * texture(noise_tex, uv * vec2(2.3, 1.3) + 0.21).r, wash);
 	// Where two lamp colours pile up, keep the hue instead of clipping to white.
@@ -256,23 +347,12 @@ void fragment() {
 
 	vec3 col;
 	if (shift <= 0.001) {
-		col = street(jekyll_a, jekyll_b, jekyll_c, uv, 0.0);
+		col = street(jekyll_a, jekyll_b, 0.0, uv, 0.0);
 	} else if (shift >= 0.999) {
-		col = street(hyde_a, hyde_b, hyde_c, uv, 1.0);
+		col = street(hyde_a, hyde_b, 1.0, uv, 1.0);
 	} else {
-		// The change bleeds in like ink through wet paper, with a hot edge and a wobble.
-		float centre = 1.0 - clamp(length((uv - vec2(0.5, 0.58)) * vec2(1.0, 1.3)) * 1.25, 0.0, 1.0);
-		float blot = (texture(noise_tex, uv * vec2(1.1, 0.62)).r * 0.77
-				+ texture(noise_tex, uv * vec2(3.6, 2.0) + 0.3).g * 0.23) * (1.0 - front_from_centre)
-				+ centre * front_from_centre;
-		float front = shift * (1.0 + front_softness * 4.0) - front_softness * 2.0;
-		float m = 1.0 - smoothstep(front - front_softness, front + front_softness, 1.0 - blot);
-		float rim = 1.0 - abs(m - 0.5) * 2.0;
-		vec2 warp = (texture(noise_tex, uv * 2.0 + TIME * 0.05).rg - 0.5) * front_warp * rim;
-		vec3 j = street(jekyll_a, jekyll_b, jekyll_c, uv + warp, shift);
-		vec3 h = street(hyde_a, hyde_b, hyde_c, uv - warp, shift);
-		col = mix(j, h, m);
-		col += mix(jekyll_key, hyde_wall, shift) * rim * rim * rim * front_glow;
+		// Part-way: both streets, each already in the in-between colours, laid over each other.
+		col = mix(street(jekyll_a, jekyll_b, 0.0, uv, shift), street(hyde_a, hyde_b, 1.0, uv, shift), shift);
 	}
 
 	// Paper grain and vignette.

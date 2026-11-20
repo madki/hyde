@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7qunawreje74"
-path="res://.godot/imported/hyde_c.png-7585a3a4d104a3b5c4bf1780e4d0fe19.ctex"
+uid="uid://dsx2qkwa6e0ah"
+path="res://.godot/imported/figures_depth.png-bf8542f60443b6fb31c0a32ae7ce3cef.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/bg/hyde_c.png"
-dest_files=["res://.godot/imported/hyde_c.png-7585a3a4d104a3b5c4bf1780e4d0fe19.ctex"]
+source_file="res://art/bg/figures_depth.png"
+dest_files=["res://.godot/imported/figures_depth.png-bf8542f60443b6fb31c0a32ae7ce3cef.ctex"]
 
 [params]
 

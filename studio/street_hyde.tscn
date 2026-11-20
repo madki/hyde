@@ -2102,7 +2102,7 @@ omni_range = 14.0
 omni_attenuation = 1.4
 
 [node name="Hyde" type="Node3D" parent="." unique_id=1725213124]
-transform = Transform3D(0.90630776, 0, 0.42261827, 0, 1, 0, -0.42261827, 0, 0.90630776, 1.8, 0, 2.18)
+transform = Transform3D(0.79755086, 0, 0.37190408, 0, 0.88, 0, -0.37190408, 0, 0.79755086, 2, 0, 2.63)
 
 [node name="Body" type="MeshInstance3D" parent="Hyde" unique_id=1226283202 groups=["figure"]]
 material_override = SubResource("ShaderMaterial_q8mnj")

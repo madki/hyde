@@ -6,8 +6,8 @@
 [ext_resource type="Texture2D" path="res://art/bg/hyde_a.png" id="4"]
 [ext_resource type="Texture2D" path="res://art/bg/hyde_b.png" id="5"]
 [ext_resource type="Texture2D" path="res://art/bg/noise.png" id="6"]
-[ext_resource type="Texture2D" path="res://art/bg/jekyll_c.png" id="7"]
-[ext_resource type="Texture2D" path="res://art/bg/hyde_c.png" id="8"]
+[ext_resource type="Texture2D" path="res://art/bg/figures.png" id="7"]
+[ext_resource type="Texture2D" path="res://art/bg/figures_depth.png" id="8"]
 
 [resource]
 shader = ExtResource("1")
@@ -16,5 +16,5 @@ shader_parameter/jekyll_b = ExtResource("3")
 shader_parameter/hyde_a = ExtResource("4")
 shader_parameter/hyde_b = ExtResource("5")
 shader_parameter/noise_tex = ExtResource("6")
-shader_parameter/jekyll_c = ExtResource("7")
-shader_parameter/hyde_c = ExtResource("8")
+shader_parameter/figures = ExtResource("7")
+shader_parameter/figures_depth = ExtResource("8")

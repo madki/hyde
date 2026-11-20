@@ -44,14 +44,16 @@ static func variant(name: String) -> Dictionary:
 			"cam_pos": CAM_POS, "cam_target": CAM_TARGET,
 			"cam_roll": 0.0, "fov": CAM_FOV,
 			"lit_windows": 0.06, "glassware": true, "post_lean": 0.0,
-			# He hunches towards the camera: stand him back so his head stays where Jekyll's is.
-			"figure_offset": Vector3(-0.2, 0.0, -0.45),
+			# He stands exactly where Jekyll stands: one man turns into the other on the spot.
+			# His model is the taller of the two and he leans towards the camera, so he is
+			# scaled down to look no bigger than Jekyll.
+			"figure_offset": Vector3.ZERO, "figure_scale": 0.88,
 		}
 	return {
 		"cam_pos": CAM_POS, "cam_target": CAM_TARGET,
 		"cam_roll": 0.0, "fov": CAM_FOV,
 		"lit_windows": 0.3, "glassware": false, "post_lean": 0.0,
-		"figure_offset": Vector3.ZERO,
+		"figure_offset": Vector3.ZERO, "figure_scale": 1.0,
 	}
 
 
@@ -92,6 +94,7 @@ static func build(variant_name: String) -> Node3D:
 	figure.position = FIGURE_POS + v.figure_offset
 	# Jekyll turns to the camera so his raised arm does not hide his face.
 	figure.rotation.y = deg_to_rad(-50.0 if variant_name == "jekyll" else 25.0)
+	figure.scale = Vector3.ONE * v.figure_scale
 	root.add_child(figure)
 	# A lamp behind him lights the mist he stands against, so the silhouette reads.
 	var back := OmniLight3D.new()

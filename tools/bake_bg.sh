@@ -1,6 +1,7 @@
 #!/bin/sh
 # Re-bake the street background textures into art/bg/ (desktop only, uses the Forward+ renderer).
 # Usage: tools/bake_bg.sh [--variant=jekyll|hyde] [--passes=/abs/dir]   then run tools/check.sh
+# The figures are a separate layer: tools/bake_figures.sh.
 # Takes about ten seconds. The bake renders in a window, and macOS stops drawing windows while
 # the display sleeps, so keep the display awake for the duration.
 cd "$(dirname "$0")/.." || exit 1

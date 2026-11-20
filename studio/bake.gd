@@ -13,8 +13,10 @@ extends Node
 ##
 ##   <variant>_a.png   R = key lamp   G = wall lanterns + far lamps   B = ambient / moon
 ##   <variant>_b.png   R = lit windows   G = mist (distance + ground fog)   B = sky mask
-##   <variant>_c.png   the figure: R = mask + form shading   G = left rim   B = right rim
-##                     (written by studio/figure.gdshader, see there)
+##
+## The street is baked with nobody in it. The two men are a layer of their own, baked from the
+## same scenes by studio/figure_bake.gd (tools/bake_figures.sh): re-run that too after moving
+## the camera, a lamp or a figure.
 ##
 ## shaders/background.gdshader colours and animates them at runtime.
 ## `--passes` also writes every pass as its own PNG, for checking the bake by eye.
@@ -59,20 +61,14 @@ func _bake(variant: String) -> void:
 	world_env.environment = _env
 	street.add_child(world_env)
 
+	for n: Node3D in get_tree().get_nodes_in_group("figure"):
+		n.visible = false
 	var lum := {}
-	for p: String in ["key", "wall", "windows", "ambient", "mist", "sky", "figure"]:
-		_setup_pass(p)
-		for i in SETTLE_FRAMES:
-			await get_tree().process_frame
-		await RenderingServer.frame_post_draw
-		var img := _viewport.get_texture().get_image()
-		img.convert(Image.FORMAT_RGB8)
+	for p: String in ["key", "wall", "windows", "ambient", "mist", "sky"]:
+		var img := await _render(p)
 		if Shot.has_arg("passes"):
 			img.save_png(Shot.arg("passes").path_join("%s_%s.png" % [variant, p]))
-		if p == "figure":
-			img.save_png(OUT_DIR + variant + "_c.png")
-		else:
-			lum[p] = _luminance(img)
+		lum[p] = _luminance(img)
 	_pack(lum.key, lum.wall, lum.ambient).save_png(OUT_DIR + variant + "_a.png")
 	_pack(lum.windows, lum.mist, lum.sky).save_png(OUT_DIR + variant + "_b.png")
 	print("baked ", variant)
@@ -80,14 +76,20 @@ func _bake(variant: String) -> void:
 	await get_tree().process_frame
 
 
+func _render(p: String) -> Image:
+	_setup_pass(p)
+	for i in SETTLE_FRAMES:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img := _viewport.get_texture().get_image()
+	img.convert(Image.FORMAT_RGB8)
+	return img
+
+
 func _setup_pass(p: String) -> void:
 	for group: String in LIGHT_PASSES:
 		for n: Node3D in get_tree().get_nodes_in_group("pass_" + group):
 			n.visible = group == p
-	for n: MeshInstance3D in get_tree().get_nodes_in_group("figure"):
-		var mat := n.material_override as ShaderMaterial
-		if mat:
-			mat.set_shader_parameter("data_pass", p == "figure")
 	var e := _env
 	e.background_mode = Environment.BG_COLOR
 	e.background_color = Color.WHITE if p in ["mist", "sky"] else Color.BLACK

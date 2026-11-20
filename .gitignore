@@ -43,3 +43,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.translation
+
+# Figure distance fields, rebuilt on demand by studio/figure_sdf.gd
+/studio/cache/
