@@ -17,11 +17,31 @@ the game build.
 
 ## Art, audio and fonts
 
-Art is either public domain (CC0) or generated procedurally in code
-(shaders, particles, drawn primitives). No AI-generated image or audio assets.
+Art is public domain (CC0), Creative Commons Attribution (CC BY 4.0, credited below), or
+generated procedurally in code (shaders, particles, drawn primitives). No AI-generated image
+or audio assets.
 
 Every third-party asset must be listed here before it is committed.
 
 | Asset | Path | Author | Source URL | Licence |
 |---|---|---|---|---|
-| _none yet_ | | | | |
+| Street Lamp 01 (model) | `studio/assets/street_lamp_01/` | Poly Haven | <https://polyhaven.com/a/street_lamp_01> | CC0 |
+| Street Lamp 02 (model) | `studio/assets/street_lamp_02/` | Poly Haven | <https://polyhaven.com/a/street_lamp_02> | CC0 |
+| Modular Urban Apartments Facade (model) | `studio/assets/modular_urban_apartments_facade/` | Poly Haven | <https://polyhaven.com/a/modular_urban_apartments_facade> | CC0 |
+| Chemistry Set (model) | `studio/assets/chemistry_set/` | Poly Haven | <https://polyhaven.com/a/chemistry_set> | CC0 |
+| Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
+| Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| A blustery day in Cathedral Close - 3d printable (model, modified) | `studio/figures/jekyll.res` | Andy Woodhead | <https://skfb.ly/ouSVW> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+
+The two CC BY models were changed for this project with `studio/import_figure.gd`, and the
+changed meshes stay under CC BY 4.0:
+
+- "Mad Corvin - AS3 'The Alienist'" by Nicu.Scarlat: frozen in one pose of its animation,
+  display stand, moustache and goatee removed, textures and materials dropped, rescaled.
+- "A blustery day in Cathedral Close - 3d printable" by Andy Woodhead: base removed, reduced
+  from about 492,000 to about 61,000 triangles, textures and materials dropped, rescaled.
+
+The background textures in `art/bg/` are rendered by this project (`tools/bake_bg.sh`) from a
+scene assembled in code out of the assets above; the assets themselves are used only for that
+bake and are not part of the game build. The two figures appear in those textures as inked
+silhouettes.

@@ -25,12 +25,15 @@ It must stay clean at every commit, including history.
 
 ## Assets
 
-- Code is AI-assisted. Art is **not** AI-generated: it is public domain (CC0)
-  or produced by code (shaders, particles, `_draw()`, procedural generation).
-  Do not add AI-generated images or audio.
-- Third-party assets must be CC0/public domain, and recorded in `CREDITS.md`
-  (path, author, source URL, licence) in the same commit. No GPL/copyleft code
-  or assets, and nothing with an unclear licence.
+- Code is AI-assisted. Art is **not** AI-generated: it is public domain (CC0),
+  Creative Commons Attribution (CC BY), or produced by code (shaders,
+  particles, `_draw()`, procedural generation). Do not add AI-generated
+  images, models or audio; if an asset's origin is unclear, check before using it.
+- Third-party assets must be CC0/public domain or CC BY, and recorded in
+  `CREDITS.md` (path, author, source URL, licence) in the same commit. A CC BY
+  asset that is changed also needs its changes listed there. No NonCommercial,
+  NoDerivatives, ShareAlike or GPL/copyleft code or assets, and nothing with an
+  unclear licence.
 
 ## Web constraints
 

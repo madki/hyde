@@ -1,0 +1,2255 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://studio/assets/cobblestone_floor_04/cobblestone_floor_04_diff_1k.jpg" id="1_0ller"]
+[ext_resource type="Texture2D" path="res://studio/assets/cobblestone_floor_04/cobblestone_floor_04_nor_gl_1k.jpg" id="2_msx4r"]
+[ext_resource type="Texture2D" path="res://studio/assets/cobblestone_floor_04/cobblestone_floor_04_rough_1k.jpg" id="3_ubrg6"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/base_standard_01.res" id="4_l8sm1"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_window_centered_large_02.res" id="5_4ndr4"]
+[ext_resource type="Material" path="res://studio/kit/brick_material.tres" id="6_ohnfm"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/window_centered_large_02.res" id="7_b3771"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/dado_standard_standard_01.res" id="8_k4eue"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/cornice_standard_standard_01.res" id="9_b3lg8"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_window_centered_double_03.res" id="10_h3ekj"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/window_centered_double_03.res" id="11_roda2"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/crown_standard_standard_01.res" id="12_kmgab"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_door_centered_small_01.res" id="13_5shf1"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/door_centered_small_01.res" id="14_m7126"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/dado_door_centered_small_01.res" id="15_14i7y"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/dado_pier_pedestal_01.res" id="16_8a465"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_pier_standard_01.res" id="17_mjfrr"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/cornice_pier_standard_01.res" id="18_yi7tc"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/crown_pier_pedestal_01.res" id="19_gookm"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_window_centered_small_02.res" id="20_ba4m0"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/window_centered_small_02.res" id="21_lvxv2"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_window_centered_small_03.res" id="22_gmpjw"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/window_centered_small_03.res" id="23_n0kbu"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/wall_window_centered_large_03.res" id="24_2fnro"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/window_centered_large_03.res" id="25_hvngd"]
+[ext_resource type="PackedScene" path="res://studio/assets/street_lamp_02/street_lamp_02.gltf" id="26_vn7hw"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/street_lamp_02_bracket.res" id="27_oqdpa"]
+[ext_resource type="Shader" path="res://studio/lantern_glass.gdshader" id="28_nrt74"]
+[ext_resource type="PackedScene" path="res://studio/assets/street_lamp_01/street_lamp_01.gltf" id="31_7smif"]
+[ext_resource type="ArrayMesh" path="res://studio/kit/street_lamp_01_post.res" id="32_b1pw8"]
+[ext_resource type="ArrayMesh" path="res://studio/figures/jekyll.res" id="32_ucgv5"]
+[ext_resource type="Shader" path="res://studio/figure.gdshader" id="33_cre1r"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2gdvq"]
+albedo_texture = ExtResource("1_0ller")
+roughness = 0.55
+roughness_texture = ExtResource("3_ubrg6")
+normal_enabled = true
+normal_texture = ExtResource("2_msx4r")
+uv1_scale = Vector3(40, 40, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_y7dkg"]
+size = Vector2(120, 120)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iwa54"]
+albedo_color = Color(0.32, 0.32, 0.33, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_0tfs6"]
+size = Vector3(2.4, 0.16, 110)
+
+[sub_resource type="BoxMesh" id="BoxMesh_7fuch"]
+size = Vector3(2.4, 0.16, 110)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rr5gm"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_4ny3s"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v8oyg"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_5mi1r"]
+size = Vector2(2, 1.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wtwks"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_kbu3a"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7a6du"]
+albedo_color = Color(0.05, 0.05, 0.05, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_bquk6"]
+size = Vector3(9, 6.95, 9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yery7"]
+albedo_color = Color(0.16, 0.16, 0.17, 1)
+roughness = 0.6
+
+[sub_resource type="PrismMesh" id="PrismMesh_ehmd8"]
+size = Vector3(9.4, 2.8654044, 9.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hbswl"]
+albedo_color = Color(0.3, 0.27, 0.25, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_kpjhj"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_e3hsq"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cs5u1"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_7a50f"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_vycui"]
+size = Vector3(1, 5.4041724, 1.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5ml4d"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_asslg"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_58gds"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ll468"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_48sih"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y05g7"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_yd1jx"]
+size = Vector2(2, 1.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kftux"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_pxds8"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tiv0x"]
+size = Vector3(9, 9.95, 9)
+
+[sub_resource type="PrismMesh" id="PrismMesh_tfe7d"]
+size = Vector3(9.4, 2.3065712, 9.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_n8drs"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_0bs80"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_psriv"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_42l7x"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_br3b3"]
+size = Vector3(1, 5.0066886, 1.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_yt87n"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xfb5e"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_d3v4k"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h602t"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_hssgw"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_w0vfp"]
+size = Vector3(9, 6.95, 9)
+
+[sub_resource type="PrismMesh" id="PrismMesh_52ovn"]
+size = Vector3(9.4, 2.4797044, 9.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nasws"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_ygals"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sb2bw"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_l1uia"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3yr3b"]
+size = Vector3(1, 4.2887893, 1.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_kwoo2"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_et3u3"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0nrlj"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1itpo"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_4670q"]
+size = Vector2(2, 1.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ui2n4"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_a8dlg"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gpg2f"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_h1m5i"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dmtiu"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_ikkdh"]
+size = Vector2(2, 1.9)
+
+[sub_resource type="BoxMesh" id="BoxMesh_px06k"]
+size = Vector3(9, 9.95, 9)
+
+[sub_resource type="PrismMesh" id="PrismMesh_frrtl"]
+size = Vector3(9.4, 2.2627223, 9.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_y6n4k"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_wf7eq"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_qnrtg"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_4a6jq"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3irjh"]
+size = Vector3(1, 4.5297885, 1.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cwirh"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_n3yj6"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_g0dgl"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m2wxv"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_rjwpu"]
+size = Vector2(2, 1.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sc10l"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_y3kta"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5hjvw"]
+size = Vector3(9, 6.95, 9)
+
+[sub_resource type="PrismMesh" id="PrismMesh_135yi"]
+size = Vector3(9.4, 2.693895, 9.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mfo4x"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_dwa2j"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0o8y5"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_pr3dq"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_8yv87"]
+size = Vector3(1, 4.5033917, 1.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sclt6"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_t22wm"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cc73u"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hg8q0"]
+render_priority = 0
+shader = ExtResource("28_nrt74")
+shader_parameter/edge = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_usnn4"]
+top_radius = 0.25455844
+bottom_radius = 0.14142136
+height = 0.42
+radial_segments = 4
+rings = 1
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7nyff"]
+albedo_color = Color(0.05, 0.05, 0.06, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_s3h85"]
+top_radius = 0.16263457
+bottom_radius = 0.084852815
+height = 0.05
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tajdf"]
+top_radius = 0.31112698
+bottom_radius = 0.31112698
+height = 0.025
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_u36c6"]
+top_radius = 0.042426407
+bottom_radius = 0.29698485
+height = 0.13
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_sdmu3"]
+top_radius = 0.016970562
+bottom_radius = 0.042426407
+height = 0.07
+radial_segments = 4
+rings = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_rsd1o"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dvipk"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2sxv0"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ub6nx"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_57we3"]
+shading_mode = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_d3otv"]
+size = Vector2(1.5, 1.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_g2eqi"]
+size = Vector3(9, 6.95, 9)
+
+[sub_resource type="PrismMesh" id="PrismMesh_gs2oe"]
+size = Vector3(9.4, 2.5115085, 9.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_w5skg"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_b6s8i"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pjlwt"]
+size = Vector3(1.3, 1.5, 2.4)
+
+[sub_resource type="PrismMesh" id="PrismMesh_ql4o4"]
+size = Vector3(1.6, 0.8, 2.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pgq15"]
+size = Vector3(1, 4.210456, 1.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_it5mw"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_g3vl1"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6tl3r"]
+size = Vector3(0.3, 0.5, 0.3)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_k017q"]
+render_priority = 0
+shader = ExtResource("28_nrt74")
+shader_parameter/edge = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_128sc"]
+top_radius = 0.25455844
+bottom_radius = 0.14142136
+height = 0.42
+radial_segments = 4
+rings = 1
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gfcpt"]
+albedo_color = Color(0.05, 0.05, 0.06, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tof2n"]
+top_radius = 0.16263457
+bottom_radius = 0.084852815
+height = 0.05
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_yn0vc"]
+top_radius = 0.31112698
+bottom_radius = 0.31112698
+height = 0.025
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hyrky"]
+top_radius = 0.042426407
+bottom_radius = 0.29698485
+height = 0.13
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_gl6hj"]
+top_radius = 0.016970562
+bottom_radius = 0.042426407
+height = 0.07
+radial_segments = 4
+rings = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_s8drw"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wegkl"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_qo1i5"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_o2nja"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_d173f"]
+render_priority = 0
+shader = ExtResource("28_nrt74")
+shader_parameter/edge = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_v17ln"]
+top_radius = 0.25455844
+bottom_radius = 0.14142136
+height = 0.42
+radial_segments = 4
+rings = 1
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3ainr"]
+albedo_color = Color(0.05, 0.05, 0.06, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_33f32"]
+top_radius = 0.16263457
+bottom_radius = 0.084852815
+height = 0.05
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_xwjkr"]
+top_radius = 0.31112698
+bottom_radius = 0.31112698
+height = 0.025
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ti3my"]
+top_radius = 0.042426407
+bottom_radius = 0.29698485
+height = 0.13
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wfiyb"]
+top_radius = 0.016970562
+bottom_radius = 0.042426407
+height = 0.07
+radial_segments = 4
+rings = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_k5hnj"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_uji86"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0phhm"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_qlmfq"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_65rlx"]
+render_priority = 0
+shader = ExtResource("28_nrt74")
+shader_parameter/edge = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rkpiq"]
+top_radius = 0.25455844
+bottom_radius = 0.14142136
+height = 0.42
+radial_segments = 4
+rings = 1
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ou7ci"]
+albedo_color = Color(0.05, 0.05, 0.06, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_q4uuw"]
+top_radius = 0.16263457
+bottom_radius = 0.084852815
+height = 0.05
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_fv833"]
+top_radius = 0.31112698
+bottom_radius = 0.31112698
+height = 0.025
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_g3l38"]
+top_radius = 0.042426407
+bottom_radius = 0.29698485
+height = 0.13
+radial_segments = 4
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_w85jo"]
+top_radius = 0.016970562
+bottom_radius = 0.042426407
+height = 0.07
+radial_segments = 4
+rings = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_0h1rr"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6v7va"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wp38m"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ldpic"]
+size = Vector3(0.022, 0.4349713, 0.022)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p56os"]
+render_priority = 0
+shader = ExtResource("33_cre1r")
+shader_parameter/data_pass = false
+shader_parameter/cloth = Color(0.05, 0.05, 0.06, 1)
+shader_parameter/rim_power = 3.5
+shader_parameter/rim_wrap = 0.15
+
+[node name="Street" type="Node3D" unique_id=978148654]
+
+[node name="Ground" type="Node3D" parent="." unique_id=1002364129]
+
+[node name="Cobbles" type="MeshInstance3D" parent="Ground" unique_id=229769321]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -30)
+material_override = SubResource("StandardMaterial3D_2gdvq")
+mesh = SubResource("PlaneMesh_y7dkg")
+
+[node name="Box" type="MeshInstance3D" parent="Ground" unique_id=1288963941]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.08, -30)
+material_override = SubResource("StandardMaterial3D_iwa54")
+mesh = SubResource("BoxMesh_0tfs6")
+
+[node name="Box2" type="MeshInstance3D" parent="Ground" unique_id=281934478]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.9, 0.08, -30)
+material_override = SubResource("StandardMaterial3D_iwa54")
+mesh = SubResource("BoxMesh_7fuch")
+
+[node name="RightTerrace" type="Node3D" parent="." unique_id=1594358566]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 4.36, 0, -46.5)
+
+[node name="House0" type="Node3D" parent="RightTerrace" unique_id=113199967]
+
+[node name="base_standard_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=836745493]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1065026484]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=797007003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=720682596]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=381917468]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_double_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=420461351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("10_h3ekj")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_double_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=730265252]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("11_roda2")
+
+[node name="LitWindow" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1927926185 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_rr5gm")
+mesh = SubResource("QuadMesh_4ny3s")
+
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=430516505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1160866496]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1360577395]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=855642052]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1053365037]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="LitWindow2" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1214850983 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2.05, -0.26)
+material_override = SubResource("StandardMaterial3D_v8oyg")
+mesh = SubResource("QuadMesh_5mi1r")
+
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1685569408]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_double_04" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=496414791]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("10_h3ekj")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_double_04" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1937963785]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("11_roda2")
+
+[node name="LitWindow3" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=387532055 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_wtwks")
+mesh = SubResource("QuadMesh_kbu3a")
+
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=513139089]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=513882598]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=128411017]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("13_5shf1")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1364170209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("14_m7126")
+
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1906794935]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("15_14i7y")
+
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=835460237]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_double_05" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=2117971895]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("10_h3ekj")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_double_05" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1706847715]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("11_roda2")
+
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=71858927]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=180436572]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=89479710]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=54598103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1461490420]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1779064748]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1695008367]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=901858680]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=435894675]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1209071213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1505929132]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="Box" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1130759175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3.475, -4.85)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_bquk6")
+
+[node name="Roof" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=195534662]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 8.757702, -4.7)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_ehmd8")
+
+[node name="Box2" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1886054629]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_kpjhj")
+
+[node name="DormerRoof" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=469425237]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_e3hsq")
+
+[node name="Box3" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=556716354]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_cs5u1")
+
+[node name="DormerRoof2" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=207287749]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_7a50f")
+
+[node name="Box4" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=570295897]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 10.402086, -4.7)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_vycui")
+
+[node name="Box5" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1912565269]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.354173, -5.3)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_5ml4d")
+
+[node name="Box6" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=907363820]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.354173, -4.7)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_asslg")
+
+[node name="Box7" type="MeshInstance3D" parent="RightTerrace/House0" unique_id=1720832306]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.354173, -4.1)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_58gds")
+
+[node name="House1" type="Node3D" parent="RightTerrace" unique_id=1630488180]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+
+[node name="base_standard_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1656516484]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=2040561534]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=148841159]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=684300521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=729995637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1564976059]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("20_ba4m0")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1851912188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("21_lvxv2")
+
+[node name="LitWindow" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=397953162 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_ll468")
+mesh = SubResource("QuadMesh_48sih")
+
+[node name="wall_window_centered_small_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=10697044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=472621242]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1310820769]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 9.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1471913531]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1798419813]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("13_5shf1")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=423489561]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("14_m7126")
+
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=75629375]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("15_14i7y")
+
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=22279798]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_04" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1050300051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("20_ba4m0")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_04" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=705826384]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("21_lvxv2")
+
+[node name="wall_window_centered_small_05" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1903230953]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_05" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1976876624]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1208938353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 9.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1368278183]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=355945617]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=614093939]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=754359064]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="LitWindow2" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=38770470 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2.05, -0.26)
+material_override = SubResource("StandardMaterial3D_y05g7")
+mesh = SubResource("QuadMesh_yd1jx")
+
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1741578539]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_06" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=207724189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("20_ba4m0")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_06" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=811077566]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("21_lvxv2")
+
+[node name="wall_window_centered_small_07" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1196630045]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_07" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1216264202]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="LitWindow3" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=848293060 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 8.25, -0.3)
+material_override = SubResource("StandardMaterial3D_kftux")
+mesh = SubResource("QuadMesh_pxds8")
+
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1368241679]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=2020319414]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=2097986293]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=974293254]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1822615722]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=691123051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=396427482]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=2127169172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1863933408]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=904207201]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_05" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1261791172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="wall_pier_standard_06" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1642448618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1083115120]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="Box" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1918487308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 4.975, -4.85)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_tiv0x")
+
+[node name="Roof" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1986145654]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 11.478286, -4.7)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_tfe7d")
+
+[node name="Box2" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1970374507]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 11.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_n8drs")
+
+[node name="DormerRoof" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=587190885]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 12.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_0bs80")
+
+[node name="Box3" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=153382071]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 11.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_psriv")
+
+[node name="DormerRoof2" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=610218521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 12.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_42l7x")
+
+[node name="Box4" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1365905316]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.203344, -4.7)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_br3b3")
+
+[node name="Box5" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1608647914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 15.956689, -5.3)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_yt87n")
+
+[node name="Box6" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1548336129]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 15.956689, -4.7)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_xfb5e")
+
+[node name="Box7" type="MeshInstance3D" parent="RightTerrace/House1" unique_id=1204416439]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 15.956689, -4.1)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_d3v4k")
+
+[node name="House2" type="Node3D" parent="RightTerrace" unique_id=1207160137]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 0)
+
+[node name="base_standard_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=598069816]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=883749672]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1283948345]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1450811855]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1690544775]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=2066504217]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=706438772]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=76364720]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=808495669]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=103632048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=879293068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1259106590]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1420946998]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_04" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=2073339064]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_04" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1310845788]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=139523398]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=80446638]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=355677504]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("13_5shf1")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=170674418]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("14_m7126")
+
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=54755431]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("15_14i7y")
+
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=111153714]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_05" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1247573566]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_05" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=963218896]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="LitWindow" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=2017088823 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_h602t")
+mesh = SubResource("QuadMesh_hssgw")
+
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1813676414]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=710203393]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=573753836]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1939521260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1611384287]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1791513809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1179433622]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=343426338]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=798063585]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=740610914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=675265935]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="Box" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1741323797]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3.475, -4.85)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_w0vfp")
+
+[node name="Roof" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=377864370]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 8.564852, -4.7)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_52ovn")
+
+[node name="Box2" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1873328949]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_nasws")
+
+[node name="DormerRoof" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=533209716]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_ygals")
+
+[node name="Box3" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=530288948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_sb2bw")
+
+[node name="DormerRoof2" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=804470836]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_l1uia")
+
+[node name="Box4" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1280378231]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 9.844395, -4.7)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_3yr3b")
+
+[node name="Box5" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=1727083782]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 12.23879, -5.3)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_kwoo2")
+
+[node name="Box6" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=612363540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 12.23879, -4.7)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_et3u3")
+
+[node name="Box7" type="MeshInstance3D" parent="RightTerrace/House2" unique_id=131130807]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 12.23879, -4.1)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_0nrlj")
+
+[node name="House3" type="Node3D" parent="RightTerrace" unique_id=313886966]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0, 0)
+
+[node name="base_standard_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=229624618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1812396113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1424300610]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=885291210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="LitWindow" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1610699228 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 2.05, -0.26)
+material_override = SubResource("StandardMaterial3D_1itpo")
+mesh = SubResource("QuadMesh_4670q")
+
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1079087440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=2118119334]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=812525489]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="wall_window_centered_large_04" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=23230726]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("24_2fnro")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_04" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=776958718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("25_hvngd")
+
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=460391192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 9.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1492716981]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=34646073]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("13_5shf1")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1603318920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("14_m7126")
+
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=2054563701]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("15_14i7y")
+
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1632520320]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_large_05" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1615399272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_05" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1221145656]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="LitWindow2" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1005157512 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_ui2n4")
+mesh = SubResource("QuadMesh_a8dlg")
+
+[node name="wall_window_centered_large_06" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=115626708]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("24_2fnro")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_06" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1134128518]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("25_hvngd")
+
+[node name="LitWindow3" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1906585999 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 8.25, -0.3)
+material_override = SubResource("StandardMaterial3D_gpg2f")
+mesh = SubResource("QuadMesh_h1m5i")
+
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=300623253]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 9.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_03" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=293288289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_07" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=588361230]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_07" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=2112212091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1231560914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="LitWindow4" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=406850987 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2.05, -0.26)
+material_override = SubResource("StandardMaterial3D_dmtiu")
+mesh = SubResource("QuadMesh_ikkdh")
+
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1635038904]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_large_08" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=987032742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_08" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1701723705]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="wall_window_centered_large_09" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=284140202]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("24_2fnro")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_09" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=327220195]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("25_hvngd")
+
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1617936730]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1015678229]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=760964287]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1272477827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=588210841]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=975609059]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1950741091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=710472055]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=409744288]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=296589256]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_05" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1598348073]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="wall_pier_standard_06" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1536404549]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1526393361]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="Box" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=359959519]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 4.975, -4.85)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_px06k")
+
+[node name="Roof" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1960466700]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 11.456361, -4.7)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_frrtl")
+
+[node name="Box2" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=585736930]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 11.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_y6n4k")
+
+[node name="DormerRoof" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1407196825]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 12.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_wf7eq")
+
+[node name="Box3" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=794501243]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 11.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_qnrtg")
+
+[node name="DormerRoof2" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=121676476]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 12.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_4a6jq")
+
+[node name="Box4" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=503983871]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 12.964894, -4.7)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_3irjh")
+
+[node name="Box5" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1818032058]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 15.479789, -5.3)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_cwirh")
+
+[node name="Box6" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=139914423]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 15.479789, -4.7)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_n3yj6")
+
+[node name="Box7" type="MeshInstance3D" parent="RightTerrace/House3" unique_id=1460280191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 15.479789, -4.1)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_g0dgl")
+
+[node name="House4" type="Node3D" parent="RightTerrace" unique_id=17167654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 0, 0)
+
+[node name="base_standard_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1345434212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=752625927]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("13_5shf1")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1035723085]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("14_m7126")
+
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=875575835]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("15_14i7y")
+
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=152354783]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=132325511]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("24_2fnro")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1805166685]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("25_hvngd")
+
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1995104457]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1318072261]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=357299470]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=398871894]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=639536322]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=798900176]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_large_04" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1608255719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("24_2fnro")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_04" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1808832770]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("25_hvngd")
+
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1453630081]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_03" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1914890646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_05" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1736828371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_05" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1083677276]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1091891210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="LitWindow" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=410268225 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2.05, -0.26)
+material_override = SubResource("StandardMaterial3D_m2wxv")
+mesh = SubResource("QuadMesh_rjwpu")
+
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1340245237]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_large_06" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1626889296]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("24_2fnro")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_06" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1074580032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("25_hvngd")
+
+[node name="LitWindow2" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1182357754 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_sc10l")
+mesh = SubResource("QuadMesh_y3kta")
+
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=152873127]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1075487093]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1048846862]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1703108585]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=539037353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1437646505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=991040841]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1224285528]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=817177001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1241106032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1963524193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="Box" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=775871765]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3.475, -4.85)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_5hjvw")
+
+[node name="Roof" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=378523800]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 8.6719475, -4.7)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_135yi")
+
+[node name="Box2" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=412412072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_mfo4x")
+
+[node name="DormerRoof" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=349575525]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_dwa2j")
+
+[node name="Box3" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1070209554]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_0o8y5")
+
+[node name="DormerRoof2" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1814840893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_pr3dq")
+
+[node name="Box4" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=463640394]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 9.951695, -4.7)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_8yv87")
+
+[node name="Box5" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=482029150]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.453392, -5.3)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_sclt6")
+
+[node name="Box6" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=1804044704]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.453392, -4.7)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_t22wm")
+
+[node name="Box7" type="MeshInstance3D" parent="RightTerrace/House4" unique_id=730447104]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.453392, -4.1)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_cc73u")
+
+[node name="WallLamp" parent="RightTerrace/House4" unique_id=654514653 instance=ExtResource("26_vn7hw")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 1.9, 0.08)
+
+[node name="street_lamp_02" parent="RightTerrace/House4/WallLamp" index="0" unique_id=766934085]
+layers = 2
+mesh = ExtResource("27_oqdpa")
+
+[node name="Lantern" type="Node3D" parent="RightTerrace/House4/WallLamp" unique_id=908628203]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4, 0.61)
+
+[node name="Glass" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=117010049 groups=["pass_wall"]]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
+material_override = SubResource("ShaderMaterial_hg8q0")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_usnn4")
+
+[node name="Base" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=448380971]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("CylinderMesh_s3h85")
+
+[node name="Eaves" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=1174959952]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("CylinderMesh_tajdf")
+
+[node name="Cap" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=1269443623]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("CylinderMesh_u36c6")
+
+[node name="Finial" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=2144180926]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("CylinderMesh_sdmu3")
+
+[node name="Bar" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=1279356678]
+transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("BoxMesh_rsd1o")
+
+[node name="Bar2" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=235146209]
+transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("BoxMesh_dvipk")
+
+[node name="Bar3" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=2036729044]
+transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("BoxMesh_2sxv0")
+
+[node name="Bar4" type="MeshInstance3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=1539108845]
+transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_7nyff")
+mesh = SubResource("BoxMesh_ub6nx")
+
+[node name="Light" type="OmniLight3D" parent="RightTerrace/House4/WallLamp/Lantern" unique_id=1765129764 groups=["pass_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+light_energy = 1.6
+light_size = 0.12
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_caster_mask = 1
+omni_range = 13.0
+omni_attenuation = 1.4
+
+[node name="House5" type="Node3D" parent="RightTerrace" unique_id=1906736100]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 0)
+
+[node name="base_standard_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=803810678]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=76202908]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1376549510]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=319049735]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=479831643]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1969949743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=2038977007]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="LitWindow" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=292551479 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 5.25, -0.3)
+material_override = SubResource("StandardMaterial3D_57we3")
+mesh = SubResource("QuadMesh_d3otv")
+
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=765153869]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=47027652]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1160820963]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("13_5shf1")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1338456264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("14_m7126")
+
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=2072650912]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
+mesh = ExtResource("15_14i7y")
+
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1604381812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_04" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=760757479]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_04" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=582405036]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=680490814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="base_standard_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1490930838]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+mesh = ExtResource("4_l8sm1")
+
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1062440310]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("5_4ndr4")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_large_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=731207978]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("7_b3771")
+
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1253415853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("8_k4eue")
+
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=602017031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("9_b3lg8")
+
+[node name="wall_window_centered_small_05" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=499313363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("22_gmpjw")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="window_centered_small_05" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1466146386]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("23_n0kbu")
+
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1548812143]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("12_kmgab")
+
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=713799686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=2809113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=746291597]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=4681667]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1667733217]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=442926149]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("16_8a465")
+
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=220374925]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1141587000]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
+mesh = ExtResource("18_yi7tc")
+
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=396243448]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
+mesh = ExtResource("17_mjfrr")
+surface_material_override/0 = ExtResource("6_ohnfm")
+
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1405290421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
+mesh = ExtResource("19_gookm")
+
+[node name="Box" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1534384395]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3.475, -4.85)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_g2eqi")
+
+[node name="Roof" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1135760430]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 8.580754, -4.7)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_gs2oe")
+
+[node name="Box2" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1138214873]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_w5skg")
+
+[node name="DormerRoof" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=24863596]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_b6s8i")
+
+[node name="Box3" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1522471068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 8.45, -1.2)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_pjlwt")
+
+[node name="DormerRoof2" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=712627391]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 9.6, -1.2)
+material_override = SubResource("StandardMaterial3D_yery7")
+mesh = SubResource("PrismMesh_ql4o4")
+
+[node name="Box4" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=686146133]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 9.805228, -4.7)
+material_override = SubResource("StandardMaterial3D_hbswl")
+mesh = SubResource("BoxMesh_pgq15")
+
+[node name="Box5" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=142514391]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.160456, -5.3)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_it5mw")
+
+[node name="Box6" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=339282985]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.160456, -4.7)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_g3vl1")
+
+[node name="Box7" type="MeshInstance3D" parent="RightTerrace/House5" unique_id=1434200228]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.160456, -4.1)
+material_override = SubResource("StandardMaterial3D_7a6du")
+mesh = SubResource("BoxMesh_6tl3r")
+
+[node name="WallLamp" parent="RightTerrace/House5" unique_id=1956242512 instance=ExtResource("26_vn7hw")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 1.9, 0.08)
+
+[node name="street_lamp_02" parent="RightTerrace/House5/WallLamp" index="0" unique_id=766934085]
+layers = 2
+mesh = ExtResource("27_oqdpa")
+
+[node name="Lantern" type="Node3D" parent="RightTerrace/House5/WallLamp" unique_id=823491921]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4, 0.61)
+
+[node name="Glass" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=1119442533 groups=["pass_wall"]]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
+material_override = SubResource("ShaderMaterial_k017q")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_128sc")
+
+[node name="Base" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=765948056]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("CylinderMesh_tof2n")
+
+[node name="Eaves" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=1765996976]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("CylinderMesh_yn0vc")
+
+[node name="Cap" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=602856204]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("CylinderMesh_hyrky")
+
+[node name="Finial" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=1559247325]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("CylinderMesh_gl6hj")
+
+[node name="Bar" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=1628619273]
+transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("BoxMesh_s8drw")
+
+[node name="Bar2" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=127013737]
+transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("BoxMesh_wegkl")
+
+[node name="Bar3" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=1090107265]
+transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("BoxMesh_qo1i5")
+
+[node name="Bar4" type="MeshInstance3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=536890236]
+transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_gfcpt")
+mesh = SubResource("BoxMesh_o2nja")
+
+[node name="Light" type="OmniLight3D" parent="RightTerrace/House5/WallLamp/Lantern" unique_id=1919619674 groups=["pass_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+light_energy = 1.6
+light_size = 0.12
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_caster_mask = 1
+omni_range = 13.0
+omni_attenuation = 1.4
+
+[node name="KeyLamp" parent="." unique_id=1063877973 instance=ExtResource("31_7smif")]
+transform = Transform3D(0.90509665, 0, 0.90509665, 0, 1.28, 0, -0.90509665, 0, 0.90509665, -1, 0, -2)
+
+[node name="street_lamp_01" parent="KeyLamp" index="0" unique_id=903472581]
+layers = 2
+mesh = ExtResource("32_b1pw8")
+
+[node name="Lantern" type="Node3D" parent="KeyLamp" unique_id=1553853888]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+
+[node name="Glass" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=674528000 groups=["pass_key"]]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
+material_override = SubResource("ShaderMaterial_d173f")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_v17ln")
+
+[node name="Base" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=676140866]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("CylinderMesh_33f32")
+
+[node name="Eaves" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=866783686]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("CylinderMesh_xwjkr")
+
+[node name="Cap" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=971296361]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("CylinderMesh_ti3my")
+
+[node name="Finial" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=1226301778]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("CylinderMesh_wfiyb")
+
+[node name="Bar" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=1788552961]
+transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("BoxMesh_k5hnj")
+
+[node name="Bar2" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=55847450]
+transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("BoxMesh_uji86")
+
+[node name="Bar3" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=2000830112]
+transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("BoxMesh_0phhm")
+
+[node name="Bar4" type="MeshInstance3D" parent="KeyLamp/Lantern" unique_id=680821318]
+transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_3ainr")
+mesh = SubResource("BoxMesh_qlmfq")
+
+[node name="Light" type="OmniLight3D" parent="KeyLamp/Lantern" unique_id=1671073220 groups=["pass_key"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+light_energy = 1.5
+light_size = 0.12
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_caster_mask = 1
+omni_range = 22.0
+omni_attenuation = 1.4
+
+[node name="FarLamp" parent="." unique_id=1814181172 instance=ExtResource("31_7smif")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -1, 0, -15.7)
+
+[node name="street_lamp_01" parent="FarLamp" index="0" unique_id=903472581]
+layers = 2
+mesh = ExtResource("32_b1pw8")
+
+[node name="Lantern" type="Node3D" parent="FarLamp" unique_id=2133479640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+
+[node name="Glass" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=2056709807 groups=["pass_wall"]]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
+material_override = SubResource("ShaderMaterial_65rlx")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_rkpiq")
+
+[node name="Base" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=922267085]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("CylinderMesh_q4uuw")
+
+[node name="Eaves" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=1414584713]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("CylinderMesh_fv833")
+
+[node name="Cap" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=4156445]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("CylinderMesh_g3l38")
+
+[node name="Finial" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=446770679]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("CylinderMesh_w85jo")
+
+[node name="Bar" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=537850102]
+transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("BoxMesh_0h1rr")
+
+[node name="Bar2" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=764381942]
+transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("BoxMesh_6v7va")
+
+[node name="Bar3" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=331866450]
+transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("BoxMesh_wp38m")
+
+[node name="Bar4" type="MeshInstance3D" parent="FarLamp/Lantern" unique_id=774594730]
+transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
+layers = 2
+material_override = SubResource("StandardMaterial3D_ou7ci")
+mesh = SubResource("BoxMesh_ldpic")
+
+[node name="Light" type="OmniLight3D" parent="FarLamp/Lantern" unique_id=807654508 groups=["pass_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+light_energy = 1.2
+light_size = 0.12
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_caster_mask = 1
+omni_range = 14.0
+omni_attenuation = 1.4
+
+[node name="Jekyll" type="Node3D" parent="." unique_id=203204961]
+transform = Transform3D(0.6427876, 0, -0.7660444, 0, 1, 0, 0.7660444, 0, 0.6427876, 2, 0, 2.63)
+
+[node name="Body" type="MeshInstance3D" parent="Jekyll" unique_id=177153083 groups=["figure"]]
+material_override = SubResource("ShaderMaterial_p56os")
+mesh = ExtResource("32_ucgv5")
+
+[node name="FigureBacklight" type="OmniLight3D" parent="." unique_id=1064090359 groups=["pass_key"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 1.5, 1.2300001)
+light_energy = 0.9
+light_volumetric_fog_energy = 0.6
+shadow_enabled = true
+omni_range = 4.5
+
+[node name="Camera" type="Camera3D" parent="." unique_id=877579867]
+transform = Transform3D(0.971091, -0.041547168, -0.23506616, 0, 0.984737, -0.17404902, 0.23870958, 0.16901743, 0.9562692, 1.17, 1.2, 5.63)
+fov = 46.0
+far = 200.0
+
+[node name="Moon" type="DirectionalLight3D" parent="." unique_id=1710051298 groups=["pass_ambient"]]
+transform = Transform3D(-0.76604444, -0.5265408, 0.36868784, 0, 0.57357645, 0.81915206, -0.64278764, 0.62750685, -0.43938506, 0, 0, 0)
+light_energy = 0.5
+shadow_enabled = true
+
+[editable path="RightTerrace/House4/WallLamp"]
+[editable path="RightTerrace/House5/WallLamp"]
+[editable path="KeyLamp"]
+[editable path="FarLamp"]

@@ -35,7 +35,8 @@ Other scripts: `tools/check.sh` reports script and scene errors headlessly;
 ## How it was made
 
 - **Code:** written with AI assistance (Claude Code).
-- **Art:** public domain (CC0) or generated procedurally in code. No AI-generated art.
+- **Art:** public domain (CC0), Creative Commons Attribution (CC BY 4.0), or generated
+  procedurally in code. No AI-generated art.
 - Attribution for all third-party assets is in [CREDITS.md](CREDITS.md).
 
 ## Licence
