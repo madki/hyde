@@ -19,7 +19,7 @@ the game build.
 
 Art is public domain (CC0), Creative Commons Attribution (CC BY 4.0, credited below), or
 generated procedurally in code (shaders, particles, drawn primitives), with one exception:
-the figure of Jekyll, noted under the table. No AI-generated image or audio assets.
+the figure of Jekyll, rendered from a bought model, noted under the table. No AI-generated image or audio assets.
 
 Every third-party asset must be listed here before it is committed.
 
@@ -38,12 +38,22 @@ mesh stays under CC BY 4.0:
 - "Mad Corvin - AS3 'The Alienist'" by Nicu.Scarlat: frozen in one pose of its animation,
   display stand, moustache and goatee removed, textures and materials dropped, rescaled.
 
-Jekyll is rendered from "Victorian Gent", a rigged character model obtained from
+### Jekyll: a bought model
+
+Jekyll is rendered from "Victorian Gent", a rigged character model bought from
 [CGTrader](https://www.cgtrader.com/) under that marketplace's licence, which is not a Creative
-Commons licence. The model, and the meshes made from it (`studio/figures/jekyll*.res`), are
-not part of this repository. Only pictures rendered from it are: the figure of Jekyll in
-`art/bg/figures.png`, `art/bg/figures_depth.png`, `art/bg/title_figures.png`,
-`art/bg/title_figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`, `lab_c.png`. Its author and the exact licence terms are still to be recorded here.
+Commons licence.
+
+| Asset | Author | Source URL | Licence |
+|---|---|---|---|
+| Victorian Gent (model, bought) | TO BE RECORDED | TO BE RECORDED | TO BE RECORDED (CGTrader licence named on the model's page) |
+
+The model, and the meshes made from it (`studio/figures/jekyll*.res`), may not be passed on and
+are not part of this repository: `.gitignore` keeps them out, and the bake scripts stop with a
+message where they are missing. Only pictures rendered from the model are committed, from which
+it cannot be got back: the figure of Jekyll in `art/bg/figures.png`, `art/bg/figures_depth.png`,
+`art/bg/title_figures.png`, `art/bg/title_figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`,
+`lab_c.png`.
 
 The textures in `art/bg/` are rendered by this project (`tools/bake_bg.sh` for the streets,
 `tools/bake_figures.sh` for the figures, `tools/bake_title.sh` for the title screen's streets and the

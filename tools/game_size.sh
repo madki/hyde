@@ -49,5 +49,6 @@ fi
 total=$((data + engine))
 echo "Shipped game (Web): about $(mb "$total") = $(mb "$data") game data (estimate) + $(mb "$engine") engine; $export_note"
 if [ "$1" = "--log" ]; then
+	mkdir -p build
 	echo "$(date +%Y-%m-%dT%H:%M) $(git rev-parse --short HEAD 2>/dev/null) total=$total data=$data engine=$engine last_export=$export_total" >> build/size.log
 fi

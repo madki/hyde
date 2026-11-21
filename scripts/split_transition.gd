@@ -86,10 +86,10 @@ func is_playing() -> bool:
 ## 1 = Hyde) and `change` is called at once to make the change. With a `linger` (on the scale
 ## of the split itself: 1 = as far apart as the pictures fly) the split stays open round
 ## `place`, whose position is its middle and whose size is how far it reaches each way, in
-## 0..1 of the screen. Does nothing while a split is already under way.
+## 0..1 of the screen. Called while a split is under way, that one ends at once (its
+## `finished` is sent) and this one starts.
 func play(face: float, change: Callable, linger := 0.0, place := Rect2()) -> void:
-	if is_playing():
-		return
+	_cut_short()
 	begin(face, change, linger, place)
 	_tween = create_tween()
 	_tween.tween_method(pose, 0.0, 1.0, SECONDS)
@@ -100,10 +100,10 @@ func play(face: float, change: Callable, linger := 0.0, place := Rect2()) -> voi
 ## all three showing the live screen, so a change that plays under it is seen through it.
 ## `size` scales how far apart they go (1 = as in a change of scene) and `shake` is how far
 ## the screen is also shaken at the start, as a fraction of its height, dying away.
-## `seconds` is how long it takes. Called while one is under way, it starts again.
+## `seconds` is how long it takes. Called while a split is under way, that one ends at once
+## (its `finished` is sent) and this one starts.
 func glitch(size := 1.0, shake := 0.0, seconds := SECONDS) -> void:
-	if _tween:
-		_tween.kill()
+	_cut_short()
 	begin_glitch(size, shake)
 	_tween = create_tween()
 	_tween.tween_method(pose, 0.0, 1.0, seconds)
@@ -184,6 +184,14 @@ func _back_out(u: float) -> float:
 	const PAST := 1.70158
 	var v := u - 1.0
 	return 1.0 + (PAST + 1.0) * v * v * v + PAST * v * v
+
+
+## Ends a split that is under way, so that whoever waits for its `finished` is not left
+## waiting. Its change of scene was made when it began.
+func _cut_short() -> void:
+	if is_playing():
+		_tween.kill()
+		_end()
 
 
 func _end() -> void:

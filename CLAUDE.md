@@ -34,6 +34,11 @@ It must stay clean at every commit, including history.
   asset that is changed also needs its changes listed there. No NonCommercial,
   NoDerivatives, ShareAlike or GPL/copyleft code or assets, and nothing with an
   unclear licence.
+- One exception: Jekyll's figure is rendered from a model bought on CGTrader
+  (recorded in `CREDITS.md`). The model and the meshes made from it
+  (`studio/figures/jekyll*.res`, gitignored) must never be committed; only
+  pictures rendered from them are. Do not add another bought or
+  non-Creative-Commons asset without asking.
 
 ## Web constraints
 

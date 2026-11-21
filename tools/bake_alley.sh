@@ -7,6 +7,7 @@
 # The bake renders in a window, and macOS stops drawing windows while the display sleeps, so
 # keep it awake for the duration.
 cd "$(dirname "$0")/.." || exit 1
+tools/need_figures.sh hyde || exit 1
 if command -v caffeinate >/dev/null 2>&1; then caffeinate -u -d -t 60 & fi
 GODOT="${GODOT:-godot}"
 GODOT_MCP_DISABLE_SERVER=1 "$GODOT" --path . --rendering-method forward_plus res://studio/bake.tscn -- --variant=alley "$@" || exit 1

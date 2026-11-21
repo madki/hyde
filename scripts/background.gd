@@ -66,7 +66,11 @@ func _ready() -> void:
 	_set_param("figure_rect", Vector4(FIGURE_RECT.position.x, FIGURE_RECT.position.y,
 			FIGURE_RECT.size.x, FIGURE_RECT.size.y))
 	_set_param("figure_depth_range", FIGURE_DEPTH_RANGE)
+	# With no change part-way or done, the street keeps the `shift` it was given.
+	var given := shift
 	_pose_transformation()
+	if transformation <= 0.0:
+		shift = given
 	_set_param("sway", Vector2.ZERO)
 	resized.connect(_fit)
 	_fit()

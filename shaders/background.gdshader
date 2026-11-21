@@ -14,8 +14,8 @@ shader_type canvas_item;
 //                  two men standing still. scripts/background.gd picks what is shown.
 //   figures_depth  how far the figure is from the camera, same layout at half the size
 //
-// A canvas shader gets eight textures in the Compatibility renderer (this one uses seven): a
-// ninth silently breaks the others.
+// A canvas shader gets eight textures in the Compatibility renderer, and this one uses all
+// eight (the seven above and `colour_tex`): a ninth silently breaks the others.
 //
 // Mipmaps of the pass textures double as a free blur: they tint the mist and make the glow.
 // Every look setting is a parameter: edit them on shaders/background_material.tres.

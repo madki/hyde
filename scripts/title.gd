@@ -5,7 +5,8 @@ extends Control
 ## and in that moment the screen shakes and splits a little way into three colours; then
 ## Hyde turns back into Jekyll's magenta ghost and the two ghosts close into Jekyll. Tab goes
 ## over to the older change, in which Shift turns one man into the other through the dark,
-## and back.
+## and back. A visit starts from Jekyll: while Hyde stands there, Shift turns him back through
+## the dark whichever change is chosen.
 ## For screenshots: `--apart=0.5` shows a moment of Jekyll coming apart, `--hyde=1` (with
 ## `--apart=1`) the magenta ghost turned into Hyde, `--glitch=0.3` a moment of the split of
 ## the screen, `--shift=1` starts on Hyde, and `--lamps=0.3` and `--dark=0.5` show a moment
@@ -61,9 +62,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		change = Change.DARK if change == Change.VISIT else Change.VISIT
 		print("Change: ", Change.find_key(change))
 	elif key.keycode == KEY_SHIFT:
-		if change == Change.VISIT:
+		if change == Change.VISIT and _bg.shift <= 0.0:
 			_visit_hyde()
 		else:
+			# Also the way back for a Hyde left standing by the other change: a visit starts
+			# from Jekyll.
 			_bg.change_to(0.0 if _bg.shift > 0.5 else 1.0)
 
 
