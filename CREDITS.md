@@ -40,13 +40,17 @@ mesh stays under CC BY 4.0:
 
 ### Jekyll: a bought model
 
-Jekyll is rendered from "Victorian Gent", a rigged character model bought from
-[CGTrader](https://www.cgtrader.com/) under that marketplace's licence, which is not a Creative
-Commons licence.
+Jekyll is rendered from a rigged character model bought from CGTrader under that
+marketplace's licence, which is not a Creative Commons licence.
 
 | Asset | Author | Source URL | Licence |
 |---|---|---|---|
-| Victorian Gent (model, bought) | TO BE RECORDED | TO BE RECORDED | TO BE RECORDED (CGTrader licence named on the model's page) |
+| BLENDER - Victorian Gent - Rigged - one model 2 versions (model #4126179, bought) | Continuum3D | <https://www.cgtrader.com/3d-models/character/man/victorian-gent-rigged-one-model-2-versions-da601b01-9f0b-4787-ad27-de9552c4d763> | CGTrader Royalty Free License, No AI ([terms](https://www.cgtrader.com/pages/terms-and-conditions), sections 21A and 21B) |
+
+That licence allows the model to be used as an "Incorporated Product", one that cannot be got
+back out of the work it is in, and names rendered still images and use inside a game among
+such uses. It does not allow the model itself to be passed on, or to be used to train machine
+learning models.
 
 The model, and the meshes made from it (`studio/figures/jekyll*.res`), may not be passed on and
 are not part of this repository: `.gitignore` keeps them out, and the bake scripts stop with a
