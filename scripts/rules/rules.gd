@@ -1,50 +1,25 @@
 class_name Rules
-## The card game's rules, as pure logic with no nodes. A run is plain data: a Dictionary of
-## numbers, strings, Arrays and Dictionaries, so it can be saved as JSON (to_json, from_json)
-## and replayed from its seed and its moves. Every function takes the run first.
+## The card game's rules, as pure logic with no nodes. Every function takes the run first:
+## a RulesRun, which holds the whole state and saves as JSON (to_json, from_json), so a run
+## can be replayed from its seed and its moves.
 ##
-## The run: `seed` (the generator's state) and `seed0`, `night` (0 to 4), `round` (0 to 2, the
-## scene is 2), `phase` ("play", "result", "lab", "alley", "end"), `stance` ("jekyll" or
-## "hyde"), `restraint`, `stored`, `salt`, `doses_bought`, `sov`, `hyde_arrived`, `unlocked`,
-## `instruments`, the gauges `craving`, `habit` and `temper` (a number a symbol), `cards`
-## (each {id, t: "root", sym, ink} or {id, t: "factor", kind}), the piles `draw`, `hand` and
-## `discard` (card ids; the top of the draw pile is its end), the round's `score`, `plays`
-## and `discards`, and between rounds `last`, `offer`, `shop`, `alley`, `dawn`, `ending`
-## ("hyde", "double", "myself") and `ended_by`.
-##
-## A move returns {ok: true, ...} or {ok: false, reason}. The names and numbers are in
-## RulesConfig, the reading of a play in RulesHands, what a table shows in RulesView.
+## A move returns {ok: true, ...} or {ok: false, reason}. The names of things are in
+## RulesConfig, the numbers in RulesDials, the reading of a play in RulesHands, and what a
+## table shows in RulesView.
 
 const PHASES: Array[String] = ["play", "result", "alley", "lab", "end"]
 
 
 # ---------- a run ----------
 
-## A new run, dealt and ready for its first play. `changes` replaces numbers of
-## RulesConfig.NUMBERS. With no seed, a random one is taken.
-static func new_run(changes: Dictionary = {}, seed_value: Variant = null) -> Dictionary:
-	var d := RulesConfig.dials(changes)
-	var s0: int = RulesRng.wrap_seed(randi() % 2147483647 if seed_value == null else int(seed_value))
-	var run := {
-		"v": 1, "dials": d, "seed": s0, "seed0": s0, "uid": 0,
-		"night": 0, "round": 0, "stance": "jekyll",
-		"restraint": 0, "stored": 0, "salt": d.salt_start, "doses_bought": 0, "sov": 0,
-		"craving": {"lamp": 0, "heart": 0, "mirror": 0},
-		"habit": {"lamp": 0, "heart": 0, "mirror": 0},
-		"temper": {"lamp": 0, "heart": 0, "mirror": 0},
-		"cards": [], "draw": [], "hand": [], "discard": [],
-		"score": 0, "plays": 0, "discards": 0,
-		"hyde_arrived": false, "unlocked": {"pen": false, "cane": false},
-		"instruments": [], "phase": "play",
-		"last": null, "offer": null, "alley": null, "shop": null, "dawn": null,
-		"ending": null, "ended_by": null,
-		"log": [], "history": [],
-		"stats": {
-			"rescues": 0, "converted": 0, "breakouts": 0, "turns": 0, "temper": 0,
-			"hyde_hands": 0, "jekyll_hands": 0, "best": 0, "best_name": "",
-			"drinks": 0, "stains": 0, "salts": 0, "bred": 0, "struck": 0, "passes": 0,
-		},
-	}
+## A new run, dealt and ready for its first play. `changes` replaces numbers of RulesDials.
+## With no seed, a random one is taken.
+static func new_run(changes: Dictionary = {}, seed_value: Variant = null) -> RulesRun:
+	var run := RulesRun.new()
+	run.dials = RulesDials.make(changes)
+	run.seed = RulesRng.wrap_seed(randi() % 2147483647 if seed_value == null else int(seed_value))
+	run.seed0 = run.seed
+	run.salt = run.dials.salt_start
 	for key in RulesConfig.STARTING_DECK:
 		run.cards.append(make_card(run, key, false))
 	start_round(run)
@@ -52,20 +27,20 @@ static func new_run(changes: Dictionary = {}, seed_value: Variant = null) -> Dic
 
 
 ## The run as JSON text.
-static func to_json(run: Dictionary) -> String:
-	return JSON.stringify(run)
+static func to_json(run: RulesRun) -> String:
+	return JSON.stringify(run.to_dict())
 
 
-## A run read back from to_json's text, or {} if the text is not one. JSON has one kind of
-## number, so every whole number is made an int again.
-static func from_json(text: String) -> Dictionary:
+## A run read back from to_json's text, or null if the text is not one. JSON has one kind
+## of number, so every whole number is made an int again.
+static func from_json(text: String) -> RulesRun:
 	var json := JSON.new()
 	if json.parse(text) != OK:
-		return {}
+		return null
 	var data: Variant = json.data
 	if typeof(data) != TYPE_DICTIONARY or not data.has("cards") or not data.has("dials"):
-		return {}
-	return _whole_numbers(data)
+		return null
+	return RulesRun.from_dict(_whole_numbers(data))
 
 
 static func _whole_numbers(v: Variant) -> Variant:
@@ -86,7 +61,7 @@ static func _whole_numbers(v: Variant) -> Variant:
 
 # ---------- small helpers ----------
 
-static func night_of(run: Dictionary) -> Dictionary:
+static func night_of(run: RulesRun) -> Dictionary:
 	return RulesConfig.NIGHTS[run.night]
 
 
@@ -94,70 +69,70 @@ static func night_count() -> int:
 	return RulesConfig.NIGHTS.size()
 
 
-static func is_scene(run: Dictionary) -> bool:
-	return int(run.round) == 2
+static func is_scene(run: RulesRun) -> bool:
+	return run.round == 2
 
 
 ## The twist in force now: the night's, in its scene only. "" for none.
-static func twist_now(run: Dictionary) -> String:
+static func twist_now(run: RulesRun) -> String:
 	return night_of(run).twist if is_scene(run) else ""
 
 
 ## The score this round must reach.
-static func target(run: Dictionary) -> int:
+static func target(run: RulesRun) -> int:
 	return RulesConfig.targets(run.dials, run.night)[run.round]
 
 
-static func has_inst(run: Dictionary, key: String) -> bool:
+static func has_inst(run: RulesRun, key: String) -> bool:
 	return run.instruments.has(key)
 
 
 ## The restraint limit of this night's scene (`scene` true) or of its ordinary rounds.
-static func limit_for(run: Dictionary, scene: bool) -> int:
-	var d: Dictionary = run.dials
-	var most: int = int(d.restraint_limit) + (int(d.balance_bonus) if has_inst(run, "balance") else 0)
+static func limit_for(run: RulesRun, scene: bool) -> int:
+	var d := run.dials
+	var most: int = d.restraint_limit + (d.balance_bonus if has_inst(run, "balance") else 0)
 	if scene and night_of(run).twist == "tight":
-		most = maxi(1, most - int(d.tight_drop))
+		most = maxi(1, most - d.tight_drop)
 	return most
 
 
 ## The restraint limit of this round.
-static func limit(run: Dictionary) -> int:
+static func limit(run: RulesRun) -> int:
 	return limit_for(run, is_scene(run))
 
 
 ## How many Ink Roots one Sublimation may turn.
-static func turn_cap(run: Dictionary) -> int:
+static func turn_cap(run: RulesRun) -> int:
 	return 2 if has_inst(run, "saucers") else 1
 
 
-## The card with this id, or {} if the deck has none.
-static func card(run: Dictionary, id: int) -> Dictionary:
-	for c: Dictionary in run.cards:
+## The card with this id, or null if the deck has none.
+static func card(run: RulesRun, id: int) -> RulesCard:
+	for c: RulesCard in run.cards:
 		if c.id == id:
 			return c
-	return {}
+	return null
 
 
-static func is_root(c: Dictionary) -> bool:
-	return c.t == "root"
+static func is_root(c: RulesCard) -> bool:
+	return c.is_root()
 
 
-static func is_ink(c: Dictionary) -> bool:
-	return c.t == "root" and c.ink
+static func is_ink(c: RulesCard) -> bool:
+	return c.is_ink()
 
 
-static func is_paper(c: Dictionary) -> bool:
-	return c.t == "root" and not c.ink
+static func is_paper(c: RulesCard) -> bool:
+	return c.is_paper()
 
 
-static func is_factor(c: Dictionary) -> bool:
-	return c.t == "factor"
+static func is_factor(c: RulesCard) -> bool:
+	return c.is_factor()
 
 
 ## A Root has one name for good. A Factor is named by whoever has the table.
-static func name_of(c: Dictionary, stance: String) -> String:
-	if c.t == "root":
+static func name_of(c: RulesCard, stance: String) -> String:
+	if c.is_root():
 		return RulesConfig.ROOT[c.sym].ink if c.ink else RulesConfig.ROOT[c.sym].paper
 	return RulesConfig.FACTOR[c.kind].ink if stance == "hyde" else RulesConfig.FACTOR[c.kind].paper
 
@@ -169,43 +144,41 @@ static func key_name(key: String, ink: bool) -> String:
 
 
 ## The chips a card is worth now. `craving`, if given, is used in place of its symbol's.
-static func chips_of(run: Dictionary, c: Dictionary, craving: int = -1) -> int:
-	var d: Dictionary = run.dials
-	if c.t == "factor":
+static func chips_of(run: RulesRun, c: RulesCard, craving: int = -1) -> int:
+	var d := run.dials
+	if c.is_factor():
 		return d.factor_chips
 	if c.ink:
 		var points: int = run.craving[c.sym] if craving < 0 else craving
-		return int(d.root_chips) + int(d.craving_chips) * points + int(d.habit_chips) * int(run.habit[c.sym])
-	return int(d.root_chips) + int(d.temper_chips) * int(run.temper[c.sym])
+		return d.root_chips + d.craving_chips * points + d.habit_chips * run.habit[c.sym]
+	return d.root_chips + d.temper_chips * run.temper[c.sym]
 
 
 ## How many Roots of a side the deck holds, of one symbol or ("") of all.
-static func count_roots(run: Dictionary, ink: bool, sym: String = "") -> int:
+static func count_roots(run: RulesRun, ink: bool, sym: String = "") -> int:
 	var n := 0
-	for c: Dictionary in run.cards:
-		if c.t == "root" and c.ink == ink and (sym == "" or c.sym == sym):
+	for c: RulesCard in run.cards:
+		if c.is_root() and c.ink == ink and (sym == "" or c.sym == sym):
 			n += 1
 	return n
 
 
 ## The line: the run is lost when Ink Roots outnumber Paper Roots at the end of a round.
 ## A tie holds, and Factors count for neither side.
-static func line_info(run: Dictionary) -> Dictionary:
+static func line_info(run: RulesRun) -> Dictionary:
 	var ink := count_roots(run, true)
 	var paper := count_roots(run, false)
 	return {"ink": ink, "paper": paper, "total": run.cards.size(), "cushion": paper - ink, "over": ink > paper}
 
 
 ## A new card with the next id. It is not put in the deck.
-static func make_card(run: Dictionary, key: String, ink: bool) -> Dictionary:
-	run.uid = int(run.uid) + 1
-	if RulesConfig.ROOT.has(key):
-		return {"id": run.uid, "t": "root", "sym": key, "ink": ink}
-	return {"id": run.uid, "t": "factor", "kind": key}
+static func make_card(run: RulesRun, key: String, ink: bool) -> RulesCard:
+	run.uid += 1
+	return RulesCard.make(run.uid, key, ink)
 
 
 ## Adds a new card to the deck. During a round it goes into the draw pile at a random place.
-static func add_card(run: Dictionary, key: String, ink: bool, mid_round: bool) -> Dictionary:
+static func add_card(run: RulesRun, key: String, ink: bool, mid_round: bool) -> RulesCard:
 	var c := make_card(run, key, ink)
 	run.cards.append(c)
 	if mid_round:
@@ -240,7 +213,7 @@ static func _before(a: Array, b: Array) -> bool:
 
 ## Draws the top card. An empty draw pile is first rebuilt from the shuffled discards.
 ## Returns the card's id, or -1 if there is nothing to draw.
-static func draw_one(run: Dictionary) -> int:
+static func draw_one(run: RulesRun) -> int:
 	if run.draw.is_empty():
 		if run.discard.is_empty():
 			return -1
@@ -251,21 +224,21 @@ static func draw_one(run: Dictionary) -> int:
 	return id
 
 
-static func refill(run: Dictionary) -> void:
-	while run.hand.size() < int(run.dials.hand_size):
+static func refill(run: RulesRun) -> void:
+	while run.hand.size() < run.dials.hand_size:
 		if draw_one(run) < 0:
 			break
 
 
 ## Begins the round `run.night` and `run.round` point at: shuffles the whole deck, deals, and
 ## applies what comes before the first play (night 4's forced shift, walking in full).
-static func start_round(run: Dictionary) -> void:
-	var d: Dictionary = run.dials
+static func start_round(run: RulesRun) -> void:
+	var d := run.dials
 	run.score = 0
 	run.plays = d.plays
-	run.discards = int(d.discards) + (1 if has_inst(run, "spirit") else 0)
+	run.discards = d.discards + (1 if has_inst(run, "spirit") else 0)
 	var ids: Array = []
-	for c: Dictionary in run.cards:
+	for c: RulesCard in run.cards:
 		ids.append(c.id)
 	run.draw = RulesRng.shuffle(run, ids)
 	run.hand = []
@@ -284,39 +257,39 @@ static func start_round(run: Dictionary) -> void:
 		run.log.append(ev)
 	# Walking in full: Jekyll enters with the meter at or over this round's limit, and he
 	# breaks out before the first play.
-	if run.stance == "jekyll" and int(run.restraint) >= limit(run):
+	if run.stance == "jekyll" and run.restraint >= limit(run):
 		var ev := _break_out(run, "walkedin")
 		ev.brought = _bring_roots(run)
 
 
 # ---------- the two stances ----------
 
-static func _pile_count(run: Dictionary, sym: String, ink: bool) -> int:
+static func _pile_count(run: RulesRun, sym: String, ink: bool) -> int:
 	var n := 0
 	for pile: Array in [run.draw, run.discard]:
 		for id: int in pile:
 			var c := card(run, id)
-			if c.t == "root" and c.sym == sym and c.ink == ink:
+			if c.is_root() and c.sym == sym and c.ink == ink:
 				n += 1
 	return n
 
 
-static func _hand_has(run: Dictionary, sym: String, ink: bool) -> bool:
+static func _hand_has(run: RulesRun, sym: String, ink: bool) -> bool:
 	for id: int in run.hand:
 		var c := card(run, id)
-		if c.t == "root" and c.sym == sym and c.ink == ink:
+		if c.is_root() and c.sym == sym and c.ink == ink:
 			return true
 	return false
 
 
 # Moves one such Root into the hand: from the draw pile, or from the discards if the draw
 # pile has none. Each pile is searched from its end. Returns its id, or -1.
-static func _pull(run: Dictionary, sym: String, ink: bool) -> int:
+static func _pull(run: RulesRun, sym: String, ink: bool) -> int:
 	for pile: Array in [run.draw, run.discard]:
 		var i := pile.size() - 1
 		while i >= 0:
 			var c := card(run, pile[i])
-			if c.t == "root" and c.sym == sym and c.ink == ink:
+			if c.is_root() and c.sym == sym and c.ink == ink:
 				pile.remove_at(i)
 				run.hand.append(c.id)
 				return c.id
@@ -329,7 +302,7 @@ static func _pull(run: Dictionary, sym: String, ink: bool) -> int:
 # otherwise one each of two symbols (one he already holds first, then most Habit).
 # Jekyll: one each of two symbols (one his hand lacks first, then one whose Ink twin he holds).
 # Remaining ties go Lamp, Heart, Mirror.
-static func _bring_roots(run: Dictionary) -> Array:
+static func _bring_roots(run: RulesRun) -> Array:
 	var out: Array = []
 	var ink: bool = run.stance == "hyde"
 	var roots := RulesConfig.ROOTS
@@ -344,12 +317,12 @@ static func _bring_roots(run: Dictionary) -> Array:
 				pairs.append(sym)
 		if not pairs.is_empty():
 			pairs = sort_by(pairs, func(s: String) -> Array:
-				return [-int(run.habit[s]), -_pile_count(run, s, true), roots.find(s)])
+				return [-run.habit[s], -_pile_count(run, s, true), roots.find(s)])
 			out.append(_pull(run, pairs[0], true))
 			out.append(_pull(run, pairs[0], true))
 			return out
 		avail = sort_by(avail, func(s: String) -> Array:
-			return [-int(_hand_has(run, s, true)), -int(run.habit[s]), roots.find(s)])
+			return [-int(_hand_has(run, s, true)), -run.habit[s], roots.find(s)])
 	else:
 		avail = sort_by(avail, func(s: String) -> Array:
 			return [int(_hand_has(run, s, false)), -int(_hand_has(run, s, true)), roots.find(s)])
@@ -362,7 +335,7 @@ static func _bring_roots(run: Dictionary) -> Array:
 # looked in first, then the discards, then the hand. If one of his three Roots has no copy
 # anywhere in the deck and its twin is in that pile, that twin goes first. With no Paper
 # Root anywhere, one Ink Root of a random symbol joins the draw pile.
-static func _stain_one(run: Dictionary) -> Dictionary:
+static func _stain_one(run: RulesRun) -> Dictionary:
 	var roots := RulesConfig.ROOTS
 	var pools := [["draw", run.draw], ["discard", run.discard], ["hand", run.hand]]
 	for pool: Array in pools:
@@ -377,7 +350,7 @@ static func _stain_one(run: Dictionary) -> Dictionary:
 		for sym in roots:
 			if missing == "" and count_roots(run, true, sym) == 0 and RulesHands._has_sym(papers, sym):
 				missing = sym
-		var taken: Dictionary = {}
+		var taken: RulesCard = null
 		if missing != "":
 			var i := papers.size() - 1
 			while i >= 0:
@@ -395,15 +368,15 @@ static func _stain_one(run: Dictionary) -> Dictionary:
 
 
 ## His symbols with the fewest Ink Roots in the deck: the ones a breakout adds a copy of.
-static func lowest_two(run: Dictionary) -> Array:
+static func lowest_two(run: RulesRun) -> Array:
 	var roots := RulesConfig.ROOTS
 	return sort_by(roots, func(s: String) -> Array: return [count_roots(run, true, s), roots.find(s)]) \
-			.slice(0, int(run.dials.breakout_roots))
+			.slice(0, run.dials.breakout_roots)
 
 
 # Jekyll to Hyde, by any road: "drink", "window" (night 4's scene), "breakout" or "walkedin".
 # Does everything but bring his two Roots, because a breakout that wins the round brings none.
-static func _arrive(run: Dictionary, how: String) -> Dictionary:
+static func _arrive(run: RulesRun, how: String) -> Dictionary:
 	var ev := {
 		"t": "shift", "to": "hyde", "how": how, "stored": 0, "lost_restraint": 0, "first": false,
 		"brought": [], "stained": null, "added": [],
@@ -434,7 +407,7 @@ static func _arrive(run: Dictionary, how: String) -> Dictionary:
 	return ev
 
 
-static func _break_out(run: Dictionary, how: String) -> Dictionary:
+static func _break_out(run: RulesRun, how: String) -> Dictionary:
 	var ev := _arrive(run, how)
 	run.stats.breakouts += 1
 	run.log.append(ev)
@@ -442,12 +415,12 @@ static func _break_out(run: Dictionary, how: String) -> Dictionary:
 
 
 ## Whether the draught can be drunk now: {ok, why}.
-static func can_drink(run: Dictionary) -> Dictionary:
+static func can_drink(run: RulesRun) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "why": "Not now."}
 	if run.stance != "jekyll":
 		return {"ok": false, "why": "He already has the table."}
-	if int(run.night) == 0 and int(run.round) == 0:
+	if run.night == 0 and run.round == 0:
 		return {"ok": false, "why": "The draught does not exist yet."}
 	if twist_now(run) == "last":
 		return {"ok": false, "why": "No draught works in this scene."}
@@ -455,31 +428,31 @@ static func can_drink(run: Dictionary) -> Dictionary:
 
 
 ## Whether a dose of salt can be taken now: {ok, why}.
-static func can_salt(run: Dictionary) -> Dictionary:
+static func can_salt(run: RulesRun) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "why": "Not now."}
 	if run.stance != "hyde":
 		return {"ok": false, "why": "You are yourself."}
 	var from: int = run.dials.salt_from
-	if int(run.night) * 3 + int(run.round) < from:
+	if run.night * 3 + run.round < from:
 		@warning_ignore("integer_division")
 		var night: int = from / 3 + 1
 		return {"ok": false, "why": "The salt comes with the scene." if from == 2 else "The salt comes on night %d." % night}
 	if twist_now(run) == "last":
 		return {"ok": false, "why": "No salt works in this scene."}
-	if int(run.salt) <= 0:
+	if run.salt <= 0:
 		return {"ok": false, "why": "No doses left."}
 	return {"ok": true, "why": ""}
 
 
 ## What the next drink costs: "first" (his first four Roots join) or "stain".
-static func drink_cost(run: Dictionary) -> String:
+static func drink_cost(run: RulesRun) -> String:
 	return "stain" if run.hyde_arrived else "first"
 
 
 ## Jekyll to Hyde. The meter is stored, his first Roots join or a Paper Root is stained,
 ## and he brings two Roots.
-static func drink(run: Dictionary) -> Dictionary:
+static func drink(run: RulesRun) -> Dictionary:
 	var c := can_drink(run)
 	if not c.ok:
 		return {"ok": false, "reason": c.why}
@@ -492,7 +465,7 @@ static func drink(run: Dictionary) -> Dictionary:
 
 ## Hyde to Jekyll. One dose is spent, restraint is 0, stored restraint is lost, and Jekyll
 ## brings two Roots.
-static func take_salt(run: Dictionary) -> Dictionary:
+static func take_salt(run: RulesRun) -> Dictionary:
 	var c := can_salt(run)
 	if not c.ok:
 		return {"ok": false, "reason": c.why}
@@ -510,17 +483,17 @@ static func take_salt(run: Dictionary) -> Dictionary:
 # ---------- playing ----------
 
 ## Reads a play without making it: see RulesHands.evaluate.
-static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
+static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 	return RulesHands.evaluate(run, cards)
 
 
 ## The highest-scoring allowed play in the hand: see RulesHands.best.
-static func best(run: Dictionary, filter: Callable = Callable()) -> Dictionary:
+static func best(run: RulesRun, filter: Callable = Callable()) -> Dictionary:
 	return RulesHands.best(run, filter)
 
 
 # One to any number of different card ids, all in the hand.
-static func _in_hand(run: Dictionary, ids: Array) -> bool:
+static func _in_hand(run: RulesRun, ids: Array) -> bool:
 	if ids.is_empty():
 		return false
 	var seen := {}
@@ -531,7 +504,7 @@ static func _in_hand(run: Dictionary, ids: Array) -> bool:
 	return true
 
 
-static func _to_discards(run: Dictionary, ids: Array) -> void:
+static func _to_discards(run: RulesRun, ids: Array) -> void:
 	for id: int in ids:
 		run.hand.erase(id)
 		run.discard.append(id)
@@ -539,7 +512,7 @@ static func _to_discards(run: Dictionary, ids: Array) -> void:
 
 ## Plays these cards of the hand. Returns {ok, ev (the reading), events, stance (who played),
 ## phase (after the play)}.
-static func play(run: Dictionary, ids: Array) -> Dictionary:
+static func play(run: RulesRun, ids: Array) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "reason": "Not now."}
 	if not _in_hand(run, ids):
@@ -550,7 +523,7 @@ static func play(run: Dictionary, ids: Array) -> Dictionary:
 	var ev := RulesHands.evaluate(run, cards)
 	if not ev.ok:
 		return {"ok": false, "reason": ev.reason}
-	var d: Dictionary = run.dials
+	var d := run.dials
 	var st: String = run.stance
 	var out := {"ok": true, "ev": ev, "events": [], "stance": st, "phase": ""}
 	var stats: Dictionary = run.stats
@@ -565,16 +538,16 @@ static func play(run: Dictionary, ids: Array) -> Dictionary:
 	if st == "hyde":
 		stats.hyde_hands += 1
 		if ev.kind == "hand":
-			if int(run.stored) > 0:
-				entry.notes.append("stored restraint paid +%d mult" % (int(run.stored) * int(d.restraint_pay)))
+			if run.stored > 0:
+				entry.notes.append("stored restraint paid +%d mult" % (run.stored * d.restraint_pay))
 				run.stored = 0
 			for sym in RulesConfig.ROOTS:
 				if not ev.craving_on.has(sym):
 					continue
 				run.craving[sym] += int(ev.craving_on[sym])
 				# Rollover: the Habit rises and a copy joins the draw pile.
-				while int(run.craving[sym]) >= int(d.craving_cap):
-					run.craving[sym] -= int(d.craving_cap)
+				while run.craving[sym] >= d.craving_cap:
+					run.craving[sym] -= d.craving_cap
 					run.habit[sym] += 1
 					add_card(run, sym, true, true)
 					stats.bred += 1
@@ -618,31 +591,31 @@ static func play(run: Dictionary, ids: Array) -> Dictionary:
 
 
 # The end of a play: the breakout, the win, and the last play that falls short.
-static func _settle(run: Dictionary, st: String, last_score: int, last_name: String, held: Array, out: Dictionary) -> void:
-	if st == "jekyll" and int(run.restraint) >= limit(run):
+static func _settle(run: RulesRun, st: String, last_score: int, last_name: String, held: Array, out: Dictionary) -> void:
+	if st == "jekyll" and run.restraint >= limit(run):
 		var bo := _break_out(run, "breakout")
 		out.events.append({"t": "breakout", "ev": bo})
-		if int(run.score) >= target(run):
+		if run.score >= target(run):
 			# Won, in his stance: he brings no Roots.
 			_end_round(run, {"how": "won", "broke_out": true})
 			return
 		bo.brought = _bring_roots(run)
-	if int(run.score) >= target(run):
+	if run.score >= target(run):
 		_end_round(run, {"how": "won"})
 		return
-	if int(run.plays) <= 0:
+	if run.plays <= 0:
 		_rescue(run, last_score, last_name, held)
 
 
 ## Throws away 1 to 5 cards of the hand and refills it. Uses one of the round's discards.
-static func discard(run: Dictionary, ids: Array) -> Dictionary:
+static func discard(run: RulesRun, ids: Array) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "reason": "Not now."}
-	if int(run.discards) <= 0:
+	if run.discards <= 0:
 		return {"ok": false, "reason": "No discards left."}
 	if not _in_hand(run, ids):
 		return {"ok": false, "reason": "Choose cards to discard."}
-	if ids.size() > int(run.dials.max_play):
+	if ids.size() > run.dials.max_play:
 		return {"ok": false, "reason": "Discard up to five cards."}
 	run.discards -= 1
 	_to_discards(run, ids)
@@ -652,28 +625,28 @@ static func discard(run: Dictionary, ids: Array) -> Dictionary:
 
 
 ## Whether the hand holds anything the man at the table can play: a Factor or a Root of his.
-static func has_play(run: Dictionary) -> bool:
+static func has_play(run: RulesRun) -> bool:
 	var ink: bool = run.stance == "hyde"
 	for id: int in run.hand:
 		var c := card(run, id)
-		if c.t == "factor" or c.ink == ink:
+		if c.is_factor() or c.ink == ink:
 			return true
 	return false
 
 
 ## Whether the play can be passed: {ok, why}. Only with nothing to play and no discards left.
-static func can_pass(run: Dictionary) -> Dictionary:
+static func can_pass(run: RulesRun) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "why": "Not now."}
 	if has_play(run):
 		return {"ok": false, "why": "A card in hand can be played."}
-	if int(run.discards) > 0:
+	if run.discards > 0:
 		return {"ok": false, "why": "Discard first."}
 	return {"ok": true, "why": ""}
 
 
 ## Passes a play. It uses a play and scores nothing, and as Jekyll it adds restraint.
-static func pass_play(run: Dictionary) -> Dictionary:
+static func pass_play(run: RulesRun) -> Dictionary:
 	var c := can_pass(run)
 	if not c.ok:
 		return {"ok": false, "reason": c.why}
@@ -699,27 +672,27 @@ static func pass_play(run: Dictionary) -> Dictionary:
 ## Heart, Mirror. Each one doubles the last play, and he stops when the target is met.
 ## Returns {k, ids, pool, factor, score, ok, ink, paper, over}: the Roots taken, the score
 ## reached and whether it covers the round, and the line as it would then stand.
-static func plan_rescue(run: Dictionary, prior: int, last: int, held_ids: Array, breaks_out: bool) -> Dictionary:
+static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, breaks_out: bool) -> Dictionary:
 	var goal := target(run)
 	var papers: Array = []
 	for id: int in held_ids:
 		var c := card(run, id)
-		if not c.is_empty() and is_paper(c):
+		if c != null and c.is_paper():
 			papers.append(c)
-	var pool := sort_by(papers, func(c: Dictionary) -> Array:
-		return [int(run.temper[c.sym]), RulesConfig.ROOTS.find(c.sym), c.id])
+	var pool := sort_by(papers, func(c: RulesCard) -> Array:
+		return [run.temper[c.sym], RulesConfig.ROOTS.find(c.sym), c.id])
 	var k := 0
 	while prior + last * (1 << k) < goal and k < pool.size():
 		k += 1
 	var reached: int = prior + last * (1 << k)
 	# Roots that join with him if this is also his first arrival, or if the play also
 	# fills the meter.
-	var extra: int = (0 if run.hyde_arrived else RulesConfig.FIRST_ARRIVAL.size()) + (int(run.dials.breakout_roots) if breaks_out else 0)
+	var extra: int = (0 if run.hyde_arrived else RulesConfig.FIRST_ARRIVAL.size()) + (run.dials.breakout_roots if breaks_out else 0)
 	var li := line_info(run)
 	var ink: int = int(li.ink) + k + extra
 	var paper: int = int(li.paper) - k
 	var ids: Array = []
-	for c: Dictionary in pool.slice(0, k):
+	for c: RulesCard in pool.slice(0, k):
 		ids.append(c.id)
 	return {
 		"k": k, "ids": ids, "pool": pool.size(), "factor": 1 << k, "score": reached, "ok": reached >= goal,
@@ -727,8 +700,8 @@ static func plan_rescue(run: Dictionary, prior: int, last: int, held_ids: Array,
 	}
 
 
-static func _rescue(run: Dictionary, last_score: int, last_name: String, held: Array) -> void:
-	var prior: int = int(run.score) - last_score
+static func _rescue(run: RulesRun, last_score: int, last_name: String, held: Array) -> void:
+	var prior: int = run.score - last_score
 	var plan := plan_rescue(run, prior, last_score, held, false)
 	var names: Array = []
 	for id: int in plan.ids:
@@ -760,7 +733,7 @@ static func _rescue(run: Dictionary, last_score: int, last_name: String, held: A
 
 
 ## Gives up the run: it ends as Mr Hyde. A convenience, not a rule.
-static func give_up(run: Dictionary) -> Dictionary:
+static func give_up(run: RulesRun) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "reason": "Not now."}
 	_end_round(run, {"how": "lost", "reason": "gaveup"})
@@ -769,8 +742,8 @@ static func give_up(run: Dictionary) -> Dictionary:
 
 # ---------- the end of a round ----------
 
-static func _end_round(run: Dictionary, res: Dictionary) -> void:
-	var d: Dictionary = run.dials
+static func _end_round(run: RulesRun, res: Dictionary) -> void:
+	var d := run.dials
 	res.night = run.night
 	res.round = run.round
 	res.score = run.score
@@ -779,7 +752,7 @@ static func _end_round(run: Dictionary, res: Dictionary) -> void:
 	if res.how == "won":
 		# A rescued round pays nothing.
 		res.plays_left = run.plays
-		res.pay = int(d.round_pay) + int(d.unused_play_pay) * int(run.plays)
+		res.pay = d.round_pay + d.unused_play_pay * run.plays
 		run.sov += int(res.pay)
 	run.draw = []
 	run.hand = []
@@ -804,20 +777,20 @@ static func _end_round(run: Dictionary, res: Dictionary) -> void:
 		run.ended_by = "line"
 		run.phase = "end"
 		return
-	if int(run.night) == night_count() - 1 and is_scene(run):
+	if run.night == night_count() - 1 and is_scene(run):
 		run.ending = "double" if run.stance == "hyde" else "myself"
 		run.ended_by = "scene"
 		run.phase = "end"
 		return
 	# An ordinary round won in Jekyll's stance: one of three different cards, or none.
 	if not is_scene(run) and res.how == "won" and run.stance == "jekyll":
-		run.offer = _pick_offers(run, int(d.reward_cards))
+		run.offer = _pick_offers(run, d.reward_cards)
 	run.phase = "result"
 
 
 ## Leaves the result of a round, taking the offered card at index `pick` (null: none). Next
 ## comes the next round, or after a scene the dawn.
-static func continue_result(run: Dictionary, pick: Variant = null) -> Dictionary:
+static func continue_result(run: RulesRun, pick: Variant = null) -> Dictionary:
 	if run.phase != "result":
 		return {"ok": false, "reason": "Not now."}
 	if run.offer != null and pick != null and int(pick) >= 0 and int(pick) < run.offer.size():
@@ -834,7 +807,7 @@ static func continue_result(run: Dictionary, pick: Variant = null) -> Dictionary
 # ---------- what is on offer ----------
 
 ## The Factors that can appear in a reward or on the laboratory's shelf.
-static func unlocked_factors(run: Dictionary) -> Array:
+static func unlocked_factors(run: RulesRun) -> Array:
 	var out: Array = []
 	for k in RulesConfig.FACTORS:
 		if int(RulesConfig.FACTOR[k].unlock) == 0 or run.unlocked[k]:
@@ -844,13 +817,13 @@ static func unlocked_factors(run: Dictionary) -> Array:
 
 # Different cards for a reward: the three Paper Roots and every unlocked Factor, by weight,
 # drawn one at a time without putting any back.
-static func _pick_offers(run: Dictionary, n: int) -> Array:
-	var d: Dictionary = run.dials
+static func _pick_offers(run: RulesRun, n: int) -> Array:
+	var d := run.dials
 	var pool: Array = []
 	for s in RulesConfig.ROOTS:
-		pool.append([s, int(d.reward_root_weight)])
+		pool.append([s, d.reward_root_weight])
 	for k: String in unlocked_factors(run):
-		pool.append([k, int(d.reward_factor_weight)])
+		pool.append([k, d.reward_factor_weight])
 	var out: Array = []
 	while out.size() < n and not pool.is_empty():
 		var total := 0
@@ -869,28 +842,28 @@ static func _pick_offers(run: Dictionary, n: int) -> Array:
 
 
 ## The price of a dose of salt, in the laboratory ("lab") or the back alley ("alley").
-static func salt_cost(run: Dictionary, where: String) -> int:
-	var d: Dictionary = run.dials
-	return int(d.salt_price) + int(d.salt_rise) * int(run.doses_bought) + (int(d.alley_markup) if where == "alley" else 0)
+static func salt_cost(run: RulesRun, where: String) -> int:
+	var d := run.dials
+	return d.salt_price + d.salt_rise * run.doses_bought + (d.alley_markup if where == "alley" else 0)
 
 
 ## His Root with the most Habit. Ties go to the most Craving, then the fewest Ink copies in
 ## the deck, then Lamp, Heart, Mirror.
-static func highest_habit(run: Dictionary) -> String:
+static func highest_habit(run: RulesRun) -> String:
 	var roots := RulesConfig.ROOTS
 	return sort_by(roots, func(s: String) -> Array:
-		return [-int(run.habit[s]), -int(run.craving[s]), count_roots(run, true, s), roots.find(s)])[0]
+		return [-run.habit[s], -run.craving[s], count_roots(run, true, s), roots.find(s)])[0]
 
 
 # ---------- dawn ----------
 
 # Dawn: his unasked Roots join and the night's Factor unlocks. Then one place only, by who
 # has the table: the laboratory for Jekyll, the back alley for Hyde.
-static func _enter_dawn(run: Dictionary) -> void:
+static func _enter_dawn(run: RulesRun) -> void:
 	var night := night_of(run)
 	run.dawn = {
-		"no": int(run.night) + 1, "brings": null, "unlocks": null,
-		"last": int(run.night) + 1 >= night_count() - 1, "as_hyde": run.stance == "hyde",
+		"no": run.night + 1, "brings": null, "unlocks": null,
+		"last": run.night + 1 >= night_count() - 1, "as_hyde": run.stance == "hyde",
 	}
 	var sym: String = highest_habit(run) if night.brings == "habit" else night.brings
 	if sym != "":
@@ -908,7 +881,7 @@ static func _enter_dawn(run: Dictionary) -> void:
 
 # The laboratory's Factor: the one that unlocked at this dawn; failing that, an unlocked Pen
 # or Cane the deck has no copy of, Pen first; failing that, any unlocked Factor at random.
-static func _lab_factor(run: Dictionary) -> String:
+static func _lab_factor(run: RulesRun) -> String:
 	var night := night_of(run)
 	if night.unlocks != "":
 		return night.unlocks
@@ -916,8 +889,8 @@ static func _lab_factor(run: Dictionary) -> String:
 		if not run.unlocked[k]:
 			continue
 		var held := false
-		for c: Dictionary in run.cards:
-			if c.t == "factor" and c.kind == k:
+		for c: RulesCard in run.cards:
+			if c.is_factor() and c.kind == k:
 				held = true
 		if not held:
 			return k
@@ -925,7 +898,7 @@ static func _lab_factor(run: Dictionary) -> String:
 	return keys[RulesRng.below(run, keys.size())]
 
 
-static func _open_lab(run: Dictionary) -> void:
+static func _open_lab(run: RulesRun) -> void:
 	run.alley = null
 	var syms: Array = RulesRng.shuffle(run, RulesConfig.ROOTS.duplicate()).slice(0, 2)
 	var free: Array = []
@@ -944,7 +917,7 @@ static func _open_lab(run: Dictionary) -> void:
 	run.phase = "lab"
 
 
-static func _open_alley(run: Dictionary) -> void:
+static func _open_alley(run: RulesRun) -> void:
 	run.shop = null
 	var options: Array = []
 	for k in RulesConfig.HIS_INSTRUMENTS:
@@ -954,7 +927,7 @@ static func _open_alley(run: Dictionary) -> void:
 	run.phase = "alley"
 
 
-static func _next_night(run: Dictionary) -> void:
+static func _next_night(run: RulesRun) -> void:
 	run.night += 1
 	run.round = 0
 	start_round(run)
@@ -964,16 +937,16 @@ static func _next_night(run: Dictionary) -> void:
 
 ## One Habit, free, once: on a symbol with an Ink Root in the deck. It breeds no copy and
 ## leaves the Craving where it was.
-static func alley_habit(run: Dictionary, sym: String) -> Dictionary:
+static func alley_habit(run: RulesRun, sym: String) -> Dictionary:
 	if run.phase != "alley" or run.alley.habit != null or not RulesConfig.ROOT.has(sym) or count_roots(run, true, sym) == 0:
 		return {"ok": false, "reason": "Not on offer."}
-	run.habit[sym] += int(run.dials.alley_habit)
+	run.habit[sym] += run.dials.alley_habit
 	run.alley.habit = sym
 	return {"ok": true}
 
 
 ## One of his instruments, free, once, if a slot is free.
-static func alley_instrument(run: Dictionary, key: String) -> Dictionary:
+static func alley_instrument(run: RulesRun, key: String) -> Dictionary:
 	if run.phase != "alley" or run.alley.inst != null or not run.alley.options.has(key):
 		return {"ok": false, "reason": "Not on offer."}
 	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
@@ -984,11 +957,11 @@ static func alley_instrument(run: Dictionary, key: String) -> Dictionary:
 
 
 ## A dose of salt from the street chemist.
-static func alley_salt(run: Dictionary) -> Dictionary:
+static func alley_salt(run: RulesRun) -> Dictionary:
 	if run.phase != "alley":
 		return {"ok": false, "reason": "Not now."}
 	var price := salt_cost(run, "alley")
-	if int(run.sov) < price:
+	if run.sov < price:
 		return {"ok": false, "reason": "Not enough sovereigns."}
 	run.sov -= price
 	run.salt += 1
@@ -998,7 +971,7 @@ static func alley_salt(run: Dictionary) -> Dictionary:
 
 
 ## Leaves the back alley: the next night begins.
-static func alley_leave(run: Dictionary) -> Dictionary:
+static func alley_leave(run: RulesRun) -> Dictionary:
 	if run.phase != "alley":
 		return {"ok": false, "reason": "Not now."}
 	_next_night(run)
@@ -1008,14 +981,14 @@ static func alley_leave(run: Dictionary) -> Dictionary:
 # ---------- the laboratory ----------
 
 ## Buys the card at this place of the shelf: one copy joins the deck.
-static func buy_card(run: Dictionary, index: int) -> Dictionary:
+static func buy_card(run: RulesRun, index: int) -> Dictionary:
 	if run.phase != "lab":
 		return {"ok": false, "reason": "Not now."}
 	var shelf: Array = run.shop.cards
 	if index < 0 or index >= shelf.size() or shelf[index].sold:
 		return {"ok": false, "reason": "Sold."}
 	var o: Dictionary = shelf[index]
-	if int(run.sov) < int(o.price):
+	if run.sov < int(o.price):
 		return {"ok": false, "reason": "Not enough sovereigns."}
 	run.sov -= int(o.price)
 	o.sold = true
@@ -1024,7 +997,7 @@ static func buy_card(run: Dictionary, index: int) -> Dictionary:
 
 
 ## Buys the instrument at this place of the shelf.
-static func buy_instrument(run: Dictionary, index: int) -> Dictionary:
+static func buy_instrument(run: RulesRun, index: int) -> Dictionary:
 	if run.phase != "lab":
 		return {"ok": false, "reason": "Not now."}
 	var shelf: Array = run.shop.instruments
@@ -1033,7 +1006,7 @@ static func buy_instrument(run: Dictionary, index: int) -> Dictionary:
 	var o: Dictionary = shelf[index]
 	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
 		return {"ok": false, "reason": "Three instruments held. Drop one first."}
-	if int(run.sov) < int(o.price):
+	if run.sov < int(o.price):
 		return {"ok": false, "reason": "Not enough sovereigns."}
 	run.sov -= int(o.price)
 	o.sold = true
@@ -1042,7 +1015,7 @@ static func buy_instrument(run: Dictionary, index: int) -> Dictionary:
 
 
 ## Drops a held instrument. Only at dawn, in either place.
-static func drop_instrument(run: Dictionary, key: String) -> Dictionary:
+static func drop_instrument(run: RulesRun, key: String) -> Dictionary:
 	if run.phase != "lab" and run.phase != "alley":
 		return {"ok": false, "reason": "Instruments are dropped at dawn."}
 	if not has_inst(run, key):
@@ -1052,11 +1025,11 @@ static func drop_instrument(run: Dictionary, key: String) -> Dictionary:
 
 
 ## A dose of salt from the laboratory.
-static func buy_salt(run: Dictionary) -> Dictionary:
+static func buy_salt(run: RulesRun) -> Dictionary:
 	if run.phase != "lab":
 		return {"ok": false, "reason": "Not now."}
 	var price := salt_cost(run, "lab")
-	if int(run.sov) < price:
+	if run.sov < price:
 		return {"ok": false, "reason": "Not enough sovereigns."}
 	run.sov -= price
 	run.salt += 1
@@ -1065,19 +1038,19 @@ static func buy_salt(run: Dictionary) -> Dictionary:
 
 
 ## What it costs to strike this card from the deck.
-static func strike_price(c: Dictionary) -> int:
-	return RulesConfig.STRIKE_INK if is_ink(c) else RulesConfig.STRIKE_PAPER
+static func strike_price(c: RulesCard) -> int:
+	return RulesConfig.STRIKE_INK if c.is_ink() else RulesConfig.STRIKE_PAPER
 
 
 ## Removes a card from the deck for good, in the laboratory.
-static func strike(run: Dictionary, id: int) -> Dictionary:
+static func strike(run: RulesRun, id: int) -> Dictionary:
 	if run.phase != "lab":
 		return {"ok": false, "reason": "Not now."}
 	var c := card(run, id)
-	if c.is_empty():
+	if c == null:
 		return {"ok": false, "reason": "No such card."}
 	var price := strike_price(c)
-	if int(run.sov) < price:
+	if run.sov < price:
 		return {"ok": false, "reason": "Not enough sovereigns."}
 	run.sov -= price
 	run.cards.erase(c)
@@ -1086,7 +1059,7 @@ static func strike(run: Dictionary, id: int) -> Dictionary:
 
 
 ## Leaves the laboratory: the next night begins.
-static func leave_lab(run: Dictionary) -> Dictionary:
+static func leave_lab(run: RulesRun) -> Dictionary:
 	if run.phase != "lab":
 		return {"ok": false, "reason": "Not now."}
 	_next_night(run)

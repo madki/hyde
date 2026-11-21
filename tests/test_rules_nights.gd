@@ -27,9 +27,9 @@ func test_dawn_1_in_the_laboratory() -> void:
 	eq([Rules.buy_salt(run).ok, Rules.salt_cost(run, "lab"), Rules.salt_cost(run, "alley"), run.salt, run.sov], [true, 4, 6, 4, 31], "then 4 and 6 after one dose")
 	Rules.buy_salt(run)
 	eq([run.sov, Rules.salt_cost(run, "lab"), Rules.salt_cost(run, "alley")], [27, 5, 7], "and 1 more each time")
-	var fog: Dictionary = run.cards.filter(Rules.is_ink)[0]
-	var comp: Dictionary = run.cards.filter(Rules.is_paper)[0]
-	var fac: Dictionary = run.cards.filter(Rules.is_factor)[0]
+	var fog: RulesCard = run.cards.filter(Rules.is_ink)[0]
+	var comp: RulesCard = run.cards.filter(Rules.is_paper)[0]
+	var fac: RulesCard = run.cards.filter(Rules.is_factor)[0]
 	eq([Rules.strike_price(fog), Rules.strike_price(comp), Rules.strike_price(fac)], [8, 4, 4], "strike: 8 for his, 4 for a Paper Root or a Factor")
 	Rules.strike(run, fog.id)
 	eq([run.sov, ink_n(run, "heart"), run.cards.size(), run.stats.struck], [19, 1, n + 1, 1], "struck")
@@ -76,7 +76,7 @@ func test_dawn_1_in_the_back_alley() -> void:
 func test_alley_limits() -> void:
 	var run := at(fresh({}, 23), 0, 2)
 	Rules.drink(run)
-	for c: Dictionary in run.cards:  # no Pride in the deck
+	for c: RulesCard in run.cards:  # no Pride in the deck
 		if c.t == "root" and c.ink and c.sym == "mirror":
 			c.ink = false
 	win_scene(run)

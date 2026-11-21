@@ -99,10 +99,10 @@ func _pick_n(items: Array, n: int) -> Array:
 	return out
 
 
-func _invariants(run: Dictionary, where: String) -> void:
-	var d: Dictionary = run.dials
+func _invariants(run: RulesRun, where: String) -> void:
+	var d := run.dials
 	var li := Rules.line_info(run)
-	var all: Array = run.cards.map(func(c: Dictionary) -> int: return c.id)
+	var all: Array = run.cards.map(func(c: RulesCard) -> int: return c.id)
 	all.sort()
 	var unique := {}
 	for id: int in all:
@@ -133,7 +133,7 @@ func _invariants(run: Dictionary, where: String) -> void:
 	ok(Rules.PHASES.has(run.phase), where + ": a known phase")
 
 
-func _random_run(seed_value: int, dials: Dictionary, start_night: int, check: bool = true) -> Dictionary:
+func _random_run(seed_value: int, dials: Dictionary, start_night: int, check: bool = true) -> RulesRun:
 	var run := Rules.new_run(dials, seed_value)
 	if start_night > 0:
 		Golden.start_on(run, start_night, seed_value % 3)
@@ -170,7 +170,7 @@ func _random_run(seed_value: int, dials: Dictionary, start_night: int, check: bo
 					var done := false
 					for t in 30:
 						var sel := _pick_n(run.hand, 1 + int(_rand() * 5))
-						if Rules.evaluate(run, sel.map(func(id: int) -> Dictionary: return Rules.card(run, id))).ok:
+						if Rules.evaluate(run, sel.map(func(id: int) -> RulesCard: return Rules.card(run, id))).ok:
 							Rules.play(run, sel)
 							done = true
 							break

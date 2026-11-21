@@ -2,7 +2,7 @@ extends "res://tests/case.gd"
 ## The two stances: drink, stain, salt, who brings which Roots, restraint and the breakout.
 
 
-func _roots(run: Dictionary, brought: Array) -> Array:
+func _roots(run: RulesRun, brought: Array) -> Array:
 	var out: Array = []
 	for id: int in brought:
 		out.append(Rules.card(run, id))
@@ -78,13 +78,13 @@ func test_stain_order() -> void:
 	var run := at(fresh({}, 8), 0, 2)
 	Rules.drink(run)
 	Rules.take_salt(run)
-	run.cards = run.cards.filter(func(c: Dictionary) -> bool: return not (c.t == "root" and c.ink and c.sym == "mirror"))
-	var live := func(id: int) -> bool: return not Rules.card(run, id).is_empty()
+	run.cards = run.cards.filter(func(c: RulesCard) -> bool: return not (c.t == "root" and c.ink and c.sym == "mirror"))
+	var live := func(id: int) -> bool: return Rules.card(run, id) != null
 	run.draw = run.draw.filter(live)
 	run.hand = run.hand.filter(live)
 	run.discard = run.discard.filter(live)
 	# Make sure every Scruple is in the draw pile.
-	for c: Dictionary in run.cards:
+	for c: RulesCard in run.cards:
 		if c.t == "root" and not c.ink and c.sym == "mirror" and run.hand.has(c.id):
 			run.hand.erase(c.id)
 			run.draw.append(c.id)
@@ -112,7 +112,7 @@ func test_stain_order() -> void:
 	# No Paper Root anywhere: one of his Roots is added instead.
 	run.salt = 1
 	Rules.take_salt(run)
-	for c: Dictionary in run.cards:
+	for c: RulesCard in run.cards:
 		if c.t == "root":
 			c.ink = true
 	var n: int = run.cards.size()
@@ -133,19 +133,19 @@ func test_arrivals_with_a_choice() -> void:
 	run.restraint = 0
 	var r := Rules.drink(run)  # stains one, then pulls
 	var br := _roots(run, r.ev.brought)
-	ok(br.size() == 2 and br.all(func(c: Dictionary) -> bool: return c.ink), "Hyde pulls two of his")
+	ok(br.size() == 2 and br.all(func(c: RulesCard) -> bool: return c.ink), "Hyde pulls two of his")
 	# Jekyll: symbols the hand lacks come first.
 	var run2 := at(fresh({}, 11), 0, 2)
 	Rules.drink(run2)
 	deal(run2, "P:lamp P:lamp I:lamp I:lamp F:cup F:eye F:lock F:cup")
 	r = Rules.take_salt(run2)
-	var syms: Array = _roots(run2, r.ev.brought).map(func(c: Dictionary) -> String: return c.sym)
+	var syms: Array = _roots(run2, r.ev.brought).map(func(c: RulesCard) -> String: return c.sym)
 	syms.sort()
 	eq(syms, ["heart", "mirror"], "Jekyll pulls the symbols his hand lacks")
 
 
 # A run in Hyde's or Jekyll's stance whose piles hold what `extra` adds, with this hand.
-func _table(stance: String, extra: String, hand: String) -> Dictionary:
+func _table(stance: String, extra: String, hand: String) -> RulesRun:
 	var run := at(fresh({}, 40), 1, 0)
 	run.hyde_arrived = true
 	for spec in extra.split(" "):
@@ -156,8 +156,8 @@ func _table(stance: String, extra: String, hand: String) -> Dictionary:
 	return run
 
 
-func _brought(run: Dictionary) -> Array:
-	return _roots(run, Rules._bring_roots(run)).map(func(c: Dictionary) -> String: return ("I:" if c.ink else "P:") + str(c.sym))
+func _brought(run: RulesRun) -> Array:
+	return _roots(run, Rules._bring_roots(run)).map(func(c: RulesCard) -> String: return ("I:" if c.ink else "P:") + str(c.sym))
 
 
 func test_who_brings_what() -> void:
@@ -198,7 +198,7 @@ func test_who_brings_what() -> void:
 	eq(_brought(run), ["P:lamp", "P:heart"], "he holds none: the twin first, then Lamp, Heart, Mirror")
 	# From the discards when the draw pile has no copy.
 	run = _table("jekyll", "I:lamp", "F:cup F:cup F:eye F:lock I:lamp")
-	var moved: Array = run.draw.filter(func(id: int) -> bool: return Rules.card(run, id).get("sym", "") == "lamp")
+	var moved: Array = run.draw.filter(func(id: int) -> bool: return Rules.card(run, id).sym == "lamp")
 	for id: int in moved:
 		run.draw.erase(id)
 		run.discard.append(id)

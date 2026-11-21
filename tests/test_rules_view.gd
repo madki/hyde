@@ -103,7 +103,7 @@ func test_last_play_that_falls_short() -> void:
 	h = deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
 	p = RulesView.preview(run, [h[0].id])
 	eq([p.restraint.breaks_out, p.breakout.first, p.result, p.rescue.k, p.line, p.ended_by], [true, true, "rescued", 2, {"ink": 8, "paper": 6, "over": true}, "line"], "breakout, then the rescue: 8 to 6")
-	var before := run.duplicate(true)
+	var before := run.copy()
 	Rules.play(run, [h[0].id])
 	eq([run.last.how, run.last.rescue.k, run.last.rescue.ids, ink_n(run), paper_n(run), run.ended_by], ["rescued", 2, p.rescue.ids, 8, 6, "line"], "and the play does what was shown")
 	ok(not same(before, run), "the play changed the run")
@@ -233,7 +233,7 @@ func test_queries_change_nothing() -> void:
 	for record: Dictionary in Golden.runs().slice(0, 30):
 		var run := Golden.begin(record)
 		for move: Array in record.moves:
-			var before := run.duplicate(true)
+			var before := run.copy()
 			var chosen: Array = move[1] if move[0] == "play" or move[0] == "discard" else run.hand.slice(0, 3)
 			RulesView.table(run, chosen)
 			Rules.best(run)
@@ -255,7 +255,7 @@ func test_preview_matches_the_play_that_follows() -> void:
 				Golden.apply(run, move)
 				continue
 			var p := RulesView.preview(run, move[1])
-			var was := run.duplicate(true)
+			var was := run.copy()
 			var accepted := Golden.apply(run, move)
 			var where := "run %d move %d" % [i, j + 1]
 			seen.plays += 1

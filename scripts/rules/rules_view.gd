@@ -21,7 +21,7 @@ class_name RulesView
 ##   twist, known from round 1, and what the dawn after it brings.
 ## - `notebook`: null without the Notebook, else the top cards of the draw pile, next first
 ##   (three at most), each {id, name, ink}.
-static func table(run: Dictionary, chosen: Array = []) -> Dictionary:
+static func table(run: RulesRun, chosen: Array = []) -> Dictionary:
 	var stance: String = run.stance
 	var playing: bool = run.phase == "play"
 	var drink := Rules.can_drink(run)
@@ -31,17 +31,17 @@ static func table(run: Dictionary, chosen: Array = []) -> Dictionary:
 		symbols[sym] = {
 			"craving": run.craving[sym], "habit": run.habit[sym], "temper": run.temper[sym],
 			"paper": Rules.count_roots(run, false, sym), "ink": Rules.count_roots(run, true, sym),
-			"paper_chips": Rules.chips_of(run, {"t": "root", "sym": sym, "ink": false}),
-			"ink_chips": Rules.chips_of(run, {"t": "root", "sym": sym, "ink": true}),
+			"paper_chips": Rules.chips_of(run, RulesCard.make(0, sym, false)),
+			"ink_chips": Rules.chips_of(run, RulesCard.make(0, sym, true)),
 		}
 	var hand: Array = []
 	for id: int in run.hand:
 		var c := Rules.card(run, id)
 		var turnable: bool = stance == "jekyll" and Rules.is_ink(c) and Rules._hand_has(run, c.sym, false)
 		hand.append({
-			"id": id, "t": c.t, "key": c.kind if c.t == "factor" else c.sym, "ink": c.t == "root" and c.ink,
+			"id": id, "t": c.t, "key": c.key(), "ink": c.is_ink(),
 			"name": Rules.name_of(c, stance), "chips": Rules.chips_of(run, c),
-			"playable": playing and (c.t == "factor" or c.ink == (stance == "hyde") or turnable),
+			"playable": playing and (c.is_factor() or c.ink == (stance == "hyde") or turnable),
 			"turnable": playing and turnable,
 		})
 	var notebook: Variant = null
@@ -75,15 +75,15 @@ static func table(run: Dictionary, chosen: Array = []) -> Dictionary:
 	}
 
 
-static func _night(run: Dictionary) -> Dictionary:
+static func _night(run: RulesRun) -> Dictionary:
 	var night := Rules.night_of(run)
-	var last_night: bool = int(run.night) == Rules.night_count() - 1
+	var last_night: bool = run.night == Rules.night_count() - 1
 	var brings: String = night.brings
 	if brings == "habit":
 		brings = Rules.highest_habit(run)
 	var unlocks: String = night.unlocks
 	return {
-		"no": int(run.night) + 1, "title": night.title, "round": int(run.round) + 1, "scene": Rules.is_scene(run),
+		"no": run.night + 1, "title": night.title, "round": run.round + 1, "scene": Rules.is_scene(run),
 		"target": Rules.target(run), "targets": RulesConfig.targets(run.dials, run.night),
 		"twist": night.twist, "twist_text": night.twist_text, "twist_now": Rules.twist_now(run) != "",
 		"dawn": {
@@ -94,7 +94,7 @@ static func _night(run: Dictionary) -> Dictionary:
 			"unlocks": unlocks, "unlocks_name": RulesConfig.FACTOR[unlocks].paper if unlocks != "" else "",
 			# Where the dawn is spent if the scene ends in the present stance.
 			"place": "" if last_night else ("alley" if run.stance == "hyde" else "lab"),
-			"last": int(run.night) == Rules.night_count() - 2,
+			"last": run.night == Rules.night_count() - 2,
 			"ends": last_night,
 		},
 	}
@@ -123,10 +123,10 @@ static func _night(run: Dictionary) -> Dictionary:
 ## It is worked out by playing the cards on a copy of the run, so it cannot drift from the
 ## rules. Only what does not depend on chance is reported, and the copy is given another
 ## seed so that nothing of the real draws to come can show.
-static func preview(run: Dictionary, ids: Array) -> Dictionary:
+static func preview(run: RulesRun, ids: Array) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "reason": "Not now."}
-	var sim: Dictionary = run.duplicate(true)
+	var sim := run.copy()
 	sim.seed = 0
 	var res := Rules.play(sim, ids)
 	if not res.ok:
@@ -144,7 +144,7 @@ static func preview(run: Dictionary, ids: Array) -> Dictionary:
 	for sym: String in ev.craving_on:
 		craving[sym] = {
 			"adds": ev.craving_on[sym], "to": sim.craving[sym],
-			"copies": int(sim.habit[sym]) - int(run.habit[sym]), "habit_to": sim.habit[sym],
+			"copies": int(sim.habit[sym]) - run.habit[sym], "habit_to": sim.habit[sym],
 		}
 	var ended: bool = sim.phase != "play"
 	var last: Dictionary = sim.last if ended else {}
@@ -159,18 +159,18 @@ static func preview(run: Dictionary, ids: Array) -> Dictionary:
 			"score": sim.score, "ok": last.how == "rescued",
 		}
 	var li := Rules.line_info(sim)
-	var score_to: int = int(run.score) + int(ev.score)
+	var score_to: int = run.score + int(ev.score)
 	return {
 		"ok": true, "reason": "", "ev": ev,
 		"restraint": {
-			"adds": adds, "to": int(run.restraint) + (1 if adds else 0), "limit": Rules.limit(run),
+			"adds": adds, "to": run.restraint + (1 if adds else 0), "limit": Rules.limit(run),
 			"breaks_out": breakout != null,
 		},
 		"breakout": breakout,
 		"craving": craving,
 		"turns": turns,
 		"score_to": score_to, "target": Rules.target(run), "meets_target": score_to >= Rules.target(run),
-		"last_play": int(run.plays) == 1,
+		"last_play": run.plays == 1,
 		"result": result,
 		"rescue": rescue,
 		"pay": last.get("pay", 0),

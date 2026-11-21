@@ -4,7 +4,7 @@ extends "res://tests/case.gd"
 
 # A run set up for one reading. `state` may hold: stance "hyde", craving / habit / temper
 # (a number a symbol), stored, inst (instruments), hunted (night 2's scene).
-func _run_with(state: Dictionary) -> Dictionary:
+func _run_with(state: Dictionary) -> RulesRun:
 	var run := fresh()
 	if state.get("stance", "jekyll") == "hyde":
 		as_hyde(run)
@@ -19,7 +19,7 @@ func _run_with(state: Dictionary) -> Dictionary:
 	return run
 
 
-func _read(run: Dictionary, list: String) -> Array:
+func _read(run: RulesRun, list: String) -> Array:
 	var e := Rules.evaluate(run, cards(list))
 	return [e.name, e.chips, e.mult]
 
@@ -241,7 +241,7 @@ func test_reading_changes_nothing() -> void:
 	var run := as_hyde(fresh({}, 4))
 	run.stored = 2
 	run.craving.lamp = 2
-	var before := run.duplicate(true)
+	var before := run.copy()
 	Rules.evaluate(run, cards("I:lamp I:lamp F:cane"))
 	Rules.best(run)
 	eq(run, before, "evaluate and best leave the run and its generator alone")

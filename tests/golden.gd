@@ -22,7 +22,7 @@ static func runs() -> Array:
 
 
 ## The run a record starts from.
-static func begin(record: Dictionary) -> Dictionary:
+static func begin(record: Dictionary) -> RulesRun:
 	var run := Rules.new_run(record.dials, record.seed)
 	if record.start != null:
 		start_on(run, record.start.night, record.start.round)
@@ -31,31 +31,25 @@ static func begin(record: Dictionary) -> Dictionary:
 
 ## Drops a new run into a later night, with what the dawns before it would have unlocked and
 ## brought.
-static func start_on(run: Dictionary, night: int, round_no: int) -> void:
+static func start_on(run: RulesRun, night: int, round_no: int) -> void:
 	run.unlocked.pen = true
 	run.unlocked.cane = night >= 2
 	run.hyde_arrived = true
 	for sym in RulesConfig.FIRST_ARRIVAL:
-		_push(run, {"t": "root", "sym": sym, "ink": true})
+		run.cards.append(Rules.make_card(run, sym, true))
 	for i in 2 + night:
-		_push(run, {"t": "root", "sym": RulesConfig.ROOTS[i % 3], "ink": false})
-	_push(run, {"t": "factor", "kind": "pen"})
+		run.cards.append(Rules.make_card(run, RulesConfig.ROOTS[i % 3], false))
+	run.cards.append(Rules.make_card(run, "pen", false))
 	if night >= 2:
-		_push(run, {"t": "factor", "kind": "cane"})
+		run.cards.append(Rules.make_card(run, "cane", false))
 	run.sov = 12
 	run.night = night
 	run.round = round_no
 	Rules.start_round(run)
 
 
-static func _push(run: Dictionary, c: Dictionary) -> void:
-	run.uid += 1
-	c.id = run.uid
-	run.cards.append(c)
-
-
 ## Makes one recorded move. Returns whether the rules accepted it.
-static func apply(run: Dictionary, move: Array) -> bool:
+static func apply(run: RulesRun, move: Array) -> bool:
 	var res: Dictionary
 	match move[0]:
 		"play": res = Rules.play(run, move[1])
@@ -80,7 +74,7 @@ static func apply(run: Dictionary, move: Array) -> bool:
 
 
 ## The state as one line of text, built the same way by the recorder.
-static func digest(run: Dictionary) -> String:
+static func digest(run: RulesRun) -> String:
 	var shop := "-"
 	if run.shop != null:
 		shop = _join(run.shop.cards.map(_shelf)) + ";" + _join(run.shop.instruments.map(_shelf))
@@ -89,7 +83,7 @@ static func digest(run: Dictionary) -> String:
 		var a: Dictionary = run.alley
 		alley = "%s;%s;%s;%d" % [a.habit if a.habit != null else "", a.inst if a.inst != null else "", _join(a.options), a.bought]
 	var cards: Array = []
-	for c: Dictionary in run.cards:
+	for c: RulesCard in run.cards:
 		var code: String = FACTOR_CODE[c.kind] if c.t == "factor" else (str(c.sym)[0].to_upper() if c.ink else str(c.sym)[0])
 		cards.append(str(c.id) + code)
 	var parts: Array = [

@@ -1,6 +1,7 @@
 class_name RulesConfig
-## Every name and number of the card game's rules, in one place. Nothing here changes during
-## a run: a run copies NUMBERS into its own `dials`, so a test or a tuning pass can change one.
+## Every name of the card game's rules, and the numbers that belong to a card, a hand, a night
+## or an instrument. Nothing here changes during a run. The numbers a tuning pass may want
+## to change are in RulesDials.
 
 ## The three symbols, in the order every tie between symbols is settled by.
 const ROOTS: Array[String] = ["lamp", "heart", "mirror"]
@@ -118,67 +119,10 @@ const NIGHTS := [
 	},
 ]
 
-## The numbers a run plays by. Rules.new_run copies them into `run.dials`, with any changes.
-const NUMBERS := {
-	# a round
-	"plays": 4,
-	"discards": 3,
-	"hand_size": 8,
-	"max_play": 5,
-	# chips
-	"root_chips": 15,
-	"factor_chips": 10,
-	"glee_chips": 25,
-	"craving_chips": 10,  # a point of Craving, on every Ink Root of the symbol
-	"habit_chips": 15,
-	"temper_chips": 15,
-	# mult
-	"cheer_mult": 2,  # Good Cheer
-	"pen_mult": 2,  # Reason: a different symbol. Alibi: a Root of the largest matching set
-	"cane_mult": 2,  # Vigour and Restlessness
-	"habit_mult": 1,  # a point of Habit, for every Ink Root of the symbol in the play
-	"temper_mult": 2,  # a point of Temper, once for a symbol in the play
-	"burst_mult": 2,  # a Sublimation's burst for a turned Root...
-	"burst_craving_mult": 2,  # ...and for each point of Craving it carries
-	"restraint_pay": 2,  # a point of stored restraint, on his first Stirring or better
-	"hcane_mult": 4,  # The Cane, on a Mania
-	# gauges and restraint
-	"craving_cap": 3,  # Craving that rolls over into a Habit and a copy
-	"restraint_limit": 5,
-	"balance_bonus": 1,
-	"tight_drop": 2,  # night 3's scene: the limit is this much lower
-	"breakout_roots": 2,  # Ink Roots a breakout adds
-	"alley_habit": 1,
-	# salt and pay
-	"salt_start": 3,
-	"salt_price": 3,
-	"salt_rise": 1,  # for every dose bought so far in the run
-	"salt_from": 2,  # the round, counted from 0 across the run, when salt first works
-	"alley_markup": 2,
-	"round_pay": 3,
-	"unused_play_pay": 1,
-	# the reward after a round
-	"reward_cards": 3,
-	"reward_root_weight": 3,
-	"reward_factor_weight": 2,
-	# applied to the targets of nights 2 and later, for tuning
-	"target_scale": 1,
-}
-
-
-## A run's numbers: NUMBERS with the given changes. An unknown key is an error.
-static func dials(changes: Dictionary = {}) -> Dictionary:
-	var d: Dictionary = NUMBERS.duplicate()
-	for k: String in changes:
-		assert(d.has(k), "unknown rules number: " + k)
-		d[k] = changes[k]
-	return d
-
-
 ## The score targets of a night's three rounds, for these numbers.
-static func targets(dial_values: Dictionary, night: int) -> Array:
+static func targets(dials: RulesDials, night: int) -> Array:
 	var base: Array = NIGHTS[night].targets
-	var scale: float = float(dial_values.target_scale)
+	var scale := dials.target_scale
 	if night == 0 or scale == 1.0:
 		return base
 	var out: Array = []

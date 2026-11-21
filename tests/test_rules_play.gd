@@ -77,7 +77,7 @@ func test_craving_and_habit() -> void:
 	r = Rules.play(run, [h[1].id])
 	eq([run.craving.lamp, run.habit.lamp, run.cards.size(), ink_n(run, "lamp")], [0, 1, total + 1, 3], "rollover: Craving wraps, Habit 1, one copy joins")
 	ok(r.events.any(func(x: Dictionary) -> bool: return x.t == "breed" and x.sym == "lamp"), "the play reports the copy")
-	var bred: Dictionary = run.cards[-1]
+	var bred: RulesCard = run.cards[-1]
 	ok(run.draw.has(bred.id) or run.hand.has(bred.id), "the copy went into the draw pile, from where the refill may draw it")
 	e = Rules.evaluate(run, cards("I:lamp I:lamp I:lamp"))
 	eq([e.chips, e.mult, e.score], [60 + 3 * 30, 7 + 3, 1500], "Habit: 15 chips and 1 mult on every card of that symbol")
@@ -105,7 +105,7 @@ func test_rollover_scores_at_the_craving_it_found() -> void:
 	var r := Rules.play(run, ids(h.slice(0, 2)))
 	eq([r.ev.name, r.ev.score, run.score], ["Fixation", 525, 525], "Fog, Fog at Craving 2 scores 525")
 	eq([run.craving.lamp, run.habit.lamp, run.cards.size(), ink_n(run, "lamp"), run.stats.bred], [0, 1, 17, 3, 1], "then Craving 0, Habit 1, and the deck goes from 16 to 17 with 3 Fog")
-	var bred: Dictionary = run.cards[-1]
+	var bred: RulesCard = run.cards[-1]
 	eq([bred.t, bred.sym, bred.ink], ["root", "lamp", true], "the copy is a Fog")
 	ok(run.draw.has(bred.id) or run.hand.has(bred.id), "in the draw pile before the refill, so it can be drawn at once")
 	# With the draw pile empty the copy is the first card of the refill.

@@ -3,7 +3,7 @@ class_name RulesHands
 ## changes the run or uses its generator.
 
 
-## Reads a play of these cards (card dictionaries, in the deck or not) for the man at the
+## Reads a play of these cards (RulesCard, in the deck or not) for the man at the
 ## table. `ok` is false with a `reason` when the play is not allowed. Otherwise the result
 ## holds the hand (`kind`: "hand", "sublimation" or "thought"; `key`, `row`, `name`), `chips`,
 ## `mult` and `score` with their `parts` and `mult_parts`, and what the play will do:
@@ -11,8 +11,8 @@ class_name RulesHands
 ## `no_craving`, `turns` (ids of the Ink Roots turned, in order), `temper_gain` (a symbol),
 ## `spends_stored`, `cheque`, `draws`, `scoring` (ids of the cards that score) and `lit`
 ## (the symbols of the active Roots).
-static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
-	var d: Dictionary = run.dials
+static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
+	var d := run.dials
 	var st: String = run.stance
 	var res := {
 		"ok": false, "reason": "", "kind": "", "key": "", "row": "", "name": "",
@@ -24,7 +24,7 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 	if cards.is_empty():
 		res.reason = "Choose cards for a hand."
 		return res
-	if cards.size() > int(d.max_play):
+	if cards.size() > d.max_play:
 		res.reason = "A hand is up to five cards."
 		return res
 	var paper: Array = []
@@ -32,9 +32,9 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 	var fac: Array = []
 	var nf := {"cup": 0, "eye": 0, "lock": 0, "pen": 0, "cane": 0}
 	var scoring: Array = []
-	for c: Dictionary in cards:
+	for c: RulesCard in cards:
 		scoring.append(c.id)
-		if c.t == "factor":
+		if c.is_factor():
 			fac.append(c)
 			nf[c.kind] += 1
 		elif c.ink:
@@ -54,7 +54,7 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 	if active.is_empty():
 		# A Passing Thought: Factors only. One of them scores its chips, times 1. No bonus
 		# applies and no Craving rises.
-		var first: Dictionary = fac[0]
+		var first: RulesCard = fac[0]
 		var fchips: int = d.factor_chips
 		res.kind = "thought"
 		res.key = "thought"
@@ -70,7 +70,7 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 		return res
 
 	var cnt := {}
-	for c: Dictionary in active:
+	for c: RulesCard in active:
 		cnt[c.sym] = int(cnt.get(c.sym, 0)) + 1
 		res.lit[c.sym] = true
 	var different: int = cnt.size()
@@ -106,12 +106,12 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 	var parts: Array = res.parts
 	var mult_parts: Array = res.mult_parts
 	parts.append({"label": def.name, "v": def.chips, "base": true})
-	for c: Dictionary in active:
+	for c: RulesCard in active:
 		var v := Rules.chips_of(run, c)
 		chips += v
 		parts.append({"label": Rules.name_of(c, st), "v": v, "id": c.id})
-	for c: Dictionary in fac:
-		chips += int(d.factor_chips)
+	for c: RulesCard in fac:
+		chips += d.factor_chips
 		parts.append({"label": _factor_name(c.kind, st), "v": d.factor_chips, "id": c.id})
 	var top := best_root(run, active)
 	var canes: int = nf.cane
@@ -126,29 +126,29 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 			mult = int(ceil(mult / 2.0))
 		mult_parts.append({"label": str(def.name) + ", hunted" if hunted else str(def.name), "v": mult, "base": true})
 		if nf.cup > 0:
-			var v: int = int(d.glee_chips) * int(nf.cup)
+			var v: int = d.glee_chips * int(nf.cup)
 			chips += v
 			parts.append({"label": "Glee bonus", "v": v})
 		var habit_bonus := 0
-		for c: Dictionary in active:
-			habit_bonus += int(d.habit_mult) * int(run.habit[c.sym])
+		for c: RulesCard in active:
+			habit_bonus += d.habit_mult * run.habit[c.sym]
 		if habit_bonus > 0:
 			mult += habit_bonus
 			mult_parts.append({"label": "Habit", "v": habit_bonus})
-		if int(run.stored) > 0:
-			var b: int = int(run.stored) * int(d.restraint_pay)
+		if run.stored > 0:
+			var b: int = run.stored * d.restraint_pay
 			mult += b
 			mult_parts.append({"label": "stored restraint", "v": b})
 			res.spends_stored = true
 		if nf.pen > 0:
-			var b: int = int(d.pen_mult) * most * int(nf.pen)
+			var b: int = d.pen_mult * most * int(nf.pen)
 			mult += b
 			mult_parts.append({"label": "Alibi", "v": b})
 		if canes > 0:
-			mult += int(d.cane_mult) * canes
-			mult_parts.append({"label": "Restlessness", "v": int(d.cane_mult) * canes})
+			mult += d.cane_mult * canes
+			mult_parts.append({"label": "Restlessness", "v": d.cane_mult * canes})
 		if key == "mania" and Rules.has_inst(run, "hcane"):
-			mult += int(d.hcane_mult)
+			mult += d.hcane_mult
 			mult_parts.append({"label": "The Cane", "v": d.hcane_mult})
 		# Craving: 1 for each of his symbols in the play, 1 more on the best Root's symbol for
 		# each Restlessness, none at all with Cunning.
@@ -163,27 +163,27 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 				if not on.has(sym):
 					continue
 				@warning_ignore("integer_division")
-				var copies: int = (int(run.craving[sym]) + int(on[sym])) / int(d.craving_cap)
+				var copies: int = (run.craving[sym] + int(on[sym])) / d.craving_cap
 				for i in copies:
 					res.breeds.append(sym)
 		res.cheque = Rules.has_inst(run, "cheque")
 	else:
 		mult_parts.append({"label": def.name, "v": mult, "base": true})
 		for sym in RulesConfig.ROOTS:
-			if cnt.has(sym) and int(run.temper[sym]) > 0:
-				var b: int = int(d.temper_mult) * int(run.temper[sym])
+			if cnt.has(sym) and run.temper[sym] > 0:
+				var b: int = d.temper_mult * run.temper[sym]
 				mult += b
 				mult_parts.append({"label": "Temper, " + str(RulesConfig.ROOT[sym].label), "v": b})
 		if nf.cup > 0:
-			mult += int(d.cheer_mult) * int(nf.cup)
-			mult_parts.append({"label": "Good Cheer", "v": int(d.cheer_mult) * int(nf.cup)})
+			mult += d.cheer_mult * int(nf.cup)
+			mult_parts.append({"label": "Good Cheer", "v": d.cheer_mult * int(nf.cup)})
 		if nf.pen > 0:
-			var b: int = int(d.pen_mult) * different * int(nf.pen)
+			var b: int = d.pen_mult * different * int(nf.pen)
 			mult += b
 			mult_parts.append({"label": "Reason", "v": b})
 		if canes > 0:
-			mult += int(d.cane_mult) * canes
-			mult_parts.append({"label": "Vigour", "v": int(d.cane_mult) * canes})
+			mult += d.cane_mult * canes
+			mult_parts.append({"label": "Vigour", "v": d.cane_mult * canes})
 		res.adds_restraint = nf.lock == 0
 	res.chips = chips
 	res.mult = mult
@@ -192,10 +192,10 @@ static func evaluate(run: Dictionary, cards: Array) -> Dictionary:
 
 
 ## The best Root of a play: the one with the most chips. Ties go Lamp, Heart, Mirror.
-static func best_root(run: Dictionary, roots: Array) -> Dictionary:
-	var top: Dictionary = {}
+static func best_root(run: RulesRun, roots: Array) -> RulesCard:
+	var top: RulesCard = null
 	var top_chips := -1
-	for c: Dictionary in roots:
+	for c: RulesCard in roots:
 		var v := Rules.chips_of(run, c)
 		if v > top_chips or (v == top_chips and RulesConfig.ROOTS.find(c.sym) < RulesConfig.ROOTS.find(top.sym)):
 			top = c
@@ -206,7 +206,7 @@ static func best_root(run: Dictionary, roots: Array) -> Dictionary:
 ## The highest-scoring allowed play in the hand, as {key, ev, ids}, or {} if there is none.
 ## With the same score, fewer cards come first. `filter`, if given, is called with the reading
 ## and the cards and returns false to leave a play out.
-static func best(run: Dictionary, filter: Callable = Callable()) -> Dictionary:
+static func best(run: RulesRun, filter: Callable = Callable()) -> Dictionary:
 	var hand: Array = []
 	for id: int in run.hand:
 		hand.append(Rules.card(run, id))
@@ -217,7 +217,7 @@ static func best(run: Dictionary, filter: Callable = Callable()) -> Dictionary:
 	# is read. The first is also the one that would win a tie.
 	var seen := {}
 	var codes: Array[int] = []
-	for c: Dictionary in hand:
+	for c: RulesCard in hand:
 		codes.append(_kind_code(c))
 	for m in range(1, 1 << n):
 		var bits := 0
@@ -244,7 +244,7 @@ static func best(run: Dictionary, filter: Callable = Callable()) -> Dictionary:
 		var key: float = int(ev.score) - bits * 0.001
 		if top.is_empty() or key > float(top.key):
 			var ids: Array = []
-			for c: Dictionary in sel:
+			for c: RulesCard in sel:
 				ids.append(c.id)
 			top = {"key": key, "ev": ev, "ids": ids}
 	return top
@@ -252,8 +252,8 @@ static func best(run: Dictionary, filter: Callable = Callable()) -> Dictionary:
 
 # A number that adds up to a different total for every different set of card kinds (up to
 # 7 of a kind): 3 bits for each of the 11 kinds.
-static func _kind_code(c: Dictionary) -> int:
-	if c.t == "factor":
+static func _kind_code(c: RulesCard) -> int:
+	if c.is_factor():
 		return 1 << (3 * (6 + RulesConfig.FACTORS.find(c.kind)))
 	return 1 << (3 * (RulesConfig.ROOTS.find(c.sym) + (3 if c.ink else 0)))
 
@@ -266,18 +266,18 @@ static func _factor_name(kind: String, stance: String) -> String:
 # turns, or two with the Glass saucers: one Paper Root and two of its twins, or two twin
 # pairs. The Ink Roots resolve one at a time, Lamp before Heart before Mirror, each at the
 # Craving its symbol has by then.
-static func _sublimation(run: Dictionary, res: Dictionary, paper: Array, ink: Array, fac: Array) -> Dictionary:
-	var d: Dictionary = run.dials
+static func _sublimation(run: RulesRun, res: Dictionary, paper: Array, ink: Array, fac: Array) -> Dictionary:
+	var d := run.dials
 	var cap := Rules.turn_cap(run)
 	if ink.size() > cap:
 		res.reason = "A Sublimation turns one of his Roots." if cap == 1 else "A Sublimation turns two of his Roots at most."
 		return res
-	for c: Dictionary in ink:
+	for c: RulesCard in ink:
 		if not _has_sym(paper, c.sym):
 			res.reason = "%s turns only beside %s." % [RulesConfig.ROOT[c.sym].ink, RulesConfig.ROOT[c.sym].paper]
 			return res
 	var spare := paper.size() > ink.size()
-	for p: Dictionary in paper:
+	for p: RulesCard in paper:
 		if not _has_sym(ink, p.sym):
 			spare = true
 	if spare:
@@ -300,23 +300,23 @@ static func _sublimation(run: Dictionary, res: Dictionary, paper: Array, ink: Ar
 	parts.append({"label": def.name, "v": def.chips, "base": true})
 	mult_parts.append({"label": def.name, "v": def.mult, "base": true})
 	var seen := {}
-	for c: Dictionary in paper:
+	for c: RulesCard in paper:
 		var v := Rules.chips_of(run, c)
 		chips += v
 		parts.append({"label": RulesConfig.ROOT[c.sym].paper, "v": v, "id": c.id})
 		res.lit[c.sym] = true
 		if not seen.has(c.sym):
 			seen[c.sym] = true
-			if int(run.temper[c.sym]) > 0:
-				var b: int = int(d.temper_mult) * int(run.temper[c.sym])
+			if run.temper[c.sym] > 0:
+				var b: int = d.temper_mult * run.temper[c.sym]
 				mult += b
 				mult_parts.append({"label": "Temper, " + str(RulesConfig.ROOT[c.sym].label), "v": b})
 	var now: Dictionary = run.craving.duplicate()
-	var order := Rules.sort_by(ink, func(c: Dictionary) -> Array: return [RulesConfig.ROOTS.find(c.sym), c.id])
-	for c: Dictionary in order:
+	var order := Rules.sort_by(ink, func(c: RulesCard) -> Array: return [RulesConfig.ROOTS.find(c.sym), c.id])
+	for c: RulesCard in order:
 		var craving: int = now[c.sym]
 		var v := Rules.chips_of(run, c, craving)
-		var b: int = int(d.burst_mult) + int(d.burst_craving_mult) * craving
+		var b: int = d.burst_mult + d.burst_craving_mult * craving
 		chips += v
 		parts.append({"label": RulesConfig.ROOT[c.sym].ink, "v": v, "id": c.id})
 		mult += b
@@ -325,14 +325,14 @@ static func _sublimation(run: Dictionary, res: Dictionary, paper: Array, ink: Ar
 		now[c.sym] = 0
 		res.turns.append(c.id)
 	if not fac.is_empty():
-		var f: Dictionary = fac[0]
-		chips += int(d.factor_chips)
+		var f: RulesCard = fac[0]
+		chips += d.factor_chips
 		parts.append({"label": RulesConfig.FACTOR[f.kind].paper, "v": d.factor_chips, "id": f.id})
 		if f.kind == "cup":
-			mult += int(d.cheer_mult)
+			mult += d.cheer_mult
 			mult_parts.append({"label": "Good Cheer", "v": d.cheer_mult})
 		elif f.kind == "pen":
-			var b: int = int(d.pen_mult) * seen.size()
+			var b: int = d.pen_mult * seen.size()
 			mult += b
 			mult_parts.append({"label": "Reason", "v": b})
 		elif f.kind == "cane":
@@ -340,7 +340,7 @@ static func _sublimation(run: Dictionary, res: Dictionary, paper: Array, ink: Ar
 			var v := Rules.chips_of(run, top)
 			chips += v
 			parts.append({"label": str(RulesConfig.ROOT[top.sym].paper) + " again", "v": v})
-			mult += int(d.cane_mult)
+			mult += d.cane_mult
 			mult_parts.append({"label": "Vigour", "v": d.cane_mult})
 	res.chips = chips
 	res.mult = mult
@@ -349,7 +349,7 @@ static func _sublimation(run: Dictionary, res: Dictionary, paper: Array, ink: Ar
 
 
 static func _has_sym(cards: Array, sym: String) -> bool:
-	for c: Dictionary in cards:
+	for c: RulesCard in cards:
 		if c.sym == sym:
 			return true
 	return false

@@ -12,7 +12,8 @@ func test_generator_matches_reference_values() -> void:
 	}
 	var seed_after := {1: -1895507009, 77: -1895506933, 2147483646: 251976636, -5: -1895507015}
 	for s: int in want:
-		var run := {"seed": RulesRng.wrap_seed(s)}
+		var run := RulesRun.new()
+		run.seed = RulesRng.wrap_seed(s)
 		var got: Array = []
 		for i in 6:
 			got.append(int(RulesRng.next(run) * 4294967296.0))
@@ -23,7 +24,8 @@ func test_generator_matches_reference_values() -> void:
 
 
 func test_shuffle_matches_reference() -> void:
-	var run := {"seed": 42}
+	var run := RulesRun.new()
+	run.seed = 42
 	var a: Array = range(1, 17)
 	RulesRng.shuffle(run, a)
 	eq(a, [13, 8, 1, 16, 5, 2, 4, 15, 11, 14, 6, 3, 9, 12, 7, 10], "a shuffle of 16 ids")
@@ -35,7 +37,7 @@ func test_shuffle_matches_reference() -> void:
 func test_new_run() -> void:
 	var run := fresh()
 	var kinds := {}
-	for c: Dictionary in run.cards:
+	for c: RulesCard in run.cards:
 		var k: String = c.kind if c.t == "factor" else ("ink " if c.ink else "paper ") + str(c.sym)
 		kinds[k] = int(kinds.get(k, 0)) + 1
 	eq(kinds, {"paper lamp": 3, "paper heart": 3, "paper mirror": 2, "cup": 2, "eye": 1, "lock": 1}, "the 12 starting cards")
@@ -70,8 +72,8 @@ func test_card_chips() -> void:
 
 
 func test_config() -> void:
-	var d := RulesConfig.dials({"craving_cap": 2})
-	eq([d.craving_cap, d.restraint_limit, RulesConfig.NUMBERS.craving_cap], [2, 5, 3], "a run's numbers can be changed without touching the config")
+	var d := RulesDials.make({"craving_cap": 2})
+	eq([d.craving_cap, d.restraint_limit, RulesDials.new().craving_cap], [2, 5, 3], "a run's numbers can be changed without touching the game's own")
 	var scenes: Array = []
 	for n in 5:
 		scenes.append(RulesConfig.targets(d, n)[2])
@@ -92,8 +94,8 @@ func test_json_round_trip() -> void:
 	eq(back.last, null, "nothing stays nothing")
 	var half := Rules.from_json(Rules.to_json(fresh({"target_scale": 0.5})))
 	eq(half.dials.target_scale, 0.5, "a number that is not whole stays as it is")
-	eq(Rules.from_json("not a run"), {}, "text that is not a run gives nothing")
-	eq(Rules.from_json("[1, 2]"), {}, "nor does other JSON")
+	eq(Rules.from_json("not a run"), null, "text that is not a run gives nothing")
+	eq(Rules.from_json("[1, 2]"), null, "nor does other JSON")
 	# The run read back plays on like the first.
 	var a := Rules.play(run, [run.hand[0]])
 	var b := Rules.play(back, [back.hand[0]])

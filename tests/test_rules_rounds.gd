@@ -17,11 +17,11 @@ func _rescue_table(prior: int) -> Array:
 
 func test_rescue_plan() -> void:
 	var t := _rescue_table(2000)
-	var run: Dictionary = t[0]
+	var run: RulesRun = t[0]
 	var h: Array = t[1]
 	var ev := Rules.evaluate(run, [h[0], h[1]])
 	eq(ev.score, 110, "Rumination 55 x 2")
-	var before := run.duplicate(true)
+	var before := run.copy()
 	var plan := Rules.plan_rescue(run, 2000, 110, ids(h.slice(2)), false)
 	# 2000 + 110 x 2^k >= 3000 needs k = 4, but only two Paper Roots are held.
 	eq([plan.k, plan.pool, plan.ok, plan.score], [2, 2, false, 2440], "only held Paper Roots count: Factors and his Roots are ignored")
@@ -37,7 +37,7 @@ func test_rescue_plan() -> void:
 func test_rescue_three_priors() -> void:
 	# Prior 2,800: he converts the Scruple.
 	var t := _rescue_table(2800)
-	var run: Dictionary = t[0]
+	var run: RulesRun = t[0]
 	var h: Array = t[1]
 	Rules.play(run, [h[0].id, h[1].id])
 	eq([run.phase, run.last.how, run.score, run.last.rescue.k, ink_n(run), paper_n(run)], ["result", "rescued", 3020, 1, 5, 7], "prior 2,800: 3,020, rescued at 5 to 7")
@@ -144,7 +144,7 @@ func test_rounds_pay_and_offers() -> void:
 	var k: String = offer[0]
 	Rules.continue_result(run, 0)
 	eq([run.cards.size(), run.round, run.phase, run.offer], [n + 1, 1, "play", null], "the card is taken and round 2 begins")
-	var got: Dictionary = run.cards[-1]
+	var got: RulesCard = run.cards[-1]
 	ok((got.t == "root" and not got.ink and got.sym == k) if RulesConfig.ROOT.has(k) else (got.t == "factor" and got.kind == k), "it is the card offered, on paper")
 	ok(run.hand.has(got.id) or run.draw.has(got.id), "and it is in the deck for the next deal")
 	# The card can be left.

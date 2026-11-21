@@ -11,8 +11,8 @@ static func wrap_seed(seed_value: int) -> int:
 
 
 ## Next number in [0, 1). Moves the run's seed on.
-static func next(run: Dictionary) -> float:
-	var s: int = (int(run.seed) + 0x6D2B79F5) & _MASK
+static func next(run: RulesRun) -> float:
+	var s: int = (run.seed + 0x6D2B79F5) & _MASK
 	run.seed = _signed(s)
 	var t: int = _mul(s ^ (s >> 15), s | 1)
 	t = t ^ ((t + _mul(t ^ (t >> 7), t | 61)) & _MASK)
@@ -20,12 +20,12 @@ static func next(run: Dictionary) -> float:
 
 
 ## A whole number in [0, n).
-static func below(run: Dictionary, n: int) -> int:
+static func below(run: RulesRun, n: int) -> int:
 	return int(next(run) * n)
 
 
 ## Shuffles the array in place and returns it.
-static func shuffle(run: Dictionary, a: Array) -> Array:
+static func shuffle(run: RulesRun, a: Array) -> Array:
 	var i := a.size() - 1
 	while i > 0:
 		var j := below(run, i + 1)
