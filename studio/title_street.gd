@@ -19,6 +19,12 @@ const MEN := {
 	"hyde": {"pose": "", "yaw": 25.0, "scale": 0.88},
 }
 
+## Where the light for the foot of the near wall is, for the streets that need one. Hyde's
+## does: his crate of glassware stands between that wall and the nearest lamp.
+const FOOT_LIGHT := {"hyde": Vector3(3.0, 0.8, 2.2)}
+const FOOT_LIGHT_RANGE := 5.5
+const FOOT_LIGHT_ENERGY := 0.7
+
 
 ## `man` ("jekyll" / "hyde") standing in his place.
 static func figure(man: String) -> Node3D:
@@ -39,3 +45,15 @@ static func stage(street: Node3D, man: String) -> void:
 	var fig := figure(man)
 	fig.get_node("Body").add_to_group("casts_shadow", true)
 	street.add_child(fig)
+	if FOOT_LIGHT.has(man):
+		# The foot of the wall nearest the camera gets no lamp light of its own on this street:
+		# a low light out of the picture gives it some, in the colour of the wall lanterns.
+		var foot := OmniLight3D.new()
+		foot.name = "WallFootLight"
+		foot.position = FOOT_LIGHT[man]
+		foot.omni_range = FOOT_LIGHT_RANGE
+		foot.light_energy = FOOT_LIGHT_ENERGY
+		foot.light_volumetric_fog_energy = 0.0 # it must not show as a glow in the air
+		foot.shadow_enabled = true
+		foot.add_to_group("pass_wall", true)
+		street.add_child(foot)
