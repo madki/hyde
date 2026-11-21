@@ -39,6 +39,26 @@ const THROW_ENERGY := 0.7
 const THROW_RANGE := 16.0
 const THROW_ATTENUATION := 1.0 # the street's lamps use 1.4: lower fades more slowly
 
+# A pool of light on the cobbles where the men stand, from above and behind them on the lamp
+# post's side, in the colour of the post's lamp. It sets them apart from the street and gives
+# their shadows light to fall across; the men themselves are a layer of their own and are not
+# lit by it.
+const POOL_FROM := Vector3(-0.7, 3.4, -1.9) # where it shines from, from where they stand
+const POOL_AIM := Vector3(0.0, 0.0, 0.6) # the point on the ground it shines at, likewise
+const POOL_ANGLE := 24.0
+const POOL_ENERGY := 8.0
+
+# A few dim lights in a third colour, the one the lit windows have, where a street would
+# otherwise be all one hue: each is [place, reach in metres, brightness]. Hyde's street is
+# all pinks and violets, and its windows are green.
+const ACCENTS := {
+	"hyde": [
+		[Vector3(3.9, 1.0, 2.6), 4.0, 0.6], # low by the near door
+		[Vector3(3.8, 0.8, -6.0), 5.0, 0.5], # along the foot of the wall
+		[Vector3(-0.5, 0.5, -8.0), 6.0, 0.4], # far kerb, across the road
+	],
+}
+
 # It has rained: the cobbles are smoother than the game's, so the lamps streak across them and (with studio/bake.gd's reflections) the lit wall shows in them.
 const WET_ROUGHNESS := 0.65 # of how rough the ground is in the game
 
@@ -63,6 +83,8 @@ static func stage(street: Node3D, man: String) -> void:
 	fig.get_node("Body").add_to_group("casts_shadow", true)
 	street.add_child(fig)
 	_even_out(street)
+	_pool(street)
+	_accents(street, man)
 	_wet(street)
 	var side := SpotLight3D.new()
 	side.name = "SideLamp"
@@ -111,3 +133,32 @@ static func _wet(street: Node3D) -> void:
 			mat = mat.duplicate() as StandardMaterial3D # the game's street keeps its own
 			mat.roughness *= WET_ROUGHNESS
 			part.material_override = mat
+
+
+## The pool of light the men stand in: see `POOL_FROM`.
+static func _pool(street: Node3D) -> void:
+	var pool := SpotLight3D.new()
+	pool.name = "FigurePool"
+	street.add_child(pool)
+	pool.look_at_from_position(STAND + POOL_FROM, STAND + POOL_AIM)
+	pool.spot_range = 10.0
+	pool.spot_angle = POOL_ANGLE
+	pool.spot_angle_attenuation = 0.5 # a soft edge
+	pool.light_energy = POOL_ENERGY
+	pool.light_volumetric_fog_energy = 0.0 # no beam in the air
+	pool.shadow_enabled = true
+	pool.add_to_group("pass_key", true)
+
+
+## The street's lights in a third colour: see `ACCENTS`. They are baked with the lit windows,
+## so the game colours them as it does those.
+static func _accents(street: Node3D, man: String) -> void:
+	for accent: Array in ACCENTS.get(man, []):
+		var light := OmniLight3D.new()
+		light.name = "Accent"
+		light.position = accent[0]
+		light.omni_range = accent[1]
+		light.light_energy = accent[2]
+		light.shadow_enabled = true
+		light.add_to_group("pass_windows", true)
+		street.add_child(light, true)
