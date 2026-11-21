@@ -49,6 +49,8 @@ licence file), keep fragment shaders cheap.
   `Shot.run_if_requested(self)` at the end of `_ready` (`scripts/shot.gd`).
 - **Web build:** `tools/export_web.sh`, then `tools/serve_web.sh` →
   http://localhost:8060. Close the editor first.
+- **Shipped size:** `tools/game_size.sh` prints how big the Web game would be. Run
+  `tools/install_hooks.sh` once per clone to have git print it after every commit.
 - Never run the project headlessly without a time limit: with no main scene,
   Godot prints an error and hangs instead of exiting.
 
