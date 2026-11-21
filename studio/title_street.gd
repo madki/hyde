@@ -29,6 +29,16 @@ const SIDE_LAMP_ANGLE := 38.0
 const SIDE_LAMP_RANGE := 8.0
 const SIDE_LAMP_ENERGY := 2.5
 
+# A wall lantern hangs so close to the wall that its light burns the bricks behind it and only
+# grazes the wall further along. For the title each lantern's own light is turned down, and
+# keeps only its glow in the air; the wall is lit by a second light out over the pavement,
+# which meets it at a better angle and reaches further.
+const LANTERN_DIMMED := 0.35 # what is left of a wall lantern's own light
+const THROW_OUT := 0.9 # metres from the lantern, away from the wall, to the light that takes over
+const THROW_ENERGY := 0.7
+const THROW_RANGE := 16.0
+const THROW_ATTENUATION := 1.0 # the street's lamps use 1.4: lower fades more slowly
+
 
 ## `man` ("jekyll" / "hyde") standing in his place.
 static func figure(man: String) -> Node3D:
@@ -49,6 +59,7 @@ static func stage(street: Node3D, man: String) -> void:
 	var fig := figure(man)
 	fig.get_node("Body").add_to_group("casts_shadow", true)
 	street.add_child(fig)
+	_even_out(street)
 	var side := SpotLight3D.new()
 	side.name = "SideLamp"
 	street.add_child(side)
@@ -60,3 +71,25 @@ static func stage(street: Node3D, man: String) -> void:
 	side.light_volumetric_fog_energy = 0.0 # its beam must not show in the air
 	side.shadow_enabled = true
 	side.add_to_group("pass_wall", true)
+
+
+## Spreads the wall lanterns' light more evenly along the wall: see `LANTERN_DIMMED`.
+static func _even_out(street: Node3D) -> void:
+	for light: OmniLight3D in street.find_children("*", "OmniLight3D", true, false):
+		var lamp := light.get_parent().get_parent() # the lantern's own light is two levels in
+		if lamp == null or not String(lamp.name).begins_with("WallLamp"):
+			continue
+		var thrown := OmniLight3D.new()
+		thrown.name = "Throw"
+		thrown.omni_range = THROW_RANGE
+		thrown.omni_attenuation = THROW_ATTENUATION
+		thrown.light_energy = THROW_ENERGY
+		thrown.light_volumetric_fog_energy = 0.0 # the glow in the air stays round the lantern
+		thrown.shadow_enabled = true
+		thrown.shadow_bias = light.shadow_bias
+		thrown.shadow_caster_mask = light.shadow_caster_mask
+		thrown.add_to_group("pass_wall", true)
+		street.add_child(thrown)
+		thrown.global_position = light.global_position + Vector3.LEFT * THROW_OUT
+		light.light_volumetric_fog_energy = light.light_volumetric_fog_energy / LANTERN_DIMMED
+		light.light_energy *= LANTERN_DIMMED
