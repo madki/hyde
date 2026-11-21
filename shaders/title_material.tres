@@ -16,6 +16,7 @@ shader_parameter/jekyll_flicker = 0.5
 shader_parameter/jekyll_gutter = 0.45
 shader_parameter/mist_pool = 0.6
 shader_parameter/highlight_rolloff = 0.6
+shader_parameter/glow = 1.1
 shader_parameter/feet_patch = 0.8
 shader_parameter/jekyll_a = ExtResource("2")
 shader_parameter/jekyll_b = ExtResource("3")

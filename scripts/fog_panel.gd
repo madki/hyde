@@ -20,6 +20,8 @@ const SETTINGS := [
 	["Fog pool: width", "mist_pool_size", 0, 0.05, 1.0],
 	["Fog pool: height", "mist_pool_size", 1, 0.05, 1.0],
 	["Highlight roll-off", "highlight_rolloff", -1, 0.0, 2.0],
+	["Glow round the lamps", "glow", -1, 0.0, 3.0],
+	["Wide wash of lamp colour", "bloom", -1, 0.0, 3.0],
 ]
 
 ## The background whose material the sliders change.
