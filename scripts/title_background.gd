@@ -37,7 +37,7 @@ const FIGURE_DEPTH_RANGE := Vector2(3.0, 9.0)
 # The change, in seconds.
 const LAMPS_OUT := 0.5 # the lamps gutter and die
 const FALL_DARK := 0.3 # what light is left goes too
-const DARK := 0.45 # nothing to see: the men change places
+const DARK := 0.225 # nothing to see: the men change places
 
 ## 0 = Jekyll, 1 = Hyde.
 @export_range(0.0, 1.0) var shift := 0.0:
