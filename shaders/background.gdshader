@@ -176,6 +176,18 @@ uniform vec2 figure_depth_range = vec2(1.0, 6.0);
 /** Where the figure's feet are on the picture, and how far the patch under them reaches. */
 uniform vec2 feet = vec2(0.5, 1.5);
 uniform vec2 feet_patch_size = vec2(0.05, 0.02);
+/** How far the man stands aside from where he was baked, as a fraction of the picture, and
+	how solidly he is there: 0 = not at all. */
+uniform vec2 figure_aside = vec2(0.0);
+uniform float figure_solid = 1.0;
+/** Jekyll come apart into two ghosts of light: how strongly each shows, the first in his own
+	lamp's colour and the second in Hyde's (0 = not at all). */
+uniform vec2 ghosts = vec2(0.0);
+/** How far the first ghost stands to the left of the man's baked place and the second to the
+	right, as fractions of the picture. */
+uniform vec2 ghost_spread = vec2(0.0);
+/** How far the second ghost has turned from Jekyll's shape into Hyde's: 0..1. */
+uniform float ghost_turned = 0.0;
 /** How brightly the lamps and the lit windows burn: 1 = as set above, 0 = all of them out. */
 uniform float lamps = 1.0;
 /** 1 = the whole picture is black. */
@@ -250,6 +262,19 @@ vec4 figure(float own, vec2 uv) {
 	return c;
 }
 
+// How brightly a ghost of a man (`face`: 0 = Jekyll, 1 = Hyde) shines at `uv`: a faint body
+// with his lit edges brighter.
+float ghost_light(float face, vec2 uv) {
+	vec2 f = (uv - figure_rect.xy) / figure_rect.zw;
+	vec4 g = texture(figures, on_sheet(vec2(face * figure_still_px,
+			morph_grid.y * morph_frame_px), figure_still_px, f));
+	g *= step(0.0, f.x) * step(f.x, 1.0) * step(0.0, f.y);
+	g.rgb /= max(g.a, 0.001);
+	float rim = max(smoothstep(figure_rim_edge - figure_rim_soft, figure_rim_edge + figure_rim_soft, g.g),
+			smoothstep(figure_rim_edge - figure_rim_soft, figure_rim_edge + figure_rim_soft, g.b));
+	return (0.12 + 0.5 * rim) * g.a;
+}
+
 // Removes the haze the bake leaves in the lamp passes, so unlit areas stay dark.
 vec2 lift(vec2 l) {
 	return max(l - light_floor, 0.0) / (1.0 - light_floor);
@@ -266,7 +291,7 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	float depth = textureLod(tex_b, uv, 2.0).g; // mist is thicker with distance
 	// The figure is a layer of its own, so it slides by its own depth, across the street.
 	float fig_haze = figure_haze_at(own, uv);
-	vec2 fig_uv = uv + sway * (1.0 - fig_haze) * parallax_depth;
+	vec2 fig_uv = uv + sway * (1.0 - fig_haze) * parallax_depth - figure_aside;
 	uv += sway * (1.0 - depth) * parallax_depth;
 	uv += (texture(noise_tex, uv * vec2(7.1, 4.0)).rg - 0.5) * wobble;
 
@@ -320,10 +345,10 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	// shadows and hard-edged light in the colour of the lamp on each side.
 	if (feet_patch > 0.0) {
 		vec2 from_feet = (fig_uv - feet) / feet_patch_size;
-		col *= 1.0 - feet_patch * exp(-dot(from_feet, from_feet) * 1.5);
+		col *= 1.0 - feet_patch * figure_solid * exp(-dot(from_feet, from_feet) * 1.5);
 	}
 	vec4 c = figure(own, fig_uv);
-	float fig_mask = c.a;
+	float fig_mask = c.a * figure_solid;
 	float shade = clamp((c.r - 0.35) / 0.65, 0.0, 1.0);
 	// With the lamps out he is left with little more than his outline.
 	vec3 fig = ink * 0.45 + ambient_hue * (0.22 * step(0.5, shade) + 0.2 * step(0.8, shade))
@@ -348,6 +373,23 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 			+ ambient_hue * 0.3 * n2.g * n.g * sky_clouds
 			+ (key_hue * (wide.r + soft.r * 0.5) * key_power + wall_hue * (wide.g + soft.g * 0.5) * wall_power) * sky_light;
 	col = mix(col, sky, b.b * (1.0 - fig_mask)); // a man who stands against the sky hides it
+	if (ghosts.x + ghosts.y > 0.0) {
+		// The ghosts: light laid over street and sky, behind the man who is solidly there.
+		vec2 place = fig_uv + figure_aside;
+		vec3 light = vec3(0.0);
+		if (ghosts.x > 0.0) {
+			light += jekyll_key * ghost_light(0.0, place + vec2(ghost_spread.x, 0.0)) * ghosts.x;
+		}
+		if (ghosts.y > 0.0) {
+			vec2 right = place - vec2(ghost_spread.y, 0.0);
+			float shape = ghost_turned < 1.0 ? ghost_light(0.0, right) : 0.0;
+			if (ghost_turned > 0.0) {
+				shape = mix(shape, ghost_light(1.0, right), ghost_turned);
+			}
+			light += hyde_key * shape * ghosts.y;
+		}
+		col += light * (1.0 - fig_mask);
+	}
 
 	// Pen hatching: slanted strokes that thicken as the picture darkens, crossed in the
 	// deepest shadow. Each stroke breaks up along its length so it reads as drawn.
