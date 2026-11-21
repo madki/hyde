@@ -4,6 +4,20 @@ A game for [GitHub Game Off 2026](https://itch.io/jam/game-off-2026). Theme: **S
 
 Work in progress. The game description, controls and play instructions will be added here.
 
+## Getting the source
+
+Pictures, meshes, audio and fonts are kept in [Git LFS](https://git-lfs.com) (the file types
+are listed in `.gitattributes`). Install it before cloning, or the game's pictures come down as
+small text pointers and nothing draws:
+
+```sh
+git lfs install    # once per machine
+git clone https://github.com/madki/hyde.git
+```
+
+In a clone made without it, run `git lfs install` and then `git lfs pull`. New files of those
+types go into LFS on `git add` with nothing more to do.
+
 ## Running
 
 - Desktop: open the project in [Godot 4.7](https://godotengine.org) and press Play.
@@ -35,7 +49,9 @@ Other scripts: `tools/check.sh` reports script and scene errors headlessly;
 ## How it was made
 
 - **Code:** written with AI assistance (Claude Code).
-- **Art:** public domain (CC0) or generated procedurally in code. No AI-generated art.
+- **Art:** public domain (CC0), Creative Commons Attribution (CC BY 4.0), or generated
+  procedurally in code, except the figure of Jekyll, which is rendered from a bought model
+  that is not in this repository. No AI-generated art.
 - Attribution for all third-party assets is in [CREDITS.md](CREDITS.md).
 
 ## Licence

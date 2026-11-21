@@ -1,0 +1,13 @@
+# Local, gitignored files that Claude Code copies into each git worktree it creates
+# (claude --worktree, agent worktrees, parallel desktop sessions). .gitignore syntax;
+# only files that are also ignored by git are copied. A plain `git worktree add` does
+# not read this file: copy these by hand there.
+
+# Personal Claude Code instructions and permissions
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Godot MCP server and editor plugin (tools/install_mcp.sh). After a worktree is made,
+# run `tools/install_mcp.sh --no-download` in it to switch the plugin on in project.godot.
+.mcp.json
+addons/godot_mcp/

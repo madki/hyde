@@ -1,0 +1,38 @@
+[gd_resource type="ShaderMaterial" load_steps=9 format=3]
+
+[ext_resource type="Shader" path="res://shaders/background.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://art/bg/title_jekyll_a.png" id="2"]
+[ext_resource type="Texture2D" path="res://art/bg/title_jekyll_b.png" id="3"]
+[ext_resource type="Texture2D" path="res://art/bg/title_hyde_a.png" id="4"]
+[ext_resource type="Texture2D" path="res://art/bg/title_hyde_b.png" id="5"]
+[ext_resource type="Texture2D" path="res://art/bg/noise.png" id="6"]
+[ext_resource type="Texture2D" path="res://art/bg/title_figures.png" id="7"]
+[ext_resource type="Texture2D" path="res://art/bg/title_figures_depth.png" id="8"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/jekyll_ambient = Color(0.15, 0.18, 0.55, 1)
+shader_parameter/jekyll_flicker = 0.5
+shader_parameter/jekyll_gutter = 0.45
+shader_parameter/hyde_key = Color(0.88, 0.06, 0.46, 1)
+shader_parameter/hyde_wall = Color(0.88, 0.06, 0.46, 1)
+shader_parameter/hyde_ambient = Color(0.24, 0.24, 0.3, 1)
+shader_parameter/hyde_key_power = 0.95
+shader_parameter/hyde_wall_power = 0.7
+shader_parameter/mist = 0.24
+shader_parameter/mist_light = 0.54
+shader_parameter/mist_glow = 0.72
+shader_parameter/mist_pool = 0.58
+shader_parameter/mist_pool_at = Vector2(0.64, 0.08)
+shader_parameter/mist_pool_size = Vector2(0.35, 0.12)
+shader_parameter/highlight_rolloff = 0.6
+shader_parameter/glow = 0.97
+shader_parameter/bloom = 0.2
+shader_parameter/feet_patch = 0.8
+shader_parameter/jekyll_a = ExtResource("2")
+shader_parameter/jekyll_b = ExtResource("3")
+shader_parameter/hyde_a = ExtResource("4")
+shader_parameter/hyde_b = ExtResource("5")
+shader_parameter/noise_tex = ExtResource("6")
+shader_parameter/figures = ExtResource("7")
+shader_parameter/figures_depth = ExtResource("8")

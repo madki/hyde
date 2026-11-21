@@ -25,12 +25,20 @@ It must stay clean at every commit, including history.
 
 ## Assets
 
-- Code is AI-assisted. Art is **not** AI-generated: it is public domain (CC0)
-  or produced by code (shaders, particles, `_draw()`, procedural generation).
-  Do not add AI-generated images or audio.
-- Third-party assets must be CC0/public domain, and recorded in `CREDITS.md`
-  (path, author, source URL, licence) in the same commit. No GPL/copyleft code
-  or assets, and nothing with an unclear licence.
+- Code is AI-assisted. Art is **not** AI-generated: it is public domain (CC0),
+  Creative Commons Attribution (CC BY), or produced by code (shaders,
+  particles, `_draw()`, procedural generation). Do not add AI-generated
+  images, models or audio; if an asset's origin is unclear, check before using it.
+- Third-party assets must be CC0/public domain or CC BY, and recorded in
+  `CREDITS.md` (path, author, source URL, licence) in the same commit. A CC BY
+  asset that is changed also needs its changes listed there. No NonCommercial,
+  NoDerivatives, ShareAlike or GPL/copyleft code or assets, and nothing with an
+  unclear licence.
+- One exception: Jekyll's figure is rendered from a model bought on CGTrader
+  (recorded in `CREDITS.md`). The model and the meshes made from it
+  (`studio/figures/jekyll*.res`, gitignored) must never be committed; only
+  pictures rendered from them are. Do not add another bought or
+  non-Creative-Commons asset without asking.
 
 ## Web constraints
 
@@ -49,6 +57,8 @@ licence file), keep fragment shaders cheap.
   `Shot.run_if_requested(self)` at the end of `_ready` (`scripts/shot.gd`).
 - **Web build:** `tools/export_web.sh`, then `tools/serve_web.sh` →
   http://localhost:8060. Close the editor first.
+- **Shipped size:** `tools/game_size.sh` prints how big the Web game would be. Run
+  `tools/install_hooks.sh` once per clone to have git print it after every commit.
 - Never run the project headlessly without a time limit: with no main scene,
   Godot prints an error and hangs instead of exiting.
 
