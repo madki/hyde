@@ -45,12 +45,12 @@ const THROW_ATTENUATION := 1.0 # the street's lamps use 1.4: lower fades more sl
 # lit by it.
 const POOL_FROM := Vector3(-0.7, 3.4, -1.9) # where it shines from, from where they stand
 const POOL_AIM := Vector3(0.0, 0.0, 0.6) # the point on the ground it shines at, likewise
-# How wide the pool is, in degrees, and how bright, for each street. Jekyll's lamp colour is
-# far brighter to the eye than Hyde's, so his pool is dimmer; Hyde's is narrower and stronger,
-# so that it holds together as one pool.
+# How wide the pool is, in degrees, and how bright, for each street. The two are the same
+# width, so that the pool keeps its shape when one man turns into the other. Jekyll's lamp
+# colour is far brighter to the eye than Hyde's, so his pool is dimmer.
 const POOL := {
 	"jekyll": {"angle": 24.0, "energy": 4.5},
-	"hyde": {"angle": 18.0, "energy": 12.0},
+	"hyde": {"angle": 24.0, "energy": 8.0},
 }
 
 # A few dim lights in a third colour, the one the lit windows have, where a street would
@@ -58,9 +58,8 @@ const POOL := {
 # all pinks and violets, and its windows are green.
 const ACCENTS := {
 	"hyde": [
+		# Only the wall: one on the ground shows as a patch that Jekyll's street has not got.
 		[Vector3(3.9, 1.0, 2.6), 4.0, 0.6], # low by the near door
-		[Vector3(3.8, 0.8, -6.0), 5.0, 0.5], # along the foot of the wall
-		[Vector3(-0.5, 0.5, -8.0), 6.0, 0.4], # far kerb, across the road
 	],
 }
 
