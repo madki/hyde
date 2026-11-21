@@ -9,8 +9,9 @@ class_name LabBuilder
 ##
 ## One corner of the room, seen square on to its end wall. Everything stands against the
 ## left-hand wall, so it fills the left of the picture (the back alley's man
-## is in the bottom right) and the rest of the room is left to the dark. Nobody is in it yet:
-## FIGURE_POS is the clear patch of floor by the window kept for Jekyll.
+## is in the bottom right) and the rest of the room is left to the dark. Jekyll sits in the
+## chair, sat back in it, his head turned to look out of the window. He sits still, so unlike
+## the men in the street and the alley he is baked into the picture like the furniture.
 ## Lights belong to the same pass groups as the streets': "pass_key" is the light that comes
 ## in by the window and the burner's flame on the table (both blue in the game, so blue rules
 ## the corner Jekyll works in), "pass_wall" the gas lamp deep in the room, "pass_windows" what glows by itself (the liquids in the glass, windows outside).
@@ -31,9 +32,13 @@ const TABLE_POS := Vector3(-0.32, 0.0, 1.15) # middle of the table, on the floor
 const TABLE_SIZE := Vector3(1.65, 0.76, 1.3) # across, top's height, along the wall
 const TABLE_YAW := 0.0
 const GLASS_SCALE := 1.6 # the glassware is a little larger than life, to read from here
-const CHAIR_POS := Vector3(-0.05, 0.0, -2.8) # in the corner by the window
-const CHAIR_YAW := 25.0 # turned out of the corner, towards the camera
-const FIGURE_POS := Vector3(-0.8, 0.0, -0.9) # by the window, kept clear for Jekyll
+const CHAIR_POS := Vector3(-0.2, 0.0, -3.0) # against the end wall, in front of the patch of light the
+# window throws on it, so the man in it is seen dark against the light
+const CHAIR_FIT := Vector3(1.0, 0.9, 0.8) # lower and shallower, so Jekyll sits right back in it
+const CHAIR_YAW := -45.0 # turned towards the window: we see him half side on
+const FIGURE_CLOTH := Color(0.43, 0.43, 0.46) # how much light comes off him: low, so he is a dark
+# shape against the lit wall, but not so low that his own colours are lost
+const FIGURE_SEAT := 0.12 # how far in front of the middle of the seat Jekyll's own middle is
 
 # From standing height, looking square at the end wall and a little down: the window's wall
 # closes the left of the picture, seen edge-on, and its light lies across the end wall.
@@ -55,7 +60,23 @@ static func build() -> Node3D:
 	root.add_child(_outside())
 	root.add_child(_table())
 	root.add_child(_chair())
+	root.add_child(_figure())
 	root.add_child(_far_end())
+
+	# A soft light from the camera's side of the room, in the gas lamp's colour: the window lights
+	# Jekyll from the far side, so this gives the side of him that faces us a colour of its own.
+	var fill := OmniLight3D.new()
+	fill.name = "RoomFill"
+	fill.position = Vector3(1.0, 1.5, -1.2)
+	fill.omni_range = 4.0
+	fill.omni_attenuation = 1.0
+	fill.light_energy = 0.55
+	fill.light_volumetric_fog_energy = 0.0
+	fill.light_size = 0.5
+	fill.shadow_enabled = true
+	fill.shadow_bias = 0.05
+	fill.add_to_group("pass_wall", true)
+	root.add_child(fill)
 
 	var cam := Camera3D.new()
 	cam.name = "Camera"
@@ -409,7 +430,8 @@ static func _chair() -> Node3D:
 	chair.name = "Chair"
 	chair.position = CHAIR_POS
 	chair.rotation.y = deg_to_rad(CHAIR_YAW)
-	var cloth := StreetBuilder._flat(Color(0.62, 0.6, 0.57), 0.9) # pale, to take the window's light
+	chair.scale = CHAIR_FIT
+	var cloth := StreetBuilder._flat(Color(0.2, 0.19, 0.18), 0.9) # dark leather, so the man in it stands out
 	var wood := _timber()
 	var w := 0.3 # half the seat's width
 	var d := 0.3 # half its depth
@@ -432,6 +454,20 @@ static func _chair() -> Node3D:
 		pad.rotation.x = PI / 2.0
 		pad.position = Vector3(x, 0.64, -0.02)
 	return chair
+
+
+## Jekyll, seated in the chair.
+static func _figure() -> Node3D:
+	var figure := FigureBuilder.build("jekyll", "seated")
+	var yaw := deg_to_rad(CHAIR_YAW)
+	figure.position = CHAIR_POS + Basis(Vector3.UP, yaw) * Vector3(0.0, 0.0, FIGURE_SEAT)
+	figure.rotation.y = yaw
+	# Part of the picture, not a layer of his own: studio/bake.gd hides whatever is a "figure".
+	var body := figure.get_node("Body") as MeshInstance3D
+	body.remove_from_group("figure")
+	body.add_to_group("own_colour", true) # and in his own colours: his mesh carries them
+	(body.material_override as ShaderMaterial).set_shader_parameter("cloth", FIGURE_CLOTH)
+	return figure
 
 
 ## The end wall: shelves of stock bottles where the window's light falls, and a gas lamp away

@@ -4,6 +4,7 @@
 # Local-only Godot MCP plugin entries are stripped from project.godot on commit
 # (no effect unless tools/install_mcp.sh has been run).
 project.godot filter=godot-mcp
+# Baked pictures and figure meshes are kept in Git LFS.
 art/bg/*.png filter=lfs diff=lfs merge=lfs -text
 studio/figures/*.res filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text

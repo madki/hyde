@@ -1,9 +1,10 @@
-[gd_resource type="ShaderMaterial" load_steps=5 format=3]
+[gd_resource type="ShaderMaterial" load_steps=6 format=3]
 
 [ext_resource type="Shader" path="res://shaders/background.gdshader" id="1"]
 [ext_resource type="Texture2D" path="res://art/bg/lab_a.png" id="2"]
 [ext_resource type="Texture2D" path="res://art/bg/lab_b.png" id="3"]
 [ext_resource type="Texture2D" path="res://art/bg/noise.png" id="4"]
+[ext_resource type="Texture2D" path="res://art/bg/lab_c.png" id="5"]
 
 [resource]
 shader = ExtResource("1")
@@ -22,3 +23,7 @@ shader_parameter/jekyll_b = ExtResource("3")
 shader_parameter/hyde_a = ExtResource("2")
 shader_parameter/hyde_b = ExtResource("3")
 shader_parameter/noise_tex = ExtResource("4")
+shader_parameter/colour_tex = ExtResource("5")
+shader_parameter/own_colour = 0.8
+shader_parameter/own_colour_lift = 0.8
+shader_parameter/own_colour_gain = 0.85

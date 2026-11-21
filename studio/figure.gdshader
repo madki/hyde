@@ -1,4 +1,6 @@
 shader_type spatial;
+// Both sides are drawn: a hat brim or a coat tail is often a single sheet in a model.
+render_mode cull_disabled;
 // Material for the Jekyll / Hyde figures in the street scenes.
 //
 // In the street it is plain dark cloth. When studio/figure_bake.gd draws the figure layer it

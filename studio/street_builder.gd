@@ -53,7 +53,9 @@ static func variant(name: String) -> Dictionary:
 		"cam_pos": CAM_POS, "cam_target": CAM_TARGET,
 		"cam_roll": 0.0, "fov": CAM_FOV,
 		"lit_windows": 0.3, "glassware": false, "post_lean": 0.0,
-		"figure_offset": Vector3.ZERO, "figure_scale": 1.0,
+		# Hyde leans in towards the camera and Jekyll's stick pushes his middle off his feet, so
+		# Jekyll is stood a step aside and a touch smaller to put his head where Hyde's is.
+		"figure_offset": Vector3(0.194, 0.0, 0.048), "figure_scale": 0.985,
 	}
 
 
@@ -92,8 +94,9 @@ static func build(variant_name: String) -> Node3D:
 
 	var figure := FigureBuilder.build(variant_name)
 	figure.position = FIGURE_POS + v.figure_offset
-	# Jekyll turns to the camera so his raised arm does not hide his face.
-	figure.rotation.y = deg_to_rad(-50.0 if variant_name == "jekyll" else 25.0)
+	# Jekyll stands side on, his stick on the near side, and looks back at the camera over his
+	# shoulder; Hyde comes at it a little side on.
+	figure.rotation.y = deg_to_rad(30.0 if variant_name == "jekyll" else 25.0)
 	figure.scale = Vector3.ONE * v.figure_scale
 	root.add_child(figure)
 	# A lamp behind him lights the mist he stands against, so the silhouette reads.

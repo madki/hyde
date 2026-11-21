@@ -102,6 +102,15 @@ uniform float figure_haze : hint_range(0.0, 0.2) = 0.028;
 /** Pen hatching in the figure's shadows. */
 uniform float figure_hatch : hint_range(0.0, 1.0) = 0.5;
 
+group_uniforms own_colours;
+/** How far things with colours of their own (`colour_tex`) show them, not the lamps' hues:
+ * 0 = everything is drawn in light alone. */
+uniform float own_colour : hint_range(0.0, 1.0) = 0.0;
+/** Lightens those colours: 1 = as they are, lower = dark cloth is lifted towards mid grey. */
+uniform float own_colour_lift : hint_range(0.2, 1.0) = 0.6;
+/** How bright they are for the light that falls on them. */
+uniform float own_colour_gain : hint_range(0.5, 3.0) = 1.3;
+
 group_uniforms motion;
 /** Speed of the flame flicker. */
 uniform float flicker_speed : hint_range(0.0, 4.0) = 1.0;
@@ -120,6 +129,9 @@ uniform sampler2D hyde_b : filter_linear_mipmap, repeat_disable;
 uniform sampler2D figures : filter_linear, repeat_disable;
 uniform sampler2D figures_depth : filter_linear, repeat_disable;
 uniform sampler2D noise_tex : filter_linear, repeat_enable;
+/** The colours of whatever in the picture has colours of its own, white elsewhere
+ * (`<variant>_c.png` from studio/bake.gd). Only read when `own_colour` is above 0. */
+uniform sampler2D colour_tex : hint_default_white, filter_linear_mipmap, repeat_disable;
 
 group_uniforms set_by_script;
 /** Maps the rect onto the 16:9 bake so it always covers the screen. */
@@ -270,6 +282,13 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	vec3 col = ink;
 	col += ambient_hue * amb * ambient_strength;
 	col += ramp(key, key_hue) + ramp(wall, wall_hue);
+	if (own_colour > 0.0) {
+		// Light says how bright; the thing's own colour says what hue.
+		vec3 own_c = texture(colour_tex, uv).rgb;
+		float has = 1.0 - smoothstep(0.88, 0.97, min(own_c.r, min(own_c.g, own_c.b)));
+		float lit = max(col.r, max(col.g, col.b));
+		col = mix(col, pow(own_c, vec3(own_colour_lift)) * lit * own_colour_gain, has * own_colour);
+	}
 	col *= line;
 	col += window_hue * b.r * (1.0 + (flicker.g - 0.5) * waver);
 

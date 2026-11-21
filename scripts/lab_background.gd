@@ -2,7 +2,7 @@
 class_name LabBackground
 extends ColorRect
 ## Full-screen picture of Dr Jekyll's laboratory at night: his table of glassware, the window
-## and the chair beside it, in the bottom left corner, and the dark of the room over the rest,
+## and Jekyll in the chair beside it, in the bottom left corner, and the dark of the room over the rest,
 ## which is left free for whatever is laid over it. The back alley's opposite number
 ## (scripts/alley_background.gd), in Jekyll's colours.
 ##
@@ -10,9 +10,8 @@ extends ColorRect
 ## shaders/lab_material.tres: edit the look (colours, fog, glow, outlines) there, or open
 ## scenes/lab_background.tscn to see it in the editor. The textures come from tools/bake_lab.sh.
 ##
-## Nobody is in the room yet. When Jekyll is, he is a figure layer like the man in the alley
-## (studio/alley_figure_bake.gd): bake it, set the material's `figures` and `figures_depth`,
-## and give `figure_rect` the part of the picture it covers.
+## Jekyll sits still, so he is baked into the picture with the chair he sits in and there is no
+## figure layer (the man in the alley has one, studio/alley_figure_bake.gd).
 
 const BAKE_ASPECT := 16.0 / 9.0
 ## The corner the picture is pinned to when the screen is not 16:9, so the table is never cut off.

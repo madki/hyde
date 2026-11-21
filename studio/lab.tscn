@@ -37,6 +37,13 @@
 [ext_resource type="PackedScene" path="res://studio/assets/street_lamp_02/street_lamp_02.gltf" id="35_h3cpm"]
 [ext_resource type="ArrayMesh" path="res://studio/kit/street_lamp_02_bracket.res" id="36_otknq"]
 [ext_resource type="Shader" path="res://studio/lantern_glass.gdshader" id="37_4iusn"]
+[ext_resource type="Shader" path="res://studio/figure.gdshader" id="38_figsh"]
+[ext_resource type="ArrayMesh" path="res://studio/figures/jekyll_seated.res" id="39_jseat"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jseat"]
+render_priority = 0
+shader = ExtResource("38_figsh")
+shader_parameter/cloth = Color(0.43, 0.43, 0.46, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_yghf1"]
 render_priority = 0
@@ -377,7 +384,7 @@ size = Vector3(0.050000012, 0.2, 0.050000012)
 size = Vector3(0.050000012, 0.2, 0.050000012)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nfkxt"]
-albedo_color = Color(0.62, 0.6, 0.57, 1)
+albedo_color = Color(0.2, 0.19, 0.18, 1)
 roughness = 0.9
 
 [sub_resource type="BoxMesh" id="BoxMesh_w03kw"]
@@ -1222,7 +1229,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0, -0.3)
 mesh = ExtResource("34_7u65d")
 
 [node name="Chair" type="Node3D" parent="." unique_id=1469509462]
-transform = Transform3D(0.90630776, 0, 0.42261827, 0, 1, 0, -0.42261827, 0, 0.90630776, -0.05, 0, -2.8)
+transform = Transform3D(0.70710678, 0, -0.56568542, 0, 0.9, 0, 0.70710678, 0, 0.56568542, -0.2, 0, -3.0)
 
 [node name="Leg" type="MeshInstance3D" parent="Chair" unique_id=344993220]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.1, -0.28)
@@ -1466,5 +1473,22 @@ far = 200.0
 transform = Transform3D(0.75460553, 0.2472736, -0.6078045, 0, 0.9262788, 0.3768388, 0.6561787, -0.28436464, 0.69897515, 0, 0, 0)
 light_energy = 1.2
 shadow_enabled = true
+
+[node name="Jekyll" type="Node3D" parent="."]
+transform = Transform3D(0.7071068, 0, -0.7071068, 0, 1, 0, 0.7071068, 0, 0.7071068, -0.28485, 0, -2.91515)
+
+[node name="Body" type="MeshInstance3D" parent="Jekyll" groups=["own_colour"]]
+material_override = SubResource("ShaderMaterial_jseat")
+mesh = ExtResource("39_jseat")
+
+[node name="RoomFill" type="OmniLight3D" parent="." groups=["pass_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0, 1.5, -1.2)
+light_energy = 0.55
+light_volumetric_fog_energy = 0.0
+light_size = 0.5
+shadow_enabled = true
+shadow_bias = 0.05
+omni_range = 4.0
+omni_attenuation = 1.0
 
 [editable path="FarEnd/GasLamp"]

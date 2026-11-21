@@ -19,6 +19,12 @@ extends Node
 ##   <variant>_a.png   R = key lamp   G = wall lanterns + far lamps   B = ambient / moon
 ##   <variant>_b.png   R = lit windows   G = mist (distance + ground fog)   B = sky mask
 ##
+## A picture with somebody baked into it in his own colours (Jekyll in the laboratory) gets a
+## third: meshes in the group "own_colour" are drawn in their vertex colours (see `--colours`
+## of studio/import_figure.gd) and everything else in white.
+##
+##   <variant>_c.png   RGB = the colour of whatever has one of its own, white elsewhere
+##
 ## The street is baked with nobody in it. The two men are a layer of their own, baked from the
 ## same scenes by studio/figure_bake.gd (tools/bake_figures.sh): re-run that too after moving
 ## the camera, a lamp or a figure.
@@ -89,9 +95,29 @@ func _bake(variant: String) -> void:
 		lum[p] = _luminance(img)
 	_pack(lum.key, lum.wall, lum.ambient).save_png(OUT_DIR + variant + "_a.png")
 	_pack(lum.windows, lum.mist, lum.sky).save_png(OUT_DIR + variant + "_b.png")
+	if not get_tree().get_nodes_in_group("own_colour").is_empty():
+		_show_colours(street)
+		var colours := await _render("colour")
+		if Shot.has_arg("passes"):
+			colours.save_png(Shot.arg("passes").path_join(variant + "_colour.png"))
+		colours.save_png(OUT_DIR + variant + "_c.png")
 	print("baked ", variant)
 	_viewport.queue_free()
 	await get_tree().process_frame
+
+
+## Dresses the scene for the colour pass: plain white, but for what has colours of its own.
+## Nothing is put back, so this pass has to be the last.
+func _show_colours(street: Node3D) -> void:
+	var white := StandardMaterial3D.new()
+	white.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var own := ShaderMaterial.new()
+	own.shader = Shader.new()
+	# Kept a little under white, so that the game's shader can tell a white shirt from the room.
+	own.shader.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled;\n" \
+			+ "void fragment() { ALBEDO = COLOR.rgb * 0.7; }\n"
+	for n: GeometryInstance3D in street.find_children("*", "GeometryInstance3D", true, false):
+		n.material_override = own if n.is_in_group("own_colour") else white
 
 
 func _render(p: String) -> Image:
@@ -110,7 +136,7 @@ func _setup_pass(p: String) -> void:
 			n.visible = group == p
 	var e := _env
 	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color.WHITE if p in ["mist", "sky"] else Color.BLACK
+	e.background_color = Color.WHITE if p in ["mist", "sky", "colour"] else Color.BLACK
 	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_color = Color.WHITE

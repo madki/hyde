@@ -1,6 +1,7 @@
 #!/bin/sh
-# Re-bake the laboratory picture into art/bg/: lab_a.png and lab_b.png (its light passes).
-# Nobody is in it yet, so there is no figure layer to bake.
+# Re-bake the laboratory picture into art/bg/: lab_a.png and lab_b.png (its light passes) and
+# lab_c.png (Jekyll's own colours).
+# Jekyll in his chair is part of the picture, so there is no figure layer to bake.
 # Desktop only, uses the Forward+ renderer.
 # Usage: tools/bake_lab.sh [--passes=/abs/dir] [--rebuild]   then run tools/check.sh
 # `--rebuild` OVERWRITES studio/lab.tscn with a fresh one from studio/lab_builder.gd.
