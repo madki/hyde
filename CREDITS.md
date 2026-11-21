@@ -43,7 +43,7 @@ changed meshes stay under CC BY 4.0:
 
 The textures in `art/bg/` are rendered by this project (`tools/bake_bg.sh` for the streets,
 `tools/bake_figures.sh` for the figures, `tools/bake_alley.sh` for the back alley and the man
-at its door, `art/bg/alley_*.png`) from scenes assembled in code out of the assets above;
+at its door, `art/bg/alley_*.png`, `tools/bake_lab.sh` for the laboratory, `art/bg/lab_*.png`) from scenes assembled in code out of the assets above;
 the assets themselves are used only for those bakes and are not part of the game build. The two
 figures appear in `art/bg/figures.png` and `art/bg/figures_depth.png` as inked silhouettes: each
 standing still, and in a flipbook of one turning into the other, whose in-between shapes are

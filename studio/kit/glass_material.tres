@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://studio/glass.gdshader" id="1_5b57r"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_5b57r")
+shader_parameter/body = 0.07
+shader_parameter/tone = 0.9
+shader_parameter/edge = 0.45
