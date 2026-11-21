@@ -18,7 +18,7 @@ uniform sampler2D screen : hint_screen_texture, filter_linear, repeat_disable;
 
 group_uniforms look;
 /** How far apart the pictures go, as a fraction of the screen's height. */
-uniform float reach : hint_range(0.0, 0.3) = 0.05;
+uniform float reach : hint_range(0.0, 0.3) = 0.03;
 /** Which way each picture goes: Jekyll's colour, Hyde's colour, the third colour. */
 uniform vec2 way_jekyll = vec2(-1.0, 0.1);
 uniform vec2 way_hyde = vec2(1.0, 0.1);
@@ -51,6 +51,8 @@ uniform float linger = 0.0;
 	in 0..1 of the screen. */
 uniform vec2 linger_at = vec2(0.5);
 uniform vec2 linger_size = vec2(0.1);
+/** Moves the whole screen, as a fraction of its height: a shake. */
+uniform vec2 shake = vec2(0.0);
 /** For each picture, 0 = it still shows the screen as it was, 1 = as it is now. */
 uniform vec3 arrived = vec3(1.0);
 /** Changes a few times in the change, to move the torn bands. */
@@ -72,6 +74,7 @@ void fragment() {
 	vec2 uv = SCREEN_UV;
 	// One unit is the screen's height both ways, so a slanted `way` keeps its angle.
 	vec2 unit = vec2(SCREEN_PIXEL_SIZE.x / SCREEN_PIXEL_SIZE.y, 1.0);
+	uv += shake * unit;
 	vec2 from_place = (uv - linger_at) / linger_size;
 	float here = split + linger * (1.0 - smoothstep(0.45, 1.0, length(from_place)));
 	float apart = abs(here);

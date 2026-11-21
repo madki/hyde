@@ -24,9 +24,9 @@ extends ColorRect
 signal finished
 
 # The change, in seconds.
-const APART := 0.16 # the pictures fly apart
-const HELD := 0.2 # they hang there, still drifting outwards
-const SNAP := 0.3 # they snap back, swing a little past each other and settle
+const APART := 0.1 # the pictures fly apart
+const HELD := 0.09 # they hang there, still drifting outwards
+const SNAP := 0.16 # they snap back, swing a little past each other and settle
 const SECONDS := APART + HELD + SNAP
 
 ## How much further apart the pictures drift while they hang.
@@ -69,6 +69,8 @@ var _linger := 0.0
 var _lingered := 0.0
 # Whether the split is over the live screen alone (`glitch`), with no kept picture under it.
 var _live := false
+var _size := 1.0
+var _shake := 0.0
 
 
 func _ready() -> void:
@@ -96,20 +98,24 @@ func play(face: float, change: Callable, linger := 0.0, place := Rect2()) -> voi
 
 ## The split alone, over whatever the screen is doing: the pictures fly apart and snap back,
 ## all three showing the live screen, so a change that plays under it is seen through it.
-## Called while one is under way, it starts again.
-func glitch() -> void:
+## `size` scales how far apart they go (1 = as in a change of scene) and `shake` is how far
+## the screen is also shaken at the start, as a fraction of its height, dying away.
+## `seconds` is how long it takes. Called while one is under way, it starts again.
+func glitch(size := 1.0, shake := 0.0, seconds := SECONDS) -> void:
 	if _tween:
 		_tween.kill()
-	begin_glitch()
+	begin_glitch(size, shake)
 	_tween = create_tween()
-	_tween.tween_method(pose, 0.0, 1.0, SECONDS)
+	_tween.tween_method(pose, 0.0, 1.0, seconds)
 	_tween.tween_callback(_end)
 
 
 ## Shows the split over the live screen at its start, without playing it: `pose` then sets
 ## a moment of it.
-func begin_glitch() -> void:
+func begin_glitch(size := 1.0, shake := 0.0) -> void:
 	_live = true
+	_size = size
+	_shake = shake
 	_linger = 0.0
 	_set_param("linger", 0.0)
 	pose(0.0)
@@ -121,6 +127,8 @@ func begin_glitch() -> void:
 func begin(face: float, change: Callable, linger := 0.0, place := Rect2()) -> void:
 	_towards = face
 	_live = false
+	_size = 1.0
+	_shake = 0.0
 	# A split that lingered until now is in the kept picture already.
 	_keep_screen()
 	_linger = linger
@@ -143,7 +151,10 @@ func pose(t: float) -> void:
 		split = 1.0 + DRIFT * (seconds - APART) / HELD
 	else:
 		split = (1.0 + DRIFT) * (1.0 - _back_out((seconds - APART - HELD) / SNAP))
-	_set_param("split", split)
+	_set_param("split", split * _size)
+	# The shake jumps to a new place every frame and dies away over the first half.
+	var shaking := _shake * (1.0 - smoothstep(0.0, 0.5, t))
+	_set_param("shake", Vector2.from_angle(randf() * TAU) * shaking)
 	# What lingers comes in as the rest snaps back, so the place never closes.
 	_set_param("linger", _linger * smoothstep(APART + HELD, SECONDS, seconds))
 

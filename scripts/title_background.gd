@@ -34,18 +34,12 @@ const FEET_PATCH := Vector2(95.0 / 1920.0, 20.0 / 1080.0)
 ## Distances from the camera, in metres, that the depth sheet's 0 and 1 stand for.
 const FIGURE_DEPTH_RANGE := Vector2(3.0, 9.0)
 
-# Jekyll coming apart (`apart`). Distances are fractions of the baked picture.
-const PART_SECONDS := 0.7 # the whole of it, either way
-const HYDE_ASIDE := 0.03 # how far right of Jekyll's place the magenta ghost goes: Hyde's place
-const GHOST_ASIDE := 0.05 # how far left of it the cyan ghost goes
-const GHOST_FRESH := 1.5 # how strongly the ghosts show when Jekyll has just come apart
-const GHOST_LEFT := 0.0 # how strongly the cyan one shows once Hyde is there: 0 = gone
-# When things happen, as shares of the whole: from the first to the second of each pair.
-const LIGHT_TURNS := Vector2(0.0, 0.6) # the lamps go from cyan to magenta
-const JEKYLL_THINS := Vector2(0.0, 0.12) # the solid man gives way to his two ghosts
-const GHOSTS_GO := Vector2(0.0, 0.6) # the ghosts move out to their places
-const HYDE_SETS := Vector2(0.14, 0.7) # the magenta ghost, Hyde's shape, sets into Hyde himself
-const LEFT_FADES := Vector2(0.3, 1.0) # the cyan ghost fades to GHOST_LEFT
+# Jekyll come apart (`apart`, `hyde`). Distances are fractions of the baked picture.
+const HYDE_ASIDE := 0.02 # how far right of Jekyll's place the magenta ghost goes
+const GHOST_ASIDE := 0.03 # how far left of it the cyan ghost goes
+const GHOST_FRESH := 1.5 # how strongly the magenta ghost shows
+const GHOST_CYAN := 0.5 # how much of that strength the cyan one has
+const JEKYLL_THINS := 0.3 # by this much `apart` the solid man has given way to his ghosts
 
 # The change, in seconds.
 const LAMPS_OUT := 0.5 # the lamps gutter and die
@@ -70,20 +64,24 @@ const DARK := 0.225 # nothing to see: the men change places
 		darkness = clampf(value, 0.0, 1.0)
 		_set_param("blackout", darkness)
 
-## Jekyll coming apart into Hyde: 0 = Jekyll alone under his cyan lamps, 1 = the lamps
-## magenta and Hyde standing a little to the right.
-## On the way Jekyll parts into two ghosts: the cyan one goes left and fades, and the magenta one, which
-## is Hyde's shape from the start, goes right and sets into Hyde himself. Also sets `shift`.
+## Jekyll come apart into two ghosts of light, each his own shape: 0 = Jekyll, whole,
+## 1 = a cyan ghost of him to the left and a magenta one to the right.
 @export_range(0.0, 1.0) var apart := 0.0:
 	set(value):
 		apart = clampf(value, 0.0, 1.0)
+		_pose_apart()
+
+## The magenta ghost turned into Hyde, once Jekyll is apart: 1 = Hyde himself stands there,
+## under magenta lamps. Also sets `shift`.
+@export_range(0.0, 1.0) var hyde := 0.0:
+	set(value):
+		hyde = clampf(value, 0.0, 1.0)
 		_pose_apart()
 
 ## How far the view leans towards the mouse while the game runs. 0 turns the parallax off.
 @export_range(0.0, 1.0) var parallax := 1.0
 
 var _tween: Tween
-var _part_tween: Tween
 
 
 func _ready() -> void:
@@ -144,17 +142,7 @@ func show_face(face: float) -> void:
 	_swap(face)
 
 
-## Plays Jekyll coming apart (1) or coming back together (0) from wherever it has got to.
-func part_to(target: float) -> void:
-	if is_changing():
-		return
-	if _part_tween:
-		_part_tween.kill()
-	_part_tween = create_tween()
-	_part_tween.tween_property(self, "apart", target, PART_SECONDS * absf(target - apart))
-
-
-## Sets the men and the street for the current `apart`.
+## Sets the men and the street for the current `apart` and `hyde`.
 func _pose_apart() -> void:
 	if apart <= 0.0:
 		_set_param("figure_face", -1.0)
@@ -163,28 +151,22 @@ func _pose_apart() -> void:
 		_set_param("ghosts", Vector2.ZERO)
 		shift = 0.0
 		return
-	shift = _between(LIGHT_TURNS, apart)
-	var out := ease(_between(GHOSTS_GO, apart), 0.35) # quick away, slowing as they arrive
-	_set_param("ghost_spread", Vector2(GHOST_ASIDE, HYDE_ASIDE) * out)
-	_set_param("ghost_turned", 1.0) # the magenta ghost is Hyde's shape from the start
-	var thinned := _between(JEKYLL_THINS, apart)
-	var hyde := _between(HYDE_SETS, apart)
-	_set_param("ghosts", Vector2(
-			thinned * lerpf(GHOST_FRESH, GHOST_LEFT, _between(LEFT_FADES, apart)),
-			thinned * GHOST_FRESH * (1.0 - hyde)))
-	# The solid man is Jekyll in his place until he has thinned away, then Hyde in his.
-	if apart < HYDE_SETS.x:
+	var turned := hyde if apart >= 1.0 else 0.0 # only a ghost that has got there turns
+	shift = turned
+	_set_param("ghost_spread", Vector2(GHOST_ASIDE, HYDE_ASIDE) * apart)
+	_set_param("ghost_turned", turned)
+	var thinned := smoothstep(0.0, JEKYLL_THINS, apart)
+	_set_param("ghosts", Vector2(thinned * GHOST_FRESH * GHOST_CYAN,
+			thinned * GHOST_FRESH * (1.0 - turned)))
+	# The solid man is Jekyll in his place, thinning as he parts, or Hyde in the ghost's.
+	if turned <= 0.0:
 		_set_param("figure_face", 0.0)
 		_set_param("figure_aside", Vector2.ZERO)
 		_set_param("figure_solid", 1.0 - thinned)
 	else:
 		_set_param("figure_face", 1.0)
-		_set_param("figure_aside", Vector2(HYDE_ASIDE * out, 0.0))
-		_set_param("figure_solid", hyde)
-
-
-func _between(times: Vector2, t: float) -> float:
-	return smoothstep(times.x, times.y, t)
+		_set_param("figure_aside", Vector2(HYDE_ASIDE, 0.0))
+		_set_param("figure_solid", turned)
 
 
 func _swap(face: float) -> void:
