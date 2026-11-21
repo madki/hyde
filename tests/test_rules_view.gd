@@ -167,10 +167,10 @@ func test_hand() -> void:
 	var h := deal(run, "P:lamp I:lamp I:heart F:cup P:mirror P:mirror F:lock F:eye")
 	var v := RulesView.table(run)
 	eq(v.hand.size(), 8, "every card of the hand")
-	eq(_hand_card(v, h[0].id), {"id": h[0].id, "t": "root", "key": "lamp", "ink": false, "name": "Composure", "chips": 30, "playable": true, "turnable": false}, "a Paper Root as Jekyll")
+	eq(_hand_card(v, h[0].id), {"id": h[0].id, "t": "root", "key": "lamp", "ink": false, "name": "Composure", "chips": 30, "text": "", "playable": true, "turnable": false}, "a Paper Root as Jekyll")
 	eq([_hand_card(v, h[1].id).playable, _hand_card(v, h[1].id).turnable], [true, true], "a Fog beside a Composure can be turned")
 	eq([_hand_card(v, h[2].id).playable, _hand_card(v, h[2].id).turnable, _hand_card(v, h[2].id).name], [false, false, "Appetite"], "an Appetite with no Kindness cannot")
-	eq([_hand_card(v, h[3].id).name, _hand_card(v, h[3].id).playable, _hand_card(v, h[3].id).key], ["Good Cheer", true, "cup"], "a Factor, under Jekyll's name")
+	eq([_hand_card(v, h[3].id).name, _hand_card(v, h[3].id).playable, _hand_card(v, h[3].id).key, _hand_card(v, h[3].id).text], ["Good Cheer", true, "cup", "Adds 2 mult."], "a Factor, under Jekyll's name, and what it does")
 	eq(v.can_pass.ok, false, "a card can be played, so no pass")
 	run.stance = "hyde"
 	v = RulesView.table(run)
@@ -321,3 +321,33 @@ func test_preview_matches_the_play_that_follows() -> void:
 	print("  previews checked against the play: %s" % JSON.stringify(seen))
 	for k: String in seen:
 		ok(seen[k] > 0, "the recorded runs hold a case of: " + k)
+
+
+func test_texts_follow_the_numbers() -> void:
+	var run := as_hyde(at(fresh({"max_play": 3, "glee_chips": 30, "tight_drop": 1, "hcane_mult": 6, "balance_bonus": 2}, 5), 2, 0))
+	var h := deal(run, "F:cup I:lamp I:lamp I:lamp I:lamp P:heart P:mirror P:lamp")
+	eq(_hand_card(RulesView.table(run), h[0].id).text, "Adds 30 chips.", "Glee's text names the run's number")
+	eq(RulesView.table(run).night.twist_text, "Restraint holds 1 fewer.", "so does the twist's")
+	eq([RulesConfig.instrument_text("hcane", run.dials), RulesConfig.instrument_text("balance", run.dials)], ["His Mania gains 6 mult.", "Restraint holds 2 more."], "and an instrument's")
+	eq(Rules.evaluate(run, h.slice(1, 5)).reason, "A hand is up to 3 cards.", "a play of too many cards")
+	eq(Rules.discard(run, ids(h.slice(1, 5))).reason, "Discard up to 3 cards.", "a discard of too many")
+	for kind in RulesConfig.FACTORS:
+		for stance: String in ["jekyll", "hyde"]:
+			ok(not RulesConfig.factor_text(kind, stance, run.dials).contains("{"), "%s's text for %s is filled in" % [kind, stance])
+	for n in RulesConfig.NIGHTS.size():
+		ok(not RulesConfig.twist_text(n, run.dials).contains("{"), "night %d's twist is filled in" % (n + 1))
+	for key: String in RulesConfig.INSTRUMENTS:
+		ok(not RulesConfig.instrument_text(key, run.dials).contains("{"), key + "'s text is filled in")
+	# The targets handed out are the table's own to change.
+	var targets: Array = RulesView.table(fresh()).night.targets
+	targets.append(1)
+	eq(RulesConfig.targets(RulesDials.new(), 0), [1000, 1500, 2200], "changing the targets handed out leaves the game's alone")
+
+
+func test_no_reward_cards() -> void:
+	var run := at(fresh({"reward_cards": 0}, 22), 0, 1)
+	run.score = Rules.target(run) - 1
+	var h := deal(run, "P:lamp F:lock P:heart P:mirror P:lamp P:heart F:cup F:eye")
+	eq(RulesView.preview(run, [h[0].id, h[1].id]).offers_card, false, "with no reward cards the preview offers none")
+	Rules.play(run, [h[0].id, h[1].id])
+	eq([run.phase, run.last.how, run.offer], ["result", "won", null], "and the round won offers none")

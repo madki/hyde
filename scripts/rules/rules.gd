@@ -397,7 +397,8 @@ static func _arrive(run: RulesRun, how: String) -> Dictionary:
 			add_card(run, sym, true, true)
 	elif how == "drink":
 		ev.stained = _stain_one(run)
-		run.stats.stains += 1
+		if not ev.stained.added:
+			run.stats.stains += 1
 	# A breakout adds a copy of each of his two lowest-count Roots, counted after any
 	# first-arrival cards.
 	if how == "breakout" or how == "walkedin":
@@ -616,7 +617,7 @@ static func discard(run: RulesRun, ids: Array) -> Dictionary:
 	if not _in_hand(run, ids):
 		return {"ok": false, "reason": "Choose cards to discard."}
 	if ids.size() > run.dials.max_play:
-		return {"ok": false, "reason": "Discard up to five cards."}
+		return {"ok": false, "reason": "Discard up to %d cards." % run.dials.max_play}
 	run.discards -= 1
 	_to_discards(run, ids)
 	refill(run)
@@ -688,7 +689,7 @@ static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, b
 	var reached: int = prior + last * (1 << k)
 	# Roots that join with him if this is also his first arrival, or if the play also
 	# fills the meter.
-	var extra: int = (0 if run.hyde_arrived else RulesConfig.FIRST_ARRIVAL.size()) + (run.dials.breakout_roots if breaks_out else 0)
+	var extra: int = (0 if run.hyde_arrived else RulesConfig.FIRST_ARRIVAL.size()) + (mini(run.dials.breakout_roots, RulesConfig.ROOTS.size()) if breaks_out else 0)
 	var li := line_info(run)
 	var ink: int = int(li.ink) + k + extra
 	var paper: int = int(li.paper) - k
@@ -785,7 +786,9 @@ static func _end_round(run: RulesRun, res: Dictionary) -> void:
 		return
 	# An ordinary round won in Jekyll's stance: one of three different cards, or none.
 	if not is_scene(run) and res.how == "won" and run.stance == "jekyll":
-		run.offer = _pick_offers(run, d.reward_cards)
+		var offers := _pick_offers(run, d.reward_cards)
+		if not offers.is_empty():
+			run.offer = offers
 	run.phase = "result"
 
 
@@ -951,7 +954,7 @@ static func alley_instrument(run: RulesRun, key: String) -> Dictionary:
 	if run.phase != "alley" or run.alley.inst != null or not run.alley.options.has(key):
 		return {"ok": false, "reason": "Not on offer."}
 	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
-		return {"ok": false, "reason": "Three instruments held. Drop one first."}
+		return {"ok": false, "reason": "%d instruments held. Drop one first." % RulesConfig.MAX_INSTRUMENTS}
 	run.instruments.append(key)
 	run.alley.inst = key
 	return {"ok": true}
@@ -1006,7 +1009,7 @@ static func buy_instrument(run: RulesRun, index: int) -> Dictionary:
 		return {"ok": false, "reason": "Sold."}
 	var o: Dictionary = shelf[index]
 	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
-		return {"ok": false, "reason": "Three instruments held. Drop one first."}
+		return {"ok": false, "reason": "%d instruments held. Drop one first." % RulesConfig.MAX_INSTRUMENTS}
 	if run.sov < int(o.price):
 		return {"ok": false, "reason": "Not enough sovereigns."}
 	run.sov -= int(o.price)

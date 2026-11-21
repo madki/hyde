@@ -36,6 +36,11 @@ if [ "$timed_out" = 1 ]; then
 	echo "TESTS FAILED: the import did not finish in ${limit}s, stopped"
 	exit 1
 fi
+if [ "$code" -ne 0 ]; then
+	cat "$log"
+	echo "TESTS FAILED: the import failed"
+	exit 1
+fi
 
 run_godot -s res://tests/run_tests.gd -- "$@"
 cat "$log"

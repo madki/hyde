@@ -97,41 +97,108 @@ func to_dict() -> Dictionary:
 	return out
 
 
-## Whether this is the data of a run, as far as its shape goes: the right version, a deck of
-## cards, the piles, the gauges and the numbers. Whole numbers must already be ints.
+## Whether this is the data of a run that can be played on: the right version, a deck of
+## known cards with ids of their own, piles that hold cards of the deck once at most, the
+## gauges, a night, round, phase and stance that exist, and what the phase needs. Whole
+## numbers must already be ints.
 static func is_run_data(data: Variant) -> bool:
 	if not data is Dictionary or data.get("v") != 1 or not data.get("dials") is Dictionary:
 		return false
+	# Numbers.
+	for k: String in ["seed", "seed0"]:
+		if not data.get(k, 0) is int:
+			return false
+	for k: String in ["uid", "night", "round", "restraint", "stored", "salt", "doses_bought", "sov", "score", "plays", "discards"]:
+		var n: Variant = data.get(k, 0)
+		if not n is int or n < 0:
+			return false
+	if data.get("night", 0) >= RulesConfig.NIGHTS.size() or data.get("round", 0) > 2:
+		return false
+	if not data.get("hyde_arrived", false) is bool:
+		return false
+	if not data.get("stance", "jekyll") in ["jekyll", "hyde"]:
+		return false
+	# Lists and records.
 	for k: String in ["cards", "draw", "hand", "discard", "instruments"]:
 		if not data.get(k) is Array:
+			return false
+	for k: String in ["log", "history"]:
+		if not data.get(k, []) is Array:
+			return false
+	for k: String in ["unlocked", "stats"]:
+		if not data.get(k, {}) is Dictionary:
+			return false
+	for k: String in ["last", "alley", "shop", "dawn"]:
+		if data.get(k) != null and not data[k] is Dictionary:
+			return false
+	for key: Variant in data.instruments:
+		if not RulesConfig.INSTRUMENTS.has(key):
 			return false
 	for k: String in ["craving", "habit", "temper"]:
 		var gauge: Variant = data.get(k)
 		if not gauge is Dictionary:
 			return false
 		for sym in RulesConfig.ROOTS:
-			if not gauge.get(sym) is int:
+			if not gauge.get(sym) is int or gauge[sym] < 0:
 				return false
+	# The deck and the piles.
+	var ids := {}
 	for c: Variant in data.cards:
-		if not c is Dictionary or not c.get("id") is int:
+		if not c is Dictionary or not c.get("id") is int or ids.has(c.id) or c.id > data.get("uid", 0):
 			return false
+		ids[c.id] = true
 		if c.get("t") == "factor":
 			if not RulesConfig.FACTOR.has(c.get("kind")):
 				return false
 		elif c.get("t") != "root" or not RulesConfig.ROOT.has(c.get("sym")) or not c.get("ink") is bool:
 			return false
+	var piled := {}
 	for pile: String in ["draw", "hand", "discard"]:
 		for id: Variant in data[pile]:
-			if not id is int:
+			if not id is int or not ids.has(id) or piled.has(id):
 				return false
+			piled[id] = true
+	# What the phase needs.
+	var offer: Variant = data.get("offer")
+	if offer != null:
+		if not offer is Array:
+			return false
+		for key: Variant in offer:
+			if not RulesConfig.ROOT.has(key) and not RulesConfig.FACTOR.has(key):
+				return false
+	match data.get("phase", "play"):
+		"play":
+			return piled.size() == ids.size()
+		"result":
+			return data.get("last") is Dictionary
+		"end":
+			return data.get("last") is Dictionary and data.get("ending") is String
+		"lab":
+			var shop: Variant = data.get("shop")
+			return shop is Dictionary and _is_shelf(shop.get("cards")) and _is_shelf(shop.get("instruments"))
+		"alley":
+			var alley: Variant = data.get("alley")
+			return alley is Dictionary and alley.get("options") is Array and alley.get("bought") is int
+	return false
+
+
+static func _is_shelf(shelf: Variant) -> bool:
+	if not shelf is Array:
+		return false
+	for o: Variant in shelf:
+		if not o is Dictionary or not o.get("key") is String or not o.get("price") is int or not o.get("sold") is bool:
+			return false
 	return true
 
 
-## A run from to_dict's data, which must pass is_run_data. A number the data lacks keeps the
-## game's own value.
+## A run from to_dict's data, which must pass is_run_data. Anything the data lacks keeps
+## its starting value, and anything it holds that a run does not have is left out.
 static func from_dict(data: Dictionary) -> RulesRun:
 	var run := RulesRun.new()
-	for k: String in data:
+	var own := run.to_dict()
+	for k: Variant in data:
+		if not own.has(k):
+			continue
 		var value: Variant = data[k]
 		match k:
 			"dials":
@@ -143,6 +210,8 @@ static func from_dict(data: Dictionary) -> RulesRun:
 				for sym: String in value:
 					gauge[sym] = value[sym]
 				run.set(k, gauge)
+			"stats", "unlocked":
+				run.set(k, own[k].merged(value, true))
 			_:
 				run.set(k, value.duplicate(true) if value is Array or value is Dictionary else value)
 	return run

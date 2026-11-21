@@ -94,7 +94,7 @@ static func problems(changes: Dictionary) -> Dictionary:
 		var value: Variant = changes[k]
 		if not k is String or not known.has(k):
 			out[k] = "Unknown rules number: %s" % k
-		elif not (value is int or value is float) or (known[k] is int and value != floor(value)):
+		elif not (value is int or value is float) or is_nan(value) or is_inf(value) or (known[k] is int and value != floor(value)):
 			out[k] = "The rules number %s cannot be %s" % [k, value]
 		elif value < (1 if _AT_LEAST_ONE.has(k) else 0) or (k == "target_scale" and value <= 0):
 			out[k] = "The rules number %s is too small: %s" % [k, value]

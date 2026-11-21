@@ -13,8 +13,9 @@ class_name RulesView
 ## - `restraint`: {meter, limit, scene_limit, stored}: this round's limit and the scene's.
 ## - `symbols`: for each symbol {craving, habit, temper, paper, ink, paper_chips, ink_chips}:
 ##   the gauges, how many of each Root the deck holds, and what one is worth now.
-## - `hand`: for each card {id, t, key, ink, name, chips, playable, turnable}: whether the
-##   man at the table can play it, and for an Ink Root whether Jekyll can turn it now.
+## - `hand`: for each card {id, t, key, ink, name, chips, text, playable, turnable}: what a
+##   Factor does, whether the man at the table can play the card, and for an Ink Root
+##   whether Jekyll can turn it now.
 ## - `can_pass`: {ok, why}.
 ## - `night`: {no, title, round, scene, target, targets, twist, twist_text, twist_now,
 ##   dawn: {brings, brings_name, unlocks, unlocks_name, place, last, ends}}: the scene's
@@ -41,6 +42,7 @@ static func table(run: RulesRun, chosen: Array = []) -> Dictionary:
 		hand.append({
 			"id": id, "t": c.t, "key": c.key(), "ink": c.is_ink(),
 			"name": Rules.name_of(c, stance), "chips": Rules.chips_of(run, c),
+			"text": RulesConfig.factor_text(c.kind, stance, run.dials) if c.is_factor() else "",
 			"playable": playing and (c.is_factor() or c.ink == (stance == "hyde") or turnable),
 			"turnable": playing and turnable,
 		})
@@ -85,7 +87,7 @@ static func _night(run: RulesRun) -> Dictionary:
 	return {
 		"no": run.night + 1, "title": night.title, "round": run.round + 1, "scene": Rules.is_scene(run),
 		"target": Rules.target(run), "targets": RulesConfig.targets(run.dials, run.night),
-		"twist": night.twist, "twist_text": night.twist_text, "twist_now": Rules.twist_now(run) != "",
+		"twist": night.twist, "twist_text": RulesConfig.twist_text(run.night, run.dials), "twist_now": Rules.twist_now(run) != "",
 		"dawn": {
 			# Two copies of this Ink Root join. For night 3 it is his highest-Habit Root as
 			# the gauges stand now.

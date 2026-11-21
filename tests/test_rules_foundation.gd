@@ -107,6 +107,7 @@ func test_numbers_that_cannot_be_used() -> void:
 	var bad := {"restraint_limt": 3, "craving_cap": 0, "plays": -1, "hand_size": "ten", "max_play": 2.5, "target_scale": 0}
 	var wrong := RulesDials.problems(bad)
 	eq(wrong.size(), 6, "a misspelt name, a zero cap, a negative, a text, a fraction and a zero scale cannot be used")
+	eq(RulesDials.problems({"target_scale": NAN, "plays": INF, "salt_price": -INF, "glee_chips": NAN}).size(), 4, "nor can a number that is not one, or is without end")
 	eq(RulesDials.problems({"discards": 0, "craving_cap": 1, "target_scale": 2, "salt_start": 5.0}), {}, "these can")
 	# One of them goes through make, which reports it as an error (printed below) and leaves it out.
 	var d := RulesDials.make({"craving_cap": 0, "plays": 2})
@@ -150,3 +151,69 @@ func test_json_that_is_not_a_run() -> void:
 	old.dials.erase("salt_rise")
 	var run := Rules.from_json(JSON.stringify(old))
 	ok(run != null and run.dials.salt_rise == 1, "a number the save lacks keeps the game's own value")
+
+
+func test_saves_that_cannot_be_played() -> void:
+	var data := fresh({}, 3).to_dict()
+	var changes := {
+		"a night that does not exist": func(d: Dictionary) -> void: d.night = 7,
+		"a round that does not exist": func(d: Dictionary) -> void: d.round = 3,
+		"a negative number": func(d: Dictionary) -> void: d.salt = -1,
+		"a phase that does not exist": func(d: Dictionary) -> void: d.phase = "shop",
+		"a stance that does not exist": func(d: Dictionary) -> void: d.stance = "utterson",
+		"a hand card that is not in the deck": func(d: Dictionary) -> void: d.hand[0] = 999,
+		"a card in two piles": func(d: Dictionary) -> void: d.draw[0] = d.hand[0],
+		"a card in no pile during a round": func(d: Dictionary) -> void: d.draw.pop_back(),
+		"two cards with one id": func(d: Dictionary) -> void: d.cards[1].id = d.cards[0].id,
+		"a card newer than the newest id": func(d: Dictionary) -> void: d.uid = 3,
+		"an instrument that does not exist": func(d: Dictionary) -> void: d.instruments.append("wand"),
+		"a negative gauge": func(d: Dictionary) -> void: d.habit.lamp = -1,
+		"a laboratory with no shelf": func(d: Dictionary) -> void: d.phase = "lab",
+		"an alley with no offers": func(d: Dictionary) -> void: d.phase = "alley",
+		"a result with no round": func(d: Dictionary) -> void: d.phase = "result",
+		"an offer of an unknown card": func(d: Dictionary) -> void: d.offer = ["joker"],
+		"stats that are not a record": func(d: Dictionary) -> void: d.stats = 3,
+	}
+	for what: String in changes:
+		var bad: Dictionary = data.duplicate(true)
+		changes[what].call(bad)
+		eq(Rules.from_json(JSON.stringify(bad)), null, "refused: " + what)
+	ok(Rules.from_json(JSON.stringify(data)) != null, "the save they were made from loads")
+	# What a run does not have is left out, and what a save lacks keeps its starting value.
+	var odd: Dictionary = data.duplicate(true)
+	odd["script"] = null
+	odd["extra"] = 5
+	odd.stats.erase("passes")
+	odd.unlocked.erase("cane")
+	var run := Rules.from_json(JSON.stringify(odd))
+	ok(run != null and run.get_script() == RulesRun, "a save cannot take the run's script away")
+	eq([run.stats.passes, run.unlocked.cane, run.night, run.hand], [0, false, 0, data.hand], "missing counts and locks start as in a new run")
+	run.discards = 0
+	deal(run, "I:lamp I:lamp I:heart")
+	ok(Rules.pass_play(run).ok and run.stats.passes == 1, "and the run plays on")
+	# Every phase of a whole run saves and loads.
+	var seen := {}
+	run = fresh({}, 33)
+	var guard := 0
+	while guard < 200:
+		guard += 1
+		seen[run.phase] = true
+		var back := Rules.from_json(Rules.to_json(run))
+		if back == null or not same(back, run):
+			_fail("a run in the phase %s does not load back the same" % run.phase)
+		match run.phase:
+			"play":
+				run.restraint = 0
+				win_scene(run)
+			"result":
+				Rules.continue_result(run, 0)
+			"lab":
+				run.sov += 6
+				Rules.buy_card(run, 0)
+				Rules.buy_card(run, 1)
+				Rules.leave_lab(run)
+			"alley":
+				Rules.alley_leave(run)
+			"end":
+				break
+	eq(seen.size(), Rules.PHASES.size(), "a run saves and loads in every phase")

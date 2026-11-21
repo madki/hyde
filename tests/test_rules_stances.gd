@@ -116,8 +116,10 @@ func test_stain_order() -> void:
 		if c.t == "root":
 			c.ink = true
 	var n: int = run.cards.size()
+	var stains: int = run.stats.stains
 	r = Rules.drink(run)
 	eq([r.ev.stained.added, r.ev.stained.id, run.cards.size()], [true, null, n + 1], "no Paper Root left: a random Ink Root joins instead")
+	eq(run.stats.stains, stains, "which is not counted as a stain")
 	ok(run.cards[-1].ink and (run.draw.has(run.cards[-1].id) or run.hand.has(run.cards[-1].id)), "it joins the draw pile, from where he may bring it")
 
 

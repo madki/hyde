@@ -125,6 +125,16 @@ func test_rescue_after_a_breakout() -> void:
 	Rules.play(run, [h[0].id])
 	eq([run.last.how, run.last.rescue.k, ink_n(run), paper_n(run), run.ended_by], ["rescued", 2, 8, 6, "line"], "breakout, then the rescue")
 	eq(run.stats.breakouts, 1, "the breakout came first")
+	# A breakout adds one Root a symbol at most, whatever the number says.
+	run = at(fresh({"breakout_roots": 5}, 19), 0, 1)
+	run.restraint = 4
+	run.plays = 1
+	run.score = 1300
+	h = deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
+	plan = Rules.plan_rescue(run, 1300, 60, ids(h.slice(1)), true)
+	Rules.play(run, [h[0].id])
+	eq([plan.ink, plan.paper], [ink_n(run), paper_n(run)], "the plan counts the Roots a breakout really adds: 4 and 3, and 2 converted")
+	eq(ink_n(run), 9, "9 of his")
 
 
 func test_rounds_pay_and_offers() -> void:

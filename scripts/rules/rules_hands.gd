@@ -25,7 +25,7 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 		res.reason = "Choose cards for a hand."
 		return res
 	if cards.size() > d.max_play:
-		res.reason = "A hand is up to five cards."
+		res.reason = "A hand is up to %d cards." % d.max_play
 		return res
 	var paper: Array = []
 	var ink: Array = []
