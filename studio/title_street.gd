@@ -80,7 +80,8 @@ static func figure(man: String) -> Node3D:
 ## Puts `man` in his place in `street`, a street scene just loaded, instead of the game's
 ## figure. He is not drawn into the picture, only his shadow is.
 static func stage(street: Node3D, man: String) -> void:
-	for old: String in ["Jekyll", "Hyde"]:
+	# Hyde's crate of glassware goes too: this far from it, it is only clutter in the corner.
+	for old: String in ["Jekyll", "Hyde", "Glassware"]:
 		var node := street.get_node_or_null(old)
 		if node:
 			node.free()
