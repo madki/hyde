@@ -188,7 +188,7 @@ func _setup() -> void:
 
 ## The lamps of `street` in `group` nearest to `near`: [places and reaches, brightnesses],
 ## padded to MAX_LAMPS.
-func _lamps(street: Node3D, group: String, near: Vector3) -> Array:
+static func _lamps(street: Node3D, group: String, near: Vector3) -> Array:
 	var found: Array[Dictionary] = []
 	for light: OmniLight3D in street.find_children("*", "OmniLight3D", true, false):
 		if light.is_in_group(group):
@@ -238,7 +238,7 @@ func _draw(seconds: float, px: int, depth: bool) -> Image:
 
 
 ## Whether the figure runs off the left, top or right of the frame (the bottom always does).
-func _touches_edge(img: Image) -> bool:
+static func _touches_edge(img: Image) -> bool:
 	var last := img.get_width() - 1
 	for i in img.get_width():
 		if img.get_pixel(i, 0).a > 0.05 or img.get_pixel(0, i).a > 0.05 or img.get_pixel(last, i).a > 0.05:
@@ -246,7 +246,7 @@ func _touches_edge(img: Image) -> bool:
 	return false
 
 
-func _in_scene(node: Node3D, scene: Node3D) -> Transform3D:
+static func _in_scene(node: Node3D, scene: Node3D) -> Transform3D:
 	var xf := Transform3D.IDENTITY
 	var cur: Node = node
 	while cur != scene and cur != null:

@@ -5,11 +5,16 @@ extends SceneTree
 ##   godot --headless --path . -s res://studio/import_figure.gd -- --src=/abs/model.glb \
 ##       --name=jekyll [--height=1.85] [--tris=100000] [--pose=0.6] [--skip=Stand,Base] [--yaw=0]
 ##       [--smooth=8 [--smooth-below=1.5]] [--cut=x0,y0,z0,x1,y1,z1[;...]]
+##       [--bones="UpperArm>0,-0.5,1;Head:0,20,0"]
 ##
 ## Only the shape is kept (positions, normals, triangles): the figures are drawn as inked
 ## silhouettes by studio/figure.gdshader, so textures and materials are not needed.
 ## `--pose` freezes a rigged model part-way (0..1) through its first animation; without it the
-## rest pose is used. `--skip` leaves out meshes by node name. The result stands on the ground
+## rest pose is used. `--bones` then moves single bones of that pose, for a pose the model has
+## no animation for: `Bone>x,y,z` swings the bone to point along that direction, `Bone:x,y,z`
+## turns it by that many degrees about each axis. Both are in the model's own space (y up) and
+## are applied in the order given, so list a limb from the shoulder down; `--bones=?` lists the
+## bone names. `--skip` leaves out meshes by node name. The result stands on the ground
 ## at the origin, `--height` metres tall, facing +Z after `--yaw` degrees.
 ## `--cut` removes loose pieces of the model (a beard, a prop: any part not joined to the rest)
 ## that lie wholly inside one of the given boxes, measured in metres on the finished figure.
@@ -48,6 +53,9 @@ func _run() -> void:
 			player.play(anim)
 			player.seek(player.get_animation(anim).length * float(Shot.arg("pose")), true)
 			await process_frame
+			player.pause() # so the bones moved below stay moved
+	if Shot.has_arg("bones"):
+		move_bones(scene, Shot.arg("bones"))
 	var data := flatten(scene, Array(Shot.arg("skip").split(",", false)))
 	scene.queue_free()
 	data = simplify(data, int(Shot.arg("tris")) if Shot.has_arg("tris") else 100000)
@@ -65,6 +73,39 @@ func _run() -> void:
 	ResourceSaver.save(to_mesh(data), path, ResourceSaver.FLAG_COMPRESS)
 	print("wrote ", path, ": ", data[2].size() / 3, " triangles")
 	quit()
+
+
+## Moves bones of the current pose: see `--bones` at the top.
+func move_bones(scene: Node3D, moves: String) -> void:
+	for skel: Skeleton3D in scene.find_children("*", "Skeleton3D", true, false):
+		if moves == "?":
+			for b in skel.get_bone_count():
+				print(skel.get_bone_name(b))
+			continue
+		# Directions and turns are given in the model's space; bones live in the skeleton's.
+		var to_skel := _to_root(skel, scene).basis.orthonormalized().inverse()
+		for move: String in moves.split(";", false):
+			var swing := move.contains(">")
+			var part := move.split(">" if swing else ":")
+			var bone := skel.find_bone(part[0].strip_edges())
+			var n := part[1].split_floats(",") if part.size() == 2 else PackedFloat64Array()
+			if bone < 0 or n.size() != 3:
+				push_warning("--bones: cannot read '%s'" % move)
+				continue
+			var pose := skel.get_bone_global_pose(bone)
+			var turn: Basis
+			if swing:
+				var kids := skel.get_bone_children(bone)
+				if kids.is_empty():
+					push_warning("--bones: %s has no end to point with" % part[0])
+					continue
+				var now := (skel.get_bone_global_pose(kids[0]).origin - pose.origin).normalized()
+				turn = Basis(Quaternion(now, (to_skel * Vector3(n[0], n[1], n[2])).normalized()))
+			else:
+				var model_turn := Basis.from_euler(Vector3(deg_to_rad(n[0]), deg_to_rad(n[1]), deg_to_rad(n[2])))
+				turn = to_skel * model_turn * to_skel.inverse()
+			pose.basis = turn * pose.basis
+			skel.set_bone_global_pose(bone, pose)
 
 
 ## All meshes under `scene` flattened into one (positions + normals + indices, in `scene` space),

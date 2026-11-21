@@ -78,6 +78,8 @@ uniform float bloom : hint_range(0.0, 3.0) = 0.35;
 uniform float mist : hint_range(0.0, 1.0) = 0.3;
 /** How brightly the lamps light the fog. */
 uniform float mist_light : hint_range(0.0, 3.0) = 1.0;
+/** How bright the fog is where no lamp reaches it. */
+uniform float mist_glow : hint_range(0.0, 2.0) = 0.12;
 uniform float outline : hint_range(0.0, 1.0) = 0.85;
 uniform float sky_clouds : hint_range(0.0, 2.0) = 1.1;
 /** How much the lamps light the sky. */
@@ -122,6 +124,8 @@ uniform sampler2D noise_tex : filter_linear, repeat_enable;
 group_uniforms set_by_script;
 /** Maps the rect onto the 16:9 bake so it always covers the screen. */
 uniform vec2 uv_scale = vec2(1.0);
+/** The point of the bake that stays put when it is cropped to fit: 0.5 = its centre. */
+uniform vec2 uv_anchor = vec2(0.5);
 /** Small view offset (-1..1 on each axis) for parallax, e.g. from the mouse. */
 uniform vec2 sway = vec2(0.0);
 /** Which man each street shows: -1 = its own, 0 = Jekyll in both, 1 = Hyde in both. */
@@ -321,7 +325,7 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 
 	// Mist takes the colour of whatever lamp is near it, and drifts.
 	float fog = pow(b.g * (1.0 - b.b * 0.3), 1.6) * (0.35 + 2.6 * n.g * n2.b);
-	vec3 fog_col = ink * 1.5 + ambient_hue * 0.12
+	vec3 fog_col = ink * 1.5 + ambient_hue * mist_glow
 			+ key_hue * (pow(wide.r, 1.5) * 5.0 + soft.r * soft.r * 1.2) * key_power * mist_light
 			+ wall_hue * (pow(wide.g, 1.5) * 5.0 + soft.g * soft.g * 1.2) * wall_power * mist_light;
 	col = mix(col, fog_col, clamp(fog, 0.0, 1.0) * mist);
@@ -342,7 +346,7 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 }
 
 void fragment() {
-	vec2 uv = (UV - 0.5) * uv_scale + 0.5;
+	vec2 uv = (UV - uv_anchor) * uv_scale + uv_anchor;
 	uv = (uv - 0.5) * (1.0 - parallax_depth * 2.5 + breathing * sin(TIME * 0.13)) + 0.5;
 
 	vec3 col;
