@@ -55,6 +55,10 @@ uniform float light_gain : hint_range(0.0, 3.0) = 1.5;
 /** Black level of the baked lamp light: anything dimmer stays ink. Raise it if the lamp colours
  * wash over the whole street, lower it to let the light reach further. */
 uniform float light_floor : hint_range(0.0, 0.5) = 0.16;
+/** Rolls the brightest lamp light off instead of letting it burn out to white: 0 = none,
+ * higher = the wall right by a lamp keeps its colour and its drawing. Dim light is left as it
+ * is. */
+uniform float highlight_rolloff : hint_range(0.0, 2.0) = 0.0;
 /** Overall brightness, applied last. */
 uniform float exposure : hint_range(0.2, 2.0) = 1.0;
 uniform float ambient_strength : hint_range(0.0, 2.0) = 0.45;
@@ -82,6 +86,12 @@ uniform float mist : hint_range(0.0, 1.0) = 0.3;
 uniform float mist_light : hint_range(0.0, 3.0) = 1.0;
 /** How bright the fog is where no lamp reaches it. */
 uniform float mist_glow : hint_range(0.0, 2.0) = 0.12;
+/** Extra fog pooled round one place in the picture, which spreads the lamp light there:
+ * 0 = none. */
+uniform float mist_pool : hint_range(0.0, 1.0) = 0.0;
+/** Where the pool is on the picture (0..1 from the top left) and how far it reaches. */
+uniform vec2 mist_pool_at = vec2(0.85, 0.9);
+uniform vec2 mist_pool_size = vec2(0.35, 0.28);
 uniform float outline : hint_range(0.0, 1.0) = 0.85;
 uniform float sky_clouds : hint_range(0.0, 2.0) = 1.1;
 /** How much the lamps light the sky. */
@@ -283,6 +293,8 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 
 	float key = pow(a.r, light_contrast) * light_gain * key_power;
 	float wall = pow(a.g, light_contrast) * light_gain * wall_power;
+	key /= 1.0 + key * highlight_rolloff;
+	wall /= 1.0 + wall * highlight_rolloff;
 	float amb = a.b;
 
 	// Ink outlines from the ambient pass (cheap two-tap edge).
@@ -365,7 +377,9 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	vec3 fog_col = ink * 1.5 + ambient_hue * mist_glow
 			+ key_hue * (pow(wide.r, 1.5) * 5.0 + soft.r * soft.r * 1.2) * key_power * mist_light
 			+ wall_hue * (pow(wide.g, 1.5) * 5.0 + soft.g * soft.g * 1.2) * wall_power * mist_light;
-	col = mix(col, fog_col, clamp(fog, 0.0, 1.0) * mist);
+	vec2 from_pool = (uv - mist_pool_at) / mist_pool_size;
+	float pool = mist_pool * exp(-dot(from_pool, from_pool)) * (0.45 + 1.6 * n.g * n2.b);
+	col = mix(col, fog_col, clamp(clamp(fog, 0.0, 1.0) * mist + pool, 0.0, 1.0));
 
 	// Glow around the lamps and a wide wash of their colour.
 	// A man standing in front of a lamp hides most of its halo.
