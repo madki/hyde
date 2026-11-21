@@ -32,6 +32,8 @@ uniform float jekyll_key_power : hint_range(0.0, 3.0) = 1.1;
 uniform float jekyll_wall_power : hint_range(0.0, 3.0) = 0.8;
 /** How much the flames waver. */
 uniform float jekyll_flicker : hint_range(0.0, 1.0) = 0.08;
+/** How far the key lamp dips when it gutters: 0 = it burns steadily. */
+uniform float jekyll_gutter : hint_range(0.0, 1.0) = 0.0;
 
 group_uniforms hyde;
 uniform vec3 hyde_key : source_color = vec3(0.55, 0.2, 1.0);
@@ -101,6 +103,9 @@ uniform float figure_blocks_glow : hint_range(0.0, 1.0) = 0.85;
 uniform float figure_haze : hint_range(0.0, 0.2) = 0.028;
 /** Pen hatching in the figure's shadows. */
 uniform float figure_hatch : hint_range(0.0, 1.0) = 0.5;
+/** How dark the patch of ground under the figure's feet is, for a man seen down to his feet:
+ * 0 = none. Where it is, is set by the script (`feet`). */
+uniform float feet_patch : hint_range(0.0, 1.0) = 0.0;
 
 group_uniforms own_colours;
 /** How far things with colours of their own (`colour_tex`) show them, not the lamps' hues:
@@ -158,6 +163,13 @@ uniform float figure_still_px = 768.0;
 uniform vec4 figure_rect = vec4(0.0, 0.0, 1.0, 1.0);
 /** Distances from the camera, in metres, that the depth sheet's 0 and 1 stand for. */
 uniform vec2 figure_depth_range = vec2(1.0, 6.0);
+/** Where the figure's feet are on the picture, and how far the patch under them reaches. */
+uniform vec2 feet = vec2(0.5, 1.5);
+uniform vec2 feet_patch_size = vec2(0.05, 0.02);
+/** How brightly the lamps and the lit windows burn: 1 = as set above, 0 = all of them out. */
+uniform float lamps = 1.0;
+/** 1 = the whole picture is black. */
+uniform float blackout = 0.0;
 
 // Flame flicker, worked out once per vertex instead of per pixel.
 varying vec3 flicker;
@@ -256,13 +268,13 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	soft.rg = lift(soft.rg);
 	wide.rg = lift(wide.rg);
 
-	// Gas flames: steady for Jekyll, guttering for Hyde.
+	// Gas flames: steady for Jekyll, guttering for Hyde, unless the material says otherwise.
 	float waver = mix(jekyll_flicker, hyde_flicker, s);
-	float gutter = smoothstep(0.62, 0.72, flicker.b) * hyde_gutter * s;
+	float gutter = smoothstep(0.62, 0.72, flicker.b) * mix(jekyll_gutter, hyde_gutter, s);
 	float key_power = mix(jekyll_key_power, hyde_key_power, s)
-			* (1.0 + (flicker.r - 0.5) * waver - gutter);
+			* (1.0 + (flicker.r - 0.5) * waver - gutter) * lamps;
 	float wall_power = mix(jekyll_wall_power, hyde_wall_power, s)
-			* (1.0 + (flicker.g - 0.5) * waver * 0.7);
+			* (1.0 + (flicker.g - 0.5) * waver * 0.7) * lamps;
 
 	vec3 key_hue = mix(jekyll_key, hyde_key, s);
 	vec3 wall_hue = mix(jekyll_wall, hyde_wall, s);
@@ -290,14 +302,20 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 		col = mix(col, pow(own_c, vec3(own_colour_lift)) * lit * own_colour_gain, has * own_colour);
 	}
 	col *= line;
-	col += window_hue * b.r * (1.0 + (flicker.g - 0.5) * waver);
+	col += window_hue * b.r * (1.0 + (flicker.g - 0.5) * waver) * lamps;
 
 	// The figure layer: an ink silhouette with banded form shading, pen hatching in the
 	// shadows and hard-edged light in the colour of the lamp on each side.
+	if (feet_patch > 0.0) {
+		vec2 from_feet = (fig_uv - feet) / feet_patch_size;
+		col *= 1.0 - feet_patch * exp(-dot(from_feet, from_feet) * 1.5);
+	}
 	vec4 c = figure(own, fig_uv);
 	float fig_mask = c.a;
 	float shade = clamp((c.r - 0.35) / 0.65, 0.0, 1.0);
-	vec3 fig = ink * 0.45 + ambient_hue * (0.22 * step(0.5, shade) + 0.2 * step(0.8, shade));
+	// With the lamps out he is left with little more than his outline.
+	vec3 fig = ink * 0.45 + ambient_hue * (0.22 * step(0.5, shade) + 0.2 * step(0.8, shade))
+			* (0.3 + 0.7 * lamps);
 	float pen = step(0.5, fract((fig_uv.x * 1.78 + fig_uv.y) * 150.0));
 	fig *= 1.0 - figure_hatch * pen * (1.0 - step(0.5, shade)) * 0.7;
 	float rim_k = smoothstep(figure_rim_edge - figure_rim_soft, figure_rim_edge + figure_rim_soft, c.g);
@@ -317,7 +335,7 @@ vec3 street(sampler2D tex_a, sampler2D tex_b, float own, vec2 uv, float s) {
 	vec3 sky = mix(ink, ambient_hue, 0.3) * (0.55 + n.r * sky_clouds)
 			+ ambient_hue * 0.3 * n2.g * n.g * sky_clouds
 			+ (key_hue * (wide.r + soft.r * 0.5) * key_power + wall_hue * (wide.g + soft.g * 0.5) * wall_power) * sky_light;
-	col = mix(col, sky, b.b);
+	col = mix(col, sky, b.b * (1.0 - fig_mask)); // a man who stands against the sky hides it
 
 	// Pen hatching: slanted strokes that thicken as the picture darkens, crossed in the
 	// deepest shadow. Each stroke breaks up along its length so it reads as drawn.
@@ -384,5 +402,6 @@ void fragment() {
 	col *= 1.0 - grain * 0.5 + g * grain;
 	vec2 v = UV - 0.5;
 	col *= 1.0 - dot(v, v) * vignette;
+	col *= 1.0 - blackout;
 	COLOR = vec4(col, 1.0);
 }

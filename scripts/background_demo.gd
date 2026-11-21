@@ -1,6 +1,6 @@
 extends Control
 ## Stand-alone viewer for the street background.
-## Space / click toggles between the two faces. `--shift=0.5` starts part-way (for screenshots).
+## Shift / click toggles between the two faces. `--shift=0.5` starts part-way (for screenshots).
 
 @onready var _bg: Background = $Background
 @onready var _label: Label = $Label
@@ -14,10 +14,11 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var face := "JEKYLL" if _bg.shift < 0.5 else "HYDE"
-	_label.text = "%s   shift %.2f   (Space / click to shift)" % [face, _bg.shift]
+	_label.text = "%s   shift %.2f   (Shift / click to shift)" % [face, _bg.shift]
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	var click: bool = event is InputEventMouseButton and event.pressed
-	if event.is_action_pressed("ui_accept") or click:
+	var key := event as InputEventKey
+	if (key and key.pressed and not key.echo and key.keycode == KEY_SHIFT) or click:
 		_bg.shift_to(0.0 if _bg.shift > 0.5 else 1.0)

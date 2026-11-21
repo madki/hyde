@@ -42,11 +42,12 @@ Jekyll is rendered from "Victorian Gent", a rigged character model obtained from
 [CGTrader](https://www.cgtrader.com/) under that marketplace's licence, which is not a Creative
 Commons licence. The model, and the meshes made from it (`studio/figures/jekyll*.res`), are
 not part of this repository. Only pictures rendered from it are: the figure of Jekyll in
-`art/bg/figures.png`, `art/bg/figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`,
-`lab_c.png`. Its author and the exact licence terms are still to be recorded here.
+`art/bg/figures.png`, `art/bg/figures_depth.png`, `art/bg/title_figures.png`,
+`art/bg/title_figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`, `lab_c.png`. Its author and the exact licence terms are still to be recorded here.
 
 The textures in `art/bg/` are rendered by this project (`tools/bake_bg.sh` for the streets,
-`tools/bake_figures.sh` for the figures, `tools/bake_alley.sh` for the back alley and the man
+`tools/bake_figures.sh` for the figures, `tools/bake_title.sh` for the title screen's streets and the
+two men on them, `art/bg/title_*.png`, `tools/bake_alley.sh` for the back alley and the man
 at its door, `art/bg/alley_*.png`, `tools/bake_lab.sh` for the laboratory, `art/bg/lab_*.png`) from scenes assembled in code out of the assets above;
 the assets themselves are used only for those bakes and are not part of the game build. The two
 figures appear in `art/bg/figures.png` and `art/bg/figures_depth.png` as inked silhouettes: each

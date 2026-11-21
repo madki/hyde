@@ -1,6 +1,6 @@
 extends Control
 ## The transformation: Jekyll turns to liquid, flows into Hyde's shape and sets, while the
-## street's colours cross over. Space / click plays it, and plays it back the other way from Hyde.
+## street's colours cross over. Shift / click plays it, and plays it back the other way from Hyde.
 ## `--at=0.5` starts part-way through (for screenshots).
 
 @onready var _bg: Background = $Background
@@ -14,10 +14,11 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	_label.text = "transformation %.2f   (Space / click to play)" % _bg.transformation
+	_label.text = "transformation %.2f   (Shift / click to play)" % _bg.transformation
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	var click: bool = event is InputEventMouseButton and event.pressed
-	if event.is_action_pressed("ui_accept") or click:
+	var key := event as InputEventKey
+	if (key and key.pressed and not key.echo and key.keycode == KEY_SHIFT) or click:
 		_bg.transform_to(0.0 if _bg.transformation > 0.5 else 1.0)

@@ -1,0 +1,26 @@
+[gd_resource type="ShaderMaterial" load_steps=9 format=3]
+
+[ext_resource type="Shader" path="res://shaders/background.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://art/bg/title_jekyll_a.png" id="2"]
+[ext_resource type="Texture2D" path="res://art/bg/title_jekyll_b.png" id="3"]
+[ext_resource type="Texture2D" path="res://art/bg/title_hyde_a.png" id="4"]
+[ext_resource type="Texture2D" path="res://art/bg/title_hyde_b.png" id="5"]
+[ext_resource type="Texture2D" path="res://art/bg/noise.png" id="6"]
+[ext_resource type="Texture2D" path="res://art/bg/title_figures.png" id="7"]
+[ext_resource type="Texture2D" path="res://art/bg/title_figures_depth.png" id="8"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/jekyll_wall = Color(0.12, 0.38, 1, 1)
+shader_parameter/jekyll_ambient = Color(0.1, 0.2, 0.55, 1)
+shader_parameter/jekyll_windows = Color(0.7, 0.85, 1, 1)
+shader_parameter/jekyll_flicker = 0.5
+shader_parameter/jekyll_gutter = 0.45
+shader_parameter/feet_patch = 0.8
+shader_parameter/jekyll_a = ExtResource("2")
+shader_parameter/jekyll_b = ExtResource("3")
+shader_parameter/hyde_a = ExtResource("4")
+shader_parameter/hyde_b = ExtResource("5")
+shader_parameter/noise_tex = ExtResource("6")
+shader_parameter/figures = ExtResource("7")
+shader_parameter/figures_depth = ExtResource("8")
