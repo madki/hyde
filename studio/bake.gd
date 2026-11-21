@@ -31,7 +31,8 @@ extends Node
 ## same scenes by studio/figure_bake.gd (tools/bake_figures.sh): re-run that too after moving
 ## the camera, a lamp or a figure.
 ##
-## The title's streets also get bounced light in their lamp passes (SDFGI): `_bounce`.
+## The title's streets also get bounced light (SDFGI) and reflections in wet ground (SSR) in
+## their lamp passes: `_bounce`.
 ##
 ## shaders/background.gdshader colours and animates them at runtime.
 ## `--passes` also writes every pass as its own PNG, for checking the bake by eye.
@@ -163,6 +164,11 @@ func _setup_pass(p: String) -> void:
 	e.sdfgi_bounce_feedback = 0.2
 	e.sdfgi_min_cell_size = 0.1
 	e.sdfgi_energy = BOUNCE_ENERGY
+	# With them, wet ground shows what is lit above it.
+	e.ssr_enabled = _bounce and p in ["key", "wall", "windows"]
+	e.ssr_max_steps = 128
+	e.ssr_fade_in = 0.1
+	e.ssr_fade_out = 4.0
 	# Lamp halos: only the lamp passes scatter in the air.
 	e.volumetric_fog_enabled = p in ["key", "wall"]
 	e.volumetric_fog_density = 0.018

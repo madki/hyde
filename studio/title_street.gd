@@ -39,6 +39,9 @@ const THROW_ENERGY := 0.7
 const THROW_RANGE := 16.0
 const THROW_ATTENUATION := 1.0 # the street's lamps use 1.4: lower fades more slowly
 
+# It has rained: the cobbles are smoother than the game's, so the lamps streak across them and (with studio/bake.gd's reflections) the lit wall shows in them.
+const WET_ROUGHNESS := 0.65 # of how rough the ground is in the game
+
 
 ## `man` ("jekyll" / "hyde") standing in his place.
 static func figure(man: String) -> Node3D:
@@ -60,6 +63,7 @@ static func stage(street: Node3D, man: String) -> void:
 	fig.get_node("Body").add_to_group("casts_shadow", true)
 	street.add_child(fig)
 	_even_out(street)
+	_wet(street)
 	var side := SpotLight3D.new()
 	side.name = "SideLamp"
 	street.add_child(side)
@@ -93,3 +97,17 @@ static func _even_out(street: Node3D) -> void:
 		thrown.global_position = light.global_position + Vector3.LEFT * THROW_OUT
 		light.light_volumetric_fog_energy = light.light_volumetric_fog_energy / LANTERN_DIMMED
 		light.light_energy *= LANTERN_DIMMED
+
+
+## Wets the ground: see `WET_ROUGHNESS`.
+static func _wet(street: Node3D) -> void:
+	var ground := street.get_node_or_null("Ground")
+	if ground == null:
+		return
+	for part: MeshInstance3D in ground.find_children("*", "MeshInstance3D", true, false):
+		var mat := part.material_override as StandardMaterial3D
+		# Only the cobbles: the pavement is flat, and wet it shows the lanterns like a mirror.
+		if mat and part.name == &"Cobbles":
+			mat = mat.duplicate() as StandardMaterial3D # the game's street keeps its own
+			mat.roughness *= WET_ROUGHNESS
+			part.material_override = mat
