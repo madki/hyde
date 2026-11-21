@@ -6,7 +6,7 @@ extends SceneTree
 ##       --name=jekyll [--height=1.85 | --scale=1.03] [--tris=100000] [--pose=0.6] [--skip=Stand,Base] [--yaw=0] [--lean=0]
 ##       [--smooth=8 [--smooth-below=1.5]] [--cut=x0,y0,z0,x1,y1,z1[;...]]
 ##       [--bones="UpperArm>0,-0.5,1;Head:0,20,0"] [--attach="Hat:Head;Stick:Hand>0,-1,0.1"]
-##       [--move="Stick@0,0.8,0.2:0,90,0"]
+##       [--move="Stick@0,0.8,0.2:0,90,0*1.1"]
 ##       [--colours[=/abs/colour_map.jpg]]
 ##
 ## Only the shape is kept (positions, normals, triangles): the figures are drawn as inked
@@ -26,7 +26,8 @@ extends SceneTree
 ## grip: the place on the bone it was nearest to.
 ## `--move` puts a loose part where it is wanted, whatever holds it: `Node@x,y,z:rx,ry,rz` sets
 ## its origin at that place in the model's space, turned by those degrees about each axis from
-## the way its mesh was made (for a stick stood on the ground between two hands).
+## the way its mesh was made (for a stick stood on the ground under a man's hands); `*k` after
+## the degrees also makes it that many times its size.
 ## `--skip` leaves out meshes by node name. The result stands on the ground
 ## at the origin, `--height` metres tall, facing +Z after `--yaw` degrees. `--lean` tips the whole
 ## figure back by that many degrees before it is stood on the ground, for a man sat back in an
@@ -198,7 +199,9 @@ func carry(scene: Node3D, held: Array) -> void:
 func place(scene: Node3D, moves: String) -> void:
 	for item: String in moves.split(";", false):
 		var part := item.split("@")
-		var to := part[1].split(":") if part.size() == 2 else PackedStringArray()
+		var sized := part[1].split("*") if part.size() == 2 else PackedStringArray()
+		var to := sized[0].split(":") if sized.size() > 0 else PackedStringArray()
+		var size := float(sized[1]) if sized.size() == 2 else 1.0
 		var node := scene.find_child(part[0].strip_edges(), true, false) as Node3D
 		if node == null or to.size() != 2 or to[0].split_floats(",").size() != 3 \
 				or to[1].split_floats(",").size() != 3:
@@ -207,7 +210,7 @@ func place(scene: Node3D, moves: String) -> void:
 		var at := to[0].split_floats(",")
 		var turn := to[1].split_floats(",")
 		var basis := Basis.from_euler(Vector3(deg_to_rad(turn[0]), deg_to_rad(turn[1]), deg_to_rad(turn[2]))) \
-				* Basis.from_scale(_to_root(node, scene).basis.get_scale())
+				* Basis.from_scale(_to_root(node, scene).basis.get_scale() * size)
 		var parent := node.get_parent() as Node3D
 		node.transform = (_to_root(parent, scene).affine_inverse() if parent != scene else Transform3D.IDENTITY) \
 				* Transform3D(basis, Vector3(at[0], at[1], at[2]))
