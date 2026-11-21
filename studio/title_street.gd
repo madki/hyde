@@ -45,8 +45,13 @@ const THROW_ATTENUATION := 1.0 # the street's lamps use 1.4: lower fades more sl
 # lit by it.
 const POOL_FROM := Vector3(-0.7, 3.4, -1.9) # where it shines from, from where they stand
 const POOL_AIM := Vector3(0.0, 0.0, 0.6) # the point on the ground it shines at, likewise
-const POOL_ANGLE := 24.0
-const POOL_ENERGY := 8.0
+# How wide the pool is, in degrees, and how bright, for each street. Jekyll's lamp colour is
+# far brighter to the eye than Hyde's, so his pool is dimmer; Hyde's is narrower and stronger,
+# so that it holds together as one pool.
+const POOL := {
+	"jekyll": {"angle": 24.0, "energy": 4.5},
+	"hyde": {"angle": 18.0, "energy": 12.0},
+}
 
 # A few dim lights in a third colour, the one the lit windows have, where a street would
 # otherwise be all one hue: each is [place, reach in metres, brightness]. Hyde's street is
@@ -83,7 +88,7 @@ static func stage(street: Node3D, man: String) -> void:
 	fig.get_node("Body").add_to_group("casts_shadow", true)
 	street.add_child(fig)
 	_even_out(street)
-	_pool(street)
+	_pool(street, man)
 	_accents(street, man)
 	_wet(street)
 	var side := SpotLight3D.new()
@@ -136,15 +141,15 @@ static func _wet(street: Node3D) -> void:
 
 
 ## The pool of light the men stand in: see `POOL_FROM`.
-static func _pool(street: Node3D) -> void:
+static func _pool(street: Node3D, man: String) -> void:
 	var pool := SpotLight3D.new()
 	pool.name = "FigurePool"
 	street.add_child(pool)
 	pool.look_at_from_position(STAND + POOL_FROM, STAND + POOL_AIM)
 	pool.spot_range = 10.0
-	pool.spot_angle = POOL_ANGLE
+	pool.spot_angle = POOL[man].angle
 	pool.spot_angle_attenuation = 0.5 # a soft edge
-	pool.light_energy = POOL_ENERGY
+	pool.light_energy = POOL[man].energy
 	pool.light_volumetric_fog_energy = 0.0 # no beam in the air
 	pool.shadow_enabled = true
 	pool.add_to_group("pass_key", true)
