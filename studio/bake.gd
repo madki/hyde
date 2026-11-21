@@ -31,8 +31,7 @@ extends Node
 ## same scenes by studio/figure_bake.gd (tools/bake_figures.sh): re-run that too after moving
 ## the camera, a lamp or a figure.
 ##
-## The title's streets also get bounced light (SDFGI) and reflections in wet ground (SSR) in
-## their lamp passes: `_bounce`.
+## The title's streets also get reflections in their wet ground (SSR) in the lamp passes: `_wet`.
 ##
 ## shaders/background.gdshader colours and animates them at runtime.
 ## `--passes` also writes every pass as its own PNG, for checking the bake by eye.
@@ -41,14 +40,12 @@ const SIZE := Vector2i(1920, 1080)
 const OUT_DIR := "res://art/bg/"
 const LIGHT_PASSES := ["key", "wall", "windows", "ambient"]
 const SETTLE_FRAMES := 24 # volumetric fog is temporally accumulated
-const BOUNCE_SETTLE := 4 # bounced light takes this many times longer to settle
-const BOUNCE_ENERGY := 0.6
 ## Scenes that do not follow the streets' naming.
 const SCENES := {"alley": "res://studio/alley.tscn", "lab": "res://studio/lab.tscn"}
 
 var _viewport: SubViewport
 var _env: Environment
-var _bounce := false # whether the lamp passes of the variant being baked also get bounced light
+var _wet := false # whether the variant being baked has wet ground, which shows reflections
 
 
 func _ready() -> void:
@@ -85,8 +82,8 @@ func _bake(variant: String) -> void:
 	var street: Node3D = (ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
 			as PackedScene).instantiate()
 	_viewport.add_child(street)
-	_bounce = variant.begins_with("title_")
-	if _bounce:
+	_wet = variant.begins_with("title_")
+	if _wet:
 		TitleStreet.stage(street, man)
 	_env = Environment.new()
 	var world_env := WorldEnvironment.new()
@@ -134,7 +131,7 @@ func _show_colours(street: Node3D) -> void:
 
 func _render(p: String) -> Image:
 	_setup_pass(p)
-	for i in SETTLE_FRAMES * (BOUNCE_SETTLE if _env.sdfgi_enabled else 1):
+	for i in SETTLE_FRAMES:
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	var img := _viewport.get_texture().get_image()
@@ -157,15 +154,8 @@ func _setup_pass(p: String) -> void:
 	e.ssao_enabled = p == "ambient"
 	e.ssao_radius = 2.0
 	e.ssao_intensity = 3.0
-	# Bounced light: what a lamp lights goes on to light what is near it, so that a lit wall
-	# fills the pavement at its foot. Only for the pictures that ask for it.
-	e.sdfgi_enabled = _bounce and p in ["key", "wall"]
-	e.sdfgi_use_occlusion = true
-	e.sdfgi_bounce_feedback = 0.2
-	e.sdfgi_min_cell_size = 0.1
-	e.sdfgi_energy = BOUNCE_ENERGY
-	# With them, wet ground shows what is lit above it.
-	e.ssr_enabled = _bounce and p in ["key", "wall", "windows"]
+	# Wet ground shows what is lit above it. Only for the pictures that ask for it.
+	e.ssr_enabled = _wet and p in ["key", "wall", "windows"]
 	e.ssr_max_steps = 128
 	e.ssr_fade_in = 0.1
 	e.ssr_fade_out = 4.0
