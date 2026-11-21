@@ -2,7 +2,7 @@ extends Control
 ## The title screen: the street, with Jekyll waiting in it. Shift changes him into Hyde, and
 ## Hyde back into him, through the dark.
 ## For screenshots: `--shift=1` starts on Hyde, `--lamps=0.3` and `--dark=0.5` show a moment of
-## the change. In debug builds F shows sliders for the fog (scripts/fog_panel.gd).
+## the change.
 
 @onready var _bg: TitleBackground = $Background
 
