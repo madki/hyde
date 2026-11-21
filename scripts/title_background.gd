@@ -7,7 +7,8 @@ extends ColorRect
 ## as Hyde's do.
 ##
 ## `change_to` turns one man into the other out of sight: the lamps go out, the picture falls
-## dark, and the lamps of the other face come back on with the other man standing there.
+## dark, and the lamps of the other face catch with the same flicker, the other man standing
+## there.
 ##
 ## Drawn by the street's shader (shaders/background.gdshader) with a material of its own,
 ## shaders/title_material.tres: edit the look there, or open scenes/title_background.tscn and
@@ -37,7 +38,6 @@ const FIGURE_DEPTH_RANGE := Vector2(3.0, 9.0)
 const LAMPS_OUT := 0.5 # the lamps gutter and die
 const FALL_DARK := 0.3 # what light is left goes too
 const DARK := 0.45 # nothing to see: the men change places
-const COME_BACK := 0.7 # the other face's lamps catch and the picture returns
 
 ## 0 = Jekyll, 1 = Hyde.
 @export_range(0.0, 1.0) var shift := 0.0:
@@ -102,10 +102,14 @@ func change_to(face: float) -> void:
 	_tween.tween_interval(DARK * 0.5)
 	_tween.tween_callback(_swap.bind(face))
 	_tween.tween_interval(DARK * 0.5)
-	_tween.tween_method(_catch, 0.0, 1.0, COME_BACK)
+	# The way back is the way out, run backwards: the dark lifts, then the other face's lamps
+	# flare, sink and catch.
+	_tween.tween_property(self, "darkness", 0.0, FALL_DARK).set_trans(Tween.TRANS_SINE)
+	_tween.tween_method(_gutter, 1.0, 0.0, LAMPS_OUT)
 
 
-## The lamps dying, `t` = 0..1: they sink, flare up once and go out.
+## The lamps dying, `t` = 0..1: they sink, flare up once and go out. Run from 1 to 0 it is
+## the lamps catching.
 func _gutter(t: float) -> void:
 	lamps = (1.0 - smoothstep(0.0, 0.55, t)) + 0.45 * smoothstep(0.5, 0.62, t) * (1.0 - smoothstep(0.7, 1.0, t))
 
@@ -113,12 +117,6 @@ func _gutter(t: float) -> void:
 func _swap(face: float) -> void:
 	shift = face
 	face_changed.emit(face)
-
-
-## The picture coming back, `t` = 0..1: out of the dark, the lamps catching with a stutter.
-func _catch(t: float) -> void:
-	darkness = 1.0 - smoothstep(0.0, 0.35, t)
-	lamps = smoothstep(0.05, 1.0, t) * (1.0 - 0.5 * smoothstep(0.3, 0.38, t) * (1.0 - smoothstep(0.42, 0.5, t)))
 
 
 func _process(_delta: float) -> void:
