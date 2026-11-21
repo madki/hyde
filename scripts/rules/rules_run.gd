@@ -97,7 +97,38 @@ func to_dict() -> Dictionary:
 	return out
 
 
-## A run from to_dict's data. Whole numbers must already be ints.
+## Whether this is the data of a run, as far as its shape goes: the right version, a deck of
+## cards, the piles, the gauges and the numbers. Whole numbers must already be ints.
+static func is_run_data(data: Variant) -> bool:
+	if not data is Dictionary or data.get("v") != 1 or not data.get("dials") is Dictionary:
+		return false
+	for k: String in ["cards", "draw", "hand", "discard", "instruments"]:
+		if not data.get(k) is Array:
+			return false
+	for k: String in ["craving", "habit", "temper"]:
+		var gauge: Variant = data.get(k)
+		if not gauge is Dictionary:
+			return false
+		for sym in RulesConfig.ROOTS:
+			if not gauge.get(sym) is int:
+				return false
+	for c: Variant in data.cards:
+		if not c is Dictionary or not c.get("id") is int:
+			return false
+		if c.get("t") == "factor":
+			if not RulesConfig.FACTOR.has(c.get("kind")):
+				return false
+		elif c.get("t") != "root" or not RulesConfig.ROOT.has(c.get("sym")) or not c.get("ink") is bool:
+			return false
+	for pile: String in ["draw", "hand", "discard"]:
+		for id: Variant in data[pile]:
+			if not id is int:
+				return false
+	return true
+
+
+## A run from to_dict's data, which must pass is_run_data. A number the data lacks keeps the
+## game's own value.
 static func from_dict(data: Dictionary) -> RulesRun:
 	var run := RulesRun.new()
 	for k: String in data:

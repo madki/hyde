@@ -101,3 +101,52 @@ func test_json_round_trip() -> void:
 	var b := Rules.play(back, [back.hand[0]])
 	eq(b, a, "the same play gives the same result")
 	eq(back, run, "and the same run")
+
+
+func test_numbers_that_cannot_be_used() -> void:
+	var bad := {"restraint_limt": 3, "craving_cap": 0, "plays": -1, "hand_size": "ten", "max_play": 2.5, "target_scale": 0}
+	var wrong := RulesDials.problems(bad)
+	eq(wrong.size(), 6, "a misspelt name, a zero cap, a negative, a text, a fraction and a zero scale cannot be used")
+	eq(RulesDials.problems({"discards": 0, "craving_cap": 1, "target_scale": 2, "salt_start": 5.0}), {}, "these can")
+	# One of them goes through make, which reports it as an error (printed below) and leaves it out.
+	var d := RulesDials.make({"craving_cap": 0, "plays": 2})
+	eq([d.craving_cap, d.plays], [3, 2], "a number that cannot be used keeps the game's own value")
+	d = RulesDials.make({"discards": 0, "craving_cap": 1, "target_scale": 2, "salt_start": 5.0})
+	eq([d.discards, d.craving_cap, d.target_scale, d.salt_start], [0, 1, 2.0, 5], "numbers that can be used are taken")
+	# A cap of 1: every point of Craving rolls over at once.
+	var run := as_hyde(at(fresh({"craving_cap": 1}, 3), 1, 0))
+	var h := deal(run, "I:lamp I:lamp P:heart P:heart P:mirror P:lamp P:lamp P:heart")
+	Rules.play(run, [h[0].id])
+	eq([run.craving.lamp, run.habit.lamp], [0, 1], "a cap of 1 plays")
+
+
+func test_whole_scale_survives_json() -> void:
+	var run := fresh({"target_scale": 2.0}, 3)
+	var back := Rules.from_json(Rules.to_json(run))
+	eq(typeof(back.dials.target_scale), TYPE_FLOAT, "the scale is still a float")
+	eq(back, run, "and the run comes back the same")
+	run.night = 1
+	eq(Rules.target(run), 6000, "night 2's first target, doubled")
+
+
+func test_json_that_is_not_a_run() -> void:
+	for text: String in [
+		'{"cards":1,"dials":2}', '{"v":1,"cards":[],"dials":{}}', '{}', 'null', '3',
+		'{"v":2,"dials":{},"cards":[],"draw":[],"hand":[],"discard":[],"instruments":[]}',
+	]:
+		eq(Rules.from_json(text), null, "refused: " + text)
+	var data := fresh({}, 3).to_dict()
+	var bad: Dictionary = data.duplicate(true)
+	bad.cards[0] = {"id": 1, "t": "root", "sym": "spade", "ink": false}
+	eq(Rules.from_json(JSON.stringify(bad)), null, "a card of no known symbol")
+	bad = data.duplicate(true)
+	bad.hand[0] = "one"
+	eq(Rules.from_json(JSON.stringify(bad)), null, "a pile that holds something other than ids")
+	bad = data.duplicate(true)
+	bad.craving.erase("lamp")
+	eq(Rules.from_json(JSON.stringify(bad)), null, "a gauge with a symbol missing")
+	# A save from before a number existed takes the game's own value for it.
+	var old: Dictionary = data.duplicate(true)
+	old.dials.erase("salt_rise")
+	var run := Rules.from_json(JSON.stringify(old))
+	ok(run != null and run.dials.salt_rise == 1, "a number the save lacks keeps the game's own value")

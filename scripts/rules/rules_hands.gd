@@ -211,27 +211,24 @@ static func best(run: RulesRun, filter: Callable = Callable()) -> Dictionary:
 	for id: int in run.hand:
 		hand.append(Rules.card(run, id))
 	var n := hand.size()
-	var most: int = run.dials.max_play
 	var top := {}
-	# Cards of one kind score alike, so of the plays that hold the same kinds only the first
-	# is read. The first is also the one that would win a tie.
-	var seen := {}
 	var codes: Array[int] = []
 	for c: RulesCard in hand:
 		codes.append(_kind_code(c))
-	for m in range(1, 1 << n):
-		var bits := 0
-		var sign := 0
-		for i in n:
-			if m & (1 << i):
-				bits += 1
-				sign += codes[i]
-		if bits > most:
-			continue
+	# Every set of up to max_play hand cards, as a number with one bit a card, with the
+	# total of its cards' kind codes. They are read in the order of those numbers.
+	var sets := {}
+	_add_sets(codes, run.dials.max_play, 0, 0, 0, sets)
+	var masks: Array = sets.keys()
+	masks.sort()
+	# Cards of one kind score alike, so of the plays that hold the same kinds only the first
+	# is read. The first is also the one that would win a tie.
+	var seen := {}
+	for m: int in masks:
 		if not filter.is_valid():
-			if seen.has(sign):
+			if seen.has(sets[m]):
 				continue
-			seen[sign] = true
+			seen[sets[m]] = true
 		var sel: Array = []
 		for i in n:
 			if m & (1 << i):
@@ -241,7 +238,7 @@ static func best(run: RulesRun, filter: Callable = Callable()) -> Dictionary:
 			continue
 		if filter.is_valid() and not filter.call(ev, sel):
 			continue
-		var key: float = int(ev.score) - bits * 0.001
+		var key: float = int(ev.score) - sel.size() * 0.001
 		if top.is_empty() or key > float(top.key):
 			var ids: Array = []
 			for c: RulesCard in sel:
@@ -250,12 +247,22 @@ static func best(run: RulesRun, filter: Callable = Callable()) -> Dictionary:
 	return top
 
 
+# Adds to `out` every set of 1 to `left` more cards taken from place `from` on, on top of
+# the set `mask` whose kind codes add up to `total`.
+static func _add_sets(codes: Array[int], left: int, from: int, mask: int, total: int, out: Dictionary) -> void:
+	for i in range(from, codes.size()):
+		var with_card := mask | (1 << i)
+		out[with_card] = total + codes[i]
+		if left > 1:
+			_add_sets(codes, left - 1, i + 1, with_card, total + codes[i], out)
+
+
 # A number that adds up to a different total for every different set of card kinds (up to
-# 7 of a kind): 3 bits for each of the 11 kinds.
+# 31 of a kind): 5 bits for each of the 11 kinds.
 static func _kind_code(c: RulesCard) -> int:
 	if c.is_factor():
-		return 1 << (3 * (6 + RulesConfig.FACTORS.find(c.kind)))
-	return 1 << (3 * (RulesConfig.ROOTS.find(c.sym) + (3 if c.ink else 0)))
+		return 1 << (5 * (6 + RulesConfig.FACTORS.find(c.kind)))
+	return 1 << (5 * (RulesConfig.ROOTS.find(c.sym) + (3 if c.ink else 0)))
 
 
 static func _factor_name(kind: String, stance: String) -> String:

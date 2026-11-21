@@ -67,14 +67,38 @@ var reward_factor_weight: int = 2
 var target_scale: float = 1.0
 
 
-## The game's numbers with the given changes. An unknown name is an error.
+# Numbers that must be at least 1 for a round to be playable. The others must be 0 or more.
+const _AT_LEAST_ONE: Array[String] = ["plays", "hand_size", "max_play", "craving_cap", "restraint_limit"]
+
+
+## The game's numbers with the given changes. A change that cannot be used (see problems)
+## is reported as an error and left out, so the game's own value stands.
 static func make(changes: Dictionary = {}) -> RulesDials:
 	var d := RulesDials.new()
-	var known := d.to_dict()
-	for k: String in changes:
-		assert(known.has(k), "unknown rules number: " + k)
-		d.set(k, changes[k])
+	var wrong := problems(changes)
+	for k: Variant in changes:
+		if wrong.has(k):
+			push_error(wrong[k])
+		else:
+			d.set(k, changes[k])
 	return d
+
+
+## What is wrong with these changes, as a message for each name that cannot be used: an
+## unknown name, a value that is not a number, a fraction for a whole number, a negative
+## value, or one too small to play with.
+static func problems(changes: Dictionary) -> Dictionary:
+	var known := RulesDials.new().to_dict()
+	var out := {}
+	for k: Variant in changes:
+		var value: Variant = changes[k]
+		if not k is String or not known.has(k):
+			out[k] = "Unknown rules number: %s" % k
+		elif not (value is int or value is float) or (known[k] is int and value != floor(value)):
+			out[k] = "The rules number %s cannot be %s" % [k, value]
+		elif value < (1 if _AT_LEAST_ONE.has(k) else 0) or (k == "target_scale" and value <= 0):
+			out[k] = "The rules number %s is too small: %s" % [k, value]
+	return out
 
 
 ## Every number by name.

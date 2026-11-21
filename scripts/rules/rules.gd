@@ -37,10 +37,10 @@ static func from_json(text: String) -> RulesRun:
 	var json := JSON.new()
 	if json.parse(text) != OK:
 		return null
-	var data: Variant = json.data
-	if typeof(data) != TYPE_DICTIONARY or not data.has("cards") or not data.has("dials"):
+	var data: Variant = _whole_numbers(json.data)
+	if not RulesRun.is_run_data(data):
 		return null
-	return RulesRun.from_dict(_whole_numbers(data))
+	return RulesRun.from_dict(data)
 
 
 static func _whole_numbers(v: Variant) -> Variant:
@@ -634,13 +634,14 @@ static func has_play(run: RulesRun) -> bool:
 	return false
 
 
-## Whether the play can be passed: {ok, why}. Only with nothing to play and no discards left.
+## Whether the play can be passed: {ok, why}. Only with nothing to play and no discards left,
+## or with an empty hand, which leaves nothing to discard either.
 static func can_pass(run: RulesRun) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "why": "Not now."}
 	if has_play(run):
 		return {"ok": false, "why": "A card in hand can be played."}
-	if run.discards > 0:
+	if run.discards > 0 and not run.hand.is_empty():
 		return {"ok": false, "why": "Discard first."}
 	return {"ok": true, "why": ""}
 

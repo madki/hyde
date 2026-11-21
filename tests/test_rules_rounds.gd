@@ -261,3 +261,27 @@ func test_passing_a_play() -> void:
 	run5.restraint = 4
 	Rules.pass_play(run5)
 	eq([run5.stance, run5.restraint, run5.phase, run5.plays], ["hyde", 0, "play", 3], "a pass that fills the meter is a breakout")
+
+
+func test_an_empty_hand_can_pass() -> void:
+	# Every card struck in the laboratory: the next round deals nothing.
+	var run := at(fresh({}, 22), 0, 2)
+	win_scene(run)
+	Rules.continue_result(run)
+	run.sov = 999
+	for c: RulesCard in run.cards.duplicate():
+		Rules.strike(run, c.id)
+	eq(run.cards.size(), 0, "the whole deck can be struck")
+	Rules.leave_lab(run)
+	eq([run.phase, run.hand.size(), run.discards], ["play", 0, 3], "a round with no cards, and discards left")
+	ok(not Rules.discard(run, []).ok, "nothing can be discarded")
+	ok(Rules.can_pass(run).ok and RulesView.table(run).can_pass.ok, "so the play can be passed")
+	var guard := 0
+	while run.phase == "play" and guard < 10:
+		guard += 1
+		ok(Rules.pass_play(run).ok, "pass %d" % guard)
+	eq([guard, run.phase, run.ended_by], [4, "end", "short"], "four passes end the round, and nothing can cover it")
+	# A hand that still holds cards must discard first.
+	run = as_hyde(at(fresh({}, 31), 0, 2))
+	deal(run, "P:lamp P:lamp P:heart")
+	eq(Rules.can_pass(run).why, "Discard first.", "with cards in hand and discards left, discard first")

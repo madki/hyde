@@ -245,3 +245,63 @@ func test_reading_changes_nothing() -> void:
 	Rules.evaluate(run, cards("I:lamp I:lamp F:cane"))
 	Rules.best(run)
 	eq(run, before, "evaluate and best leave the run and its generator alone")
+
+
+# The best play found the plain way: every subset of the hand, the first of the highest.
+func _best_by_every_subset(run: RulesRun) -> Dictionary:
+	var hand: Array = run.hand.map(func(id: int) -> RulesCard: return Rules.card(run, id))
+	var top := {}
+	for m in range(1, 1 << hand.size()):
+		var sel: Array = []
+		for i in hand.size():
+			if m & (1 << i):
+				sel.append(hand[i])
+		if sel.size() > run.dials.max_play:
+			continue
+		var ev := Rules.evaluate(run, sel)
+		if not ev.ok:
+			continue
+		var key: float = int(ev.score) - sel.size() * 0.001
+		if top.is_empty() or key > float(top.key):
+			top = {"key": key, "ids": ids(sel)}
+	return top
+
+
+func test_best_matches_every_subset() -> void:
+	var specs := ["P:lamp", "P:heart", "P:mirror", "I:lamp", "I:heart", "I:mirror", "F:cup", "F:eye", "F:lock", "F:pen", "F:cane"]
+	var r := 12345
+	for n in 60:
+		var run := at(fresh({}, n), 1, n % 3)
+		if n % 2 == 1:
+			as_hyde(run)
+		if n % 5 == 0:
+			run.instruments.append("saucers")
+		var list: Array = []
+		for i in 4 + n % 8:
+			r = (r * 1103515245 + 12345) & 0x7fffffff
+			list.append(specs[r % specs.size()])
+		for sym in RulesConfig.ROOTS:
+			r = (r * 1103515245 + 12345) & 0x7fffffff
+			run.craving[sym] = r % 3
+			run.habit[sym] = (r >> 4) % 3
+			run.temper[sym] = (r >> 8) % 3
+		deal(run, " ".join(list))
+		var want := _best_by_every_subset(run)
+		var got := Rules.best(run)
+		eq([got.get("ids"), got.get("key")], [want.get("ids"), want.get("key")], "hand %d (%s)" % [n, " ".join(list)])
+
+
+func test_best_with_a_large_hand() -> void:
+	var run := as_hyde(at(fresh({}, 1), 1, 0))
+	deal(run, "I:lamp I:lamp I:lamp I:heart I:heart I:mirror P:lamp P:heart F:cup F:cup F:eye F:lock F:pen F:cane I:lamp I:heart I:mirror P:mirror P:lamp P:heart F:cup F:eye I:lamp I:mirror")
+	eq(run.hand.size(), 24, "a hand of 24")
+	var t0 := Time.get_ticks_msec()
+	var b := Rules.best(run)
+	var took := Time.get_ticks_msec() - t0
+	eq([b.ev.name, b.ids.size()], ["Mania", 5], "its best play is found")
+	ok(took < 500, "without reading every subset of the hand (%d ms)" % took)
+	# More than seven of a kind in one play, if the numbers allow it.
+	run = as_hyde(at(fresh({"max_play": 8, "hand_size": 9}, 1), 1, 0))
+	deal(run, "I:heart I:lamp I:lamp I:lamp I:lamp I:lamp I:lamp I:lamp I:lamp")
+	b = Rules.best(run)
+	eq([b.ev.name, b.ids.size()], ["Mania", 9 - 1], "eight alike are not taken for one of another kind")
