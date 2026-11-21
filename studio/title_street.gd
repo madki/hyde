@@ -80,6 +80,9 @@ static func figure(man: String) -> Node3D:
 ## figure. He is not drawn into the picture, only his shadow is.
 static func stage(street: Node3D, man: String) -> void:
 	# Hyde's crate of glassware goes too: this far from it, it is only clutter in the corner.
+	# The lamp that lit the mist behind the game's figure (FigureBacklight) stays, though nobody
+	# stands there now: it lights the cobbles round the men's feet and the near wall, and the
+	# picture wants both.
 	for old: String in ["Jekyll", "Hyde", "Glassware"]:
 		var node := street.get_node_or_null(old)
 		if node:

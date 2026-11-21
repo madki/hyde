@@ -16,7 +16,7 @@ extends ColorRect
 ##
 ## Given a `linger` and a `place`, the pictures do not quite come together again round that
 ## place: the rest of the screen is whole, and what stands there stays split until the next
-## `play`.
+## `play` or `glitch`.
 ##
 ## The look (how far, which ways, the tearing) is on the material,
 ## shaders/split_material.tres. The colours and the timing are here.
@@ -98,23 +98,23 @@ func play(face: float, change: Callable, linger := 0.0, place := Rect2()) -> voi
 
 ## The split alone, over whatever the screen is doing: the pictures fly apart and snap back,
 ## all three showing the live screen, so a change that plays under it is seen through it.
-## `size` scales how far apart they go (1 = as in a change of scene) and `shake` is how far
+## `amount` scales how far apart they go (1 = as in a change of scene) and `shake` is how far
 ## the screen is also shaken at the start, as a fraction of its height, dying away.
 ## `seconds` is how long it takes. Called while a split is under way, that one ends at once
 ## (its `finished` is sent) and this one starts.
-func glitch(size := 1.0, shake := 0.0, seconds := SECONDS) -> void:
+func glitch(amount := 1.0, shake := 0.0, seconds := SECONDS) -> void:
 	_cut_short()
-	begin_glitch(size, shake)
+	begin_glitch(amount, shake)
 	_tween = create_tween()
 	_tween.tween_method(pose, 0.0, 1.0, seconds)
 	_tween.tween_callback(_end)
 
 
 ## Shows the split over the live screen at its start, without playing it: `pose` then sets
-## a moment of it.
-func begin_glitch(size := 1.0, shake := 0.0) -> void:
+## a moment of it. A split that lingered until now closes.
+func begin_glitch(amount := 1.0, shake := 0.0) -> void:
 	_live = true
-	_size = size
+	_size = amount
 	_shake = shake
 	_linger = 0.0
 	_set_param("linger", 0.0)

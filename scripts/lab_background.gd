@@ -22,8 +22,14 @@ const NO_FIGURE := Vector4(2.0, 2.0, 1.0, 1.0)
 ## How far the view leans towards the mouse while the game runs. 0 turns the parallax off.
 @export_range(0.0, 1.0) var parallax := 1.0
 
+var _mouse_seen := false
+
 
 func _ready() -> void:
+	# In the game each picture has a material of its own, so that two of them do not share
+	# one face. In the editor it stays the saved one, to be edited there.
+	if material and not Engine.is_editor_hint():
+		material = material.duplicate()
 	_set_param("shift", 0.0) # the shader's Jekyll face
 	_set_param("figure_rect", NO_FIGURE)
 	_set_param("figure_wobble", 0.0)
@@ -34,8 +40,15 @@ func _ready() -> void:
 	_fit()
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse_seen = true
+
+
 func _process(_delta: float) -> void:
-	if Engine.is_editor_hint() or parallax <= 0.0 or size.x <= 0.0:
+	# Until the mouse has moved nobody knows where it is (on the Web it reads as the top left
+	# corner), so the view stays level.
+	if Engine.is_editor_hint() or parallax <= 0.0 or size.x <= 0.0 or not _mouse_seen:
 		return
 	var m := (get_local_mouse_position() / size - Vector2(0.5, 0.5)) * 2.0
 	_set_param("sway", m.clamp(-Vector2.ONE, Vector2.ONE) * parallax)

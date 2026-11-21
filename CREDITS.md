@@ -32,6 +32,11 @@ Every third-party asset must be listed here before it is committed.
 | Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
 | Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 
+Meshes cut from the Poly Haven models are saved one to a file in `studio/kit/` (facade pieces,
+the two street lamps and the pieces of the chemistry set, by `studio/street_builder.gd` and
+`studio/lab_builder.gd`) and stay CC0, as do the materials beside them, which are this
+project's own.
+
 The CC BY model was changed for this project with `studio/import_figure.gd`, and the changed
 mesh stays under CC BY 4.0:
 
@@ -54,7 +59,9 @@ learning models.
 
 The model, and the meshes made from it (`studio/figures/jekyll*.res`), may not be passed on and
 are not part of this repository: `.gitignore` keeps them out, and the bake scripts stop with a
-message where they are missing. Only pictures rendered from the model are committed, from which
+message where they are missing. Two committed scenes use those meshes, `studio/street_jekyll.tscn`
+and `studio/lab.tscn`: in a clone without them the editor opens these with the mesh reported
+missing and Jekyll not there. Only pictures rendered from the model are committed, from which
 it cannot be got back: the figure of Jekyll in `art/bg/figures.png`, `art/bg/figures_depth.png`,
 `art/bg/title_figures.png`, `art/bg/title_figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`,
 `lab_c.png`.

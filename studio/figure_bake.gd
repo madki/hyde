@@ -50,6 +50,10 @@ func _ready() -> void:
 	_setup()
 	var dump := Shot.arg("frames")
 	if Shot.has_arg("time"):
+		if dump == "":
+			push_error("--time needs --frames=/abs/dir to write its picture to")
+			get_tree().quit(1)
+			return
 		_show(_clay)
 		(await _draw(float(Shot.arg("time")), px, false)).save_png(dump.path_join("morph_time.png"))
 		get_tree().quit()

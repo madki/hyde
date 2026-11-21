@@ -81,10 +81,16 @@ const DARK := 0.225 # nothing to see: the men change places
 ## How far the view leans towards the mouse while the game runs. 0 turns the parallax off.
 @export_range(0.0, 1.0) var parallax := 1.0
 
+var _mouse_seen := false
+
 var _tween: Tween
 
 
 func _ready() -> void:
+	# In the game each picture has a material of its own, so that two of them do not share
+	# one face. In the editor it stays the saved one, to be edited there.
+	if material and not Engine.is_editor_hint():
+		material = material.duplicate()
 	_set_param("shift", shift)
 	_set_param("lamps", lamps)
 	_set_param("blackout", darkness)
@@ -103,8 +109,12 @@ func _ready() -> void:
 	_set_param("feet", FEET)
 	_set_param("feet_patch_size", FEET_PATCH)
 	_set_param("sway", Vector2.ZERO)
-	if apart > 0.0:
-		_pose_apart()
+	# Whole or apart, set all of it: the saved material may hold a moment of an earlier visit.
+	# A Jekyll who is whole keeps the `shift` he was given.
+	var given := shift
+	_pose_apart()
+	if apart <= 0.0:
+		shift = given
 	resized.connect(_fit)
 	_fit()
 
@@ -174,8 +184,15 @@ func _swap(face: float) -> void:
 	face_changed.emit(face)
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse_seen = true
+
+
 func _process(_delta: float) -> void:
-	if Engine.is_editor_hint() or parallax <= 0.0 or size.x <= 0.0:
+	# Until the mouse has moved nobody knows where it is (on the Web it reads as the top left
+	# corner), so the view stays level.
+	if Engine.is_editor_hint() or parallax <= 0.0 or size.x <= 0.0 or not _mouse_seen:
 		return
 	var m := (get_local_mouse_position() / size - Vector2(0.5, 0.5)) * 2.0
 	_set_param("sway", m.clamp(-Vector2.ONE, Vector2.ONE) * parallax)
