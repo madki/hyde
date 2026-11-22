@@ -51,7 +51,8 @@ licence file), keep fragment shaders cheap.
 - **Test the rules:** `tools/test.sh` runs every `test_*` method of `tests/test_*.gd`
   headless, under a time limit (`tools/test.sh <text>` runs only the tests whose
   `file:method` name holds the text). Run it after every change under `scripts/rules/`.
-- **Check visuals:** `tools/shot.sh /abs/path.png [game args]`, then Read the
+- **Check visuals:** `tools/shot.sh /abs/path.png [res://scene.tscn] [game args]` (the main
+  scene when no scene is given), then Read the
   PNG. Do this after shader or UI changes, one shot at a time, writing to a
   temp directory outside the repo. Each screen must call
   `Shot.run_if_requested(self)` at the end of `_ready` (`scripts/shot.gd`).

@@ -5,7 +5,7 @@ extends Control
 ## The ink is set through three things (see scripts/arena_ink.gd): who has the table, how much
 ## of the page the ink covers, and how restless it is. Jekyll has the table to begin with, and
 ## Shift gives it to the other man. For a screenshot they can be given as `--ink=<0..100>`,
-## `--volatility=<0..100>` and `--hyde`.
+## `--volatility=<0..100>` and `--hyde` (`tools/shot.sh /abs/out.png res://scenes/arena.tscn --ink=30`).
 
 ## Who has the table. These three may be set before the arena is in the tree: they reach the
 ## ink and the hand when those are ready.

@@ -44,7 +44,7 @@ To update, change `VERSION` in the script and run it again. To remove it,
 delete `addons/godot_mcp/` and `.mcp.json`, then run `git checkout project.godot`.
 
 Other scripts: `tools/check.sh` reports script and scene errors headlessly;
-`tools/shot.sh /abs/path.png` saves a screenshot of the running game.
+`tools/shot.sh /abs/path.png [res://scene.tscn]` saves a screenshot of the running game, or of one screen of it.
 
 ## How it was made
 
