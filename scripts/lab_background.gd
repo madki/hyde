@@ -32,8 +32,6 @@ func _ready() -> void:
 		material = material.duplicate()
 	_set_param("shift", 0.0) # the shader's Jekyll face
 	_set_param("figure_rect", NO_FIGURE)
-	_set_param("figure_wobble", 0.0)
-	_set_param("morph_mix", 0.0)
 	_set_param("uv_anchor", ANCHOR)
 	_set_param("sway", Vector2.ZERO)
 	resized.connect(_fit)

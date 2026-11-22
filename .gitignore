@@ -44,7 +44,7 @@ Thumbs.db
 .idea/
 *.translation
 
-# Figure distance fields, rebuilt on demand by studio/figure_sdf.gd
+# Figure distance fields left by an older bake: some were made from Jekyll's licensed model.
 /studio/cache/
 
 # Jekyll's figure meshes are made from a licensed model that may not be passed on: they stay

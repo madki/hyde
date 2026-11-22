@@ -10,11 +10,18 @@
 [resource]
 shader = ExtResource("1")
 shader_parameter/shift = 1.0
-shader_parameter/mist = 1.0
-shader_parameter/mist_light = 1.3
+shader_parameter/hyde_wall = Color(0.88, 0.06, 0.46, 1)
+shader_parameter/hyde_ambient = Color(0.24, 0.24, 0.3, 1)
+shader_parameter/hyde_key_power = 0.95
+shader_parameter/hyde_wall_power = 0.85
+shader_parameter/highlight_rolloff = 0.6
+shader_parameter/glow = 0.97
+shader_parameter/bloom = 0.3
+shader_parameter/mist = 0.6
+shader_parameter/mist_light = 0.7
 shader_parameter/figure_haze = 0.0
 shader_parameter/figure_blocks_glow = 1.0
-shader_parameter/mist_glow = 0.6
+shader_parameter/mist_glow = 0.72
 shader_parameter/jekyll_a = ExtResource("2")
 shader_parameter/jekyll_b = ExtResource("3")
 shader_parameter/hyde_a = ExtResource("2")

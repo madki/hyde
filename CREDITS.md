@@ -4,6 +4,11 @@
 
 Written during GitHub Game Off 2026 with AI assistance (Claude Code).
 
+The wet layer of the arena's ink (`shaders/arena_wet.gdshader`) uses a method learnt from
+"Liquid Toy" by Leon Denise (<https://www.shadertoy.com/view/fljBWc>): a picture that is
+redrawn from itself, each place taking last frame's value from a spot shifted up its own slope
+and along a turning noise. No code was taken from that shader; the code here is this project's own.
+
 ## Engine
 
 [Godot Engine](https://godotengine.org) — MIT licence.
@@ -31,6 +36,7 @@ Every third-party asset must be listed here before it is committed.
 | Chemistry Set (model) | `studio/assets/chemistry_set/` | Poly Haven | <https://polyhaven.com/a/chemistry_set> | CC0 |
 | Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
 | Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| Old paper7 (scan of a sheet of old paper, modified) | `art/arena/paper_mask.png` | Digital Yard Sale | <https://commons.wikimedia.org/wiki/File:Old_paper7.jpg> | Public domain |
 
 Meshes cut from the Poly Haven models are saved one to a file in `studio/kit/` (facade pieces,
 the two street lamps and the pieces of the chemistry set, by `studio/street_builder.gd` and
@@ -42,6 +48,12 @@ mesh stays under CC BY 4.0:
 
 - "Mad Corvin - AS3 'The Alienist'" by Nicu.Scarlat: frozen in one pose of its animation,
   display stand, moustache and goatee removed, textures and materials dropped, rescaled.
+
+The paper scan is one of "6 Old Paper Textures" given away by Digital Yard Sale on 17 July 2010
+"to use however your little heart desires", and is on Wikimedia Commons as released into the
+public domain by its author. `studio/paper_mask_bake.gd` turns it on its side, crops its edges
+off and saves it as greys, a mask that the arena's page takes its light and dark from; the
+scan itself is not part of this repository.
 
 ### Jekyll: a bought model
 
@@ -62,15 +74,13 @@ are not part of this repository: `.gitignore` keeps them out, and the bake scrip
 message where they are missing. Two committed scenes use those meshes, `studio/street_jekyll.tscn`
 and `studio/lab.tscn`: in a clone without them the editor opens these with the mesh reported
 missing and Jekyll not there. Only pictures rendered from the model are committed, from which
-it cannot be got back: the figure of Jekyll in `art/bg/figures.png`, `art/bg/figures_depth.png`,
+it cannot be got back: the figure of Jekyll in
 `art/bg/title_figures.png`, `art/bg/title_figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`,
 `lab_c.png`.
 
-The textures in `art/bg/` are rendered by this project (`tools/bake_bg.sh` for the streets,
-`tools/bake_figures.sh` for the figures, `tools/bake_title.sh` for the title screen's streets and the
-two men on them, `art/bg/title_*.png`, `tools/bake_alley.sh` for the back alley and the man
-at its door, `art/bg/alley_*.png`, `tools/bake_lab.sh` for the laboratory, `art/bg/lab_*.png`) from scenes assembled in code out of the assets above;
-the assets themselves are used only for those bakes and are not part of the game build. The two
-figures appear in `art/bg/figures.png` and `art/bg/figures_depth.png` as inked silhouettes: each
-standing still, and in a flipbook of one turning into the other, whose in-between shapes are
-blended by code (`studio/morph.gdshader`) from the two changed meshes above.
+The textures in `art/bg/` are rendered by this project (`tools/bake_title.sh` for the title
+screen's streets and the two men on them, `art/bg/title_*.png`, `tools/bake_alley.sh` for the back
+alley and the man at its door, `art/bg/alley_*.png`, `tools/bake_lab.sh` for the laboratory,
+`art/bg/lab_*.png`) from scenes assembled in code out of the assets above; the assets themselves
+are used only for those bakes and are not part of the game build. The figures appear in them as
+inked silhouettes, standing still.

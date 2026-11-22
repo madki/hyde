@@ -2,7 +2,7 @@ class_name StreetBuilder
 ## Generates the two 3D street scenes the game background is baked from:
 ## studio/street_jekyll.tscn and studio/street_hyde.tscn (see studio/bake.gd).
 ## Those scenes are the source of truth and are meant to be edited in the 3D editor;
-## this script only makes a fresh starting point (`tools/bake_bg.sh --rebuild` OVERWRITES them).
+## this script only makes a fresh starting point (`tools/bake_title.sh --rebuild` OVERWRITES them).
 ## Desktop-only authoring code: nothing in studio/ is exported with the game.
 ##
 ## Everything that emits light belongs to one pass group ("pass_key", "pass_wall",
@@ -358,6 +358,33 @@ static func _wall_lamp() -> Node3D:
 	head.rotation.y = PI / 4.0 # corner-on to the street
 	lamp.add_child(head)
 	return lamp
+
+
+## Spreads the light of a wall lantern (`lamp`, from `_wall_lamp`, placed and with its
+## brightness set) more evenly along its wall. A lantern hangs so close to the wall that its
+## light burns the bricks behind it and only grazes the wall further along: its own light is
+## turned down to `LANTERN_DIMMED` of what it was, keeping its glow in the air, and the wall is
+## lit by the light this returns, which stands `away` from the lantern, out from the wall, and
+## meets it at a better angle. The title's streets get the same (studio/title_street.gd). Add
+## the light to the node the lamp is a child of.
+static func _even_out(lamp: Node3D, away: Vector3, energy: float, light_range: float) -> OmniLight3D:
+	const LANTERN_DIMMED := 0.35
+	var lantern := lamp.get_node("Lantern") as Node3D
+	var light := lantern.get_node("Light") as OmniLight3D
+	var thrown := OmniLight3D.new()
+	thrown.name = String(lamp.name) + "Throw"
+	thrown.omni_range = light_range
+	thrown.omni_attenuation = 1.0 # the lanterns use 1.4: lower fades more slowly
+	thrown.light_energy = energy
+	thrown.light_volumetric_fog_energy = 0.0 # the glow in the air stays round the lantern
+	thrown.shadow_enabled = true
+	thrown.shadow_bias = light.shadow_bias
+	thrown.shadow_caster_mask = light.shadow_caster_mask
+	thrown.add_to_group("pass_wall", true)
+	thrown.position = lamp.transform * (lantern.transform * light.position) + away
+	light.light_volumetric_fog_energy /= LANTERN_DIMMED
+	light.light_energy *= LANTERN_DIMMED
+	return thrown
 
 
 ## A copy of `mesh` without the triangles that have a corner where `cut` is true.

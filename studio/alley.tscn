@@ -33,7 +33,7 @@
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_clx84"]
 albedo_texture = ExtResource("1_dtgww")
-roughness = 0.5
+roughness = 0.36
 roughness_texture = ExtResource("3_hfbek")
 normal_enabled = true
 normal_texture = ExtResource("2_urkw8")
@@ -665,210 +665,210 @@ shader_parameter/data_pass = false
 shader_parameter/street = 0.0
 shader_parameter/cloth = Color(0.05, 0.05, 0.06, 1)
 
-[node name="Alley" type="Node3D" unique_id=329388457]
+[node name="Alley" type="Node3D" unique_id=914133439]
 
-[node name="Ground" type="Node3D" parent="." unique_id=116687030]
+[node name="Ground" type="Node3D" parent="." unique_id=203305661]
 
-[node name="Cobbles" type="MeshInstance3D" parent="Ground" unique_id=191647422]
+[node name="Cobbles" type="MeshInstance3D" parent="Ground" unique_id=418413239]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
 material_override = SubResource("StandardMaterial3D_clx84")
 mesh = SubResource("PlaneMesh_a43ie")
 
-[node name="DoorSide" type="Node3D" parent="." unique_id=667029008]
+[node name="DoorSide" type="Node3D" parent="." unique_id=621585224]
 
-[node name="Wall" type="MeshInstance3D" parent="DoorSide" unique_id=573023392]
+[node name="Wall" type="MeshInstance3D" parent="DoorSide" unique_id=229085644]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 3.75, 4.79)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_xpq7g")
 
-[node name="Wall2" type="MeshInstance3D" parent="DoorSide" unique_id=1003009306]
+[node name="Wall2" type="MeshInstance3D" parent="DoorSide" unique_id=696813105]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 3.75, -4.79)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_0dwhk")
 
-[node name="Wall3" type="MeshInstance3D" parent="DoorSide" unique_id=1992114707]
+[node name="Wall3" type="MeshInstance3D" parent="DoorSide" unique_id=686317702]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 4.88, 0)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_qlum8")
 
-[node name="Behind" type="MeshInstance3D" parent="DoorSide" unique_id=1491845850]
+[node name="Behind" type="MeshInstance3D" parent="DoorSide" unique_id=596717525]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.13, 0)
 material_override = SubResource("StandardMaterial3D_ry8yv")
 mesh = SubResource("BoxMesh_b7742")
 
-[node name="Pier" type="MeshInstance3D" parent="DoorSide" unique_id=388587466]
+[node name="Pier" type="MeshInstance3D" parent="DoorSide" unique_id=1446010617]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.44, 3.75, -6.2)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_yup45")
 
-[node name="Pier2" type="MeshInstance3D" parent="DoorSide" unique_id=509679366]
+[node name="Pier2" type="MeshInstance3D" parent="DoorSide" unique_id=1785485713]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.44, 3.75, -3.6)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_hxj4k")
 
-[node name="Pier3" type="MeshInstance3D" parent="DoorSide" unique_id=694636325]
+[node name="Pier3" type="MeshInstance3D" parent="DoorSide" unique_id=1108717980]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.44, 3.75, 2.7)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_aigdr")
 
-[node name="Pier4" type="MeshInstance3D" parent="DoorSide" unique_id=1903743122]
+[node name="Pier4" type="MeshInstance3D" parent="DoorSide" unique_id=1505238747]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.44, 3.75, 6)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_s3h6r")
 
-[node name="Plinth" type="MeshInstance3D" parent="DoorSide" unique_id=1307603322]
+[node name="Plinth" type="MeshInstance3D" parent="DoorSide" unique_id=549978575]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.47, 0.25, -4.81)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_hd8mk")
 
-[node name="Plinth2" type="MeshInstance3D" parent="DoorSide" unique_id=1024810180]
+[node name="Plinth2" type="MeshInstance3D" parent="DoorSide" unique_id=1680170476]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.47, 0.25, 4.81)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_w2rth")
 
-[node name="Door" type="Node3D" parent="DoorSide" unique_id=683324048]
+[node name="Door" type="Node3D" parent="DoorSide" unique_id=1404563189]
 transform = Transform3D(-3.584334e-08, 0, -0.82, 0, 0.82, 0, 0.82, 0, -3.584334e-08, 1.5, 0, 1.23)
 
-[node name="door_centered_small_01" type="MeshInstance3D" parent="DoorSide/Door" unique_id=670733599]
+[node name="door_centered_small_01" type="MeshInstance3D" parent="DoorSide/Door" unique_id=46986176]
 material_override = SubResource("StandardMaterial3D_euwog")
 mesh = ExtResource("5_phk2t")
 
-[node name="Lintel" type="MeshInstance3D" parent="DoorSide" unique_id=464210181]
+[node name="Lintel" type="MeshInstance3D" parent="DoorSide" unique_id=974296884]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4749999, 2.4299998, 0)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_cnlp2")
 
-[node name="Step" type="MeshInstance3D" parent="DoorSide" unique_id=1591258586]
+[node name="Step" type="MeshInstance3D" parent="DoorSide" unique_id=2116505195]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.49, 0.05, 0)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_wenfp")
 
-[node name="Knob" type="MeshInstance3D" parent="DoorSide" unique_id=305829128]
+[node name="Knob" type="MeshInstance3D" parent="DoorSide" unique_id=896695320]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.57, 1.09, 0.36)
 material_override = SubResource("StandardMaterial3D_ry8yv")
 mesh = SubResource("SphereMesh_ajw4o")
 
-[node name="Jetty" type="MeshInstance3D" parent="DoorSide" unique_id=1233498426]
+[node name="Jetty" type="MeshInstance3D" parent="DoorSide" unique_id=1854193911]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.025, 4.85, -0.44999993)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_u2mve")
 
-[node name="JettySill" type="MeshInstance3D" parent="DoorSide" unique_id=1445408732]
+[node name="JettySill" type="MeshInstance3D" parent="DoorSide" unique_id=1633427154]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.995, 3.28, -0.44999993)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_xocsp")
 
-[node name="Joist" type="MeshInstance3D" parent="DoorSide" unique_id=96363398]
+[node name="Joist" type="MeshInstance3D" parent="DoorSide" unique_id=1964902339]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, -3.1)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_4hhjx")
 
-[node name="Joist2" type="MeshInstance3D" parent="DoorSide" unique_id=1006348227]
+[node name="Joist2" type="MeshInstance3D" parent="DoorSide" unique_id=545240623]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, -2.35)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_dyvqv")
 
-[node name="Joist3" type="MeshInstance3D" parent="DoorSide" unique_id=1402658404]
+[node name="Joist3" type="MeshInstance3D" parent="DoorSide" unique_id=756346730]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, -1.5999999)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_5psjg")
 
-[node name="Joist4" type="MeshInstance3D" parent="DoorSide" unique_id=1333641169]
+[node name="Joist4" type="MeshInstance3D" parent="DoorSide" unique_id=1241600996]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, -0.84999996)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_8t1cj")
 
-[node name="Joist5" type="MeshInstance3D" parent="DoorSide" unique_id=64710709]
+[node name="Joist5" type="MeshInstance3D" parent="DoorSide" unique_id=136902404]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, -0.09999996)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_5ojv5")
 
-[node name="Joist6" type="MeshInstance3D" parent="DoorSide" unique_id=1912266635]
+[node name="Joist6" type="MeshInstance3D" parent="DoorSide" unique_id=343956001]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, 0.65000004)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_fuagc")
 
-[node name="Joist7" type="MeshInstance3D" parent="DoorSide" unique_id=737120318]
+[node name="Joist7" type="MeshInstance3D" parent="DoorSide" unique_id=1072568207]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, 1.4000001)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_alhdf")
 
-[node name="Joist8" type="MeshInstance3D" parent="DoorSide" unique_id=172752138]
+[node name="Joist8" type="MeshInstance3D" parent="DoorSide" unique_id=1907355600]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96500003, 3.13, 2.15)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_bjpkq")
 
-[node name="Batten" type="MeshInstance3D" parent="DoorSide" unique_id=1275032416]
+[node name="Batten" type="MeshInstance3D" parent="DoorSide" unique_id=1640581786]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -2.9)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_aq6dk")
 
-[node name="Batten2" type="MeshInstance3D" parent="DoorSide" unique_id=510991074]
+[node name="Batten2" type="MeshInstance3D" parent="DoorSide" unique_id=159779134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -2.5)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_0m3na")
 
-[node name="Batten3" type="MeshInstance3D" parent="DoorSide" unique_id=1024257131]
+[node name="Batten3" type="MeshInstance3D" parent="DoorSide" unique_id=147448562]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -2.1)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_vuk27")
 
-[node name="Batten4" type="MeshInstance3D" parent="DoorSide" unique_id=794145968]
+[node name="Batten4" type="MeshInstance3D" parent="DoorSide" unique_id=344145938]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -1.6999999)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_w2u6k")
 
-[node name="Batten5" type="MeshInstance3D" parent="DoorSide" unique_id=1887891195]
+[node name="Batten5" type="MeshInstance3D" parent="DoorSide" unique_id=1166248787]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -1.3)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_2jt3w")
 
-[node name="Batten6" type="MeshInstance3D" parent="DoorSide" unique_id=1632783060]
+[node name="Batten6" type="MeshInstance3D" parent="DoorSide" unique_id=1191019459]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -0.9)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_qjsdb")
 
-[node name="Batten7" type="MeshInstance3D" parent="DoorSide" unique_id=1283410562]
+[node name="Batten7" type="MeshInstance3D" parent="DoorSide" unique_id=1878043027]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -0.49999994)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_p56wr")
 
-[node name="Batten8" type="MeshInstance3D" parent="DoorSide" unique_id=1056645423]
+[node name="Batten8" type="MeshInstance3D" parent="DoorSide" unique_id=1271031850]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, -0.09999995)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_unf0b")
 
-[node name="Batten9" type="MeshInstance3D" parent="DoorSide" unique_id=972854402]
+[node name="Batten9" type="MeshInstance3D" parent="DoorSide" unique_id=774212564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, 0.30000004)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_0fa86")
 
-[node name="Batten10" type="MeshInstance3D" parent="DoorSide" unique_id=581495098]
+[node name="Batten10" type="MeshInstance3D" parent="DoorSide" unique_id=398451978]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, 0.70000005)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_m2j0w")
 
-[node name="Batten11" type="MeshInstance3D" parent="DoorSide" unique_id=1000193501]
+[node name="Batten11" type="MeshInstance3D" parent="DoorSide" unique_id=1478834252]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, 1.1)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_yf1nb")
 
-[node name="Batten12" type="MeshInstance3D" parent="DoorSide" unique_id=799574447]
+[node name="Batten12" type="MeshInstance3D" parent="DoorSide" unique_id=1088316736]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, 1.5)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_i3rv6")
 
-[node name="Batten13" type="MeshInstance3D" parent="DoorSide" unique_id=1156944288]
+[node name="Batten13" type="MeshInstance3D" parent="DoorSide" unique_id=100881462]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, 1.9000001)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_2tc4p")
 
-[node name="Batten14" type="MeshInstance3D" parent="DoorSide" unique_id=2093846511]
+[node name="Batten14" type="MeshInstance3D" parent="DoorSide" unique_id=1285439885]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53499997, 4.87, 2.3000002)
 material_override = SubResource("StandardMaterial3D_1jvny")
 mesh = SubResource("BoxMesh_468n3")
 
-[node name="JettyRoof" type="MeshInstance3D" parent="DoorSide" unique_id=1461036968]
+[node name="JettyRoof" type="MeshInstance3D" parent="DoorSide" unique_id=316606184]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1999999, 6.4750004, -0.44999993)
 material_override = SubResource("StandardMaterial3D_fpp16")
 mesh = SubResource("BoxMesh_p2k22")
@@ -880,66 +880,67 @@ transform = Transform3D(-4.8082526e-08, 0, -1.1, 0, 1.1, 0, 1.1, 0, -4.8082526e-
 layers = 2
 mesh = ExtResource("7_8875j")
 
-[node name="Lantern" type="Node3D" parent="DoorSide/DoorLamp" unique_id=1166839014]
+[node name="Lantern" type="Node3D" parent="DoorSide/DoorLamp" unique_id=1208477965]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4, 0.61)
 
-[node name="Glass" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=344862975 groups=["pass_wall"]]
+[node name="Glass" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=229876173 groups=["pass_wall"]]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
 material_override = SubResource("ShaderMaterial_loi65")
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_u5odw")
 
-[node name="Base" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=325671352]
+[node name="Base" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1286856483]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("CylinderMesh_yxsnv")
 
-[node name="Eaves" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1464486899]
+[node name="Eaves" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1414756106]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("CylinderMesh_wr47r")
 
-[node name="Cap" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1855862255]
+[node name="Cap" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1424961684]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("CylinderMesh_g5u6a")
 
-[node name="Finial" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1629566506]
+[node name="Finial" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1015042942]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("CylinderMesh_r7h67")
 
-[node name="Bar" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=76216352]
+[node name="Bar" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=542457294]
 transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("BoxMesh_8tg10")
 
-[node name="Bar2" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1706854009]
+[node name="Bar2" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1056284667]
 transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("BoxMesh_nnt72")
 
-[node name="Bar3" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=2019383120]
+[node name="Bar3" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1689224261]
 transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("BoxMesh_urhsc")
 
-[node name="Bar4" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1514085949]
+[node name="Bar4" type="MeshInstance3D" parent="DoorSide/DoorLamp/Lantern" unique_id=648498878]
 transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_6mdb4")
 mesh = SubResource("BoxMesh_55lfq")
 
-[node name="Light" type="OmniLight3D" parent="DoorSide/DoorLamp/Lantern" unique_id=56309497 groups=["pass_wall"]]
+[node name="Light" type="OmniLight3D" parent="DoorSide/DoorLamp/Lantern" unique_id=1657507092 groups=["pass_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
-light_energy = 1.3
+light_energy = 0.45499998
+light_volumetric_fog_energy = 2.857143
 light_size = 0.12
 shadow_enabled = true
 shadow_bias = 0.05
@@ -947,112 +948,123 @@ shadow_caster_mask = 1
 omni_range = 8.0
 omni_attenuation = 1.4
 
-[node name="FarHouse" type="MeshInstance3D" parent="DoorSide" unique_id=1309692695]
+[node name="DoorLampThrow" type="OmniLight3D" parent="DoorSide" unique_id=1213725888 groups=["pass_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07099998, 2.665, -3.05)
+light_energy = 0.55
+light_volumetric_fog_energy = 0.0
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_caster_mask = 1
+omni_range = 11.0
+
+[node name="FarHouse" type="MeshInstance3D" parent="DoorSide" unique_id=1472187507]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.625, 4.75, -16.5)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_uw1nu")
 
-[node name="Course" type="MeshInstance3D" parent="DoorSide" unique_id=519093098]
+[node name="Course" type="MeshInstance3D" parent="DoorSide" unique_id=314806771]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.115, 3.6999998, -16.5)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_hfasn")
 
-[node name="BlindWindow" type="MeshInstance3D" parent="DoorSide" unique_id=503608572]
+[node name="BlindWindow" type="MeshInstance3D" parent="DoorSide" unique_id=311079781]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1949999, 5.55, -11.5)
 material_override = SubResource("StandardMaterial3D_ry8yv")
 mesh = SubResource("BoxMesh_e482u")
 
-[node name="Sill" type="MeshInstance3D" parent="DoorSide" unique_id=1045720361]
+[node name="Sill" type="MeshInstance3D" parent="DoorSide" unique_id=1091260498]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.12, 4.5249996, -11.5)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_0jn3t")
 
-[node name="BlindWindow2" type="MeshInstance3D" parent="DoorSide" unique_id=1488829562]
+[node name="BlindWindow2" type="MeshInstance3D" parent="DoorSide" unique_id=1136254520]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1949999, 5.55, -18.5)
 material_override = SubResource("StandardMaterial3D_ry8yv")
 mesh = SubResource("BoxMesh_mbu4o")
 
-[node name="Sill2" type="MeshInstance3D" parent="DoorSide" unique_id=58644979]
+[node name="Sill2" type="MeshInstance3D" parent="DoorSide" unique_id=1092656940]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.12, 4.5249996, -18.5)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_oeohq")
 
-[node name="BlindWindow3" type="MeshInstance3D" parent="DoorSide" unique_id=1306749874]
+[node name="BlindWindow3" type="MeshInstance3D" parent="DoorSide" unique_id=926682176]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1949999, 5.55, -21.5)
 material_override = SubResource("StandardMaterial3D_ry8yv")
 mesh = SubResource("BoxMesh_v87nq")
 
-[node name="Sill3" type="MeshInstance3D" parent="DoorSide" unique_id=1677913789]
+[node name="Sill3" type="MeshInstance3D" parent="DoorSide" unique_id=588822161]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.12, 4.5249996, -21.5)
 material_override = SubResource("StandardMaterial3D_ek1r6")
 mesh = SubResource("BoxMesh_i5xee")
 
-[node name="FarLamp" parent="DoorSide" unique_id=1668568277 instance=ExtResource("6_vvico")]
+[node name="FarLamp" parent="DoorSide" unique_id=39428917 instance=ExtResource("6_vvico")]
 transform = Transform3D(-4.8082526e-08, 0, -1.1, 0, 1.1, 0, 1.1, 0, -4.8082526e-08, 1.15, 1.9, -11)
 
 [node name="street_lamp_02" parent="DoorSide/FarLamp" index="0" unique_id=766934085]
 layers = 2
 mesh = ExtResource("7_8875j")
 
-[node name="Lantern" type="Node3D" parent="DoorSide/FarLamp" unique_id=966882974]
+[node name="Lantern" type="Node3D" parent="DoorSide/FarLamp" unique_id=1215004334]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4, 0.61)
 
-[node name="Glass" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=219171175 groups=["pass_wall"]]
+[node name="Glass" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1835460199 groups=["pass_wall"]]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
 material_override = SubResource("ShaderMaterial_b2vdf")
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_u6o1g")
 
-[node name="Base" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1054633951]
+[node name="Base" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1145755015]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("CylinderMesh_1v37v")
 
-[node name="Eaves" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=293093587]
+[node name="Eaves" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=463449794]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("CylinderMesh_coj1s")
 
-[node name="Cap" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1979992066]
+[node name="Cap" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1982071193]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("CylinderMesh_mysko")
 
-[node name="Finial" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1703853663]
+[node name="Finial" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=14169707]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("CylinderMesh_q7vd7")
 
-[node name="Bar" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1783919079]
+[node name="Bar" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1737838022]
 transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("BoxMesh_05nxw")
 
-[node name="Bar2" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=765653580]
+[node name="Bar2" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1411490867]
 transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("BoxMesh_n7uhb")
 
-[node name="Bar3" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1914739701]
+[node name="Bar3" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=515384292]
 transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("BoxMesh_qqkne")
 
-[node name="Bar4" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=211167948]
+[node name="Bar4" type="MeshInstance3D" parent="DoorSide/FarLamp/Lantern" unique_id=1357467412]
 transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_khx5e")
 mesh = SubResource("BoxMesh_xlro5")
 
-[node name="Light" type="OmniLight3D" parent="DoorSide/FarLamp/Lantern" unique_id=867371241 groups=["pass_wall"]]
+[node name="Light" type="OmniLight3D" parent="DoorSide/FarLamp/Lantern" unique_id=217722248 groups=["pass_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+light_energy = 0.35
+light_volumetric_fog_energy = 2.857143
 light_size = 0.12
 shadow_enabled = true
 shadow_bias = 0.05
@@ -1060,19 +1072,28 @@ shadow_caster_mask = 1
 omni_range = 7.0
 omni_attenuation = 1.4
 
-[node name="FarSide" type="Node3D" parent="." unique_id=386131610]
+[node name="FarLampThrow" type="OmniLight3D" parent="DoorSide" unique_id=960855747 groups=["pass_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.421, 2.615, -11)
+light_energy = 0.45
+light_volumetric_fog_energy = 0.0
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_caster_mask = 1
+omni_range = 10.0
 
-[node name="NearHouse" type="MeshInstance3D" parent="FarSide" unique_id=2075680084]
+[node name="FarSide" type="Node3D" parent="." unique_id=989659242]
+
+[node name="NearHouse" type="MeshInstance3D" parent="FarSide" unique_id=92123823]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 4, 4.75)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_o4pjk")
 
-[node name="LitWindow" type="MeshInstance3D" parent="FarSide" unique_id=475763600 groups=["pass_key"]]
+[node name="LitWindow" type="MeshInstance3D" parent="FarSide" unique_id=1482733873 groups=["pass_key"]]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -4.98, 1.3, 2.4)
 material_override = SubResource("StandardMaterial3D_ady34")
 mesh = SubResource("QuadMesh_3ir2h")
 
-[node name="WindowLight" type="SpotLight3D" parent="FarSide" unique_id=1271857409 groups=["pass_key"]]
+[node name="WindowLight" type="SpotLight3D" parent="FarSide" unique_id=1920904707 groups=["pass_key"]]
 transform = Transform3D(0.41729325, 0.04209081, -0.9077966, 0, 0.9989268, 0.046316147, 0.9087719, -0.019327415, 0.4168454, -4.38, 1.3, 2.4)
 light_energy = 2.6
 light_size = 0.2
@@ -1083,172 +1104,178 @@ spot_attenuation = 0.8
 spot_angle = 30.0
 spot_angle_attenuation = 0.6
 
-[node name="YardWall" type="MeshInstance3D" parent="FarSide" unique_id=443296725]
+[node name="YardWall" type="MeshInstance3D" parent="FarSide" unique_id=673320591]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 1.25, -11.75)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_8loyk")
 
-[node name="Coping" type="MeshInstance3D" parent="FarSide" unique_id=1571485604]
+[node name="Coping" type="MeshInstance3D" parent="FarSide" unique_id=1422036362]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 2.56, -11.75)
 material_override = SubResource("StandardMaterial3D_wxo7i")
 mesh = SubResource("BoxMesh_fykwd")
 
-[node name="GatePier" type="MeshInstance3D" parent="FarSide" unique_id=1098182412]
+[node name="GatePier" type="MeshInstance3D" parent="FarSide" unique_id=959251058]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.1949997, 1.425, -4.2)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_cci3n")
 
-[node name="GatePier2" type="MeshInstance3D" parent="FarSide" unique_id=262308270]
+[node name="GatePier2" type="MeshInstance3D" parent="FarSide" unique_id=1545691882]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.1949997, 1.425, -6.4)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_go2ok")
 
-[node name="GatePier3" type="MeshInstance3D" parent="FarSide" unique_id=2088062694]
+[node name="GatePier3" type="MeshInstance3D" parent="FarSide" unique_id=856339229]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.1949997, 1.425, -12)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_lg7g5")
 
-[node name="GatePier4" type="MeshInstance3D" parent="FarSide" unique_id=2016774844]
+[node name="GatePier4" type="MeshInstance3D" parent="FarSide" unique_id=1561978428]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.1949997, 1.425, -18)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_t1716")
 
-[node name="GatePier5" type="MeshInstance3D" parent="FarSide" unique_id=1646621253]
+[node name="GatePier5" type="MeshInstance3D" parent="FarSide" unique_id=2142110403]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.1949997, 1.425, -23.75)
 material_override = ExtResource("4_hlm2t")
 mesh = SubResource("BoxMesh_3kiw5")
 
-[node name="Gate" type="MeshInstance3D" parent="FarSide" unique_id=517335361]
+[node name="Gate" type="MeshInstance3D" parent="FarSide" unique_id=1064793519]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.04, 1.05, -5.3)
 material_override = SubResource("StandardMaterial3D_7p252")
 mesh = SubResource("BoxMesh_f5sjg")
 
-[node name="Back" type="MeshInstance3D" parent="FarSide" unique_id=1059666505]
+[node name="Back" type="MeshInstance3D" parent="FarSide" unique_id=1719379662]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.800806, 3.6338375, -1.4452056)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_4g24v")
 
-[node name="Roof" type="MeshInstance3D" parent="FarSide" unique_id=581703412]
+[node name="Roof" type="MeshInstance3D" parent="FarSide" unique_id=2055486159]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.800806, 8.402962, -1.4452056)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_5b0pk")
 
-[node name="Stack" type="MeshInstance3D" parent="FarSide" unique_id=1555943543]
+[node name="Stack" type="MeshInstance3D" parent="FarSide" unique_id=351728222]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.000805, 8.627898, -0.1)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_yp03d")
 
-[node name="Back2" type="MeshInstance3D" parent="FarSide" unique_id=102691471]
+[node name="Back2" type="MeshInstance3D" parent="FarSide" unique_id=2053461762]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.392939, 2.8100424, -5.594958)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_m6yrn")
 
-[node name="Roof2" type="MeshInstance3D" parent="FarSide" unique_id=1845774460]
+[node name="Roof2" type="MeshInstance3D" parent="FarSide" unique_id=1374337607]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.392939, 6.8515377, -5.594958)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_dmx32")
 
-[node name="Stack2" type="MeshInstance3D" parent="FarSide" unique_id=1373289990]
+[node name="Stack2" type="MeshInstance3D" parent="FarSide" unique_id=935591353]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.592938, 6.6875052, -3.990411)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_1jd3h")
 
-[node name="Back3" type="MeshInstance3D" parent="FarSide" unique_id=89734342]
+[node name="Back3" type="MeshInstance3D" parent="FarSide" unique_id=1953958614]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.87582, 3.2104118, -9.432116)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_dayqx")
 
-[node name="Roof3" type="MeshInstance3D" parent="FarSide" unique_id=331783568]
+[node name="Roof3" type="MeshInstance3D" parent="FarSide" unique_id=1368673047]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.87582, 7.5104294, -9.432116)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_gcn1p")
 
-[node name="Stack3" type="MeshInstance3D" parent="FarSide" unique_id=846737427]
+[node name="Stack3" type="MeshInstance3D" parent="FarSide" unique_id=295161236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.07582, 7.5897236, -8.399505)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_xw8q2")
 
-[node name="Back4" type="MeshInstance3D" parent="FarSide" unique_id=823551161]
+[node name="Back4" type="MeshInstance3D" parent="FarSide" unique_id=1398760907]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.91577, 3.380225, -13.329949)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_yamht")
 
-[node name="Roof4" type="MeshInstance3D" parent="FarSide" unique_id=228006217]
+[node name="Roof4" type="MeshInstance3D" parent="FarSide" unique_id=111526077]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.91577, 7.8691454, -13.329949)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_7itt5")
 
-[node name="Stack4" type="MeshInstance3D" parent="FarSide" unique_id=612495896]
+[node name="Stack4" type="MeshInstance3D" parent="FarSide" unique_id=843426501]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.11577, 7.9400206, -11.664727)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_sccio")
 
-[node name="LitWindow2" type="MeshInstance3D" parent="FarSide" unique_id=1662773951 groups=["pass_windows"]]
+[node name="LitWindow2" type="MeshInstance3D" parent="FarSide" unique_id=891983457 groups=["pass_windows"]]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -15.89577, 4.0122914, -13.649721)
 material_override = SubResource("StandardMaterial3D_om63j")
 mesh = SubResource("QuadMesh_h1oco")
 
-[node name="Back5" type="MeshInstance3D" parent="FarSide" unique_id=943674135]
+[node name="Back5" type="MeshInstance3D" parent="FarSide" unique_id=2079134588]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.624577, 3.9334443, -17.454704)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_brhik")
 
-[node name="Roof5" type="MeshInstance3D" parent="FarSide" unique_id=1344014488]
+[node name="Roof5" type="MeshInstance3D" parent="FarSide" unique_id=1482815463]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.624577, 8.679382, -17.454702)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_roer8")
 
-[node name="Stack5" type="MeshInstance3D" parent="FarSide" unique_id=209073638]
+[node name="Stack5" type="MeshInstance3D" parent="FarSide" unique_id=1023302127]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.824577, 9.097633, -16.195171)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_1fd1a")
 
-[node name="Back6" type="MeshInstance3D" parent="FarSide" unique_id=553373647]
+[node name="Back6" type="MeshInstance3D" parent="FarSide" unique_id=886913855]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.177328, 3.1545546, -20.995838)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_02qba")
 
-[node name="Roof6" type="MeshInstance3D" parent="FarSide" unique_id=1032724319]
+[node name="Roof6" type="MeshInstance3D" parent="FarSide" unique_id=642525202]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.177328, 7.1523714, -20.99584)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_sspo6")
 
-[node name="Stack6" type="MeshInstance3D" parent="FarSide" unique_id=2017380600]
+[node name="Stack6" type="MeshInstance3D" parent="FarSide" unique_id=1616327295]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.377329, 7.1202908, -19.914234)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_y441l")
 
-[node name="Back7" type="MeshInstance3D" parent="FarSide" unique_id=428339118]
+[node name="Back7" type="MeshInstance3D" parent="FarSide" unique_id=1073545467]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.08944, 3.7614224, -24.555)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_pao04")
 
-[node name="Roof7" type="MeshInstance3D" parent="FarSide" unique_id=733821131]
+[node name="Roof7" type="MeshInstance3D" parent="FarSide" unique_id=1720732035]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.08944, 8.476478, -24.555002)
 material_override = SubResource("StandardMaterial3D_qf1lv")
 mesh = SubResource("PrismMesh_bytxg")
 
-[node name="Stack7" type="MeshInstance3D" parent="FarSide" unique_id=1213696978]
+[node name="Stack7" type="MeshInstance3D" parent="FarSide" unique_id=678084340]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.289438, 8.545523, -23.277443)
 material_override = SubResource("StandardMaterial3D_472ol")
 mesh = SubResource("BoxMesh_b4uo3")
 
-[node name="LitWindow3" type="MeshInstance3D" parent="FarSide" unique_id=1221089378 groups=["pass_windows"]]
+[node name="LitWindow3" type="MeshInstance3D" parent="FarSide" unique_id=734871582 groups=["pass_windows"]]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14.069439, 4.151319, -25.25405)
 material_override = SubResource("StandardMaterial3D_m5ace")
 mesh = SubResource("QuadMesh_03mbj")
 
-[node name="Barrel" type="MeshInstance3D" parent="FarSide" unique_id=908776738]
+[node name="Accent" type="OmniLight3D" parent="FarSide" unique_id=1494983610 groups=["pass_windows"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.4, 1, -5.3)
+light_energy = 0.6
+shadow_enabled = true
+omni_range = 4.0
+
+[node name="Barrel" type="MeshInstance3D" parent="FarSide" unique_id=2132791056]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.58, 0.475, -2.3)
 material_override = SubResource("StandardMaterial3D_7p252")
 mesh = SubResource("CylinderMesh_5ex36")
 
-[node name="Crate" type="MeshInstance3D" parent="FarSide" unique_id=311724432]
+[node name="Crate" type="MeshInstance3D" parent="FarSide" unique_id=616853409]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5699997, 0.3, -3.225)
 material_override = SubResource("StandardMaterial3D_7p252")
 mesh = SubResource("BoxMesh_x5vso")
 
-[node name="Mouth" type="Node3D" parent="." unique_id=1763349642]
+[node name="Mouth" type="Node3D" parent="." unique_id=1960646020]
 
 [node name="MouthLamp" parent="Mouth" unique_id=1063877973 instance=ExtResource("9_lnl7q")]
 transform = Transform3D(0.8838835, 0, 0.8838835, 0, 1.25, 0, -0.8838835, 0, 0.8838835, -0.9, 0, -27.5)
@@ -1257,64 +1284,64 @@ transform = Transform3D(0.8838835, 0, 0.8838835, 0, 1.25, 0, -0.8838835, 0, 0.88
 layers = 2
 mesh = ExtResource("10_6l3o6")
 
-[node name="Lantern" type="Node3D" parent="Mouth/MouthLamp" unique_id=999201476]
+[node name="Lantern" type="Node3D" parent="Mouth/MouthLamp" unique_id=954209491]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 
-[node name="Glass" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1610223823 groups=["pass_key"]]
+[node name="Glass" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1287343450 groups=["pass_key"]]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.25, 0)
 material_override = SubResource("ShaderMaterial_d675k")
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_g4fqw")
 
-[node name="Base" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=174590766]
+[node name="Base" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=256857823]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.025, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("CylinderMesh_4qlpd")
 
-[node name="Eaves" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1638433125]
+[node name="Eaves" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1320621614]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.4725, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("CylinderMesh_548ir")
 
-[node name="Cap" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=904556254]
+[node name="Cap" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=712653704]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.55, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("CylinderMesh_77abq")
 
-[node name="Finial" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=193032492]
+[node name="Finial" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=414680688]
 transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.65, 0)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("CylinderMesh_3873l")
 
-[node name="Bar" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=876464743]
+[node name="Bar" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=298178895]
 transform = Transform3D(0.9827905, 0.1839202, -0.017209487, -0.1839202, 0.965581, -0.1839202, -0.017209487, 0.1839202, 0.9827905, 0.14, 0.25, 0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("BoxMesh_3rkog")
 
-[node name="Bar2" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1771512500]
+[node name="Bar2" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1200283005]
 transform = Transform3D(0.9827905, 0.1839202, 0.017209487, -0.1839202, 0.965581, 0.1839202, 0.017209487, -0.1839202, 0.9827905, 0.14, 0.25, -0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("BoxMesh_phhid")
 
-[node name="Bar3" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=557608104]
+[node name="Bar3" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1379869132]
 transform = Transform3D(0.9827905, -0.1839202, 0.017209487, 0.1839202, 0.965581, -0.1839202, 0.017209487, 0.1839202, 0.9827905, -0.14, 0.25, 0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("BoxMesh_eokx0")
 
-[node name="Bar4" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=515661655]
+[node name="Bar4" type="MeshInstance3D" parent="Mouth/MouthLamp/Lantern" unique_id=1225754259]
 transform = Transform3D(0.9827905, -0.1839202, -0.017209487, 0.1839202, 0.965581, 0.1839202, -0.017209487, -0.1839202, 0.9827905, -0.14, 0.25, -0.14)
 layers = 2
 material_override = SubResource("StandardMaterial3D_ffkra")
 mesh = SubResource("BoxMesh_f6vcg")
 
-[node name="Light" type="OmniLight3D" parent="Mouth/MouthLamp/Lantern" unique_id=1191945602 groups=["pass_key"]]
+[node name="Light" type="OmniLight3D" parent="Mouth/MouthLamp/Lantern" unique_id=1941302202 groups=["pass_key"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 light_energy = 1.5
 light_size = 0.12
@@ -1324,722 +1351,722 @@ shadow_caster_mask = 1
 omni_range = 22.0
 omni_attenuation = 1.4
 
-[node name="Houses" type="Node3D" parent="Mouth" unique_id=1908850731]
+[node name="Houses" type="Node3D" parent="Mouth" unique_id=1533501684]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0, -34)
 
-[node name="House0" type="Node3D" parent="Mouth/Houses" unique_id=2043493299]
+[node name="House0" type="Node3D" parent="Mouth/Houses" unique_id=922430021]
 
-[node name="base_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1017782450]
+[node name="base_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=581190650]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=384150162]
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=506171493]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1653315838]
+[node name="window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=2035918580]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="dado_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=621220451]
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=584898500]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("14_7yjqo")
 
-[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1965686347]
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1525914701]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_small_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1338063787]
+[node name="wall_window_centered_small_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1031544084]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
 mesh = ExtResource("16_j725l")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_small_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1787680700]
+[node name="window_centered_small_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=192383036]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
 mesh = ExtResource("17_ed30r")
 
-[node name="LitWindow" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=981260828 groups=["pass_windows"]]
+[node name="LitWindow" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=341660030 groups=["pass_windows"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 5.25, -0.3)
 material_override = SubResource("StandardMaterial3D_b41ys")
 mesh = SubResource("QuadMesh_vs12x")
 
-[node name="wall_window_centered_small_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1149335941]
+[node name="wall_window_centered_small_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1794353426]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
 mesh = ExtResource("18_yru1u")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_small_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1582778897]
+[node name="window_centered_small_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1103724811]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
 mesh = ExtResource("19_naogy")
 
-[node name="crown_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1245310429]
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=203164446]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 9.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="base_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1959182262]
+[node name="base_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=76215582]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=757492522]
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1283310053]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("21_nt4hi")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1076742095]
+[node name="door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1812550493]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("5_phk2t")
 
-[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=325831337]
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1938858282]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("22_sod10")
 
-[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=718584656]
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1189178596]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_small_04" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1139041792]
+[node name="wall_window_centered_small_04" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1202041101]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
 mesh = ExtResource("16_j725l")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_small_04" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1158752806]
+[node name="window_centered_small_04" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1939281425]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
 mesh = ExtResource("17_ed30r")
 
-[node name="wall_window_centered_small_05" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1696476931]
+[node name="wall_window_centered_small_05" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1641647383]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
 mesh = ExtResource("18_yru1u")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_small_05" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1397370785]
+[node name="window_centered_small_05" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=548064259]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
 mesh = ExtResource("19_naogy")
 
-[node name="crown_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1729839263]
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=684781760]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 9.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="base_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1920275172]
+[node name="base_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=187793112]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=263664787]
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1229458055]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=913233320]
+[node name="window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1681856468]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="dado_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=2012021174]
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=2019092997]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("14_7yjqo")
 
-[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=735894408]
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=353063877]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_small_06" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=859703449]
+[node name="wall_window_centered_small_06" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1412548040]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("16_j725l")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_small_06" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1990173790]
+[node name="window_centered_small_06" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=722962524]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("17_ed30r")
 
-[node name="LitWindow2" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1060306948 groups=["pass_windows"]]
+[node name="LitWindow2" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1595743177 groups=["pass_windows"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 5.25, -0.3)
 material_override = SubResource("StandardMaterial3D_j8ke7")
 mesh = SubResource("QuadMesh_0e2b5")
 
-[node name="wall_window_centered_small_07" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=509139345]
+[node name="wall_window_centered_small_07" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1165080035]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("18_yru1u")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_small_07" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=158889203]
+[node name="window_centered_small_07" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1880479595]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("19_naogy")
 
-[node name="crown_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1722898868]
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=774463007]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=467625556]
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=283593607]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = ExtResource("23_gt24r")
 
-[node name="wall_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1893789155]
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=564295833]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1756631715]
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1480181301]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = ExtResource("25_k68k8")
 
-[node name="wall_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=2945287]
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=653663386]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="wall_pier_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=368895745]
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1877953202]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1329037970]
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=654298635]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.95, 0)
 mesh = ExtResource("26_bvo3t")
 
-[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1425493422]
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=250745093]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("23_gt24r")
 
-[node name="wall_pier_standard_04" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1265044851]
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1568990639]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1883402650]
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=775775974]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
 mesh = ExtResource("25_k68k8")
 
-[node name="wall_pier_standard_05" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=629047621]
+[node name="wall_pier_standard_05" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1349394279]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="wall_pier_standard_06" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=200206995]
+[node name="wall_pier_standard_06" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=2040070705]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1841928177]
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=370535433]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
 mesh = ExtResource("26_bvo3t")
 
-[node name="Box" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=636287525]
+[node name="Box" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=594192277]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 4.975, -4.85)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_q7aov")
 
-[node name="Roof" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=777620002]
+[node name="Roof" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1151467871]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 11.662293, -4.7)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_yce2e")
 
-[node name="Box2" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=38997459]
+[node name="Box2" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1722890182]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 11.45, -1.2)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_01eqo")
 
-[node name="DormerRoof" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=76074184]
+[node name="DormerRoof" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1812950424]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 12.6, -1.2)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_t37r2")
 
-[node name="Box3" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=671054089]
+[node name="Box3" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=2116192755]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 11.45, -1.2)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_2cy7w")
 
-[node name="DormerRoof2" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=353057955]
+[node name="DormerRoof2" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=160245870]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 12.6, -1.2)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_w4e64")
 
-[node name="Box4" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=809068825]
+[node name="Box4" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=589478433]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 12.951971, -4.7)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_55buy")
 
-[node name="Box5" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=171329768]
+[node name="Box5" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1684124368]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 15.453942, -5.3)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_botoh")
 
-[node name="Box6" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=769940170]
+[node name="Box6" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=1432002695]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 15.453942, -4.7)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_hbnln")
 
-[node name="Box7" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=727168836]
+[node name="Box7" type="MeshInstance3D" parent="Mouth/Houses/House0" unique_id=580013715]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 15.453942, -4.1)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_ino8i")
 
-[node name="House1" type="Node3D" parent="Mouth/Houses" unique_id=1364491904]
+[node name="House1" type="Node3D" parent="Mouth/Houses" unique_id=1227695855]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
 
-[node name="base_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=517701061]
+[node name="base_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1675696161]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1843503087]
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1167544441]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("21_nt4hi")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1375617517]
+[node name="door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1693337943]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("5_phk2t")
 
-[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1676849775]
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=671184732]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("22_sod10")
 
-[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1001285580]
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1509409786]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=531798319]
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=599889647]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
 mesh = ExtResource("27_evfge")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=304130684]
+[node name="window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1226958926]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
 mesh = ExtResource("28_jsr4w")
 
-[node name="crown_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2130569906]
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=503311189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="base_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=270788390]
+[node name="base_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1980468098]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=143335452]
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1866533432]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=244916]
+[node name="window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=590263307]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="dado_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2094772754]
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=888217679]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("14_7yjqo")
 
-[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=21438998]
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=629009656]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1443475151]
+[node name="wall_window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1587410920]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
 mesh = ExtResource("27_evfge")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1720018058]
+[node name="window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=519005364]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
 mesh = ExtResource("28_jsr4w")
 
-[node name="LitWindow" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=231420798 groups=["pass_windows"]]
+[node name="LitWindow" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1885547024 groups=["pass_windows"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 5.25, -0.3)
 material_override = SubResource("StandardMaterial3D_iw8ql")
 mesh = SubResource("QuadMesh_73yfj")
 
-[node name="crown_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=975519684]
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=325837749]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="base_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=761588655]
+[node name="base_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1810251034]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=770859571]
+[node name="wall_window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=437604452]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1360929648]
+[node name="window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1162782141]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="dado_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1798433361]
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2127648383]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("14_7yjqo")
 
-[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=930973597]
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=310695748]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=400494876]
+[node name="wall_window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1071735330]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("27_evfge")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=989709307]
+[node name="window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1337773886]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("28_jsr4w")
 
-[node name="crown_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=739564350]
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=809558790]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=771939962]
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1487896526]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = ExtResource("23_gt24r")
 
-[node name="wall_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1828592361]
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=601294357]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1615425959]
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=348349959]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = ExtResource("25_k68k8")
 
-[node name="wall_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=507014137]
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=680968350]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=381324219]
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=149313039]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
 mesh = ExtResource("26_bvo3t")
 
-[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2057447479]
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2036056990]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("23_gt24r")
 
-[node name="wall_pier_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1248162978]
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1233593531]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=74559832]
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1501094625]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
 mesh = ExtResource("25_k68k8")
 
-[node name="wall_pier_standard_04" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=940311339]
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=781765792]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=61159805]
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1787606259]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("26_bvo3t")
 
-[node name="Box" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2118730440]
+[node name="Box" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=811221491]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3.475, -4.85)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_m6no2")
 
-[node name="Roof" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=126398023]
+[node name="Roof" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1460397326]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 8.743324, -4.7)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_3jouu")
 
-[node name="Box2" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1341419401]
+[node name="Box2" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=854941740]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 8.45, -1.2)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_w182g")
 
-[node name="DormerRoof" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=984733965]
+[node name="DormerRoof" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=487787512]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 9.6, -1.2)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_62gt3")
 
-[node name="Box3" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1253280705]
+[node name="Box3" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1985787973]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 8.45, -1.2)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_667bh")
 
-[node name="DormerRoof2" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=81601412]
+[node name="DormerRoof2" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=481469852]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 9.6, -1.2)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_4yjil")
 
-[node name="Box4" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1199667313]
+[node name="Box4" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=2056706627]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 10.276637, -4.7)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_sg4yg")
 
-[node name="Box5" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=879983279]
+[node name="Box5" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1420972903]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.103273, -5.3)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_r3y7r")
 
-[node name="Box6" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=109507535]
+[node name="Box6" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=970832804]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.103273, -4.7)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_e7w75")
 
-[node name="Box7" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=1163361699]
+[node name="Box7" type="MeshInstance3D" parent="Mouth/Houses/House1" unique_id=933708541]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 13.103273, -4.1)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_5i6bn")
 
-[node name="House2" type="Node3D" parent="Mouth/Houses" unique_id=959752723]
+[node name="House2" type="Node3D" parent="Mouth/Houses" unique_id=1792259245]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 0)
 
-[node name="base_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1240383344]
+[node name="base_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1854062682]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=591249099]
+[node name="wall_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=579439335]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("21_nt4hi")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=164209858]
+[node name="door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=480705009]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("5_phk2t")
 
-[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=387930359]
+[node name="dado_door_centered_small_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1195198409]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.75, 0)
 mesh = ExtResource("22_sod10")
 
-[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1135407907]
+[node name="cornice_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1651981858]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2086637315]
+[node name="wall_window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=732797848]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=269251361]
+[node name="window_centered_large_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2090425546]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.95, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1673473532]
+[node name="wall_window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=481460894]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
 mesh = ExtResource("27_evfge")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=796617564]
+[node name="window_centered_large_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=291386088]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 6.95, 0)
 mesh = ExtResource("28_jsr4w")
 
-[node name="crown_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1703289673]
+[node name="crown_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1701684891]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 9.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="base_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1683866139]
+[node name="base_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1915177399]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1269487671]
+[node name="wall_window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1944231768]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=727296556]
+[node name="window_centered_large_04" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=886357522]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="dado_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1048736943]
+[node name="dado_standard_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=473841083]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.75, 0)
 mesh = ExtResource("14_7yjqo")
 
-[node name="LitWindow" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2131935402 groups=["pass_windows"]]
+[node name="LitWindow" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2022451697 groups=["pass_windows"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2.05, -0.26)
 material_override = SubResource("StandardMaterial3D_jmrvm")
 mesh = SubResource("QuadMesh_totgr")
 
-[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1909338442]
+[node name="cornice_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1686236197]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1525308384]
+[node name="wall_window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1625893264]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2033365354]
+[node name="window_centered_large_05" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1748765615]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3.95, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="wall_window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=815411564]
+[node name="wall_window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2033901196]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
 mesh = ExtResource("27_evfge")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1019363162]
+[node name="window_centered_large_06" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1271808886]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.95, 0)
 mesh = ExtResource("28_jsr4w")
 
-[node name="LitWindow2" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2101945667 groups=["pass_windows"]]
+[node name="LitWindow2" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=175157821 groups=["pass_windows"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 8.25, -0.3)
 material_override = SubResource("StandardMaterial3D_hg2no")
 mesh = SubResource("QuadMesh_3p04l")
 
-[node name="crown_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2035921311]
+[node name="crown_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1912748481]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 9.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="base_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1427150264]
+[node name="base_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=45799083]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
 mesh = ExtResource("11_omtcr")
 
-[node name="wall_window_centered_large_07" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=3689599]
+[node name="wall_window_centered_large_07" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=674427822]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_07" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1960491161]
+[node name="window_centered_large_07" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1469961248]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="dado_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=846930151]
+[node name="dado_standard_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1103753007]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("14_7yjqo")
 
-[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1005350538]
+[node name="cornice_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=838073997]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
 mesh = ExtResource("15_5068o")
 
-[node name="wall_window_centered_large_08" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=542057888]
+[node name="wall_window_centered_large_08" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=775781812]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("12_mtkg5")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_08" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1030265116]
+[node name="window_centered_large_08" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1049073672]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("13_cqjpg")
 
-[node name="wall_window_centered_large_09" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=818737433]
+[node name="wall_window_centered_large_09" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=178868486]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("27_evfge")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="window_centered_large_09" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1348060772]
+[node name="window_centered_large_09" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=847677943]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("28_jsr4w")
 
-[node name="LitWindow3" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1321873502 groups=["pass_windows"]]
+[node name="LitWindow3" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=212901363 groups=["pass_windows"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 8.25, -0.3)
 material_override = SubResource("StandardMaterial3D_t6jgn")
 mesh = SubResource("QuadMesh_u4yjs")
 
-[node name="crown_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=544905341]
+[node name="crown_standard_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1588987153]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
 mesh = ExtResource("20_pdd3d")
 
-[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=657916653]
+[node name="dado_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1993367953]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = ExtResource("23_gt24r")
 
-[node name="wall_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1293360441]
+[node name="wall_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1203261618]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=8438036]
+[node name="cornice_pier_standard_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=245910942]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = ExtResource("25_k68k8")
 
-[node name="wall_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2075545776]
+[node name="wall_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1593510741]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="wall_pier_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1975036726]
+[node name="wall_pier_standard_03" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=779793216]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=343382126]
+[node name="crown_pier_pedestal_01" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=121267241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.95, 0)
 mesh = ExtResource("26_bvo3t")
 
-[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1627637508]
+[node name="dado_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=81102493]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("23_gt24r")
 
-[node name="wall_pier_standard_04" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1645981751]
+[node name="wall_pier_standard_04" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=369583333]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1767919203]
+[node name="cornice_pier_standard_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1357829935]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.75, 0)
 mesh = ExtResource("25_k68k8")
 
-[node name="wall_pier_standard_05" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1634380212]
+[node name="wall_pier_standard_05" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2094314631]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 3.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="wall_pier_standard_06" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1888794623]
+[node name="wall_pier_standard_06" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=511216687]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 6.95, 0)
 mesh = ExtResource("24_hk1a4")
 surface_material_override/0 = ExtResource("4_hlm2t")
 
-[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1009751914]
+[node name="crown_pier_pedestal_02" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1152950725]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9.95, 0)
 mesh = ExtResource("26_bvo3t")
 
-[node name="Box" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1887606387]
+[node name="Box" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=645363500]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 4.975, -4.85)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_iii1v")
 
-[node name="Roof" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1072554889]
+[node name="Roof" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=900160197]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.5, 11.572709, -4.7)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_t37jx")
 
-[node name="Box2" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=475284020]
+[node name="Box2" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=2107835324]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 11.45, -1.2)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_1nnb8")
 
-[node name="DormerRoof" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1341207151]
+[node name="DormerRoof" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=220704356]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.52, 12.6, -1.2)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_qdtwd")
 
-[node name="Box3" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=332613769]
+[node name="Box3" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=308776093]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 11.45, -1.2)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_qk0n3")
 
-[node name="DormerRoof2" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=663622340]
+[node name="DormerRoof2" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1251044191]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.48, 12.6, -1.2)
 material_override = SubResource("StandardMaterial3D_invt4")
 mesh = SubResource("PrismMesh_8llw6")
 
-[node name="Box4" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=19760502]
+[node name="Box4" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=682792900]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 13.017426, -4.7)
 material_override = SubResource("StandardMaterial3D_ut04y")
 mesh = SubResource("BoxMesh_d3jkg")
 
-[node name="Box5" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1898214124]
+[node name="Box5" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1158074422]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 15.58485, -5.3)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_njaha")
 
-[node name="Box6" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1936608335]
+[node name="Box6" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=974641191]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 15.58485, -4.7)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_1gpdp")
 
-[node name="Box7" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=834350600]
+[node name="Box7" type="MeshInstance3D" parent="Mouth/Houses/House2" unique_id=1448201410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 15.58485, -4.1)
 material_override = SubResource("StandardMaterial3D_16q6o")
 mesh = SubResource("BoxMesh_pq0pb")
 
-[node name="Hyde" type="Node3D" parent="." unique_id=980909288]
+[node name="Hyde" type="Node3D" parent="." unique_id=2014773832]
 transform = Transform3D(0.0766971, 0, 0.87665135, 0, 0.88, 0, -0.87665135, 0, 0.0766971, 0.92, 0, 0.15)
 
-[node name="Body" type="MeshInstance3D" parent="Hyde" unique_id=1793925500 groups=["casts_shadow", "figure"]]
+[node name="Body" type="MeshInstance3D" parent="Hyde" unique_id=833141195 groups=["casts_shadow", "figure"]]
 material_override = SubResource("ShaderMaterial_0i7ci")
 mesh = ExtResource("30_b30wd")
 
-[node name="Camera" type="Camera3D" parent="." unique_id=1183063386]
+[node name="Camera" type="Camera3D" parent="." unique_id=1930232342]
 transform = Transform3D(0.99753445, -0.0055408548, 0.069959216, 0, 0.99687827, 0.07895397, -0.07017829, -0.078759305, 0.9944204, -0.6, 1.9, 3.9)
 fov = 50.0
 far = 200.0
 
-[node name="Moon" type="DirectionalLight3D" parent="." unique_id=1000651126 groups=["pass_ambient"]]
+[node name="Moon" type="DirectionalLight3D" parent="." unique_id=1051917934 groups=["pass_ambient"]]
 transform = Transform3D(-0.76604444, -0.5265408, 0.36868784, 0, 0.57357645, 0.81915206, -0.64278764, 0.62750685, -0.43938506, 0, 0, 0)
 light_energy = 0.5
 shadow_enabled = true
