@@ -11,7 +11,8 @@ class_name AlleyBuilder
 ## is left to the fog. Lights belong to the same pass groups as the streets':
 ## "pass_key" is the light from a window across the alley (out of the picture: it throws the
 ## man's shadow on the door) and the lamp at the alley's mouth, "pass_wall" the lanterns on
-## the wall.
+## the wall and the lights that spread them along it, "pass_windows" the lit windows over the
+## yard wall and the dim light by the gate.
 
 const WALL_X := 1.5 # face of the wall the door is in
 const LEFT_X := -5.0 # face of the wall across the alley
@@ -30,6 +31,7 @@ const KNOB := Vector3(WALL_X + 0.07, 1.09, DOOR_Z + 0.36) # on the door's edge n
 const FIGURE_POS := Vector3(0.92, 0.0, 0.15) # as close to the door as his stoop allows
 const FIGURE_SCALE := 0.88 # as in the street
 const FIGURE_YAW := 85.0 # facing the door, seen from behind his left shoulder
+const THROW_OUT := 0.9 # metres out from a wall lantern to the light that spreads it along the wall
 
 
 static func build() -> Node3D:
@@ -84,7 +86,9 @@ static func _ground() -> Node3D:
 	cobbles.normal_enabled = true
 	cobbles.normal_texture = load(StreetBuilder.COBBLES + "nor_gl_1k.jpg")
 	cobbles.roughness_texture = load(StreetBuilder.COBBLES + "rough_1k.jpg")
-	cobbles.roughness = 0.5 # wet stones
+	# It has rained: smooth enough for the lanterns to streak across the stones and, with
+	# studio/bake.gd's reflections, for the lit wall to show in them.
+	cobbles.roughness = 0.36
 	cobbles.uv1_scale = Vector3(30.0, 30.0, 1.0)
 	var mi := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
@@ -168,6 +172,7 @@ static func _door_side(kit: Dictionary) -> Node3D:
 	lamp.position = Vector3(WALL_X, 1.95, -3.05)
 	_dim(lamp, 8.0, 1.3)
 	side.add_child(lamp)
+	side.add_child(StreetBuilder._even_out(lamp, Vector3.LEFT * THROW_OUT, 0.55, 11.0))
 
 	# A taller house further on, standing a little proud of the wall.
 	var proud := WALL_X - 0.35
@@ -183,6 +188,7 @@ static func _door_side(kit: Dictionary) -> Node3D:
 	far_lamp.position = Vector3(proud, 1.9, -11.0)
 	_dim(far_lamp, 7.0, 1.0)
 	side.add_child(far_lamp)
+	side.add_child(StreetBuilder._even_out(far_lamp, Vector3.LEFT * THROW_OUT, 0.45, 10.0))
 	return side
 
 
@@ -262,6 +268,18 @@ static func _far_side() -> Node3D:
 			lit.add_to_group("pass_windows", true)
 			side.add_child(lit, true)
 		bz -= width
+
+	# A dim light in a third colour, the one the lit windows have, low by the gate: without it
+	# the alley is all pinks and violets. Baked with the lit windows, so the game colours it as
+	# it does those.
+	var accent := OmniLight3D.new()
+	accent.name = "Accent"
+	accent.position = Vector3(LEFT_X + 0.6, 1.0, -5.3)
+	accent.omni_range = 4.0
+	accent.light_energy = 0.6
+	accent.shadow_enabled = true
+	accent.add_to_group("pass_windows", true)
+	side.add_child(accent)
 
 	# Something to give the near stones scale: a barrel and a crate by the yard wall.
 	var barrel := MeshInstance3D.new()
