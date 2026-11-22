@@ -8,7 +8,11 @@ extends Control
 ## `--volatility=<0..100>` and `--hyde`.
 
 ## Who has the table.
-var is_jekyll := true
+var is_jekyll := true:
+	set(value):
+		is_jekyll = value
+		if _ink:
+			_ink.is_jekyll = value
 
 @onready var _ink: ArenaInk = $Ink
 
@@ -32,14 +36,13 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Sets all of the ink at once: the share of the page it covers (0 to 100), how restless it is
 ## in Hyde's stance (0 to 100), and whether Jekyll has the table.
 func set_ink(percent: float, volatility: float, jekyll: bool) -> void:
-	self.is_jekyll = jekyll
+	is_jekyll = jekyll
 	_ink.set_ink(percent, volatility, jekyll)
 
 
 ## True while Jekyll has the table: the ink stands still and its dark layers draw back.
 func set_jekyll(jekyll: bool) -> void:
 	is_jekyll = jekyll
-	_ink.is_jekyll = jekyll
 
 
 ## How much of the page the ink covers, 0 to 100.

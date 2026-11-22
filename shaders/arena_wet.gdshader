@@ -30,21 +30,21 @@ uniform float settle = 0.3;
 uniform float prime = 0.0;
 
 void fragment() {
-	vec2 wide = UV * WIDE;
+	vec2 wide = UV * page_shape;
 	float n = texture(noise_a, wide * 0.9 + vec2(ink_time * 0.011, -ink_time * 0.007)).r
 			+ 0.5 * texture(noise_b, wide * 1.7 - vec2(ink_time * 0.009, ink_time * 0.013)).r;
 	float turn = n * 12.566 + ink_time * 0.05;
 	vec2 dir = vec2(cos(turn), sin(turn));
-	float l = texture(previous, UV - vec2(texel.x * 3.0, 0.0)).r;
-	float r = texture(previous, UV + vec2(texel.x * 3.0, 0.0)).r;
-	float u = texture(previous, UV - vec2(0.0, texel.y * 3.0)).r;
-	float d = texture(previous, UV + vec2(0.0, texel.y * 3.0)).r;
+	float l = ink_paint(texture(previous, UV - vec2(texel.x * 3.0, 0.0)));
+	float r = ink_paint(texture(previous, UV + vec2(texel.x * 3.0, 0.0)));
+	float u = ink_paint(texture(previous, UV - vec2(0.0, texel.y * 3.0)));
+	float d = ink_paint(texture(previous, UV + vec2(0.0, texel.y * 3.0)));
 	vec2 slope = vec2(r - l, d - u);
 	vec2 thicker = slope / (length(slope) + 0.02);
 	float live = unrest * mix(0.5, 1.0, smoothstep(0.1, 0.8, presence)) * frame;
-	float paint = texture(previous, UV + (thicker * swell + dir * push) * texel * live).r;
+	float paint = ink_paint(texture(previous, UV + (thicker * swell + dir * push) * texel * live));
 
 	float level = clamp(1.0 - ink_rank(ink_drifted(UV)) / max(ink_reach(UV), 0.001), 0.0, 1.0);
 	paint = mix(paint, level, max(1.0 - exp(-settle * frame / 60.0), prime));
-	COLOR = vec4(vec3(clamp(paint, 0.0, 1.0)), 1.0);
+	COLOR = ink_stored(paint);
 }

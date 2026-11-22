@@ -109,6 +109,11 @@ func _ready() -> void:
 
 func _on_paper_resized() -> void:
 	_page.set_shader_parameter("page_size", paper.size)
+	# Both shaders lay their noise over the page's own shape, whatever the window's is.
+	var shape := Vector2(paper.size.x / maxf(paper.size.y, 1.0), 1.0)
+	for mat: ShaderMaterial in [_page, _wet]:
+		mat.set_shader_parameter("page_shape", shape)
+	_wake()
 
 
 func _process(delta: float) -> void:

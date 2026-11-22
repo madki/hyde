@@ -19,10 +19,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Goes to the screen after the one that is showing. A screen that is not in the list goes to
-## the first.
+## the first, unless it is one of the studio's: Enter must not cut a bake short.
 func next() -> void:
 	var current := get_tree().current_scene
 	if not current: # a change of screen is already under way
 		return
 	var at := SCENES.find(current.scene_file_path)
+	if at == -1 and current.scene_file_path.begins_with("res://studio/"):
+		return
 	get_tree().change_scene_to_file(SCENES[(at + 1) % SCENES.size()])

@@ -24,7 +24,7 @@ func _ready() -> void:
 func _draw() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = colour
-	for ruling in insets.size():
+	for ruling in mini(insets.size(), widths.size()):
 		var inset := Vector2(insets[ruling], insets[ruling])
 		var rect := Rect2(inset, size - inset * 2.0)
 		var width := widths[ruling]
