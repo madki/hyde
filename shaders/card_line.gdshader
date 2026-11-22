@@ -7,6 +7,8 @@ shader_type canvas_item;
 
 /** Size of a texel in pixels (set by arena_card.gd): the same as the card's body. */
 uniform float texel : hint_range(0.0, 4.0) = 1.0;
+/** A number that changes where the ink fails (set by arena_card.gd). */
+uniform float seed = 0.0;
 /** How rough the line's edge is. */
 uniform float rough : hint_range(0.0, 1.0) = 0.45;
 /** How much of the line the ink fails to take on. */
@@ -36,11 +38,12 @@ void vertex() {
 void fragment() {
 	vec2 p = texel > 0.0 ? (floor(at / texel) + 0.5) * texel : at;
 	float pressure = COLOR.a;
-	float half_width = pressure * (1.0 + rough * (hash(p) - 0.5));
+	vec2 s = p + seed * vec2(37.0, 91.0);
+	float half_width = pressure * (1.0 + rough * (hash(s) - 0.5));
 	float soft = texel > 0.0 ? 0.001 : fwidth(UV.y) * 0.75;
-	float line = smoothstep(half_width + soft, half_width - soft, abs(UV.y));
-	float taken = 0.55 * value_noise(p / patch_size) + 0.3 * value_noise(p / (patch_size * 0.3) + 7.0)
-			+ 0.15 * hash(p + 3.0);
+	float line = 1.0 - smoothstep(half_width - soft, half_width + soft, abs(UV.y));
+	float taken = 0.55 * value_noise(s / patch_size) + 0.3 * value_noise(s / (patch_size * 0.3) + 7.0)
+			+ 0.15 * hash(s + 3.0);
 	// Lightly pressed parts of a line lose more ink.
 	float fails = missing * (1.0 + 0.8 * (1.0 - smoothstep(0.1, 0.35, pressure)));
 	COLOR = vec4(COLOR.rgb, line * step(fails * 0.75, taken));

@@ -129,7 +129,7 @@ void fragment() {
 	float worn = hash(sign(p - card_size * 0.5) + seed);
 	torn += corner_wear * worn * (1.0 - smoothstep(0.0, 16.0, max(to_side.x, to_side.y)))
 			* (0.35 + 0.65 * value_noise(s / 4.0 + 13.0));
-	float inside = smoothstep(pixel * 0.6, -pixel * 0.6, torn);
+	float inside = 1.0 - smoothstep(-pixel * 0.6, pixel * 0.6, torn);
 	float depth = -torn; // pixels in from the edge
 
 	// The paper.
@@ -164,12 +164,12 @@ void fragment() {
 
 	// The line along the outline, pressed harder in some places than others.
 	float press = 0.45 + 0.55 * value_noise(s / 11.0 + 53.0);
-	float line = smoothstep(line_width + pixel, line_width * 0.4, depth) * press;
+	float line = (1.0 - smoothstep(line_width * 0.4, line_width + pixel, depth)) * press;
 	col = mix(col, line_colour, line * line_strength);
 
 	// The shadow: a wide soft one that falls away from the card, and a close dark one.
-	float cast = shadow_strength * smoothstep(shadow_soft, -shadow_soft * 0.5, box(at - shadow_offset, corner + 4.0));
-	float contact = contact_strength * smoothstep(contact_soft, -contact_soft * 0.3, box(at - shadow_offset * 0.25, corner));
+	float cast = shadow_strength * (1.0 - smoothstep(-shadow_soft * 0.5, shadow_soft, box(at - shadow_offset, corner + 4.0)));
+	float contact = contact_strength * (1.0 - smoothstep(-contact_soft * 0.3, contact_soft, box(at - shadow_offset * 0.25, corner)));
 	float shade = max(cast, contact) * (1.0 - inside);
 
 	float alpha = inside + shade;

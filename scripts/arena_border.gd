@@ -47,7 +47,7 @@ func _draw() -> void:
 				var end := start + pencil.randf_range(0.2, 0.45)
 				pencil.stroke(PackedVector2Array([from.lerp(to, start) + across * 0.9,
 						from.lerp(to, end) + across * 0.5]), width * 0.7, wobble * 0.8, 0.4)
-	if column_at > 0.0:
+	if column_at > 0.0 and not insets.is_empty() and not widths.is_empty():
 		var inner := insets[insets.size() - 1]
 		var from := Vector2(column_at + pencil.randf_range(-1.5, 1.5), inner - pencil.randf_range(2.0, 7.0))
 		var to := Vector2(column_at + pencil.randf_range(-1.5, 1.5), size.y - inner + pencil.randf_range(2.0, 7.0))

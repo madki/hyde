@@ -53,6 +53,8 @@ var is_jekyll := true:
 var _cards: Array[ArenaCard] = []
 var _raised: Array[bool] = []
 var _moves: Array[Tween] = []
+## False while the pointer is outside the window.
+var _pointer_here := true
 
 
 func _ready() -> void:
@@ -64,8 +66,6 @@ func _ready() -> void:
 		card.set_meta("askew", Vector2(rng.randf_range(-3.0, 3.0), rng.randf_range(-1.5, 1.5)))
 		card.set_meta("unruly", Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0),
 				rng.randf_range(-1.0, 1.0)) * UNRULY)
-		card.mouse_entered.connect(_raise.bind(i, true))
-		card.mouse_exited.connect(_raise.bind(i, false))
 		add_child(card)
 		_cards.append(card)
 		_raised.append(false)
@@ -84,6 +84,33 @@ func _show_samples() -> void:
 		_cards[i].show_card(sample[1] if on_ink else sample[0], on_ink, picture, sample[3])
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_MOUSE_ENTER:
+		_pointer_here = true
+	elif what == NOTIFICATION_WM_MOUSE_EXIT:
+		_pointer_here = false
+
+
+func _process(_delta: float) -> void:
+	var under := _card_under(get_local_mouse_position()) if _pointer_here else -1
+	for i in _cards.size():
+		if _raised[i] != (i == under):
+			_raise(i, i == under)
+
+
+## The card the pointer is on, or -1: the topmost one whose place in the row holds the point.
+## A card's place stays where it is while the card rises, so a card cannot rise away from the
+## pointer and drop again. A raised card also keeps the pointer for as far as it has risen.
+func _card_under(point: Vector2) -> int:
+	for i in range(_cards.size() - 1, -1, -1):
+		var rest := Rect2(_rest(i), ArenaCard.SIZE)
+		if _raised[i]:
+			rest = rest.merge(Rect2(_place(i), ArenaCard.SIZE))
+		if rest.has_point(point):
+			return i
+	return -1
+
+
 ## Puts every card where it belongs at once, without the move there.
 func snap() -> void:
 	for i in _cards.size():
@@ -100,13 +127,20 @@ func _outward(i: int) -> float:
 
 ## Where the i-th card's top left corner lies.
 func _place(i: int) -> Vector2:
-	var askew: Vector2 = _cards[i].get_meta("askew")
+	return _slot(i) - Vector2(0.0, RISE) if _raised[i] else _rest(i)
+
+
+## The i-th card's place in a row that is level and true.
+func _slot(i: int) -> Vector2:
 	var middle := (table_left + size.x - room_right) * 0.5
-	var x := middle + (i - (_cards.size() - 1) * 0.5) * PITCH - ArenaCard.SIZE.x * 0.5
-	var y := size.y - room_under - ArenaCard.SIZE.y
-	if _raised[i]:
-		return Vector2(x, y - RISE)
-	var place := Vector2(x, y + _outward(i) * _outward(i) * FAN_DROP + askew.x)
+	return Vector2(middle + (i - (_cards.size() - 1) * 0.5) * PITCH - ArenaCard.SIZE.x * 0.5,
+			size.y - room_under - ArenaCard.SIZE.y)
+
+
+## Where the i-th card's top left corner lies while the card is not raised.
+func _rest(i: int) -> Vector2:
+	var askew: Vector2 = _cards[i].get_meta("askew")
+	var place := _slot(i) + Vector2(0.0, _outward(i) * _outward(i) * FAN_DROP + askew.x)
 	if not is_jekyll:
 		var unruly: Vector3 = _cards[i].get_meta("unruly")
 		place += Vector2(unruly.x, unruly.y)

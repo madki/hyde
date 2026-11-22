@@ -69,8 +69,8 @@ func _init() -> void:
 
 	_body.draw.connect(_draw_body)
 	_lines.draw.connect(_draw_lines)
-	_lines.material = LINE_MATERIAL
-	LINE_MATERIAL.set_shader_parameter("texel", TEXEL)
+	# Each card has its own copy, for its own seed.
+	_lines.material = LINE_MATERIAL.duplicate()
 	var picture_material := ShaderMaterial.new()
 	picture_material.shader = PICTURE_SHADER
 	_picture.material = picture_material
@@ -81,6 +81,8 @@ func _init() -> void:
 	_picture.size = Vector2(SIZE.x - (inner + 6.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - 12.0)
 	_title.position = Vector2(inner, inner)
 	_title.size = Vector2(SIZE.x - inner * 2.0, TITLE_BOTTOM - inner)
+	# A title too long even at the smallest size is cut off at its box, not printed over the frame.
+	_title.clip_text = true
 	_chips.position = Vector2(inner, FOOT_TOP)
 	_chips.size = Vector2(CHIPS_WIDTH, SIZE.y - inner - FOOT_TOP)
 	for label: Label in [_title, _chips]:
@@ -136,6 +138,10 @@ func _refresh() -> void:
 		# The picture is printed in the body's texels: how many of its own pixels that is.
 		var shown := minf(_picture.size.x / picture.get_width(), _picture.size.y / picture.get_height())
 		picture_material.set_shader_parameter("texel", TEXEL / shown)
+
+	var line_material := _lines.material as ShaderMaterial
+	line_material.set_shader_parameter("texel", TEXEL)
+	line_material.set_shader_parameter("seed", float(rng_seed))
 
 	_body.queue_redraw()
 	_lines.queue_redraw()
