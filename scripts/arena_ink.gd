@@ -38,12 +38,15 @@ const REST_AFTER := 4.0
 
 var is_jekyll := false:
 	set(value):
+		if value != is_jekyll:
+			_wake()
 		is_jekyll = value
-		_wake()
 var percent := 50.0:
 	set(value):
-		percent = clampf(value, 0.0, 100.0)
-		_wake()
+		value = clampf(value, 0.0, 100.0)
+		if value != percent:
+			_wake()
+		percent = value
 var volatility := 50.0:
 	set(value):
 		volatility = clampf(value, 0.0, 100.0)
@@ -70,7 +73,9 @@ func snap_to_stance() -> void:
 
 
 func _ready() -> void:
-	_page = paper.material as ShaderMaterial
+	# The page gets its own copy of the saved material: what is set here is this arena's alone.
+	_page = paper.material.duplicate() as ShaderMaterial
+	paper.material = _page
 	_wet = ShaderMaterial.new()
 	_wet.shader = WET_SHADER
 	# One viewport draws the wet layer from the other's picture of the last frame; the other

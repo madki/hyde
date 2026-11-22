@@ -4,6 +4,11 @@
 
 Written during GitHub Game Off 2026 with AI assistance (Claude Code).
 
+The wet layer of the arena's ink (`shaders/arena_wet.gdshader`) uses a method learnt from
+"Liquid Toy" by Leon Denise (<https://www.shadertoy.com/view/fljBWc>): a picture that is
+redrawn from itself, each place taking last frame's value from a spot shifted up its own slope
+and along a turning noise. No code was taken from that shader; the code here is this project's own.
+
 ## Engine
 
 [Godot Engine](https://godotengine.org) — MIT licence.
