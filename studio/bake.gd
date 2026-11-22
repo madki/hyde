@@ -33,7 +33,8 @@ extends Node
 ## from the same scenes by studio/title_figure_bake.gd and studio/alley_figure_bake.gd, which
 ## the scripts above run after it.
 ##
-## The title's streets also get reflections in their wet ground (SSR) in the lamp passes: `_wet`.
+## The title's streets and the alley also get reflections in their wet ground (SSR) in the lamp
+## passes: `_wet`.
 ##
 ## shaders/background.gdshader colours and animates them at runtime.
 ## `--passes` also writes every pass as its own PNG, for checking the bake by eye.
@@ -48,6 +49,7 @@ const SCENES := {"alley": "res://studio/alley.tscn", "lab": "res://studio/lab.ts
 var _viewport: SubViewport
 var _env: Environment
 var _wet := false # whether the variant being baked has wet ground, which shows reflections
+var _indoors := false # whether it is a room: no fog in the air, so no halos or shafts of light
 
 
 func _ready() -> void:
@@ -87,8 +89,9 @@ func _bake(variant: String) -> void:
 	var street: Node3D = (ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
 			as PackedScene).instantiate()
 	_viewport.add_child(street)
-	_wet = variant.begins_with("title_")
-	if _wet:
+	_wet = variant.begins_with("title_") or variant == "alley"
+	_indoors = variant == "lab"
+	if variant.begins_with("title_"):
 		TitleStreet.stage(street, man)
 	_env = Environment.new()
 	var world_env := WorldEnvironment.new()
@@ -164,8 +167,8 @@ func _setup_pass(p: String) -> void:
 	e.ssr_max_steps = 128
 	e.ssr_fade_in = 0.1
 	e.ssr_fade_out = 4.0
-	# Lamp halos: only the lamp passes scatter in the air.
-	e.volumetric_fog_enabled = p in ["key", "wall"]
+	# Lamp halos: only the lamp passes scatter in the air, and only out of doors.
+	e.volumetric_fog_enabled = p in ["key", "wall"] and not _indoors
 	e.volumetric_fog_density = 0.018
 	e.volumetric_fog_albedo = Color.WHITE
 	e.volumetric_fog_length = 70.0

@@ -44,6 +44,9 @@ Thumbs.db
 .idea/
 *.translation
 
+# Figure distance fields left by an older bake: some were made from Jekyll's licensed model.
+/studio/cache/
+
 # Jekyll's figure meshes are made from a licensed model that may not be passed on: they stay
 # out of the repository. Only pictures rendered from them are committed (see CREDITS.md).
 /studio/figures/jekyll*.res

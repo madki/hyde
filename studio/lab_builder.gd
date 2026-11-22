@@ -187,15 +187,14 @@ static func _window_wall() -> Node3D:
 		_slab(win, Vector3(mid - 0.02, SILL, bar_z - 0.018), Vector3(mid + 0.02, HEAD, bar_z + 0.018), timber, "Bar")
 
 	# What comes in by it: a narrow beam from high outside, so only the panes' shapes land in
-	# the room and the fog in the bake shows the shafts.
+	# the room. Kept low, or it burns out the man who sits in it.
 	var beam := SpotLight3D.new()
 	beam.name = "WindowLight"
 	beam.spot_range = 22.0
 	beam.spot_angle = 16.0
 	beam.spot_angle_attenuation = 0.5
 	beam.spot_attenuation = 0.3
-	beam.light_energy = 8.0
-	beam.light_volumetric_fog_energy = 1.0
+	beam.light_energy = 5.0
 	beam.shadow_enabled = true
 	beam.light_size = 0.1
 	beam.shadow_bias = 0.05
@@ -212,7 +211,6 @@ static func _window_wall() -> Node3D:
 	fill.omni_range = 6.0
 	fill.omni_attenuation = 1.2
 	fill.light_energy = 0.75
-	fill.light_volumetric_fog_energy = 0.3
 	fill.shadow_enabled = true
 	fill.light_size = 0.3
 	fill.shadow_bias = 0.05
@@ -507,4 +505,7 @@ static func _far_end() -> Node3D:
 	light.light_energy = 0.45
 	lamp.scale *= 0.75
 	far.add_child(lamp)
+	# Most of its light on the wall comes from out in the room, so the bricks behind it keep
+	# their drawing and the light reaches further along the wall.
+	far.add_child(StreetBuilder._even_out(lamp, Vector3.BACK * 0.8, 0.22, 6.0))
 	return far

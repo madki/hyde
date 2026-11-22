@@ -34,7 +34,8 @@ uniform vec3 ink_body : source_color = vec3(0.29, 0.14, 0.25);
 uniform vec3 ink_deep : source_color = vec3(0.13, 0.05, 0.115);
 
 group_uniforms ink;
-/** The wet layer's paint: 1 at the right border, 0 at the ink's limit, stirred. */
+/** The wet layer's paint (read with ink_paint): 1 at the right border, 0 at the ink's limit,
+ * stirred. */
 uniform sampler2D wet : filter_linear, repeat_disable;
 /** The page's size in pixels (set by arena_ink.gd), to tell where on the page a pixel is. */
 uniform vec2 page_size = vec2(1152.0, 648.0);
@@ -79,13 +80,16 @@ void fragment() {
 	// All of the ink lies inside presence's limit.
 	vec2 drifted = ink_drifted(page_uv);
 	float inside = ink_reach(page_uv) - ink_rank(drifted);
-	float total = max(smoothstep(0.0, limit_soft, inside) * step(0.0005, presence), step(0.999, presence));
+	// A full page is inked to its last corner: the rank goes a little over 1 near the left
+	// border, which would leave those places bare, or with the drying line all over them.
+	inside = max(inside, step(0.999, presence));
+	float total = smoothstep(0.0, limit_soft, inside) * step(0.0005, presence);
 	if (total > 0.0) {
 		float sheet = 1.0 + (t - mid_at) * 2.0 * ink_paper;
-		float paint = texture(wet, page_uv).r;
+		float paint = ink_paint(texture(wet, page_uv));
 		// Smooth noises that travel with the ink: one shifts the layers' levels so their edges
 		// do not run alongside each other, one is how much pigment dried where.
-		vec2 w = drifted * WIDE;
+		vec2 w = drifted * page_shape;
 		float shift = texture(noise_b, w * 1.1 + vec2(0.61, 0.29)).r - 0.5;
 		float vary = smoothstep(0.25, 0.75, shift + 0.5);
 		float pigment = 0.9 + 1.1 * (texture(noise_a, w * 0.8 + vec2(0.37, 0.11)).r - 0.5)
@@ -106,7 +110,7 @@ void fragment() {
 		// body's wine, the thickest nearly black, under slow clouds that travel with the clock.
 		float dark = total * has_dark * smoothstep(dark_at - edge_soft, dark_at + edge_soft, paint);
 		float deeper = dark * smoothstep(deep_at - edge_soft, deep_at + edge_soft, paint);
-		vec2 wide = page_uv * WIDE;
+		vec2 wide = page_uv * page_shape;
 		float cloud = texture(noise_b, wide * 1.3 + vec2(ink_time * 0.031, -ink_time * 0.022)).r
 				+ 0.6 * texture(noise_a, wide * 2.7 - vec2(ink_time * 0.027, ink_time * 0.035)).r;
 		float tone = clamp(pigment * mix(0.5, 1.0, deeper) * mix(0.55, 1.25, cloud / 1.6), 0.0, 1.0);
