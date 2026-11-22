@@ -2,7 +2,7 @@ class_name StreetBuilder
 ## Generates the two 3D street scenes the game background is baked from:
 ## studio/street_jekyll.tscn and studio/street_hyde.tscn (see studio/bake.gd).
 ## Those scenes are the source of truth and are meant to be edited in the 3D editor;
-## this script only makes a fresh starting point (`tools/bake_bg.sh --rebuild` OVERWRITES them).
+## this script only makes a fresh starting point (`tools/bake_title.sh --rebuild` OVERWRITES them).
 ## Desktop-only authoring code: nothing in studio/ is exported with the game.
 ##
 ## Everything that emits light belongs to one pass group ("pass_key", "pass_wall",

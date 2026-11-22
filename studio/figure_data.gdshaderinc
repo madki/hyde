@@ -1,5 +1,5 @@
-// The drawing data both figure shaders write, so the still figures (studio/figure.gdshader)
-// and the changing one (studio/morph.gdshader) are inked and lit alike by the game:
+// The drawing data the figures' shader (studio/figure.gdshader) writes for the figure layers,
+// which the game inks and lights:
 //
 //   R = form shading (0.3 = dark fold .. 1 = lit top)
 //   G = light from the key lamp's side: its real light on the cloth + a rim on edges that face
@@ -7,11 +7,11 @@
 //   B = the same for the wall lanterns' side, screen-right
 //
 // or, with `depth_pass` on, how far the surface is from the camera (0 = near .. 1 = far end of
-// `depth_range`). The lamps are the street's own (found by studio/figure_bake.gd).
+// `depth_range`). The lamps are the scene's own (found by studio/figure_bake.gd).
 
 const int MAX_LAMPS = 8;
 
-/** Set by studio/figure_bake.gd; leave off. */
+/** Set by the figure bakes; leave off. */
 uniform bool depth_pass = false;
 /** Higher = thinner rim highlights. */
 uniform float rim_power : hint_range(0.5, 8.0) = 3.5;

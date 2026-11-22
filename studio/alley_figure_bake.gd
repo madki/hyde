@@ -6,8 +6,8 @@ extends Node
 ##                                  and how much of the pixel the figure covers in A
 ##   art/bg/alley_figure_depth.png  how far the figure is from the camera, at half the size
 ##
-## The same layer the streets have (studio/figure_bake.gd), with one picture on the sheet: the
-## game draws it over the baked alley with shaders/background.gdshader. The camera, the lamps
+## The same kind of layer the title has (studio/title_figure_bake.gd), with one picture on the
+## sheet: the game draws it over the baked alley with shaders/background.gdshader. The camera, the lamps
 ## and the figure are read from studio/alley.tscn, and the part of the picture the layer covers
 ## from AlleyBackground.FIGURE_RECT: re-bake after changing any of them.
 

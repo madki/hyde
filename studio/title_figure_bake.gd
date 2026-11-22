@@ -1,14 +1,13 @@
 extends Node
-## Bakes the figure layer of the title screen: Jekyll and Hyde standing still, further up the
-## street than in the game, so that they are seen down to their feet. Desktop only; run with
+## Bakes the figure layer of the title screen: Jekyll and Hyde standing still, out in the
+## street, seen down to their feet. Desktop only; run with
 ## Forward+ (tools/bake_title.sh runs it after the title's streets):
 ##
 ##   art/bg/title_figures.png        drawing data in RGB (see studio/figure_data.gdshaderinc)
 ##                                   and how much of the pixel the figure covers in A
 ##   art/bg/title_figures_depth.png  how far the figure is from the camera, at half the size
 ##
-## The same layer the streets have (studio/figure_bake.gd), with two pictures on the sheet:
-## Jekyll, then Hyde. The game draws them over the baked streets with
+## Two pictures on the sheet: Jekyll, then Hyde. The game draws them over the baked streets with
 ## shaders/background.gdshader. The camera and the lamps are read from
 ## studio/street_jekyll.tscn and studio/street_hyde.tscn, where the men stand from
 ## studio/title_street.gd, and the part of the picture the layer covers from

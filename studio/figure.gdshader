@@ -3,13 +3,13 @@ shader_type spatial;
 render_mode cull_disabled;
 // Material for the Jekyll / Hyde figures in the street scenes.
 //
-// In the street it is plain dark cloth. When studio/figure_bake.gd draws the figure layer it
-// turns `data_pass` on, and the shader writes drawing data instead of colour (see
+// In the street it is plain dark cloth. When a figure layer is baked (studio/title_figure_bake.gd,
+// studio/alley_figure_bake.gd) `data_pass` is turned on, and the shader writes drawing data instead of colour (see
 // studio/figure_data.gdshaderinc), which shaders/background.gdshader turns into the inked look.
 
 #include "res://studio/figure_data.gdshaderinc"
 
-/** Set by studio/figure_bake.gd; leave off. */
+/** Set by the figure bakes; leave off. */
 uniform bool data_pass = false;
 /** Whose lamps light the figure in the data pass: 0 = Jekyll's street, 1 = Hyde's. */
 uniform float street = 0.0;

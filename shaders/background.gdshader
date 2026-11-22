@@ -10,15 +10,16 @@ shader_type canvas_item;
 //
 //   figures        RGB = drawing data: form shading, light from the key lamp's side, light
 //                  from the wall lanterns' side;  A = how much of the pixel the figure covers.
-//                  One sheet: the flipbook of one man turning into the other, and under it the
-//                  two men standing still. scripts/background.gd picks what is shown.
+//                  One sheet: Jekyll standing still and then Hyde, side by side, or one man
+//                  alone. The screen's own script picks who is shown.
 //   figures_depth  how far the figure is from the camera, same layout at half the size
 //
 // A canvas shader gets eight textures in the Compatibility renderer, and this one uses all
 // eight (the seven above and `colour_tex`): a ninth silently breaks the others.
 //
 // Mipmaps of the pass textures double as a free blur: they tint the mist and make the glow.
-// Every look setting is a parameter: edit them on shaders/background_material.tres.
+// Every look setting is a parameter: edit them on the screen's material (shaders/title_material.tres,
+// alley_material.tres, lab_material.tres).
 
 /** 0 = Jekyll, 1 = Hyde. */
 uniform float shift : hint_range(0.0, 1.0) = 0.0;
@@ -157,18 +158,8 @@ uniform vec2 uv_anchor = vec2(0.5);
 uniform vec2 sway = vec2(0.0);
 /** Which man each street shows: -1 = its own, 0 = Jekyll in both, 1 = Hyde in both. */
 uniform float figure_face = -1.0;
-/** How far the figure's outline wanders, as a fraction of the picture. 0 = still. */
-uniform float figure_wobble = 0.0;
-/** 0 = the still man chosen above, 1 = the flipbook frame below. */
-uniform float morph_mix = 0.0;
-/** Which flipbook frame: a whole number shows that frame, between two it blends them. */
-uniform float morph_frame = 0.0;
-uniform float morph_frames = 36.0;
-/** Flipbook frames across and down the figure sheet. */
-uniform vec2 morph_grid = vec2(6.0, 6.0);
-/** Width of one flipbook frame, and of one still man, on the figure sheet in pixels. */
-uniform float morph_frame_px = 512.0;
-uniform float figure_still_px = 768.0;
+/** Width of one man on the figure sheet, in pixels. */
+uniform float figure_px = 512.0;
 /** The part of the picture the figure layer covers: x, y, width, height. */
 uniform vec4 figure_rect = vec4(0.0, 0.0, 1.0, 1.0);
 /** Distances from the camera, in metres, that the depth sheet's 0 and 1 stand for. */
@@ -210,19 +201,12 @@ vec2 on_sheet(vec2 corner, float size, vec2 f) {
 	return (corner + clamp(f, edge, 1.0 - edge) * size) / vec2(textureSize(figures, 0));
 }
 
-// Where the figure layer keeps what it shows at `uv`: the still man (`own` = this street's:
-// 0 Jekyll, 1 Hyde) and the current flipbook frame. Returns 0 outside the layer.
-float figure_places(float own, vec2 uv, out vec2 still, out vec2 frame, out vec2 next) {
+// Where the figure sheet keeps the man shown at `uv` (`own` = this street's: 0 Jekyll,
+// 1 Hyde). Returns 0 outside the layer.
+float figure_place(float own, vec2 uv, out vec2 at) {
 	vec2 f = (uv - figure_rect.xy) / figure_rect.zw;
 	float face = figure_face < 0.0 ? own : figure_face;
-	still = on_sheet(vec2(step(0.5, face) * figure_still_px, morph_grid.y * morph_frame_px),
-			figure_still_px, f);
-	float a = floor(morph_frame);
-	float b = min(a + 1.0, morph_frames - 1.0);
-	frame = on_sheet(vec2(mod(a, morph_grid.x), floor(a / morph_grid.x)) * morph_frame_px,
-			morph_frame_px, f);
-	next = on_sheet(vec2(mod(b, morph_grid.x), floor(b / morph_grid.x)) * morph_frame_px,
-			morph_frame_px, f);
+	at = on_sheet(vec2(step(0.5, face) * figure_px, 0.0), figure_px, f);
 	// Beside and above the layer there is no figure; below it the last row carries on.
 	return step(0.0, f.x) * step(f.x, 1.0) * step(0.0, f.y);
 }
@@ -230,34 +214,17 @@ float figure_places(float own, vec2 uv, out vec2 still, out vec2 frame, out vec2
 // How deep into the street's haze the figure is at `uv` (0 = at the camera): the same measure
 // the streets' mist pass gives for everything else.
 float figure_haze_at(float own, vec2 uv) {
-	vec2 still;
-	vec2 frame;
-	vec2 next;
-	figure_places(own, uv, still, frame, next);
-	float d = texture(figures_depth, still).r;
-	if (morph_mix > 0.0) {
-		d = mix(d, mix(texture(figures_depth, frame).r, texture(figures_depth, next).r,
-				fract(morph_frame)), morph_mix);
-	}
+	vec2 at;
+	figure_place(own, uv, at);
+	float d = texture(figures_depth, at).r;
 	return 1.0 - exp(-figure_haze * mix(figure_depth_range.x, figure_depth_range.y, d));
 }
 
 // The figure layer at `uv`: rgb = drawing data, a = how much of the pixel the figure covers.
 vec4 figure(float own, vec2 uv) {
-	if (figure_wobble > 0.0) {
-		// Redrawn twelve times a second, like the grain: the outline boils instead of sliding.
-		vec2 drift = floor(TIME * 12.0) * vec2(0.071, 0.043);
-		uv += (texture(noise_tex, uv * vec2(2.6, 1.5) + drift).rg - 0.5) * figure_wobble;
-	}
-	vec2 still;
-	vec2 frame;
-	vec2 next;
-	float inside = figure_places(own, uv, still, frame, next);
-	vec4 c = texture(figures, still);
-	if (morph_mix > 0.0) {
-		c = mix(c, mix(texture(figures, frame), texture(figures, next), fract(morph_frame)), morph_mix);
-	}
-	c *= inside;
+	vec2 at;
+	float inside = figure_place(own, uv, at);
+	vec4 c = texture(figures, at) * inside;
 	c.rgb /= max(c.a, 0.001); // the sheet holds data already scaled by coverage
 	return c;
 }
@@ -266,8 +233,7 @@ vec4 figure(float own, vec2 uv) {
 // with his lit edges brighter.
 float ghost_light(float face, vec2 uv) {
 	vec2 f = (uv - figure_rect.xy) / figure_rect.zw;
-	vec4 g = texture(figures, on_sheet(vec2(face * figure_still_px,
-			morph_grid.y * morph_frame_px), figure_still_px, f));
+	vec4 g = texture(figures, on_sheet(vec2(face * figure_px, 0.0), figure_px, f));
 	g *= step(0.0, f.x) * step(f.x, 1.0) * step(0.0, f.y);
 	g.rgb /= max(g.a, 0.001);
 	float rim = max(smoothstep(figure_rim_edge - figure_rim_soft, figure_rim_edge + figure_rim_soft, g.g),

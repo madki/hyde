@@ -69,15 +69,13 @@ are not part of this repository: `.gitignore` keeps them out, and the bake scrip
 message where they are missing. Two committed scenes use those meshes, `studio/street_jekyll.tscn`
 and `studio/lab.tscn`: in a clone without them the editor opens these with the mesh reported
 missing and Jekyll not there. Only pictures rendered from the model are committed, from which
-it cannot be got back: the figure of Jekyll in `art/bg/figures.png`, `art/bg/figures_depth.png`,
+it cannot be got back: the figure of Jekyll in
 `art/bg/title_figures.png`, `art/bg/title_figures_depth.png` and `art/bg/lab_a.png`, `lab_b.png`,
 `lab_c.png`.
 
-The textures in `art/bg/` are rendered by this project (`tools/bake_bg.sh` for the streets,
-`tools/bake_figures.sh` for the figures, `tools/bake_title.sh` for the title screen's streets and the
-two men on them, `art/bg/title_*.png`, `tools/bake_alley.sh` for the back alley and the man
-at its door, `art/bg/alley_*.png`, `tools/bake_lab.sh` for the laboratory, `art/bg/lab_*.png`) from scenes assembled in code out of the assets above;
-the assets themselves are used only for those bakes and are not part of the game build. The two
-figures appear in `art/bg/figures.png` and `art/bg/figures_depth.png` as inked silhouettes: each
-standing still, and in a flipbook of one turning into the other, whose in-between shapes are
-blended by code (`studio/morph.gdshader`) from the two changed meshes above.
+The textures in `art/bg/` are rendered by this project (`tools/bake_title.sh` for the title
+screen's streets and the two men on them, `art/bg/title_*.png`, `tools/bake_alley.sh` for the back
+alley and the man at its door, `art/bg/alley_*.png`, `tools/bake_lab.sh` for the laboratory,
+`art/bg/lab_*.png`) from scenes assembled in code out of the assets above; the assets themselves
+are used only for those bakes and are not part of the game build. The figures appear in them as
+inked silhouettes, standing still.

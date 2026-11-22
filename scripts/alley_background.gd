@@ -32,16 +32,10 @@ func _ready() -> void:
 	# one face. In the editor it stays the saved one, to be edited there.
 	if material and not Engine.is_editor_hint():
 		material = material.duplicate()
-	# The shader's Hyde face, showing the one still picture on the figure sheet.
+	# The shader's Hyde face, showing the one man on the figure sheet.
 	_set_param("shift", 1.0)
 	_set_param("figure_face", 0.0)
-	_set_param("figure_wobble", 0.0)
-	_set_param("morph_mix", 0.0)
-	_set_param("morph_frame", 0.0)
-	_set_param("morph_frames", 1.0)
-	_set_param("morph_grid", Vector2(1.0, 0.0))
-	_set_param("morph_frame_px", float(FIGURE_PX))
-	_set_param("figure_still_px", float(FIGURE_PX))
+	_set_param("figure_px", float(FIGURE_PX))
 	_set_param("figure_rect", Vector4(FIGURE_RECT.position.x, FIGURE_RECT.position.y,
 			FIGURE_RECT.size.x, FIGURE_RECT.size.y))
 	_set_param("figure_depth_range", FIGURE_DEPTH_RANGE)
