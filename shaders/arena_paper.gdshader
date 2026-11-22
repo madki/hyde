@@ -26,11 +26,12 @@ group_uniforms colours;
 uniform vec3 paper_dark : source_color = vec3(0.122, 0.141, 0.157);
 uniform vec3 paper_mid : source_color = vec3(0.184, 0.243, 0.275);
 uniform vec3 paper_light : source_color = vec3(0.306, 0.376, 0.447);
-/** The ink's four colours, palest to darkest. */
-uniform vec3 ink_wash : source_color = vec3(0.40, 0.33, 0.50);
-uniform vec3 ink_bloom : source_color = vec3(0.55, 0.27, 0.54);
-uniform vec3 ink_body : source_color = vec3(0.34, 0.14, 0.31);
-uniform vec3 ink_deep : source_color = vec3(0.18, 0.065, 0.165);
+/** The ink's four colours, palest to darkest: pale wash, pink where the ink thins, wine, and
+ * the darkest. */
+uniform vec3 ink_wash : source_color = vec3(0.415, 0.325, 0.455);
+uniform vec3 ink_bloom : source_color = vec3(0.40, 0.21, 0.37);
+uniform vec3 ink_body : source_color = vec3(0.29, 0.14, 0.25);
+uniform vec3 ink_deep : source_color = vec3(0.13, 0.05, 0.115);
 
 group_uniforms ink;
 /** The wet layer's paint: 1 at the right border, 0 at the ink's limit, stirred. */
@@ -47,7 +48,7 @@ uniform float mid_cover : hint_range(0.0, 1.0) = 0.0;
 /** How much of the page's own light and dark shows in the ink: it is a dye, not a coat. */
 uniform float ink_paper : hint_range(0.0, 1.5) = 0.5;
 /** How strongly the pale wash tints the page. */
-uniform float wash_cover : hint_range(0.0, 1.0) = 0.5;
+uniform float wash_cover : hint_range(0.0, 1.0) = 0.8;
 /** How far the page turns to the ink's colour where the paint is thick, and where thin. */
 uniform float ink_cover : hint_range(0.0, 1.0) = 0.95;
 uniform float ink_cover_thin : hint_range(0.0, 1.0) = 0.7;
