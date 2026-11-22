@@ -34,8 +34,8 @@ void fragment() {
 	float pressure = COLOR.a;
 	float tooth = 0.6 * value_noise(at / tooth_size) + 0.4 * value_noise(at / (tooth_size * 2.25) + 5.0);
 	float half_width = pressure * (0.8 + 0.4 * tooth);
-	float soft = fwidth(UV.y) * 0.75;
-	float line = smoothstep(half_width + soft, half_width - soft, abs(UV.y));
+	float soft = max(fwidth(UV.y) * 0.75, 0.0001);
+	float line = 1.0 - smoothstep(half_width - soft, half_width + soft, abs(UV.y));
 	float broken = mix(1.0, smoothstep(0.2, 0.55, tooth), grain * (1.0 - smoothstep(0.15, 0.45, pressure)));
 	float dark = clamp(0.8 + pressure * 1.5, 0.0, 1.0);
 	COLOR = vec4(COLOR.rgb, line * broken * dark);

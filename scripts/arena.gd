@@ -7,7 +7,8 @@ extends Control
 ## Shift gives it to the other man. For a screenshot they can be given as `--ink=<0..100>`,
 ## `--volatility=<0..100>` and `--hyde`.
 
-## Who has the table.
+## Who has the table. These three may be set before the arena is in the tree: they reach the
+## ink and the hand when those are ready.
 var is_jekyll := true:
 	set(value):
 		is_jekyll = value
@@ -15,6 +16,18 @@ var is_jekyll := true:
 			_ink.is_jekyll = value
 		if _hand:
 			_hand.is_jekyll = value
+## How much of the page the ink covers, 0 to 100.
+var ink_percent := 50.0:
+	set(value):
+		ink_percent = clampf(value, 0.0, 100.0)
+		if _ink:
+			_ink.percent = ink_percent
+## How restless the ink is in Hyde's stance, 0 to 100.
+var ink_volatility := 50.0:
+	set(value):
+		ink_volatility = clampf(value, 0.0, 100.0)
+		if _ink:
+			_ink.volatility = ink_volatility
 
 @onready var _ink: ArenaInk = $Ink
 @onready var _hand: ArenaHand = $Hand
@@ -22,11 +35,14 @@ var is_jekyll := true:
 
 func _ready() -> void:
 	if Shot.has_arg("ink"):
-		set_ink_percent(float(Shot.arg("ink")))
+		ink_percent = float(Shot.arg("ink"))
 	if Shot.has_arg("volatility"):
-		set_ink_volatility(float(Shot.arg("volatility")))
-	set_jekyll(not Shot.has_arg("hyde"))
+		ink_volatility = float(Shot.arg("volatility"))
+	if Shot.has_arg("hyde"):
+		is_jekyll = false
+	_ink.set_ink(ink_percent, ink_volatility, is_jekyll)
 	_ink.snap_to_stance()
+	_hand.is_jekyll = is_jekyll
 	_hand.snap()
 	Shot.run_if_requested(self)
 
@@ -40,8 +56,9 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Sets all of the ink at once: the share of the page it covers (0 to 100), how restless it is
 ## in Hyde's stance (0 to 100), and whether Jekyll has the table.
 func set_ink(percent: float, volatility: float, jekyll: bool) -> void:
+	ink_percent = percent
+	ink_volatility = volatility
 	is_jekyll = jekyll
-	_ink.set_ink(percent, volatility, jekyll)
 
 
 ## True while Jekyll has the table: the ink stands still and its dark layers draw back.
@@ -51,9 +68,9 @@ func set_jekyll(jekyll: bool) -> void:
 
 ## How much of the page the ink covers, 0 to 100.
 func set_ink_percent(percent: float) -> void:
-	_ink.percent = percent
+	ink_percent = percent
 
 
 ## How restless the ink is in Hyde's stance, 0 to 100.
 func set_ink_volatility(volatility: float) -> void:
-	_ink.volatility = volatility
+	ink_volatility = volatility

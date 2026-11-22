@@ -7,8 +7,8 @@ shader_type canvas_item;
 // limit. It is kept from resting there: each place takes last frame's paint from a spot
 // shifted towards thicker paint, so paint swells outward, and shifted again along a direction
 // read from slow noise that turns with time, which throws out arms. (Swelling and a turning
-// noise on a picture that feeds on itself is the method of Leon Denise's "Liquid Toy",
-// shadertoy.com/view/fljBWc. The code here is this project's own.)
+// noise on a picture that feeds on itself is a method learnt from another shader, credited in
+// CREDITS.md under "Code". The code here is this project's own.)
 
 #include "res://shaders/arena_ink.gdshaderinc"
 
