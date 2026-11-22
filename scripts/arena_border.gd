@@ -10,7 +10,7 @@ extends Control
 ## Distance of the line that parts the left column from the page's left edge, in pixels: 0
 ## for no line.
 @export var column_at := 0.0
-## Usual width of each ruling, in pixels.
+## Usual width of each ruling, in pixels. A ruling past the last width takes the last one.
 @export var widths := PackedFloat32Array([2.6, 1.3])
 ## How far the hand wavers, in pixels.
 @export var wobble := 1.3
@@ -28,10 +28,12 @@ func _ready() -> void:
 func _draw() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = colour
+	if widths.is_empty():
+		return
 	for ruling in insets.size():
 		var inset := Vector2(insets[ruling], insets[ruling])
 		var rect := Rect2(inset, size - inset * 2.0)
-		var width := widths[ruling]
+		var width := widths[mini(ruling, widths.size() - 1)]
 		var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
 				Vector2(rect.position.x, rect.end.y)]
 		for i in 4:
@@ -47,7 +49,7 @@ func _draw() -> void:
 				var end := start + pencil.randf_range(0.2, 0.45)
 				pencil.stroke(PackedVector2Array([from.lerp(to, start) + across * 0.9,
 						from.lerp(to, end) + across * 0.5]), width * 0.7, wobble * 0.8, 0.4)
-	if column_at > 0.0 and not insets.is_empty() and not widths.is_empty():
+	if column_at > 0.0 and not insets.is_empty():
 		var inner := insets[insets.size() - 1]
 		var from := Vector2(column_at + pencil.randf_range(-1.5, 1.5), inner - pencil.randf_range(2.0, 7.0))
 		var to := Vector2(column_at + pencil.randf_range(-1.5, 1.5), size.y - inner + pencil.randf_range(2.0, 7.0))

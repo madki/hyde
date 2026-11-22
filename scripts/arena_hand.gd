@@ -73,6 +73,8 @@ func _ready() -> void:
 	_show_samples()
 	resized.connect(snap)
 	snap()
+	# A screenshot must not depend on where the pointer happens to rest.
+	set_process(not Shot.has_arg("shot"))
 
 
 func _show_samples() -> void:
@@ -99,14 +101,18 @@ func _process(_delta: float) -> void:
 
 
 ## The card the pointer is on, or -1: the topmost one whose place in the row holds the point.
-## A card's place stays where it is while the card rises, so a card cannot rise away from the
-## pointer and drop again. A raised card also keeps the pointer for as far as it has risen.
+## A card's place stays where it is, turned as the card lies, while the card rises, so a card
+## cannot rise away from the pointer and drop again. A raised card also keeps the pointer for
+## as far as it has risen.
 func _card_under(point: Vector2) -> int:
+	var half := ArenaCard.SIZE * 0.5
 	for i in range(_cards.size() - 1, -1, -1):
 		var rest := Rect2(_rest(i), ArenaCard.SIZE)
-		if _raised[i]:
-			rest = rest.merge(Rect2(_place(i), ArenaCard.SIZE))
-		if rest.has_point(point):
+		# The point as the card at rest sees it: the card is turned about its middle.
+		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(i)))
+		if absf(seen.x) <= half.x and absf(seen.y) <= half.y:
+			return i
+		if _raised[i] and rest.merge(Rect2(_place(i), ArenaCard.SIZE)).has_point(point):
 			return i
 	return -1
 
@@ -148,8 +154,11 @@ func _rest(i: int) -> Vector2:
 
 
 func _turn(i: int) -> float:
-	if _raised[i]:
-		return 0.0
+	return 0.0 if _raised[i] else _rest_turn(i)
+
+
+## How far the i-th card is turned while it is not raised, in degrees.
+func _rest_turn(i: int) -> float:
 	var askew: Vector2 = _cards[i].get_meta("askew")
 	var turn := _outward(i) * FAN_TURN + askew.y
 	if not is_jekyll:

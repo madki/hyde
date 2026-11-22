@@ -81,11 +81,11 @@ func _init() -> void:
 	_picture.size = Vector2(SIZE.x - (inner + 6.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - 12.0)
 	_title.position = Vector2(inner, inner)
 	_title.size = Vector2(SIZE.x - inner * 2.0, TITLE_BOTTOM - inner)
-	# A title too long even at the smallest size is cut off at its box, not printed over the frame.
-	_title.clip_text = true
 	_chips.position = Vector2(inner, FOOT_TOP)
 	_chips.size = Vector2(CHIPS_WIDTH, SIZE.y - inner - FOOT_TOP)
 	for label: Label in [_title, _chips]:
+		# Text too long even at the smallest size is cut off at its box, not printed over the frame.
+		label.clip_text = true
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	for child: Control in [_body, _picture, _lines, _title, _chips]:
@@ -118,17 +118,12 @@ func _refresh() -> void:
 	_title.text = title if ink else title.to_upper()
 	_title.add_theme_font_override("font", font)
 	_title.add_theme_color_override("font_color", text)
-	# The largest size at which the title fits its box.
-	var font_size := 14 if ink else 13
-	while font_size > 7 and font.get_string_size(_title.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0,
-			font_size).x > _title.size.x - 5.0:
-		font_size -= 1
-	_title.add_theme_font_size_override("font_size", font_size)
+	_fit(_title, font, 14 if ink else 13, 5.0)
 
 	_chips.text = str(chips)
 	_chips.add_theme_font_override("font", _upright)
-	_chips.add_theme_font_size_override("font_size", 14)
 	_chips.add_theme_color_override("font_color", text)
+	_fit(_chips, _upright, 14, 2.0)
 
 	_picture.texture = picture
 	var picture_material := _picture.material as ShaderMaterial
@@ -145,6 +140,16 @@ func _refresh() -> void:
 
 	_body.queue_redraw()
 	_lines.queue_redraw()
+
+
+## Gives a label the largest font size, from `largest` down to 7, at which its text fits its
+## box with `room` pixels to spare.
+func _fit(label: Label, font: Font, largest: int, room: float) -> void:
+	var font_size := largest
+	while font_size > 7 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0,
+			font_size).x > label.size.x - room:
+		font_size -= 1
+	label.add_theme_font_size_override("font_size", font_size)
 
 
 func _draw_body() -> void:

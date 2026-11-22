@@ -123,7 +123,7 @@ void fragment() {
 	float torn = straight + 0.5
 			+ waver * (value_noise(s / 26.0) * 2.0 - 1.0)
 			+ fray * (value_noise(s / 1.9) * 2.0 - 1.0)
-			+ bite * smoothstep(1.0 - bite_rate, 1.0, value_noise(s / 8.0 + 7.0))
+			+ bite * smoothstep(1.0 - max(bite_rate, 0.001), 1.0, value_noise(s / 8.0 + 7.0))
 				* value_noise(s / 3.1 + 3.0);
 	vec2 to_side = card_size * 0.5 - abs(p - card_size * 0.5);
 	float worn = hash(sign(p - card_size * 0.5) + seed);
