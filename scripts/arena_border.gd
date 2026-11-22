@@ -2,10 +2,14 @@ class_name ArenaBorder
 extends Control
 ## The page's ruled border, drawn by hand: an outer heavier line and an inner light one. Each
 ## side is its own stroke, a little off true and running past the corner, fading where the
-## pencil lifted, and gone over again for part of the way.
+## pencil lifted, and gone over again for part of the way. One more ruled line runs down the
+## page and parts a column on the left from the table.
 
 ## Distance of the two rulings from the edge of the page, in pixels.
 @export var insets := PackedFloat32Array([28.0, 36.0])
+## Distance of the line that parts the left column from the page's left edge, in pixels: 0
+## for no line.
+@export var column_at := 0.0
 ## Usual width of each ruling, in pixels.
 @export var widths := PackedFloat32Array([2.6, 1.3])
 ## How far the hand wavers, in pixels.
@@ -43,4 +47,11 @@ func _draw() -> void:
 				var end := start + pencil.randf_range(0.2, 0.45)
 				pencil.stroke(PackedVector2Array([from.lerp(to, start) + across * 0.9,
 						from.lerp(to, end) + across * 0.5]), width * 0.7, wobble * 0.8, 0.4)
+	if column_at > 0.0:
+		var inner := insets[insets.size() - 1]
+		var from := Vector2(column_at + pencil.randf_range(-1.5, 1.5), inner - pencil.randf_range(2.0, 7.0))
+		var to := Vector2(column_at + pencil.randf_range(-1.5, 1.5), size.y - inner + pencil.randf_range(2.0, 7.0))
+		pencil.stroke(PackedVector2Array([from, to]), widths[0], wobble, fade)
+		pencil.stroke(PackedVector2Array([from.lerp(to, 0.08) + Vector2(4.5, 0.0), from.lerp(to, 0.97) + Vector2(5.0, 0.0)]),
+				widths[widths.size() - 1], wobble, fade)
 	pencil.draw(self)

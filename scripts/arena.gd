@@ -1,6 +1,6 @@
 extends Control
 ## The arena, where every round is played: a page of Dr Jekyll's night journal, its ruled
-## border, and Hyde's ink coming in from the right.
+## border, Hyde's ink coming in from the right, and the hand of cards on the table.
 ##
 ## The ink is set through three things (see scripts/arena_ink.gd): who has the table, how much
 ## of the page the ink covers, and how restless it is. Jekyll has the table to begin with, and
@@ -11,6 +11,7 @@ extends Control
 var is_jekyll := true
 
 @onready var _ink: ArenaInk = $Ink
+@onready var _hand: ArenaHand = $Hand
 
 
 func _ready() -> void:
@@ -20,6 +21,7 @@ func _ready() -> void:
 		set_ink_volatility(float(Shot.arg("volatility")))
 	set_jekyll(not Shot.has_arg("hyde"))
 	_ink.snap_to_stance()
+	_hand.snap()
 	Shot.run_if_requested(self)
 
 
@@ -34,12 +36,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func set_ink(percent: float, volatility: float, jekyll: bool) -> void:
 	self.is_jekyll = jekyll
 	_ink.set_ink(percent, volatility, jekyll)
+	_hand.is_jekyll = jekyll
 
 
 ## True while Jekyll has the table: the ink stands still and its dark layers draw back.
 func set_jekyll(jekyll: bool) -> void:
 	is_jekyll = jekyll
 	_ink.is_jekyll = jekyll
+	_hand.is_jekyll = jekyll
 
 
 ## How much of the page the ink covers, 0 to 100.
