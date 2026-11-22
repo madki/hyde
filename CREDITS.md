@@ -31,6 +31,7 @@ Every third-party asset must be listed here before it is committed.
 | Chemistry Set (model) | `studio/assets/chemistry_set/` | Poly Haven | <https://polyhaven.com/a/chemistry_set> | CC0 |
 | Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
 | Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| Old paper7 (scan of a sheet of old paper, modified) | `art/arena/paper_mask.png` | Digital Yard Sale | <https://commons.wikimedia.org/wiki/File:Old_paper7.jpg> | Public domain |
 
 Meshes cut from the Poly Haven models are saved one to a file in `studio/kit/` (facade pieces,
 the two street lamps and the pieces of the chemistry set, by `studio/street_builder.gd` and
@@ -42,6 +43,12 @@ mesh stays under CC BY 4.0:
 
 - "Mad Corvin - AS3 'The Alienist'" by Nicu.Scarlat: frozen in one pose of its animation,
   display stand, moustache and goatee removed, textures and materials dropped, rescaled.
+
+The paper scan is one of "6 Old Paper Textures" given away by Digital Yard Sale on 17 July 2010
+"to use however your little heart desires", and is on Wikimedia Commons as released into the
+public domain by its author. `studio/paper_mask_bake.gd` turns it on its side, crops its edges
+off and saves it as greys, a mask that the arena's page takes its light and dark from; the
+scan itself is not part of this repository.
 
 ### Jekyll: a bought model
 
