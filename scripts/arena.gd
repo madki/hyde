@@ -1,6 +1,6 @@
 extends Control
 ## The arena, where every round is played: a page of Dr Jekyll's night journal, its ruled
-## border, and Hyde's ink coming in from the right.
+## border, Hyde's ink coming in from the right, and the hand of cards on the table.
 ##
 ## The ink is set through three things (see scripts/arena_ink.gd): who has the table, how much
 ## of the page the ink covers, and how restless it is. Jekyll has the table to begin with, and
@@ -8,12 +8,14 @@ extends Control
 ## `--volatility=<0..100>` and `--hyde`.
 
 ## Who has the table. These three may be set before the arena is in the tree: they reach the
-## ink when it is ready.
+## ink and the hand when those are ready.
 var is_jekyll := true:
 	set(value):
 		is_jekyll = value
 		if _ink:
 			_ink.is_jekyll = value
+		if _hand:
+			_hand.is_jekyll = value
 ## How much of the page the ink covers, 0 to 100.
 var ink_percent := 50.0:
 	set(value):
@@ -28,6 +30,7 @@ var ink_volatility := 50.0:
 			_ink.volatility = ink_volatility
 
 @onready var _ink: ArenaInk = $Ink
+@onready var _hand: ArenaHand = $Hand
 
 
 func _ready() -> void:
@@ -39,6 +42,8 @@ func _ready() -> void:
 		is_jekyll = false
 	_ink.set_ink(ink_percent, ink_volatility, is_jekyll)
 	_ink.snap_to_stance()
+	_hand.is_jekyll = is_jekyll
+	_hand.snap()
 	Shot.run_if_requested(self)
 
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/arena.gd" id="1"]
 [ext_resource type="Material" path="res://shaders/arena_paper_material.tres" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="Material" path="res://shaders/pencil_line_material.tres" id="4"]
 [ext_resource type="Script" path="res://scripts/arena_border.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/arena_ink.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/arena_hand.gd" id="7"]
 
 [node name="Arena" type="Control"]
 layout_mode = 3
@@ -33,7 +34,17 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("5")
+column_at = 290.0
 
 [node name="Ink" type="Node" parent="." node_paths=PackedStringArray("paper")]
 script = ExtResource("6")
 paper = NodePath("../Paper")
+
+[node name="Hand" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("7")
+table_left = 295.0
