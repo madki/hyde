@@ -1,5 +1,7 @@
 class_name ArenaMomentEnd
-## A round's end, from its `round_end` event. A round that is won:
+## A round's end, from its `round_end` event: won, rescued (ArenaMomentRescue has shown him
+## taking his Roots), or lost. Every round that is covered ends with the line's check, which
+## can end the run; so can night 5's scene, and a rescue that falls short. A round that is won:
 ##
 ## 1. The hand and both piles gather into the deck in the corner.
 ## 2. The pay: "Round won." in the centre, the round's sovereigns drop into the purse one by
@@ -14,20 +16,83 @@ class_name ArenaMomentEnd
 ## The next round's heading follows as its own move (ArenaMomentRound).
 
 
-static func add(t: ArenaTable, e: Dictionary) -> void:
-	if e.how != "won":
-		# The rescue and the run's end are not shown yet.
-		t.unhandled = true
-		return
-	gather(t)
-	_pay(t, e)
+## `first` is the `joined` event of his first four Roots when a rescue is his first arrival
+## (they join the gathered deck), else empty.
+static func add(t: ArenaTable, e: Dictionary, first: Dictionary = {}) -> void:
+	match e.how:
+		"won":
+			gather(t)
+			_pay(t, e)
+		"rescued":
+			_rescued(t, e, first)
+		_:
+			# The pool ran out and the round is still short: the run ends there.
+			t.add_caption("He could not cover it.")
+			_ending(t, e)
+			return
 	line(t, e)
-	if e.over:
-		return
-	if e.offers_card:
+	if e.ending != null:
+		_ending(t, e)
+	elif e.offers_card:
 		_reward(t)
-	elif not t.after.night.scene and (e.stance == "hyde" or e.broke_out):
+	elif e.how == "won" and not t.after.night.scene and (e.stance == "hyde" or e.broke_out):
 		t.add_caption("He takes no card.")
+
+
+## The names of the run's three endings.
+const ENDINGS := {"hyde": "Mr Hyde", "double": "The Double Life", "myself": "This, Too, Was Myself"}
+
+
+# The round is covered by him: the target is struck in his ink, he has the table, the track
+# is wiped with nothing stored, and on his first arrival his four Roots join the deck.
+static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
+	t.beats.add(func() -> void:
+		t.stage.show_caption("Rescued. No pay, no card.")
+		t.hand.lift(false)
+		t.column.clear_readout()
+		await t.follow(t.column.strike_target()).finished
+		await t.stage.clear_caption())
+	if e.was == "jekyll":
+		ArenaMomentShift.page(t, true)
+	t.beats.add(func() -> void:
+		if int(t.shown.value("restraint/meter", 0)) != 0:
+			t.mark("restraint/meter", 0)
+			await t.beats.wait(ArenaPace.MARK))
+	gather(t)
+	if not first.is_empty():
+		ArenaMomentShift.joined(t, first)
+
+
+# The run ends: the table shows how, and hands over to the ending by its name.
+static func _ending(t: ArenaTable, e: Dictionary) -> void:
+	var ending: String = e.ending
+	t.beats.add(func() -> void:
+		t.hand.lift(false)
+		t.column.clear_readout()
+		if ending == "hyde":
+			# The ink takes the whole page, and the cards sink into it.
+			t.ink.is_jekyll = false
+			var flood := t.beats.tween().set_parallel()
+			flood.tween_property(t.ink, "percent", 100.0, 1.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+			for node: Node in t.hand.get_children() + t.travel.get_children():
+				if node is ArenaCard:
+					flood.tween_property(node, "modulate", Color(0.35, 0.2, 0.4, 0.0), 1.6)
+			await flood.finished
+		else:
+			# The page stills.
+			await t.beats.wait(ArenaPace.HOLD)
+		# The round's cards are the deck's again.
+		t.shown.set_value("draw_count", 0)
+		t.shown.set_value("discard_count", 0))
+	t.beats.add_choice(func() -> void:
+		if SceneFlow.show_ending(ending):
+			return
+		# No ending screen yet: the table names the ending and waits.
+		t.stage.show_caption("%s.  The run is over: press a key for a new one." % ENDINGS.get(ending, ending))
+		t.waiting_press = true
+		await t.pressed
+		t.waiting_press = false
+		await t.stage.clear_caption())
 
 
 ## The hand and both piles gather into the deck in the corner.
@@ -41,7 +106,7 @@ static func gather(t: ArenaTable) -> void:
 		if not cards.is_empty():
 			await t.piles.put("draw", cards)
 		await t.piles.reshuffle()
-		t.shown.set_value("deck_count", t.run.cards.size())
+		t.shown.set_value("deck_count", int(t.shown.value("draw_count", 0)))
 		t.piles.deck_mode = true
 		t.shown.set_value("draw_count", 0))
 

@@ -157,7 +157,17 @@ func do_move(move: String, result: Dictionary) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
-	if _busy or not key or not key.pressed or key.echo:
+	var button := event as InputEventMouseButton
+	if t.waiting_press and ((key and key.pressed and not key.echo) or (button and button.pressed)):
+		get_viewport().set_input_as_handled()
+		t.pressed.emit()
+		return
+	if not key or not key.pressed or key.echo:
+		return
+	if _busy:
+		# Enter is the table's own key: it must not reach the game's "next screen".
+		if key.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+			get_viewport().set_input_as_handled()
 		return
 	match key.keycode:
 		KEY_ENTER, KEY_KP_ENTER:
@@ -243,7 +253,7 @@ func _on_choice(ids: Array) -> void:
 
 # The round is over: the reward's choice is made in the rules and the next round begins.
 # Until the dawn's places have pages of their own, the laboratory and the back alley are left
-# at once; and until the run's end is shown, a new run begins after it.
+# at once. After the run's end, which the round's last move has shown, a new run begins.
 func _go_on() -> void:
 	var events: Array = []
 	while _run.phase != "play" and _run.phase != "end":
@@ -257,12 +267,16 @@ func _go_on() -> void:
 				result = Rules.alley_leave(_run)
 		events.append_array(result.events)
 	if _run.phase == "end":
-		t.add_caption("The run is over. A new one begins.")
+		# The table has shown the run's end: a new run begins on a clean page.
 		_run = Rules.new_run()
 		t.run = _run
 		t.offered = []
 		t.picked = null
 		_symbols.line_reset()
+		_ink.percent = ink_percent
+		_hand.clear()
+		for node in t.travel.get_children():
+			node.queue_free()
 		events = _run.events
 	await do_move("round", {"ok": true, "events": events})
 

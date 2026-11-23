@@ -18,6 +18,8 @@ extends RefCounted
 signal choice_changed(play: Variant)
 ## Nothing is moving and every part shows `table` (RulesView.table() with the chosen cards).
 signal synced(table: Dictionary)
+## The player pressed a key or clicked while the table waited for it (`waiting_press`).
+signal pressed
 ## A move is about to be played back: the marks of a choice are to go.
 signal move_begun(move: String)
 
@@ -51,6 +53,8 @@ var reward: ArenaReward
 
 ## The reward's choice, between the round that offered it and the next: the place of the
 ## card taken (-1 or null for none), and the nodes of the cards that were offered.
+## True while a beat waits for any key or click (the run's end).
+var waiting_press := false
 var picked: Variant = null
 var offered: Array = []
 

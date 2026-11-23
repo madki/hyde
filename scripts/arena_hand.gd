@@ -67,6 +67,8 @@ var max_chosen := 5
 ## False while clicks are not taken.
 var enabled := true
 
+## While true every card stands raised, as under the pointer: he is looking the hand over.
+var _lifted := false
 var _cards: Array[ArenaCard] = []
 var _rng := RandomNumberGenerator.new()
 ## False while the pointer is outside the window.
@@ -218,8 +220,16 @@ func turn_to(entry_of: Callable, hyde_has_table: bool) -> void:
 		card.set_tag("")
 
 
+## Raises every card of the hand, or lets them down again.
+func lift(on: bool) -> void:
+	_lifted = on
+	for card in _cards:
+		_move(card, RISE_TIME)
+
+
 ## Empties the hand at once.
 func clear() -> void:
+	_lifted = false
 	for card in _cards:
 		_stop(card)
 		card.queue_free()
@@ -393,7 +403,7 @@ func _card_under(point: Vector2) -> ArenaCard:
 
 
 func _raised(card: ArenaCard) -> bool:
-	return card.get_meta("raised")
+	return _lifted or card.get_meta("raised")
 
 
 ## The distance between one card's centre and the next: the row tightens when it holds more

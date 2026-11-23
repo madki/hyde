@@ -130,6 +130,10 @@ static func _idle(arena: Node, at_choice: bool = false) -> void:
 			if at_choice:
 				return
 			reward.pick(0)
+		elif arena.t.waiting_press:
+			if at_choice:
+				return
+			arena.t.pressed.emit()
 		await arena.get_tree().process_frame
 
 
@@ -139,6 +143,9 @@ static func _press(arena: Node, key: String) -> void:
 	if reward.waiting:
 		# At a reward: 1 to 3 take a card, anything else none.
 		reward.pick(int(key) - 1 if key.is_valid_int() else -1)
+		return
+	if arena.t.waiting_press:
+		arena.t.pressed.emit()
 		return
 	match key.to_upper():
 		"P":

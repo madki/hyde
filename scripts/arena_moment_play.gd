@@ -41,6 +41,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 	var score_to := 0
 	# The symbols whose gauges the play changes: their cards' chips are counted anew.
 	var changed: Array = []
+	var rescue := {}
 	for e: Dictionary in events:
 		match e.t:
 			"scored":
@@ -70,9 +71,15 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 			"breakout":
 				ArenaMomentBreakout.add(t, e)
 			"joined", "brought":
-				ArenaMomentShift.add_event(t, e)
+				# In a rescue his first four Roots join the gathered deck, at the round's end.
+				if e.t == "joined" and rescue.has("last"):
+					rescue.first = e
+				else:
+					ArenaMomentShift.add_event(t, e)
+			"rescue", "converted":
+				ArenaMomentRescue.add_event(t, e, rescue)
 			"round_end":
-				ArenaMomentEnd.add(t, e)
+				ArenaMomentEnd.add(t, e, rescue.get("first", {}))
 			_:
 				t.unhandled = true
 	t.beats.add_call(func() -> void:
