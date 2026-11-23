@@ -6,6 +6,10 @@ extends Control
 ## of the page the ink covers, and how restless it is. Jekyll has the table to begin with, and
 ## Shift gives it to the other man. For a screenshot they can be given as `--ink=<0..100>`,
 ## `--volatility=<0..100>` and `--hyde` (`tools/shot.sh /abs/out.png res://scenes/arena.tscn --ink=30`).
+##
+## The restraint gauge (scripts/arena_restraint.gd) shows the run's table as RulesView gives it.
+## Until rounds are played here the run is a new one, and its meter can be set to look at the
+## gauge: with `--restraint=<0..5>` for a screenshot, or with the keys 0 to 5.
 
 ## Who has the table. These three may be set before the arena is in the tree: they reach the
 ## ink and the hand when those are ready.
@@ -31,6 +35,9 @@ var ink_volatility := 50.0:
 
 @onready var _ink: ArenaInk = $Ink
 @onready var _hand: ArenaHand = $Hand
+@onready var _restraint: ArenaRestraint = $Restraint
+
+var _run := Rules.new_run()
 
 
 func _ready() -> void:
@@ -44,6 +51,10 @@ func _ready() -> void:
 	_ink.snap_to_stance()
 	_hand.is_jekyll = is_jekyll
 	_hand.snap()
+	if Shot.has_arg("restraint"):
+		_run.restraint = int(Shot.arg("restraint"))
+	_restraint.show_table(RulesView.table(_run))
+	_restraint.snap()
 	Shot.run_if_requested(self)
 
 
@@ -51,6 +62,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key and key.pressed and not key.echo and key.keycode == KEY_SHIFT:
 		set_jekyll(not is_jekyll)
+	# To look at the gauge, until rounds are played here: a number key sets the meter.
+	if key and key.pressed and not key.echo and key.keycode >= KEY_0 and key.keycode <= KEY_5:
+		_run.restraint = key.keycode - KEY_0
+		_restraint.show_table(RulesView.table(_run))
 
 
 ## Sets all of the ink at once: the share of the page it covers (0 to 100), how restless it is
