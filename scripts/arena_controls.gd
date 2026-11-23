@@ -73,6 +73,8 @@ func _ready() -> void:
 func show_table(table: Dictionary, chosen: int) -> void:
 	var playing: bool = table.phase == "play"
 	var play: Variant = table.play
+	_passing = false
+	warn_breakout(false)
 	_passing = playing and table.can_pass.ok
 	_play.text = "Pass" if _passing else "Play"
 	if _passing:
@@ -99,6 +101,17 @@ func show_table(table: Dictionary, chosen: int) -> void:
 		why_not = "Choose cards to discard."
 	_discard.disabled = why_not != ""
 	_discard.tooltip_text = why_not
+
+
+## Writes the warning of a play that would make him break out on the Play control, or takes
+## it off. `show_table` takes it off too.
+func warn_breakout(on: bool) -> void:
+	if _passing:
+		return
+	_play.text = "Play: he breaks out" if on else "Play"
+	_play.size.x = BUTTON_SIZE.x + (74.0 if on else 0.0)
+	_discard.position.x = _play.size.x + GAP
+	_row.position.x = _rest().x - (37.0 if on else 0.0)
 
 
 ## True if Play (or Pass) can be pressed now.

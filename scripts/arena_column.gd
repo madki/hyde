@@ -116,6 +116,8 @@ var _ticks := 0
 ## of salt: the stored drops struck through.
 var _ghost_drops := 0
 var _struck := false
+## The chosen play would spend the stored drops: they lean towards the mult.
+var _lean := false
 
 
 func _init() -> void:
@@ -272,6 +274,12 @@ func set_stored(n: int) -> Tween:
 func preview_stored(outlined: int, struck: bool) -> void:
 	_ghost_drops = outlined
 	_struck = struck
+	_redraw()
+
+
+## The stored drops lean towards the mult: the chosen play would spend them.
+func lean_stored(on: bool) -> void:
+	_lean = on
 	_redraw()
 
 
@@ -626,7 +634,7 @@ func _draw_text() -> void:
 	c.draw_arc(coin, 3.6, 0.0, TAU, 16, Color(0.55, 0.42, 0.18), 1.0)
 
 	for i in ceili(_stored):
-		_drop(_drop_at(i), clampf(_stored - i, 0.0, 1.0))
+		_drop(_drop_at(i) + (Vector2(-5.0, -9.0) if _lean else Vector2.ZERO), clampf(_stored - i, 0.0, 1.0))
 	for i in _ghost_drops:
 		c.draw_arc(_drop_at(ceili(_stored) + i), 7.0, 0.0, TAU, 16, Color(CREAM, 0.75), 1.4)
 	if _struck and _stored >= 1.0:

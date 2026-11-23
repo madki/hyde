@@ -80,6 +80,13 @@ var _lock_fall := 0.0:
 		_lock_fall = value
 		_text.queue_redraw()
 var _lock_move: Tween
+## The still mark of what the chosen play would do: "" for none, "step" (the next step is
+## outlined: it adds restraint), "breakout" (the outline is on the HYDE! end: he breaks out)
+## or "lock" (it adds none).
+var ghost := "":
+	set(value):
+		ghost = value
+		_text.queue_redraw()
 
 
 func _init() -> void:
@@ -249,12 +256,21 @@ func _draw_text() -> void:
 	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, PENCIL)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
 	if _lock > 0.0:
-		_draw_lock()
+		_draw_lock(_lock, _lock_fall)
+	elif ghost == "lock":
+		_draw_lock(0.7, 0.0)
+	elif ghost == "step" or ghost == "breakout":
+		var at := _step(limit if ghost == "breakout" else mini(meter + 1, limit))
+		var heavy := ghost == "breakout"
+		_text.draw_arc(at, minf(BEAD, _pitch() * 0.5) + (2.0 if heavy else 0.0), 0.0, TAU, 32,
+				Color(0.42, 0.1, 0.4, 0.95) if heavy else Color(0.42, 0.13, 0.44, 0.75), 3.2 if heavy else 2.0)
 
 
 # The lock: on a cream tag over the next step. Landing, it drops onto the step; opened, its
 # shackle swings up and it falls away below the track.
-func _draw_lock() -> void:
+func _draw_lock(alpha: float, fall: float) -> void:
+	var _lock := alpha
+	var _lock_fall := fall
 	var at := _step(mini(meter + 1, limit)) + Vector2(0.0, 14.0 * _lock_fall if _lock_fall < 0.0 else 26.0 * _lock_fall)
 	var ink := Color(PENCIL, _lock)
 	_text.draw_circle(at, 13.0, Color(0.93, 0.88, 0.75, _lock * 0.95))
