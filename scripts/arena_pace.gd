@@ -33,7 +33,7 @@ const PAGE_SHIFT := 1.2
 ## The least time a caption is on the page; it stays as long as its beat if that is longer.
 const CAPTION_MIN := 1.0
 
-## Not in doc-3's table: a pile's short riffle when a card is pushed into its middle, and the
+## Besides those: a pile's short riffle when a card is pushed into its middle, and the
 ## longer one when the discards are shuffled into a new draw pile; the slide of a card from
 ## beside the pile into it.
 const RIFFLE := 0.25

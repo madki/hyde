@@ -85,6 +85,7 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 		t.shown.set_value("draw_count", 0)
 		t.shown.set_value("discard_count", 0))
 	t.beats.add_choice(func() -> void:
+		t.freshen()
 		if SceneFlow.show_ending(ending):
 			return
 		# No ending screen yet: the table names the ending and waits.
@@ -162,6 +163,7 @@ static func _reward(t: ArenaTable) -> void:
 		t.stage.show_caption("Take a card for the deck, or none.")
 		await t.stage.lay(t.travel, nodes))
 	t.beats.add_choice(func() -> void:
+		t.freshen()
 		t.reward.offer(nodes, t.stage.slot(0, 1) + Vector2(0.0, ArenaCard.SIZE.y * 0.5 + 14.0))
 		t.picked = await t.reward.chosen
 		t.offered = nodes)

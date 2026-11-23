@@ -7,7 +7,7 @@ class_name ArenaMomentDrink
 
 static func add(t: ArenaTable, result: Dictionary) -> void:
 	t.beats.add(func() -> void:
-		t.play(t.means.tip_flask)
+		t.play_means(t.means.tip_flask)
 		await t.beats.wait(ArenaMeans.TIP_TIME))
 	for e: Dictionary in result.events:
 		if e.t == "shift":

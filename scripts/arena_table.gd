@@ -64,8 +64,11 @@ var after: Dictionary = {}
 var unhandled := false
 
 var _followed: Array[Tween] = []
-## True while the flask and the papers are still moving to what the engine holds.
+## True while the flask and the papers are in a movement of their own: they are then left
+## alone, and set to what the engine holds when it is over.
 var _means_settling := false
+## True when a skipped move left a movement of the symbols out: they show an older table.
+var _stale := false
 
 
 ## Call once, when every part is set.
@@ -124,8 +127,32 @@ func follow(tween: Tween) -> Tween:
 ## the movement is left out, and the part is put right at the end of the move.
 func play(movement: Callable) -> void:
 	if beats.rate() >= 100.0:
+		_stale = true
 		return
 	await movement.call()
+
+
+## Plays a movement of the flask or the papers that nothing waits for (the flask tipping, or
+## both settling for what comes next). Until it is over they are not set from the engine, so
+## that a move ending meanwhile cannot be overrun by it; then they are, as it then stands.
+func play_means(movement: Callable) -> void:
+	if beats.rate() >= 100.0 or _means_settling:
+		return
+	_means_settling = true
+	await movement.call()
+	_means_settling = false
+	means.show_table(RulesView.table(run), run.dials)
+
+
+## At a pause inside a move (a choice, a round's end) everything the round did has been
+## shown: the parts a skip left behind are set from the engine, and whoever listens to
+## `synced` is told the table as it stands.
+func freshen() -> void:
+	var table := RulesView.table(run)
+	if _stale:
+		symbols.show_table(table)
+		_stale = false
+	synced.emit(table)
 
 
 ## Moves one shown number and the part that draws it, without waiting: follow it with
@@ -178,6 +205,7 @@ func sync() -> void:
 	hand.is_jekyll = table.stance == "jekyll"
 	column.show_table(table)
 	symbols.show_table(table)
+	_stale = false
 	if not _means_settling:
 		means.show_table(table, run.dials)
 	hand.show_table(table)
@@ -189,13 +217,9 @@ func sync() -> void:
 ## now has them, in their own time: nothing waits for it. When the move is skipped they are
 ## set at once at its end.
 func settle_means() -> void:
-	if beats.rate() >= 100.0 or _means_settling:
-		return
-	_means_settling = true
-	await means.set_draught(after.draught)
-	await means.set_salt(after.salt)
-	_means_settling = false
-	means.show_table(RulesView.table(run), run.dials)
+	play_means(func() -> void:
+		await means.set_draught(after.draught)
+		await means.set_salt(after.salt))
 
 
 ## The table as the engine has it, at once: the end of a move some of which was not shown.

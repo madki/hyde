@@ -86,9 +86,11 @@ static func stained(t: ArenaTable, e: Dictionary) -> void:
 	var words := ArenaCaptions.changes("stain", before.name, after.name)
 	if e.from == "hand":
 		var card := t.hand.card_of(e.id)
-		var rest := t.hand.rest_of(e.id)
-		t.beats.add_call(func() -> void: card.set_meta("away", true))
-		t.moments.change_side(before, after, "hand", words, card, rest.centre, rest.turn)
+		var rest := func() -> Dictionary:
+			var at := t.hand.rest_of(e.id)
+			card.set_meta("away", true)
+			return at
+		t.moments.change_side(before, after, "hand", words, card, Vector2.ZERO, 0.0, rest)
 		t.beats.add_call(func() -> void:
 			card.card_id = e.id
 			card.dimmed = false

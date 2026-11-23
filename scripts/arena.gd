@@ -146,6 +146,7 @@ func do_move(move: String, result: Dictionary) -> void:
 	await _beats.run()
 	if _run.phase != "play":
 		# The round is over: the table stays as its end left it, and goes on.
+		t.freshen()
 		await _go_on()
 		return
 	t.sync()

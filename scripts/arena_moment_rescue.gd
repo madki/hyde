@@ -51,16 +51,18 @@ static func _takes(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 	before.ink = false
 	before.name = RulesConfig.ROOT[e.sym].paper
 	var card := t.hand.card_of(e.id)
-	var rest := t.hand.rest_of(e.id)
 	if card:
 		before.chips = card.chips
 	state.taken += 1
 	var doubled: int = 1 << int(state.taken)
-	t.beats.add_call(func() -> void:
+	# Where the card lies is asked for as it lifts: the played cards have left the row by then.
+	var rest := func() -> Dictionary:
+		var at := t.hand.rest_of(e.id)
 		if card:
-			card.set_meta("away", true))
+			card.set_meta("away", true)
+		return {"centre": at.centre + Vector2(0.0, -ArenaHand.RISE), "turn": at.turn}
 	t.moments.change_side(before, after, "hand", ArenaCaptions.changes("convert", before.name, after.name),
-			card, rest.centre + Vector2(0.0, -ArenaHand.RISE), rest.turn)
+			card, Vector2.ZERO, 0.0, rest)
 	t.beats.add_call(func() -> void:
 		if card:
 			card.dimmed = false

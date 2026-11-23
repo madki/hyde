@@ -653,7 +653,7 @@ func _selftest() -> void:
 			and ArenaCaptions.joins("breakout", ["Fog", "Pride"]) == "He breaks out. A Fog and a Pride join the deck."
 			and ArenaCaptions.joins("dawn", ["Appetite", "Appetite"]) == "Dawn. Two Appetite join the deck."
 			and ArenaCaptions.joins("no_paper", ["Appetite"]) == "Nothing is left to stain. An Appetite joins the deck.",
-			"the captions read as doc-3's tables")
+			"the captions read as they are meant to")
 	print("SELFTEST PASS" if _fails.is_empty() else "SELFTEST FAILED: %s" % str(_fails))
 
 
