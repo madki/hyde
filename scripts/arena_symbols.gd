@@ -38,10 +38,6 @@ const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_materia
 
 const SYMS: Array[String] = ["lamp", "heart", "mirror"]
 const LABELS := {"lamp": "LAMP", "heart": "HEART", "mirror": "MIRROR"}
-## The names of a symbol's two Roots, as RulesConfig.ROOT gives them.
-const ROOT_NAMES := {
-	"lamp": ["Composure", "Fog"], "heart": ["Kindness", "Appetite"], "mirror": ["Scruple", "Pride"],
-}
 
 ## The tags: size, the gap between two, and where the first one's top lies.
 const TAG_SIZE := Vector2(192.0, 140.0)
@@ -781,7 +777,7 @@ func _draw_text() -> void:
 		if s.ghost_roll:
 			var card := at + Vector2(TAG_SIZE.x - 30.0, 10.0)
 			_text.draw_string(_heavy, card + Vector2(0.0, 19.0), "+1", HORIZONTAL_ALIGNMENT_CENTER, 20.0, 10, _faint(INK, 0.7))
-			_text.draw_string(_slanted, card + Vector2(-14.0, 40.0), ROOT_NAMES[sym][1], HORIZONTAL_ALIGNMENT_CENTER,
+			_text.draw_string(_slanted, card + Vector2(-14.0, 40.0), RulesConfig.ROOT[sym].ink, HORIZONTAL_ALIGNMENT_CENTER,
 					48.0, 10, _faint(INK, 0.7))
 	# The line's counts, at its two ends, on the page's own ground.
 	var xf := _line_xform()
@@ -812,7 +808,7 @@ func _draw_detail(sym: String) -> void:
 	_text.draw_rect(box, PENCIL, false, 1.0)
 	var x := box.position.x + 10.0
 	var y := box.position.y + 19.0
-	var names: Array = ROOT_NAMES[sym]
+	var names: Array = [RulesConfig.ROOT[sym].paper, RulesConfig.ROOT[sym].ink]
 	_text.draw_string(_heavy, Vector2(x, y), "Craving %d   Habit %d   Temper %d" % [s.craving, s.habit, s.temper],
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, PENCIL)
 	_text.draw_string(_slanted, Vector2(x, y + 24.0), "%d %s in the deck, %d chips each" % [s.paper, names[0], s.paper_chips],
