@@ -153,6 +153,11 @@ func set_lock(on: bool) -> Tween:
 	return _lock_move
 
 
+## The middle of the track's last step, the HYDE! end, on the page.
+func end_place() -> Vector2:
+	return get_global_transform() * _step(limit)
+
+
 ## Puts the ink where it belongs at once, without the change there.
 func snap() -> void:
 	if _lock_move:

@@ -20,6 +20,7 @@ class_name ArenaBench
 ## - `--at=<seconds>`: with `--shot`, the still is taken this long into the last key's move
 ##   (or into the deal, without keys) instead of when it is over.
 ## - `--fast`: every move is played back at once.
+## - `--calm`: "reduce flashes" is on.
 ## - `--selftest[=<moves>]`: plays that many moves (300 by default) at random, played back at
 ##   once, and checks after each that the table shows what the engine holds. Prints
 ##   SELFTEST PASS or FAIL and quits.
@@ -28,6 +29,8 @@ class_name ArenaBench
 
 
 static func run_if_requested(arena: Node) -> void:
+	if Shot.has_arg("calm"):
+		ArenaPace.reduce_flashes = true
 	if Shot.has_arg("selftest"):
 		await _selftest(arena)
 		return

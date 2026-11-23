@@ -13,15 +13,34 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 		if e.t == "joined" and e.why == "reward":
 			taken = e.cards[0]
 	_reward_goes(t, taken)
+	# What the table shows as the round begins, where a shift before the first play (night
+	# 4's window, walking in full) has already changed the engine: Jekyll still has the
+	# table, the track holds what he walked in with, and his Roots have not yet joined.
+	var before := {}
+	for e: Dictionary in result.events:
+		if e.t in ["shift", "breakout"]:
+			before = {"meter": int(e.ev.stored) + int(e.ev.lost_restraint), "joined": 0}
+		elif e.t == "joined" and e.why in ["first", "breakout", "stain"] and not before.is_empty():
+			before.joined += e.cards.size()
 	for e: Dictionary in result.events:
 		match e.t:
 			"joined":
 				if e.why == "dawn":
 					_dawn(t, e)
 				elif e.why != "reward":
-					t.unhandled = true
+					ArenaMomentShift.add_event(t, e)
+			"brought":
+				ArenaMomentShift.add_event(t, e)
+			"shift":
+				# Night 4's scene: the drink's shift without the flask.
+				t.beats.add_call(func() -> void: t.stage.show_caption("The window. He comes unasked."))
+				t.beats.add_wait(ArenaPace.CAPTION_MIN)
+				ArenaMomentShift.store(t, e.ev.stored)
+				ArenaMomentShift.page(t, true)
+			"breakout":
+				ArenaMomentBreakout.add(t, e)
 			"shuffle":
-				_begin(t, e.ids.size())
+				_begin(t, e.ids.size(), before)
 			_:
 				if not ArenaMomentCards.add_event(t, e):
 					t.unhandled = true
@@ -70,8 +89,15 @@ static func _dawn(t: ArenaTable, e: Dictionary) -> void:
 
 
 # Everything up to the deal: `deck` is how many cards the deck holds.
-static func _begin(t: ArenaTable, deck: int) -> void:
-	var table := t.after
+static func _begin(t: ArenaTable, deck: int, before: Dictionary) -> void:
+	var table := t.after.duplicate()
+	if not before.is_empty():
+		table.stance = "jekyll"
+		table.restraint = table.restraint.duplicate()
+		table.restraint.meter = before.meter
+		table.restraint.stored = 0
+		table.line = table.line.duplicate()
+		table.line.ink = int(table.line.ink) - int(before.joined)
 	var night: Dictionary = table.night
 	# The table is cleared for the round: an empty hand, the whole deck in the draw pile, and
 	# the round's numbers at nothing. What happened between rounds was shown on other pages,
@@ -83,7 +109,9 @@ static func _begin(t: ArenaTable, deck: int) -> void:
 		t.means.show_table(table, t.run.dials)
 		for card in t.piles.discard_pile.take_all():
 			card.queue_free()
-		t.snap_shown()
+		t.shown.snap_to(table, ArenaTable.KEYS)
+		t.ink.is_jekyll = table.stance == "jekyll"
+		t.hand.is_jekyll = table.stance == "jekyll"
 		var blank := table.duplicate()
 		for key: String in ["target", "plays", "discards"]:
 			blank[key] = 0

@@ -13,6 +13,10 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 		match e.t:
 			"restraint":
 				t.add_mark("restraint/meter", e.n)
+			"breakout":
+				ArenaMomentBreakout.add(t, e)
+			"joined", "brought":
+				ArenaMomentShift.add_event(t, e)
 			"round_end":
 				ArenaMomentEnd.add(t, e)
 			_:

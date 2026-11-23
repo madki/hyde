@@ -67,6 +67,10 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 					_draw_with_eyes(t, e.ids, eyes)
 				else:
 					ArenaMomentCards.add_event(t, e)
+			"breakout":
+				ArenaMomentBreakout.add(t, e)
+			"joined", "brought":
+				ArenaMomentShift.add_event(t, e)
 			"round_end":
 				ArenaMomentEnd.add(t, e)
 			_:
