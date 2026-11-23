@@ -70,6 +70,13 @@ var face_down := false:
 	set(value):
 		face_down = value
 		_refresh()
+## The same, the other way about: false while the card lies face down.
+var face_up: bool:
+	get:
+		return not face_down
+	set(value):
+		if value == face_down:
+			face_down = not value
 ## Cannot be played now.
 var dimmed := false:
 	set(value):
@@ -160,6 +167,14 @@ func show_face(new_key: String, on_ink: bool, new_title: String, new_chips: int,
 	chips = new_chips
 	text = new_text
 	_refresh()
+
+
+## Shows a card from data shaped like one of RulesView.table().hand, {key, ink, name, chips,
+## text}, with any of them left out. A card without a key has no picture.
+func show_data(data: Dictionary, new_seed: int = rng_seed) -> void:
+	rng_seed = new_seed
+	show_face(data.get("key", ""), data.get("ink", false), data.get("name", ""),
+			data.get("chips", 0), data.get("text", ""))
 
 
 ## Writes a short note in the card's foot, "" for none. One that `warns` is written in red.
