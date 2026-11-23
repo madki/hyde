@@ -1,15 +1,23 @@
 class_name ArenaCard
 extends Control
 ## One card as it lies on the arena: a worn piece of paper with its shadow, a frame printed in
-## heavy ink, a title, a picture and its chips.
+## heavy ink, a title, a picture and its chips. A Common Factor also has what it does written
+## under its picture.
 ##
 ## A paper card is cream with a heavy upright title; an ink card is stained dark purple with
 ## a slanted one. The body (outline, paper, stains, shadow) is shaders/card_body.gdshader,
 ## through shaders/card_paper_material.tres or card_ink_material.tres: change the look there.
-## The frame's lines are laid out with Pencil and printed by shaders/card_line.gdshader, and
-## the picture by shaders/card_picture.gdshader. All three are printed coarsely, in texels of
-## TEXEL pixels. `rng_seed` changes the wear, the stains and the hand of
-## the lines, so that no two cards are alike. Set a card up with `show_card`.
+## The frame's lines and the picture are laid out with Pencil and printed by
+## shaders/card_line.gdshader, coarsely, in texels of TEXEL pixels. `rng_seed` changes the
+## wear, the stains and the hand of the lines, so that no two cards are alike.
+##
+## A card is set up from the rules' data: `show_entry` takes one card of
+## RulesView.table().hand, and `show_face` a card that is in no hand (on offer, or seen on
+## top of the draw pile). What the card is doing is then shown by plain marks, until each has
+## a look of its own: `face_down` (the draw pile), `dimmed` (cannot be played now) and a
+## written `set_tag` in the foot ("turns +2", "he takes", "best"). A chosen card is lifted by
+## the hand that holds it. `change_face` changes the card where it lies, and `appear` and
+## `leave` bring it in and take it away.
 
 const SIZE := Vector2(96.0, 140.0)
 ## The card is printed coarsely, in square texels this many pixels wide: 0 prints it smooth.
@@ -24,39 +32,72 @@ const TITLE_BOTTOM := 28.0
 const FOOT_TOP := 115.0
 ## Width of the box the chips are written in.
 const CHIPS_WIDTH := 20.0
+## Height of a Factor's picture: what it does is written in the rest of the picture's box.
+const FACTOR_PICTURE := 38.0
+## How dark a card that cannot be played now is printed.
+const DIM := Color(0.5, 0.5, 0.56)
+## The time half of a change of face takes (the card closes, then opens), and the time a
+## card takes to appear or to leave.
+const TURN_TIME := 0.09
+const FADE_TIME := 0.18
 
 const PAPER_MATERIAL: ShaderMaterial = preload("res://shaders/card_paper_material.tres")
 const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tres")
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/card_line_material.tres")
-const PICTURE_SHADER: Shader = preload("res://shaders/card_picture.gdshader")
 
 const PAPER_LINE := Color(0.07, 0.045, 0.03)
 const PAPER_TEXT := Color(0.07, 0.045, 0.03)
 ## On an ink card the frame and the picture are printed light, to be seen on the dark stain.
 const INK_LINE := Color(0.78, 0.68, 0.62)
 const INK_TEXT := Color(0.93, 0.85, 0.7)
+## A tag that warns, on paper and on ink.
+const PAPER_WARNING := Color(0.6, 0.1, 0.06)
+const INK_WARNING := Color(1.0, 0.72, 0.35)
 
+## The card's id in the run, or -1 for a card that is in no deck.
+var card_id := -1
+## The card's symbol or kind: "lamp", "heart", "mirror", "cup", "eye", "lock", "pen", "cane".
+var key := ""
 var title := ""
-## True for a card on Hyde's side.
+## True for a card that looks like Hyde's: an Ink Root, or a Factor while he has the table.
 var ink := false
-## A line drawing: only its alpha is used.
-var picture: Texture2D
 var chips := 0
+## What a Factor does. "" for a Root.
+var text := ""
 var rng_seed := 1
+## Shown from the back, as in the draw pile.
+var face_down := false:
+	set(value):
+		face_down = value
+		_refresh()
+## Cannot be played now.
+var dimmed := false:
+	set(value):
+		dimmed = value
+		modulate = Color(DIM if dimmed else Color.WHITE, modulate.a)
+## Picked for the next play or discard. The hand that holds the card lifts it.
+var chosen := false
 
 var _body := Control.new()
-var _picture := TextureRect.new()
+var _picture := Control.new()
 var _lines := Control.new()
 var _title := Label.new()
 var _chips := Label.new()
+var _text := Label.new()
+var _tag := Label.new()
+var _tag_warns := false
 var _upright := FontVariation.new()
 var _slanted := FontVariation.new()
+var _plain := FontVariation.new()
+var _change: Tween
+var _built := false
 
 
 func _init() -> void:
 	custom_minimum_size = SIZE
 	size = SIZE
 	pivot_offset = SIZE * 0.5
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# The engine's own font, until the game has its two faces: made heavy and narrow for
 	# paper, and slanted for ink.
@@ -66,16 +107,16 @@ func _init() -> void:
 	_slanted.base_font = ThemeDB.fallback_font
 	_slanted.variation_embolden = 0.3
 	_slanted.variation_transform = Transform2D(Vector2(1.0, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
+	_plain.base_font = ThemeDB.fallback_font
+	_plain.variation_embolden = 0.4
+	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
 
 	_body.draw.connect(_draw_body)
 	_lines.draw.connect(_draw_lines)
-	# Each card has its own copy, for its own seed.
+	_picture.draw.connect(_draw_picture)
+	# Each card has its own copies, for its own seed.
 	_lines.material = LINE_MATERIAL.duplicate()
-	var picture_material := ShaderMaterial.new()
-	picture_material.shader = PICTURE_SHADER
-	_picture.material = picture_material
-	_picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_picture.material = LINE_MATERIAL.duplicate()
 	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
 	_picture.position = Vector2(inner + 6.0, TITLE_BOTTOM + 6.0)
 	_picture.size = Vector2(SIZE.x - (inner + 6.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - 12.0)
@@ -83,63 +124,135 @@ func _init() -> void:
 	_title.size = Vector2(SIZE.x - inner * 2.0, TITLE_BOTTOM - inner)
 	_chips.position = Vector2(inner, FOOT_TOP)
 	_chips.size = Vector2(CHIPS_WIDTH, SIZE.y - inner - FOOT_TOP)
-	for label: Label in [_title, _chips]:
+	_tag.position = Vector2(inner + CHIPS_WIDTH + 3.0, FOOT_TOP)
+	_tag.size = Vector2(SIZE.x - inner * 2.0 - CHIPS_WIDTH - 3.0, SIZE.y - inner - FOOT_TOP)
+	_text.position = Vector2(inner + 2.0, TITLE_BOTTOM + FACTOR_PICTURE + 6.0)
+	_text.size = Vector2(SIZE.x - (inner + 2.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - FACTOR_PICTURE - 8.0)
+	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_text.add_theme_constant_override("line_spacing", -1)
+	for label: Label in [_title, _chips, _tag, _text]:
 		# Text too long even at the smallest size is cut off at its box, not printed over the frame.
 		label.clip_text = true
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	for child: Control in [_body, _picture, _lines, _title, _chips]:
+	for child: Control in [_body, _picture, _lines, _title, _chips, _tag, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
+	_built = true
 	_refresh()
 
 
-## Sets everything the card shows. `on_ink` is true for a card on Hyde's side.
-func show_card(new_title: String, on_ink: bool, new_picture: Texture2D, new_chips: int,
-		new_seed: int = rng_seed) -> void:
-	title = new_title
+## Shows one card of RulesView.table().hand: {id, t, key, ink, name, chips, text, ...}.
+## `hyde_has_table` gives a Factor Hyde's look; its name and text already follow the stance.
+func show_entry(entry: Dictionary, hyde_has_table: bool) -> void:
+	card_id = entry.id
+	rng_seed = int(entry.id) * 7 + 3
+	show_face(entry.key, entry.ink or (entry.t == "factor" and hyde_has_table), entry.name,
+			entry.chips, entry.text)
+
+
+## Sets everything the face shows. `on_ink` is true for a card that looks like Hyde's.
+func show_face(new_key: String, on_ink: bool, new_title: String, new_chips: int,
+		new_text: String = "") -> void:
+	key = new_key
 	ink = on_ink
-	picture = new_picture
+	title = new_title
 	chips = new_chips
-	rng_seed = new_seed
+	text = new_text
 	_refresh()
+
+
+## Writes a short note in the card's foot, "" for none. One that `warns` is written in red.
+func set_tag(tag: String, warns: bool = false) -> void:
+	_tag.text = tag
+	_tag_warns = warns
+	_refresh_tag()
+
+
+## Changes the card where it lies: it closes, `change` is called (to give it its new face),
+## and it opens again. Without `animate` the change is made at once.
+func change_face(change: Callable, animate: bool = true) -> void:
+	if _change:
+		_change.kill()
+		scale.x = 1.0
+	if not animate or not is_inside_tree():
+		change.call()
+		return
+	_change = create_tween()
+	_change.tween_property(self, "scale:x", 0.0, TURN_TIME).set_ease(Tween.EASE_IN)
+	_change.tween_callback(change)
+	_change.tween_property(self, "scale:x", 1.0, TURN_TIME).set_ease(Tween.EASE_OUT)
+
+
+## Lets the card come into being where it lies.
+func appear(animate: bool = true) -> void:
+	if not animate or not is_inside_tree():
+		return
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, FADE_TIME)
+
+
+## Takes the card away for good: it fades and is freed.
+func leave(animate: bool = true) -> void:
+	if not animate or not is_inside_tree():
+		queue_free()
+		return
+	var fade := create_tween()
+	fade.tween_property(self, "modulate:a", 0.0, FADE_TIME)
+	fade.tween_callback(queue_free)
 
 
 func _refresh() -> void:
-	var body := (INK_MATERIAL if ink else PAPER_MATERIAL).duplicate() as ShaderMaterial
+	if not _built:
+		return
+	var body := (INK_MATERIAL if ink and not face_down else PAPER_MATERIAL).duplicate() as ShaderMaterial
 	body.set_shader_parameter("card_size", SIZE)
 	body.set_shader_parameter("seed", float(rng_seed))
 	body.set_shader_parameter("texel", TEXEL)
-	body.set_shader_parameter("band_height", TITLE_BOTTOM + 1.0)
+	body.set_shader_parameter("band_height", 0.0 if face_down else TITLE_BOTTOM + 1.0)
 	_body.material = body
 
-	var text := INK_TEXT if ink else PAPER_TEXT
+	for part: Control in [_title, _chips, _tag, _text, _picture]:
+		part.visible = not face_down
+	_text.visible = not face_down and text != ""
+
+	var colour := INK_TEXT if ink else PAPER_TEXT
 	var font: Font = _slanted if ink else _upright
 	_title.text = title if ink else title.to_upper()
 	_title.add_theme_font_override("font", font)
-	_title.add_theme_color_override("font_color", text)
+	_title.add_theme_color_override("font_color", colour)
 	_fit(_title, font, 14 if ink else 13, 5.0)
 
 	_chips.text = str(chips)
 	_chips.add_theme_font_override("font", _upright)
-	_chips.add_theme_color_override("font_color", text)
+	_chips.add_theme_color_override("font_color", colour)
 	_fit(_chips, _upright, 14, 2.0)
 
-	_picture.texture = picture
-	var picture_material := _picture.material as ShaderMaterial
-	picture_material.set_shader_parameter("tint", INK_LINE if ink else PAPER_LINE)
-	picture_material.set_shader_parameter("seed", float(rng_seed))
-	if picture:
-		# The picture is printed in the body's texels: how many of its own pixels that is.
-		var shown := minf(_picture.size.x / picture.get_width(), _picture.size.y / picture.get_height())
-		picture_material.set_shader_parameter("texel", TEXEL / shown)
+	_text.text = text
+	_text.add_theme_font_override("font", _plain)
+	_text.add_theme_color_override("font_color", colour)
+	var text_size := 9
+	while text_size > 6 and _plain.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER,
+			_text.size.x, text_size).y > _text.size.y:
+		text_size -= 1
+	_text.add_theme_font_size_override("font_size", text_size)
+	_refresh_tag()
 
-	var line_material := _lines.material as ShaderMaterial
-	line_material.set_shader_parameter("texel", TEXEL)
-	line_material.set_shader_parameter("seed", float(rng_seed))
-
+	for printed: Control in [_lines, _picture]:
+		var line_material := printed.material as ShaderMaterial
+		line_material.set_shader_parameter("texel", TEXEL)
+		line_material.set_shader_parameter("seed", float(rng_seed))
+		printed.queue_redraw()
 	_body.queue_redraw()
-	_lines.queue_redraw()
+
+
+func _refresh_tag() -> void:
+	var colour := INK_TEXT if ink else PAPER_TEXT
+	if _tag_warns:
+		colour = INK_WARNING if ink else PAPER_WARNING
+	_tag.add_theme_font_override("font", _plain)
+	_tag.add_theme_color_override("font_color", colour)
+	_fit(_tag, _plain, 11, 2.0)
 
 
 ## Gives a label the largest font size, from `largest` down to 7, at which its text fits its
@@ -160,13 +273,17 @@ func _draw_body() -> void:
 ## side of the chips' box, then a little hatching in two corners of the picture's box.
 func _draw_lines() -> void:
 	var pencil := Pencil.new(rng_seed)
-	pencil.colour = INK_LINE if ink else PAPER_LINE
+	pencil.colour = INK_LINE if ink and not face_down else PAPER_LINE
 	var inset := Vector2(FRAME_INSET, FRAME_INSET)
 	var rect := Rect2(inset, SIZE - inset * 2.0)
 	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
 			Vector2(rect.position.x, rect.end.y)]
 	for i in 4:
 		_rule(pencil, corners[i], corners[(i + 1) % 4], FRAME_WIDTH)
+	if face_down:
+		_draw_back(pencil, rect)
+		pencil.draw(_lines)
+		return
 	_rule(pencil, Vector2(rect.position.x, TITLE_BOTTOM), Vector2(rect.end.x, TITLE_BOTTOM), 1.9)
 	_rule(pencil, Vector2(rect.position.x, FOOT_TOP), Vector2(rect.end.x, FOOT_TOP), 1.7)
 	_rule(pencil, Vector2(rect.position.x + CHIPS_WIDTH + 2.0, FOOT_TOP),
@@ -174,6 +291,37 @@ func _draw_lines() -> void:
 	_hatch(pencil, Vector2(rect.end.x - 1.5, FOOT_TOP - 1.0), Vector2(-1.0, -1.0), 22.0)
 	_hatch(pencil, Vector2(rect.position.x + 1.5, TITLE_BOTTOM + 1.0), Vector2(1.0, 1.0), 12.0)
 	pencil.draw(_lines)
+
+
+## The back of a card: a second frame inside the first, crossed by slanting lines both ways.
+func _draw_back(pencil: Pencil, rect: Rect2) -> void:
+	var inner := rect.grow(-6.0)
+	var corners := [inner.position, Vector2(inner.end.x, inner.position.y), inner.end,
+			Vector2(inner.position.x, inner.end.y)]
+	for i in 4:
+		_rule(pencil, corners[i], corners[(i + 1) % 4], 1.4)
+	var step := 14.0
+	var k := step
+	while k < inner.size.x + inner.size.y:
+		# One line down to the left and its mirror image down to the right.
+		var from := Vector2(minf(k, inner.size.x), maxf(0.0, k - inner.size.x))
+		var to := Vector2(maxf(0.0, k - inner.size.y), minf(k, inner.size.y))
+		pencil.stroke(PackedVector2Array([inner.position + from, inner.position + to]), 0.9, 0.3, 0.0)
+		pencil.stroke(PackedVector2Array([inner.position + Vector2(inner.size.x - from.x, from.y),
+				inner.position + Vector2(inner.size.x - to.x, to.y)]), 0.9, 0.3, 0.0)
+		k += step
+
+
+## The card's picture, from ArenaCardPictures. A Factor's is small, to leave room for its text.
+func _draw_picture() -> void:
+	var pencil := Pencil.new(rng_seed + 5)
+	pencil.colour = INK_LINE if ink else PAPER_LINE
+	var box := Rect2(Vector2.ZERO, _picture.size)
+	if text != "":
+		box.size.y = FACTOR_PICTURE
+	# A Factor has one picture for both men: its look says whose it is.
+	ArenaCardPictures.add(pencil, ArenaCardPictures.picture_of(key, ink), box.grow(-2.0))
+	pencil.draw(_picture)
 
 
 ## One ruled line: a little off true and running a little past both ends, and gone over again

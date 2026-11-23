@@ -5,23 +5,23 @@ extends Control
 ## right. The card under the pointer rises and straightens. While Hyde has the table the row
 ## is a little out of true: each card is pushed and turned a little its own way.
 ##
-## For now it holds sample cards, to settle their look: the three paper Roots, the three ink
-## Roots, and a Factor, which takes the name and the look of the man at the table.
+## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, after
+## every move and every change of the chosen cards. It keeps one card for each id. A card new
+## to the hand appears, one that has gone leaves, and a Root whose side has changed changes
+## face where it lies. A click chooses a card or lets it go, up to `max_chosen`; one more is
+## refused with a small shake. `chosen_changed` then asks for the table again, with
+## `chosen()`, so that the marks of the play it would make can be shown:
+##
+## - cannot be played now: printed dark;
+## - can be turned: "turns +N", N being the Craving it would move;
+## - chosen: lifted;
+## - in the chosen play: "best" on its best Root, "turning +N" on each Root being turned;
+## - "he takes" on each held Root the rescue would convert.
 
-## Each sample: [paper title, ink title, picture, chips, side], where side is "paper", "ink",
-## or "table" for a Factor. The picture is the name of a line drawing in PICTURES; a card
-## whose drawing is not there yet is shown without one.
-const SAMPLES := [
-	["Composure", "Fog", "lamp", 1, "paper"],
-	["Kindness", "Appetite", "heart", 1, "paper"],
-	["Composure", "Fog", "fog", 2, "ink"],
-	["Scruple", "Pride", "mirror", 2, "paper"],
-	["Kindness", "Appetite", "apple", 3, "ink"],
-	["Scruple", "Pride", "mirror", 3, "ink"],
-	["Good Cheer", "Glee", "cup", 4, "table"],
-]
-const PICTURES := "res://art/cards/placeholder_%s.svg"
-## Distance between one card's centre and the next, in pixels.
+## The chosen cards changed: their ids, in the hand's order.
+signal chosen_changed(ids: Array)
+
+## Distance between one card's centre and the next, in pixels, while the row has the room.
 const PITCH := 90.0
 ## How far the row's ends turn, in degrees, and how far they drop, in pixels.
 const FAN_TURN := 5.0
@@ -30,9 +30,12 @@ const FAN_DROP := 12.0
 ## and turned (in degrees). And the time the row takes to go out of true or back.
 const UNRULY := Vector3(3.0, 6.0, 3.0)
 const UNRULY_TIME := 0.25
-## How far a card rises under the pointer, in pixels, and the time it takes.
+## How far a card rises under the pointer and when chosen, in pixels, and the time it takes.
 const RISE := 16.0
+const CHOSEN_RISE := 30.0
 const RISE_TIME := 0.12
+## How far a refused card turns each way, in degrees.
+const SHAKE := 4.0
 
 ## Where the table begins, from the page's left edge, and the room kept free at its right and
 ## under the hand, all in pixels.
@@ -40,50 +43,136 @@ const RISE_TIME := 0.12
 @export var room_right := 190.0
 @export var room_under := 120.0
 
-## Who has the table: a Factor follows it.
+## Who has the table: the row is out of true for Hyde.
 var is_jekyll := true:
 	set(value):
 		if value == is_jekyll:
 			return
 		is_jekyll = value
-		_show_samples()
-		for i in _cards.size():
-			_move(i, UNRULY_TIME)
+		for card in _cards:
+			_move(card, UNRULY_TIME)
+## How many cards can be chosen at once: the rules' dial `max_play`.
+var max_chosen := 5
+## False while clicks are not taken.
+var enabled := true
 
 var _cards: Array[ArenaCard] = []
-var _raised: Array[bool] = []
-var _moves: Array[Tween] = []
+var _rng := RandomNumberGenerator.new()
 ## False while the pointer is outside the window.
 var _pointer_here := true
+## A screenshot must not depend on where the pointer happens to rest, nor catch a card midway.
+var _still := Shot.has_arg("shot")
 
 
 func _ready() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	for i in SAMPLES.size():
-		var card := ArenaCard.new()
-		card.rng_seed = i * 7 + 3
-		card.set_meta("askew", Vector2(rng.randf_range(-3.0, 3.0), rng.randf_range(-1.5, 1.5)))
-		card.set_meta("unruly", Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0),
-				rng.randf_range(-1.0, 1.0)) * UNRULY)
-		add_child(card)
-		_cards.append(card)
-		_raised.append(false)
-		_moves.append(null)
-	_show_samples()
+	_rng.seed = 11
 	resized.connect(snap)
-	snap()
-	# A screenshot must not depend on where the pointer happens to rest.
-	set_process(not Shot.has_arg("shot"))
+	set_process(not _still)
 
 
-func _show_samples() -> void:
+## Shows the hand of RulesView.table(): see the top of this script.
+func show_table(table: Dictionary) -> void:
+	var hyde: bool = table.stance == "hyde"
+	var by_id := {}
+	for card in _cards:
+		by_id[card.card_id] = card
+	var next: Array[ArenaCard] = []
+	var fresh: Array[ArenaCard] = []
+	for entry: Dictionary in table.hand:
+		var card: ArenaCard = by_id.get(entry.id)
+		if card == null:
+			card = _new_card()
+			card.show_entry(entry, hyde)
+			fresh.append(card)
+		elif card.ink != (entry.ink or (entry.t == "factor" and hyde)):
+			card.change_face(card.show_entry.bind(entry, hyde), not _still)
+		else:
+			card.show_entry(entry, hyde)
+		by_id.erase(entry.id)
+		next.append(card)
+	var let_go := false
+	for card: ArenaCard in by_id.values():
+		let_go = let_go or card.chosen
+		card.leave(not _still)
+	_cards = next
 	for i in _cards.size():
-		var sample: Array = SAMPLES[i]
-		var on_ink: bool = sample[4] == "ink" or (sample[4] == "table" and not is_jekyll)
-		var path: String = PICTURES % sample[2]
-		var picture: Texture2D = load(path) if ResourceLoader.exists(path) else null
-		_cards[i].show_card(sample[1] if on_ink else sample[0], on_ink, picture, sample[3])
+		move_child(_cards[i], i)
+	_mark(table)
+	for card in _cards:
+		if card in fresh:
+			card.position = _place(card)
+			card.rotation_degrees = _turn(card)
+			card.appear(not _still)
+		else:
+			_move(card, UNRULY_TIME)
+	if let_go:
+		chosen_changed.emit(chosen())
+
+
+## The ids of the chosen cards, in the hand's order.
+func chosen() -> Array:
+	var ids: Array = []
+	for card in _cards:
+		if card.chosen:
+			ids.append(card.card_id)
+	return ids
+
+
+## Lets every chosen card go.
+func clear_chosen() -> void:
+	var any := false
+	for card in _cards:
+		any = any or card.chosen
+		card.chosen = false
+		_move(card, RISE_TIME)
+	if any:
+		chosen_changed.emit(chosen())
+
+
+## Puts every card where it belongs at once, without the move there.
+func snap() -> void:
+	for card in _cards:
+		_stop(card)
+		card.position = _place(card)
+		card.rotation_degrees = _turn(card)
+
+
+## Marks each card with what the table says of it.
+func _mark(table: Dictionary) -> void:
+	var play: Variant = table.play
+	var takes: Array = []
+	var turning := {}
+	var best := -1
+	if play != null and play.ok:
+		best = play.best_root
+		for turn: Dictionary in play.turns:
+			turning[turn.id] = turn.gain
+		if play.rescue != null:
+			takes = play.rescue.ids
+	for i in _cards.size():
+		var card := _cards[i]
+		var entry: Dictionary = table.hand[i]
+		card.dimmed = not entry.playable
+		if card.card_id in takes:
+			card.set_tag("he takes", true)
+		elif turning.has(card.card_id):
+			card.set_tag("turning +%d" % turning[card.card_id], true)
+		elif card.card_id == best:
+			card.set_tag("best")
+		elif entry.turnable:
+			card.set_tag("turns +%d" % table.symbols[entry.key].craving)
+		else:
+			card.set_tag("")
+
+
+func _new_card() -> ArenaCard:
+	var card := ArenaCard.new()
+	card.set_meta("askew", Vector2(_rng.randf_range(-3.0, 3.0), _rng.randf_range(-1.5, 1.5)))
+	card.set_meta("unruly", Vector3(_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0),
+			_rng.randf_range(-1.0, 1.0)) * UNRULY)
+	card.set_meta("raised", false)
+	add_child(card)
+	return card
 
 
 func _notification(what: int) -> void:
@@ -94,87 +183,135 @@ func _notification(what: int) -> void:
 
 
 func _process(_delta: float) -> void:
-	var under := _card_under(get_local_mouse_position()) if _pointer_here else -1
-	for i in _cards.size():
-		if _raised[i] != (i == under):
-			_raise(i, i == under)
+	var under := _card_under(get_local_mouse_position()) if _pointer_here else null
+	for card in _cards:
+		if _raised(card) != (card == under):
+			card.set_meta("raised", card == under)
+			_move(card, RISE_TIME)
 
 
-## The card the pointer is on, or -1: the topmost one whose place in the row holds the point.
-## A card's place stays where it is, turned as the card lies, while the card rises, so a card
-## cannot rise away from the pointer and drop again. A raised card also keeps the pointer for
-## as far as it has risen.
-func _card_under(point: Vector2) -> int:
+func _unhandled_input(event: InputEvent) -> void:
+	var button := event as InputEventMouseButton
+	if not enabled or not button or not button.pressed or button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var card := _card_under(get_local_mouse_position())
+	if card == null:
+		return
+	get_viewport().set_input_as_handled()
+	toggle(card.card_id)
+
+
+## Chooses the card with this id, or lets it go if it is chosen. One more than `max_chosen`
+## is refused: the card shakes and nothing changes.
+func toggle(id: int) -> void:
+	for card in _cards:
+		if card.card_id != id:
+			continue
+		if not card.chosen and chosen().size() >= max_chosen:
+			_shake(card)
+			return
+		card.chosen = not card.chosen
+		_move(card, RISE_TIME)
+		chosen_changed.emit(chosen())
+		return
+
+
+## The card the pointer is on, or null: the topmost one whose place in the row holds the
+## point. A card's place stays where it is, turned as the card lies, while the card rises, so
+## a card cannot rise away from the pointer and drop again. A raised or chosen card also
+## keeps the pointer for as far as it has risen.
+func _card_under(point: Vector2) -> ArenaCard:
 	var half := ArenaCard.SIZE * 0.5
 	for i in range(_cards.size() - 1, -1, -1):
-		var rest := Rect2(_rest(i), ArenaCard.SIZE)
+		var card := _cards[i]
+		var rest := Rect2(_rest(card), ArenaCard.SIZE)
 		# The point as the card at rest sees it: the card is turned about its middle.
-		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(i)))
+		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(card)))
 		if absf(seen.x) <= half.x and absf(seen.y) <= half.y:
-			return i
-		if _raised[i] and rest.merge(Rect2(_place(i), ArenaCard.SIZE)).has_point(point):
-			return i
-	return -1
+			return card
+		if (_raised(card) or card.chosen) and rest.merge(Rect2(_place(card), ArenaCard.SIZE)).has_point(point):
+			return card
+	return null
 
 
-## Puts every card where it belongs at once, without the move there.
-func snap() -> void:
-	for i in _cards.size():
-		if _moves[i]:
-			_moves[i].kill()
-		_cards[i].position = _place(i)
-		_cards[i].rotation_degrees = _turn(i)
+func _raised(card: ArenaCard) -> bool:
+	return card.get_meta("raised")
 
 
-## How far the i-th card is from the middle of the row: -1 at the left end, 1 at the right.
-func _outward(i: int) -> float:
-	return (i - (_cards.size() - 1) * 0.5) / maxf(1.0, (_cards.size() - 1) * 0.5)
+## The distance between one card's centre and the next: the row tightens when it holds more
+## cards than fit.
+func _pitch() -> float:
+	var room := size.x - room_right - table_left - ArenaCard.SIZE.x
+	return minf(PITCH, room / maxf(1.0, _cards.size() - 1))
 
 
-## Where the i-th card's top left corner lies.
-func _place(i: int) -> Vector2:
-	return _slot(i) - Vector2(0.0, RISE) if _raised[i] else _rest(i)
+## How far a card is from the middle of the row: -1 at the left end, 1 at the right.
+func _outward(card: ArenaCard) -> float:
+	return (_cards.find(card) - (_cards.size() - 1) * 0.5) / maxf(1.0, (_cards.size() - 1) * 0.5)
 
 
-## The i-th card's place in a row that is level and true.
-func _slot(i: int) -> Vector2:
+## Where a card's top left corner lies.
+func _place(card: ArenaCard) -> Vector2:
+	if card.chosen:
+		return _slot(card) - Vector2(0.0, CHOSEN_RISE + (RISE * 0.25 if _raised(card) else 0.0))
+	return _slot(card) - Vector2(0.0, RISE) if _raised(card) else _rest(card)
+
+
+## A card's place in a row that is level and true.
+func _slot(card: ArenaCard) -> Vector2:
 	var middle := (table_left + size.x - room_right) * 0.5
-	return Vector2(middle + (i - (_cards.size() - 1) * 0.5) * PITCH - ArenaCard.SIZE.x * 0.5,
-			size.y - room_under - ArenaCard.SIZE.y)
+	return Vector2(middle + (_cards.find(card) - (_cards.size() - 1) * 0.5) * _pitch()
+			- ArenaCard.SIZE.x * 0.5, size.y - room_under - ArenaCard.SIZE.y)
 
 
-## Where the i-th card's top left corner lies while the card is not raised.
-func _rest(i: int) -> Vector2:
-	var askew: Vector2 = _cards[i].get_meta("askew")
-	var place := _slot(i) + Vector2(0.0, _outward(i) * _outward(i) * FAN_DROP + askew.x)
+## Where a card's top left corner lies while the card is neither raised nor chosen.
+func _rest(card: ArenaCard) -> Vector2:
+	var askew: Vector2 = card.get_meta("askew")
+	var outward := _outward(card)
+	var place := _slot(card) + Vector2(0.0, outward * outward * FAN_DROP + askew.x)
 	if not is_jekyll:
-		var unruly: Vector3 = _cards[i].get_meta("unruly")
+		var unruly: Vector3 = card.get_meta("unruly")
 		place += Vector2(unruly.x, unruly.y)
 	return place
 
 
-func _turn(i: int) -> float:
-	return 0.0 if _raised[i] else _rest_turn(i)
+func _turn(card: ArenaCard) -> float:
+	return 0.0 if _raised(card) or card.chosen else _rest_turn(card)
 
 
-## How far the i-th card is turned while it is not raised, in degrees.
-func _rest_turn(i: int) -> float:
-	var askew: Vector2 = _cards[i].get_meta("askew")
-	var turn := _outward(i) * FAN_TURN + askew.y
+## How far a card is turned while it is neither raised nor chosen, in degrees.
+func _rest_turn(card: ArenaCard) -> float:
+	var askew: Vector2 = card.get_meta("askew")
+	var turn := _outward(card) * FAN_TURN + askew.y
 	if not is_jekyll:
-		turn += (_cards[i].get_meta("unruly") as Vector3).z
+		turn += (card.get_meta("unruly") as Vector3).z
 	return turn
 
 
-func _raise(i: int, up: bool) -> void:
-	_raised[i] = up
-	_move(i, RISE_TIME)
+func _stop(card: ArenaCard) -> void:
+	var move: Tween = card.get_meta("move") if card.has_meta("move") else null
+	if move:
+		move.kill()
 
 
-## Moves the i-th card to where it belongs now, over `time` seconds.
-func _move(i: int, time: float) -> void:
-	if _moves[i]:
-		_moves[i].kill()
-	_moves[i] = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	_moves[i].tween_property(_cards[i], "position", _place(i), time)
-	_moves[i].tween_property(_cards[i], "rotation_degrees", _turn(i), time)
+## Moves a card to where it belongs now, over `time` seconds.
+func _move(card: ArenaCard, time: float) -> void:
+	_stop(card)
+	if _still or not is_inside_tree():
+		card.position = _place(card)
+		card.rotation_degrees = _turn(card)
+		return
+	var move := create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	move.tween_property(card, "position", _place(card), time)
+	move.tween_property(card, "rotation_degrees", _turn(card), time)
+	card.set_meta("move", move)
+
+
+## A card that cannot be chosen turns a little each way and settles.
+func _shake(card: ArenaCard) -> void:
+	_stop(card)
+	var turn := _turn(card)
+	var move := create_tween()
+	for way: float in [1.0, -1.0, 0.5, 0.0]:
+		move.tween_property(card, "rotation_degrees", turn + SHAKE * way, 0.05)
+	card.set_meta("move", move)
