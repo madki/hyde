@@ -494,3 +494,17 @@ func test_roots_at_risk_over_the_golden_runs() -> void:
 					var over: bool = run.last.ink > run.last.paper
 					eq(over, p.line_breaks_at >= 0 and k > p.line_breaks_at, label + ": the line breaks where it was marked")
 	ok(seen.rescues > 100 and seen["last plays"] > 300, "checked over the golden runs: %s" % JSON.stringify(seen))
+
+
+func test_best_root() -> void:
+	var run := at(fresh({}, 3), 0, 1)
+	run.temper.heart = 1
+	var h := deal(run, "P:lamp P:heart P:mirror F:cup I:lamp P:lamp P:heart P:mirror")
+	eq(RulesView.preview(run, [h[0].id, h[1].id, h[2].id]).best_root, h[1].id, "the Root with the most chips")
+	eq(RulesView.preview(run, [h[2].id, h[0].id]).best_root, h[0].id, "a tie goes Lamp, Heart, Mirror")
+	eq(RulesView.preview(run, [h[0].id, h[4].id]).best_root, h[0].id, "in a Sublimation the Paper Root, not the one being turned")
+	eq(RulesView.preview(run, [h[3].id]).best_root, -1, "none in a play without a Root")
+	run = at(as_hyde(fresh({}, 3)), 0, 1)
+	run.craving.mirror = 1
+	h = deal(run, "I:lamp I:mirror P:lamp F:cup I:heart P:heart P:mirror P:lamp")
+	eq(RulesView.preview(run, [h[0].id, h[1].id]).best_root, h[1].id, "as Hyde, his Root with the most chips")
