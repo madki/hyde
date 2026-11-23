@@ -35,6 +35,23 @@ func test_golden_runs_replay() -> void:
 	eq(same_runs, runs.size(), "every recorded run replays with the same state after every move (%d moves)" % moves)
 
 
+func test_golden_runs_score_in_steps() -> void:
+	var plays := 0
+	for i in Golden.runs().size():
+		var record: Dictionary = Golden.runs()[i]
+		var run := Golden.begin(record)
+		for j in record.moves.size():
+			var move: Array = record.moves[j]
+			if move[0] != "play":
+				Golden.apply(run, move)
+				continue
+			var res := Rules.play(run, move[1])
+			if res.ok:
+				check_steps(res.ev, move[1], "run %d, move %d" % [i, j + 1])
+				plays += 1
+	ok(plays > 1000, "the steps of %d recorded plays were checked" % plays)
+
+
 func test_golden_runs_cover_the_game() -> void:
 	var endings := {}
 	var phases := {}

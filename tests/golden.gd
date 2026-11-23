@@ -50,6 +50,11 @@ static func start_on(run: RulesRun, night: int, round_no: int) -> void:
 
 ## Makes one recorded move. Returns whether the rules accepted it.
 static func apply(run: RulesRun, move: Array) -> bool:
+	return make(run, move).ok
+
+
+## Makes one recorded move. Returns what the rules returned.
+static func make(run: RulesRun, move: Array) -> Dictionary:
 	var res: Dictionary
 	match move[0]:
 		"play": res = Rules.play(run, move[1])
@@ -69,8 +74,8 @@ static func apply(run: RulesRun, move: Array) -> bool:
 		"strike": res = Rules.strike(run, move[1])
 		"drop": res = Rules.drop_instrument(run, move[1])
 		"lleave": res = Rules.leave_lab(run)
-		_: return false
-	return res.ok
+		_: return {"ok": false, "reason": "No such move."}
+	return res
 
 
 ## The state as one line of text, built the same way by the recorder.

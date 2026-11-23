@@ -10,13 +10,14 @@ class_name RulesHands
 ## `adds_restraint`, `craving_on` (points a symbol), `breeds` (a symbol for each copy bred),
 ## `no_craving`, `turns` (ids of the Ink Roots turned, in order), `temper_gain` (a symbol),
 ## `spends_stored`, `cheque`, `draws`, `scoring` (ids of the cards that score) and `lit`
-## (the symbols of the active Roots).
+## (the symbols of the active Roots). `steps` is the score in the order a table performs it:
+## see _steps.
 static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 	var d := run.dials
 	var st: String = run.stance
 	var res := {
 		"ok": false, "reason": "", "kind": "", "key": "", "row": "", "name": "",
-		"chips": 0, "mult": 1, "score": 0, "parts": [], "mult_parts": [],
+		"chips": 0, "mult": 1, "score": 0, "parts": [], "mult_parts": [], "steps": [],
 		"adds_restraint": false, "turns": [], "temper_gain": {}, "craving_on": {}, "breeds": [],
 		"no_craving": false, "spends_stored": false, "cheque": false, "draws": 0, "scoring": [],
 		"lit": {"lamp": false, "heart": false, "mirror": false},
@@ -67,6 +68,7 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 		res.scoring = [first.id]
 		res.adds_restraint = st == "jekyll" and nf.lock == 0
 		res.no_craving = true
+		res.steps = _steps(run, res, [], fac, fchips, 1, RulesConfig.THOUGHT_NAME)
 		return res
 
 	var cnt := {}
@@ -188,6 +190,7 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 	res.chips = chips
 	res.mult = mult
 	res.score = chips * mult
+	res.steps = _steps(run, res, active, fac, def.chips, mult_parts[0].v, mult_parts[0].label)
 	return res
 
 
@@ -352,6 +355,7 @@ static func _sublimation(run: RulesRun, res: Dictionary, paper: Array, ink: Arra
 	res.chips = chips
 	res.mult = mult
 	res.score = chips * mult
+	res.steps = _steps(run, res, paper + ink, fac, def.chips, def.mult, def.name)
 	return res
 
 
@@ -360,3 +364,111 @@ static func _has_sym(cards: Array, sym: String) -> bool:
 		if c.sym == sym:
 			return true
 	return false
+
+
+# ---------- the score, step by step ----------
+
+# The score of an allowed play as the steps a table performs it in, one card at a time: the
+# hand's base; each Root, by Lamp, Heart, Mirror (Paper before Ink, then by id), with its
+# gauge bonus right after it; each Factor, by Cup, Eye, Lock, Pen, Cane (then by id), with
+# its effect right after it; then stored restraint, one step a point, and The Cane.
+#
+# A step is {kind, id, of, sym, gauge, chips, mult, label, chips_to, mult_to}. `kind` is
+# "base", "root", "gauge", "factor", "effect", "again", "stored" or "instrument". `id` is
+# the card that acts (-1 for the base, stored restraint and The Cane); `of` is the Root an
+# effect counts or an "again" repeats (-1 otherwise); `sym` is the Root's symbol ("" for none).
+# `gauge` names a gauge step's source: "temper", "habit" or "burst". `chips` and `mult` are
+# what the step adds (the base step's are the hand's own); `chips_to` and `mult_to` are the
+# running totals after it, so the last step's are the play's chips and mult.
+#
+# - Temper fires once a symbol, after the first Paper Root of it; Habit after every Ink Root.
+# - A Sublimation's Ink Root scores at the Craving its symbol has then, and its burst follows.
+# - Reason gives one step for each different Paper symbol, Alibi one for each Ink Root of
+#   the largest matching set, each naming that Root in `of`.
+# - Vigour and Restlessness: an "again" step for the best Root, then their mult.
+# - Curiosity, Impulse, Resolve and Cunning have an effect step that adds nothing.
+# - A Passing Thought's base is the one Factor's chips times 1, and its Factors add nothing.
+# - Hunted: the base step's mult is already halved.
+static func _steps(run: RulesRun, res: Dictionary, roots: Array, fac: Array, base_chips: int, base_mult: int, base_label: String) -> Array:
+	var d := run.dials
+	var st: String = run.stance
+	var thought: bool = res.kind == "thought"
+	var sub: bool = res.kind == "sublimation"
+	var out: Array = []
+	_step(out, "base", -1, -1, "", base_chips, base_mult, base_label)
+	var order := Rules.sort_by(roots, func(c: RulesCard) -> Array:
+		return [RulesConfig.ROOTS.find(c.sym), int(c.ink), c.id])
+	var now: Dictionary = run.craving.duplicate()
+	var firsts: Array = []
+	var cnt := {}
+	for c: RulesCard in order:
+		var name := Rules.name_of(c, st)
+		if sub and c.ink:
+			var craving: int = now[c.sym]
+			_step(out, "root", c.id, -1, c.sym, Rules.chips_of(run, c, craving), 0, name)
+			_step(out, "gauge", c.id, -1, c.sym, 0, d.burst_mult + d.burst_craving_mult * craving, "burst", "burst")
+			now[c.sym] = 0
+			continue
+		_step(out, "root", c.id, -1, c.sym, Rules.chips_of(run, c), 0, name)
+		cnt[c.sym] = int(cnt.get(c.sym, 0)) + 1
+		if st == "hyde":
+			var h: int = d.habit_mult * run.habit[c.sym]
+			if h > 0:
+				_step(out, "gauge", c.id, -1, c.sym, 0, h, "Habit", "habit")
+		elif cnt[c.sym] == 1:
+			firsts.append(c)
+			if run.temper[c.sym] > 0:
+				_step(out, "gauge", c.id, -1, c.sym, 0, d.temper_mult * run.temper[c.sym], "Temper", "temper")
+	# The Roots Alibi counts: those of the largest matching set, first by Lamp, Heart, Mirror.
+	var largest: Array = []
+	if st == "hyde":
+		for sym in RulesConfig.ROOTS:
+			var alike: Array = order.filter(func(c: RulesCard) -> bool: return c.sym == sym)
+			if alike.size() > largest.size():
+				largest = alike
+	var active: Array = order.filter(func(c: RulesCard) -> bool: return c.ink == (st == "hyde"))
+	var top: RulesCard = null if active.is_empty() else best_root(run, active)
+	var factors := Rules.sort_by(fac, func(c: RulesCard) -> Array:
+		return [RulesConfig.FACTORS.find(c.kind), c.id])
+	for f: RulesCard in factors:
+		_step(out, "factor", f.id, -1, "", 0 if thought else d.factor_chips, 0, _factor_name(f.kind, st))
+		match f.kind:
+			"cup":
+				if thought:
+					pass
+				elif st == "hyde":
+					_step(out, "effect", f.id, -1, "", d.glee_chips, 0, "Glee")
+				else:
+					_step(out, "effect", f.id, -1, "", 0, d.cheer_mult, "Good Cheer")
+			"eye":
+				_step(out, "effect", f.id, -1, "", 0, 0, "draws 1 more")
+			"lock":
+				if st == "jekyll":
+					_step(out, "effect", f.id, -1, "", 0, 0, "no restraint")
+				elif not thought:
+					_step(out, "effect", f.id, -1, "", 0, 0, "no Craving")
+			"pen":
+				for c: RulesCard in (largest if st == "hyde" else firsts):
+					_step(out, "effect", f.id, c.id, c.sym, 0, d.pen_mult, _factor_name(f.kind, st))
+			"cane":
+				if top != null:
+					_step(out, "again", f.id, top.id, top.sym, Rules.chips_of(run, top), 0, Rules.name_of(top, st) + " again")
+					_step(out, "effect", f.id, -1, "", 0, d.cane_mult, _factor_name(f.kind, st))
+	if st == "hyde" and not thought:
+		for i in run.stored:
+			_step(out, "stored", -1, -1, "", 0, d.restraint_pay, "stored restraint")
+		if res.key == "mania" and Rules.has_inst(run, "hcane"):
+			_step(out, "instrument", -1, -1, "", 0, d.hcane_mult, "The Cane")
+	return out
+
+
+static func _step(out: Array, kind: String, id: int, of: int, sym: String, chips: int, mult: int, label: String, gauge: String = "") -> void:
+	var chips_to := chips
+	var mult_to := mult
+	if not out.is_empty():
+		chips_to += int(out[-1].chips_to)
+		mult_to += int(out[-1].mult_to)
+	out.append({
+		"kind": kind, "id": id, "of": of, "sym": sym, "gauge": gauge, "chips": chips, "mult": mult,
+		"label": label, "chips_to": chips_to, "mult_to": mult_to,
+	})

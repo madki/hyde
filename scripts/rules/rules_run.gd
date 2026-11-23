@@ -74,6 +74,10 @@ var stats: Dictionary = {
 	"drinks": 0, "stains": 0, "salts": 0, "bred": 0, "struck": 0, "passes": 0,
 }
 
+## The events of the move being made, in order (see Rules). Not saved: a move fills it and
+## returns it.
+var events: Array = []
+
 
 ## A separate copy of the run.
 func copy() -> RulesRun:
@@ -84,7 +88,7 @@ func copy() -> RulesRun:
 func to_dict() -> Dictionary:
 	var out := {}
 	for p: Dictionary in get_property_list():
-		if not p.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+		if not p.usage & PROPERTY_USAGE_SCRIPT_VARIABLE or p.name == "events":
 			continue
 		var value: Variant = get(p.name)
 		if p.name == "dials":
