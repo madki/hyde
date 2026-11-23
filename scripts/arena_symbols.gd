@@ -511,6 +511,11 @@ func _tag_rect(i: int) -> Rect2:
 	return Rect2(Vector2(left + i * (TAG_SIZE.x + TAG_GAP), TAG_TOP), TAG_SIZE)
 
 
+## The middle of a symbol's sketch, on the page: where what its gauges pay comes from.
+func sketch_place(sym: String) -> Vector2:
+	return get_global_transform() * (_tag(sym) + SKETCH_AT)
+
+
 func _tag(sym: String) -> Vector2:
 	return _tag_rect(SYMS.find(sym)).position
 

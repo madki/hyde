@@ -30,6 +30,28 @@ static func man(hyde: bool) -> Color:
 ## `text` rises from `at` (a point on the page) on `layer` and fades.
 static func text(beats: ArenaBeats, layer: Control, at: Vector2, words: String, colour: Color,
 		font_size: int = 20) -> void:
+	var label := _label(layer, at, words, colour, font_size)
+	var t := beats.tween()
+	t.tween_property(label, "position:y", label.position.y - RISE, TIME) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	t.parallel().tween_property(label, "modulate", Color(CREAM, 0.0), TIME) \
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	t.tween_callback(label.queue_free)
+
+
+## `words` travel from `from` to `to` (points on the page) over `time` and are gone: what a
+## gauge pays, from its sketch into the mult.
+static func fly_text(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2, words: String,
+		colour: Color, time: float) -> void:
+	var label := _label(layer, from, words, colour, 20)
+	var end: Vector2 = layer.get_global_transform().affine_inverse() * to - label.size * 0.5
+	var t := beats.tween()
+	t.tween_interval(time * 0.25)
+	t.tween_property(label, "position", end, time * 0.75).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	t.tween_callback(label.queue_free)
+
+
+static func _label(layer: Control, at: Vector2, words: String, colour: Color, font_size: int) -> Label:
 	if _font == null:
 		_font = FontVariation.new()
 		_font.base_font = ThemeDB.fallback_font
@@ -46,12 +68,7 @@ static func text(beats: ArenaBeats, layer: Control, at: Vector2, words: String, 
 	layer.add_child(label)
 	label.size = label.get_minimum_size()
 	label.position = layer.get_global_transform().affine_inverse() * at - label.size * 0.5
-	var t := beats.tween()
-	t.tween_property(label, "position:y", label.position.y - RISE, TIME) \
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	t.parallel().tween_property(label, "modulate", Color(CREAM, 0.0), TIME) \
-			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	t.tween_callback(label.queue_free)
+	return label
 
 
 ## A card hops where it lies, as it scores.

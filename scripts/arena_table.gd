@@ -103,12 +103,13 @@ func follow(tween: Tween) -> Tween:
 	return tween
 
 
-## Starts a movement of a part that keeps its own time (the symbols' and the flask's calls
-## are coroutines) and waits `seconds` for it at the queue's rate. Hurried, the wait ends
-## before the movement does; the part is put right at the end of the move.
-func play(movement: Callable, seconds: float) -> void:
-	movement.call()
-	await beats.wait(seconds)
+## Plays a movement of a part that keeps its own time (the symbols' and the flask's calls
+## are coroutines) and waits for it. Such a part cannot be hurried; when the move is skipped
+## the movement is left out, and the part is put right at the end of the move.
+func play(movement: Callable) -> void:
+	if beats.rate() >= 100.0:
+		return
+	await movement.call()
 
 
 ## Moves one shown number and the part that draws it, without waiting: follow it with

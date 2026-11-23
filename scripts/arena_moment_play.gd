@@ -4,13 +4,15 @@ class_name ArenaMomentPlay
 ## 1. The chosen cards leave the hand and are laid in the centre, in the order they score:
 ##    Roots first, then Factors. A play is taken off the tally.
 ## 2. The readout names the hand and shows its base, and both numbers pulse.
-## 3. Each Root hops and gives its chips; its gauge bonus follows it, as a number on the card.
+## 3. Each Root hops and gives its chips; its gauge bonus follows it: Temper's and Habit's
+##    mult travel from the symbol's sketch to the mult, a Sublimation's burst rises from the
+##    Ink Root.
 ## 4. Each Factor hops, gives its chips, and then its effect. Vigour and Restlessness make
 ##    the best Root hop again; Reason and Alibi make each Root they count hop.
 ## 5. Stored restraint flies into the mult a drop at a time, and The Cane hops.
 ## 6. Chips and mult become one total, which travels to the round's score; a score that
 ##    reaches the target strikes it through.
-## 7. What the play does to the gauges (ArenaMomentAfter, if there is one).
+## 7. What the play does to the gauges (ArenaMomentAfter).
 ## 8. The laid cards go to the discards and the hand refills, the card drawn for Curiosity or
 ##    Impulse under an eye mark. A play that ends the round is not refilled.
 ##
@@ -37,14 +39,25 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 	_lay(t, order, laid)
 	_score(t, steps, laid, eyes, colour)
 	var score_to := 0
+	# The symbols whose gauges the play changes: their cards' chips are counted anew.
+	var changed: Array = []
 	for e: Dictionary in events:
 		match e.t:
 			"scored":
 				score_to = e.to
 				_total(t, score_to)
+				for step: Dictionary in steps:
+					if step.kind == "effect" and step.label in ["no restraint", "no Craving"]:
+						ArenaMomentAfter.unlock(t, step.label == "no restraint")
 			"stored_spent":
 				pass # performed with the score, a drop at a time
+			"restraint", "craving", "breed", "turn", "cheque":
+				ArenaMomentAfter.add_event(t, e, order)
+				if e.has("sym") and not changed.has(e.sym):
+					changed.append(e.sym)
 			"discarded":
+				for sym: String in changed:
+					ArenaMomentAfter.recount(t, sym)
 				_leave(t, order, laid)
 			"drawn", "reshuffle":
 				# A play that ends the round is not refilled: the cards go back to the deck.
@@ -110,8 +123,14 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 		"root", "factor":
 			ArenaPop.hop(t.beats, card)
 		"gauge":
-			# Until the sketches pay it themselves: the gauge is named on the card.
-			words = "%s %s" % [str(step.label).capitalize(), words]
+			if step.gauge in ["temper", "habit"]:
+				# The gauge pays from its sketch: its tallies flash and the mult travels.
+				t.play(t.symbols.flash.bind(step.sym))
+				ArenaPop.fly_text(t.beats, t.travel, t.symbols.sketch_place(step.sym), t.column.mult_place(),
+						words, colour, ArenaPace.tick(n))
+				words = ""
+			else:
+				words = "%s %s" % [str(step.label).capitalize(), words]
 		"again":
 			var again: ArenaCard = laid.get(step.of)
 			ArenaPop.hop(t.beats, card)
@@ -123,6 +142,10 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 				ArenaPop.hop(t.beats, laid.get(step.of))
 			if step.chips == 0 and step.mult == 0:
 				words = step.label
+				if step.label == "no restraint":
+					t.follow(t.column.restraint.set_lock(true))
+				elif step.label == "no Craving":
+					t.play(t.symbols.set_lock.bind(true))
 				if str(step.label).begins_with("draws") and card:
 					var mark := ArenaPop.eye(t.travel, ArenaTravel.centre_of(card))
 					eyes.append(mark)
@@ -132,7 +155,7 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			await t.follow(t.column.fly_drop(step.mult)).finished
 			return
 		"instrument":
-			t.means.hop("hcane")
+			t.play(t.means.hop.bind("hcane"))
 			at = t.means.get_global_transform() * Vector2(ArenaMeans.SIZE.x * 0.5, 40.0)
 	if words != "" and at != Vector2.ZERO:
 		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)

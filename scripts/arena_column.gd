@@ -491,6 +491,11 @@ func _readout_rect() -> Rect2:
 	return Rect2(Vector2(4.0, READOUT_TOP), Vector2(size.x - 8.0, READOUT_HEIGHT))
 
 
+## The middle of the readout's mult, on the page: where what is paid into it travels to.
+func mult_place() -> Vector2:
+	return get_global_transform() * (_mult_at() + Vector2(12.0, -12.0))
+
+
 func _numbers_y() -> float:
 	return READOUT_TOP + READOUT_HEIGHT - 22.0
 

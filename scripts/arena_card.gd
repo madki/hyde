@@ -177,6 +177,13 @@ func show_data(data: Dictionary, new_seed: int = rng_seed) -> void:
 			data.get("chips", 0), data.get("text", ""))
 
 
+## Writes the card's chips anew without redrawing the rest of it: for a count from one value
+## to another.
+func set_chips(new_chips: int) -> void:
+	chips = new_chips
+	_chips.text = str(chips)
+
+
 ## Writes a short note in the card's foot, "" for none. One that `warns` is written in red.
 func set_tag(tag: String, warns: bool = false) -> void:
 	_tag.text = tag
