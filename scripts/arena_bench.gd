@@ -9,7 +9,14 @@ class_name ArenaBench
 ## - `--set=<name>:<value>,...`: numbers and names of the run to change before its first
 ##   round is shown, for looking at a moment that is far into a run: `restraint`, `stored`,
 ##   `plays`, `discards`, `score`, `sov`, `salt`, `stance`, `hyde_arrived` (0 or 1), and
-##   `night` and `round` (from 0), which begin that round anew.
+##   `night` and `round` (from 0), which begin that round anew; `craving_lamp`, `habit_heart`,
+##   `temper_mirror` and so on for a gauge; `inst:<key>` to hold an instrument.
+## - `--hand=<card>,...`: the cards of the first hand, in place of those dealt: `lamp`,
+##   `heart`, `mirror` for a Paper Root, with `*` after it for its Ink twin, and `cup`, `eye`,
+##   `lock`, `pen`, `cane` for a Factor. A card the deck lacks is added to it.
+## - `--time`: plays the last key's move at the usual speed and prints how long it took.
+## - `--quit`: quits when the keys' moves are over (for a run without a window).
+## - `--trace`: prints the readout after each step of a play, as the column shows it.
 ## - `--at=<seconds>`: with `--shot`, the still is taken this long into the last key's move
 ##   (or into the deal, without keys) instead of when it is over.
 ## - `--fast`: every move is played back at once.
@@ -24,17 +31,19 @@ static func run_if_requested(arena: Node) -> void:
 	if Shot.has_arg("selftest"):
 		await _selftest(arena)
 		return
-	if not Shot.has_arg("shot") and not Shot.has_arg("keys"):
+	if not Shot.has_arg("shot") and not Shot.has_arg("keys") and not Shot.has_arg("quit"):
 		return
 	var at := float(Shot.arg("at")) if Shot.has_arg("at") else -1.0
 	var keys := Shot.arg("keys")
 	if Shot.has_arg("fast") or (Shot.has_arg("shot") and at < 0.0):
 		ArenaPace.speed = ArenaPace.SKIP
 	var tree := arena.get_tree()
+	var began := 0
 	for i in keys.length():
 		await _idle(arena)
-		if at >= 0.0 and i == keys.length() - 1:
+		if (at >= 0.0 or Shot.has_arg("time")) and i == keys.length() - 1:
 			ArenaPace.speed = 1.0
+		began = Time.get_ticks_msec()
 		_press(arena, keys[i])
 		await tree.process_frame
 	if at >= 0.0:
@@ -43,12 +52,14 @@ static func run_if_requested(arena: Node) -> void:
 		await tree.create_timer(at).timeout
 	else:
 		await _idle(arena)
+	if Shot.has_arg("time"):
+		print("the last move took %.2f s" % ((Time.get_ticks_msec() - began) / 1000.0))
+	if Shot.has_arg("quit"):
+		tree.quit()
 
 
 ## Changes the run as `--set` asks. Call before the run's first round is shown.
 static func apply_set(run: RulesRun) -> void:
-	if not Shot.has_arg("set"):
-		return
 	var values := {}
 	for part in Shot.arg("set").split(",", false):
 		var pair := part.split(":")
@@ -64,6 +75,34 @@ static func apply_set(run: RulesRun) -> void:
 	for name: String in values:
 		if not name in ["night", "round"] and not (again and name in ["stance", "hyde_arrived", "restraint"]):
 			_change(run, name, values[name])
+	_deal_hand(run)
+
+
+# Replaces the hand that was dealt with the cards `--hand` names, and has the round's events
+# say so, so that the table deals them.
+static func _deal_hand(run: RulesRun) -> void:
+	if not Shot.has_arg("hand"):
+		return
+	run.draw.append_array(run.hand)
+	run.hand = []
+	for name in Shot.arg("hand").split(",", false):
+		var ink := name.ends_with("*")
+		var key := name.trim_suffix("*")
+		var found := -1
+		for id: int in run.draw:
+			var c := Rules.card(run, id)
+			if c.key() == key and c.is_ink() == ink:
+				found = id
+				break
+		if found < 0:
+			found = Rules.add_card(run, key, ink, false).id
+		else:
+			run.draw.erase(found)
+		run.hand.append(found)
+	run.events = [
+		{"t": "shuffle", "ids": run.draw + run.hand},
+		{"t": "drawn", "why": "deal", "ids": run.hand.duplicate()},
+	]
 
 
 static func _change(run: RulesRun, name: String, value: String) -> void:
@@ -73,6 +112,10 @@ static func _change(run: RulesRun, name: String, value: String) -> void:
 		run.hyde_arrived = value == "1"
 	elif name in ["night", "round", "restraint", "stored", "plays", "discards", "score", "sov", "salt"]:
 		run.set(name, int(value))
+	elif name == "inst":
+		run.instruments.append(value)
+	elif name.get_slice("_", 0) in ["craving", "habit", "temper"]:
+		(run.get(name.get_slice("_", 0)) as Dictionary)[name.get_slice("_", 1)] = int(value)
 
 
 static func _idle(arena: Node) -> void:

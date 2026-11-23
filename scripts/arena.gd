@@ -131,7 +131,8 @@ func do_move(move: String, result: Dictionary) -> void:
 	_controls.lower()
 	if not move in ["play", "discard"]:
 		_hand.clear_chosen()
-	_column.show_choice(null)
+	if move != "play":
+		_column.show_choice(null)
 	t.move_begun.emit(move)
 	t.after = RulesView.table(_run)
 	t.unhandled = false
@@ -189,6 +190,8 @@ func _build() -> void:
 	var piles := ArenaPiles.new()
 	var travel := ArenaTravel.new()
 	stage.row_y = 322.0
+	# Five laid cards must stay clear of the flask's tag at the right.
+	stage.room_right = 236.0
 	add_child(stage)
 	move_child(stage, _hand.get_index())
 	add_child(piles)
