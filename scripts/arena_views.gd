@@ -8,8 +8,8 @@ extends Control
 ##   twist, what the dawn brings, and both men's hands with their base chips and mult.
 ## - Rest the pointer on the night's heading: the scene's twist and what the dawn brings.
 ##   On the restraint track: its limit and why.
-## - Click the draw pile: every card of the deck, grouped by kind, those still in the draw
-##   pile lit and the rest dim. The pile's order is not shown. A click or Esc closes it.
+## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
+##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up beside it.
 ## - On night 1 a small "Hint" control chooses the cards of the best hand the rules find.
 ##   It shows no score.
@@ -147,10 +147,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if key and key.keycode == KEY_TAB:
 		get_viewport().set_input_as_handled()
-	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT \
-			and t.piles.draw_pile.get_global_rect().has_point(get_global_mouse_position()):
-		get_viewport().set_input_as_handled()
-		_open_deck()
+	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
+		for which: String in ["draw", "discards"]:
+			if t.piles.pile(which).get_global_rect().has_point(get_global_mouse_position()):
+				get_viewport().set_input_as_handled()
+				_open_pile(which)
+				return
 
 
 func _say(words: String, at: Vector2) -> void:
@@ -224,23 +226,24 @@ func _every_number() -> String:
 
 # ---------- the deck ----------
 
-func _open_deck() -> void:
+func _open_pile(which: String) -> void:
 	_clear(_deck)
 	var run := t.run
-	var in_draw := {}
-	for id: int in run.draw:
-		in_draw[id] = true
-	# By kind, never by the pile's order: Paper Roots, Ink Roots, Factors, each by symbol.
+	# Only the cards that lie in this pile, shuffled anew each time it is looked at: the
+	# pile's own order is never shown. The shuffle is the view's, not the run's.
+	var ids: Array = (run.discard if which == "discards" else run.draw).duplicate()
+	ids.shuffle()
 	var entries: Array = []
-	for c: RulesCard in run.cards:
-		entries.append(t.entry(c.id))
-	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return ArenaHand._rank(a) < ArenaHand._rank(b))
+	for id: int in ids:
+		entries.append(t.entry(id))
 	var shade := ColorRect.new()
 	shade.color = Color(0.03, 0.02, 0.05, 0.78)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_deck.add_child(shade)
-	var pitch := Vector2(ArenaCard.SIZE.x * SMALL + 8.0, ArenaCard.SIZE.y * SMALL + 10.0)
+	# A few cards are shown nearly full size, many small.
+	var card_scale := 0.85 if entries.size() <= 8 else (0.62 if entries.size() <= 14 else SMALL)
+	var pitch := Vector2(ArenaCard.SIZE.x * card_scale + 8.0, ArenaCard.SIZE.y * card_scale + 10.0)
 	var a_row := maxi(1, int((size.x - 160.0) / pitch.x))
 	var rows := ceili(entries.size() / float(a_row))
 	var top := (size.y - rows * pitch.y) * 0.5 + 16.0
@@ -248,22 +251,19 @@ func _open_deck() -> void:
 		var entry: Dictionary = entries[i]
 		var card := ArenaCard.new()
 		card.show_entry(entry, t.hyde())
-		card.dimmed = not in_draw.has(entry.id)
-		if not in_draw.has(entry.id):
-			# Not in the draw pile: under a dark veil.
-			var veil := ColorRect.new()
-			veil.color = Color(0.04, 0.02, 0.06, 0.72)
-			veil.size = ArenaCard.SIZE
-			veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			card.add_child(veil)
-		card.scale = Vector2(SMALL, SMALL)
+		card.scale = Vector2(card_scale, card_scale)
 		@warning_ignore("integer_division")
 		var in_row := mini(a_row, entries.size() - (i / a_row) * a_row)
 		@warning_ignore("integer_division")
 		var middle := Vector2((size.x - in_row * pitch.x) * 0.5 + (i % a_row + 0.5) * pitch.x, top + (i / a_row + 0.5) * pitch.y)
 		card.position = middle - card.pivot_offset
 		_deck.add_child(card)
-	_deck_title.text = "The deck: %d cards, %d still in the draw pile (lit). Click to close." % [entries.size(), run.draw.size()]
+	var pile_name := "discards" if which == "discards" else "draw pile"
+	if entries.is_empty():
+		_deck_title.text = "The %s is empty. Click to close." % pile_name
+	else:
+		_deck_title.text = "The %s: %d card%s, in no order. Click to close." % [pile_name, entries.size(),
+				"" if entries.size() == 1 else "s"]
 	_deck_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_deck_title.position = Vector2(0.0, top - 44.0)
 	_deck_title.size = Vector2(size.x, 26.0)

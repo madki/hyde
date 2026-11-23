@@ -5,7 +5,7 @@ class_name ArenaBench
 ##   over: 1 to 9 and 0 choose the card at that place, P plays, D discards, N passes, Q drinks,
 ##   S takes salt, X lets the chosen cards go, B plays the best hand the rules find, and Z
 ##   leaves nothing to play (the cards that can be played go to the discards, and no discard
-##   is left), so that N can pass. T holds Tab down (every number), K opens the deck's view,
+##   is left), so that N can pass. T holds Tab down (every number), K opens the draw pile's view and L the discards',
 ##   H presses the hint. At a reward 1 to 3 take that card and 0 none.
 ## - `--set=<name>:<value>,...`: numbers and names of the run to change before its first
 ##   round is shown, for looking at a moment that is far into a run: `restraint`, `stored`,
@@ -166,10 +166,10 @@ static func _press(arena: Node, key: String) -> void:
 			tab.keycode = KEY_TAB
 			tab.pressed = true
 			Input.parse_input_event(tab)
-		"K":
+		"K", "L":
 			for child in arena.get_children():
 				if child is ArenaViews:
-					child._open_deck()
+					child._open_pile("draw" if key.to_upper() == "K" else "discards")
 		"H":
 			for child in arena.get_children():
 				if child is ArenaViews:
