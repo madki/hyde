@@ -758,13 +758,7 @@ static func pass_play(run: RulesRun) -> Dictionary:
 ## reached and whether it covers the round, and the line as it would then stand.
 static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, breaks_out: bool) -> Dictionary:
 	var goal := target(run)
-	var papers: Array = []
-	for id: int in held_ids:
-		var c := card(run, id)
-		if c != null and c.is_paper():
-			papers.append(c)
-	var pool := sort_by(papers, func(c: RulesCard) -> Array:
-		return [run.temper[c.sym], RulesConfig.ROOTS.find(c.sym), c.id])
+	var pool := rescue_pool(run, held_ids)
 	var k := 0
 	while prior + last * (1 << k) < goal and k < pool.size():
 		k += 1
@@ -782,6 +776,18 @@ static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, b
 		"k": k, "ids": ids, "pool": pool.size(), "factor": 1 << k, "score": reached, "ok": reached >= goal,
 		"ink": ink, "paper": paper, "over": ink > paper,
 	}
+
+
+## The Paper Roots among these held cards in the order a rescue takes them: lowest Temper
+## first, then Lamp, Heart, Mirror (then by id). As RulesCard.
+static func rescue_pool(run: RulesRun, held_ids: Array) -> Array:
+	var papers: Array = []
+	for id: int in held_ids:
+		var c := card(run, id)
+		if c != null and c.is_paper():
+			papers.append(c)
+	return sort_by(papers, func(c: RulesCard) -> Array:
+		return [run.temper[c.sym], RulesConfig.ROOTS.find(c.sym), c.id])
 
 
 static func _rescue(run: RulesRun, last_score: int, last_name: String, held: Array) -> void:

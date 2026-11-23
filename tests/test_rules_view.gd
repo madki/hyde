@@ -351,3 +351,146 @@ func test_no_reward_cards() -> void:
 	eq(RulesView.preview(run, [h[0].id, h[1].id]).offers_card, false, "with no reward cards the preview offers none")
 	Rules.play(run, [h[0].id, h[1].id])
 	eq([run.phase, run.last.how, run.offer], ["result", "won", null], "and the round won offers none")
+
+
+# ---------- what the table shows with the score hidden ----------
+
+# The preview of playing these cards, dealt into the hand of `run`.
+func _preview(run: RulesRun, play: String, rest: String = "") -> Dictionary:
+	var h := deal(run, play + (" " + rest if rest != "" else ""))
+	return RulesView.preview(run, ids(h.slice(0, play.split(" ").size())))
+
+
+func test_base_is_the_hands_own() -> void:
+	var run := fresh()
+	# Rules 4.1, Jekyll's column, and the Sublimation and the Passing Thought.
+	var rows := [
+		["P:lamp", 15, 2], ["P:lamp P:lamp", 25, 2], ["P:lamp P:heart", 30, 3], ["P:lamp P:lamp P:lamp", 40, 3],
+		["P:lamp P:heart P:mirror", 55, 5], ["P:lamp I:lamp", 25, 2], ["F:cup F:eye", 10, 1],
+	]
+	run.temper = {"lamp": 2, "heart": 1, "mirror": 0}
+	run.craving.lamp = 2
+	for row: Array in rows:
+		var extra := "" if row[0] == "P:lamp I:lamp" or row[0] == "F:cup F:eye" else " F:pen"
+		var p := _preview(run, row[0] + extra)
+		eq(p.base, {"chips": row[1], "mult": row[2]}, "Jekyll: %s" % row[0])
+	# Hyde's column, and night 2's scene, where the hand's mult is halved.
+	rows = [
+		["I:lamp", 20, 3, 2], ["I:lamp I:lamp", 35, 5, 3], ["I:lamp I:heart", 25, 3, 2],
+		["I:lamp I:lamp I:lamp", 60, 7, 4], ["I:lamp I:heart I:mirror", 40, 4, 2],
+	]
+	for hunted: bool in [false, true]:
+		run = at(as_hyde(fresh()), 1, 2 if hunted else 0)
+		run.habit.lamp = 2
+		run.stored = 3
+		for row: Array in rows:
+			var p := _preview(run, row[0] + " F:pen")
+			eq(p.base, {"chips": row[1], "mult": row[3] if hunted else row[2]}, "Hyde%s: %s" % [", hunted" if hunted else "", row[0]])
+
+
+func test_roots_at_risk_only_on_the_last_play() -> void:
+	var run := at(fresh({}, 17), 0, 0)
+	var p := _preview(run, "P:lamp", "P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
+	eq([p.at_risk, p.line_breaks_at], [null, -1], "two plays left: nothing at risk")
+	run.plays = 1
+	var h := deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
+	p = RulesView.preview(run, [h[0].id])
+	var lamps := [h[4].id, h[5].id]
+	var hearts := [h[1].id, h[2].id]
+	lamps.sort()
+	hearts.sort()
+	eq(p.at_risk, lamps + hearts + [h[3].id], "the held Paper Roots by Lamp, Heart, Mirror; the cup and eye are not at risk")
+
+
+func test_line_breaks_at_in_the_rules_scenarios() -> void:
+	# Scenario 5: night 2, round 1, Lamp Temper 1, he has arrived; two Kindness for 110,
+	# holding a Composure and a Scruple. In all three cases the line holds: 5 to 7, 6 to 6.
+	for prior: int in [2800, 2700, 2000]:
+		var run := at(fresh({}, 16), 1, 0)
+		run.hyde_arrived = true
+		run.temper.lamp = 1
+		first_arrival(run)
+		run.plays = 1
+		run.score = prior
+		var h := deal(run, "P:heart P:heart P:lamp P:mirror F:cup I:lamp I:heart F:eye")
+		var p := RulesView.preview(run, [h[0].id, h[1].id])
+		eq([p.at_risk, p.line_breaks_at], [[h[3].id, h[2].id], -1], "scenario 5, prior %d: the Scruple, then the Composure, and the line holds" % prior)
+		Rules.play(run, [h[0].id, h[1].id])
+		ok(run.ended_by != "line", "scenario 5, prior %d: the run does not end at the line" % prior)
+	# Scenario 6: night 1, round 1, a Spark for 60 as his first arrival. The third Root
+	# taken puts him over: 7 to 5.
+	var cases := [
+		[900, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye", 5, 1, false],
+		[700, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye", 5, 3, true],
+		[0, "P:lamp F:cup F:cup F:eye F:lock P:heart P:heart P:mirror", 3, 3, false],
+	]
+	for c: Array in cases:
+		var run := at(fresh({}, 17), 0, 0)
+		run.plays = 1
+		run.score = c[0]
+		var h := deal(run, c[1])
+		var p := RulesView.preview(run, [h[0].id])
+		eq([p.at_risk.size(), p.line_breaks_at], [c[2], 2], "scenario 6, prior %d: the third Root breaks the line" % c[0])
+		Rules.play(run, [h[0].id])
+		eq([run.last.rescue.k, run.ended_by == "line"], [c[3], c[4]], "scenario 6, prior %d: %d taken, %s" % [c[0], c[3], "over the line" if c[4] else "the line is not what ends it" if run.phase == "end" else "the line holds"])
+	# A breakout on the last play counts too: his four and two more.
+	var run := at(fresh({}, 19), 0, 1)
+	run.restraint = 4
+	run.plays = 1
+	run.score = 1300
+	var h := deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
+	var p := RulesView.preview(run, [h[0].id])
+	eq(p.line_breaks_at, 1, "after a breakout as his first arrival, 6 to 8: the first Root taken makes 7 to 7, the second 8 to 6")
+
+
+func test_hidden_fields_do_not_follow_the_score() -> void:
+	# The same play with another score before it, or worth another score, shows the same.
+	var shown := []
+	for k: int in 3:
+		var run := at(fresh({"root_chips": [15, 40, 90][k]}, 17), 0, 0)
+		run.plays = 1
+		run.score = [0, 900, 990][k]
+		var h := deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
+		var p := RulesView.preview(run, [h[0].id, h[1].id])
+		shown.append([p.base, p.at_risk, p.line_breaks_at])
+	eq(shown[1], shown[0], "another score before the play")
+	eq(shown[2], shown[0], "another score for the play")
+
+
+func test_roots_at_risk_over_the_golden_runs() -> void:
+	var seen := {"rescues": 0, "last plays": 0}
+	for i in Golden.runs().size():
+		var record: Dictionary = Golden.runs()[i]
+		var run := Golden.begin(record)
+		for j in record.moves.size():
+			var move: Array = record.moves[j]
+			if move[0] != "play" or run.phase != "play":
+				Golden.apply(run, move)
+				continue
+			var p := RulesView.preview(run, move[1])
+			if not p.ok:
+				Golden.apply(run, move)
+				continue
+			var label := "run %d, move %d" % [i, j + 1]
+			var last: bool = run.plays == 1
+			if not last:
+				if p.at_risk != null:
+					_fail(label + ": at risk with plays left")
+				checks += 1
+				Golden.apply(run, move)
+				continue
+			seen["last plays"] += 1
+			# Another score before the play changes neither field.
+			var other := run.copy()
+			other.score = 0 if run.score > 0 else Rules.target(run)
+			var q := RulesView.preview(other, move[1])
+			eq([q.base, q.at_risk, q.line_breaks_at], [p.base, p.at_risk, p.line_breaks_at], label + ": the same whatever the score")
+			Golden.apply(run, move)
+			if run.last != null and run.last.has("rescue") and run.last.round == run.round and run.last.night == run.night:
+				var k: int = run.last.rescue.k
+				seen.rescues += 1
+				eq(run.last.rescue.ids, p.at_risk.slice(0, k), label + ": the rescue takes the Roots at risk, in order")
+				if run.last.how == "rescued":
+					var over: bool = run.last.ink > run.last.paper
+					eq(over, p.line_breaks_at >= 0 and k > p.line_breaks_at, label + ": the line breaks where it was marked")
+	ok(seen.rescues > 100 and seen["last plays"] > 300, "checked over the golden runs: %s" % JSON.stringify(seen))
