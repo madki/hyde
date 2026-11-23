@@ -1,0 +1,50 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/arena_column_preview.gd" id="1"]
+[ext_resource type="Material" path="res://shaders/arena_paper_material.tres" id="2"]
+[ext_resource type="Texture2D" path="res://art/arena/paper_mask.png" id="3"]
+[ext_resource type="Material" path="res://shaders/pencil_line_material.tres" id="4"]
+[ext_resource type="Script" path="res://scripts/arena_border.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/arena_ink.gd" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/arena_column.tscn" id="7"]
+
+[node name="ArenaColumnPreview" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Paper" type="TextureRect" parent="."]
+material = ExtResource("2")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Border" type="Control" parent="."]
+material = ExtResource("4")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("5")
+column_at = 290.0
+
+[node name="Ink" type="Node" parent="." node_paths=PackedStringArray("paper")]
+script = ExtResource("6")
+paper = NodePath("../Paper")
+
+[node name="Column" parent="." instance=ExtResource("7")]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 42.0
+offset_top = 44.0
+offset_right = 284.0
+offset_bottom = -40.0
