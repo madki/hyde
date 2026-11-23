@@ -16,6 +16,14 @@ extends Control
 ##   K  a hand card pushed into the middle of the draw pile (the pile riffles)
 ##   R  the discards turned over into a new draw pile    T  the first hand card turns over
 ##   G  between rounds: the corner holds the whole deck, or the two piles again
+## Card moments (TASK-19.9's patterns):
+##   1  four of his Roots join the deck (his first arrival)    2  one card joins (a reward)
+##   3  Hyde brings two Fog from the draw pile    4  Jekyll brings two from the discards
+##   5  none brought
+##   6  the first hand card changes side (stained if paper, turned if ink)
+##   7  a card in the draw pile changes side    8  a card in the discards changes side
+##      (7 and 8 go paper to ink and ink to paper by turns)
+##   9  the rescue converts the first Paper Root in the hand
 ## A click or a key during a move hurries it; holding one skips to its end.
 ##
 ## For a screenshot: `tools/shot.sh /abs/out.png res://scenes/arena_motion_bench.tscn
@@ -40,8 +48,14 @@ const SAMPLES := [["Composure", "Fog", 1], ["Kindness", "Appetite", 1], ["Scrupl
 var travel := ArenaTravel.new()
 var piles := ArenaPiles.new()
 var stage := ArenaStage.new()
+var moments: ArenaCardMoments
 var _hand: Array[ArenaCard] = []
 var _next_id := 1
+## Which way 7 and 8 go next: true for paper to ink.
+var _to_ink := {"draw": true, "discards": false}
+## The last caption each moment showed, and the longest a caption was on the page, for the
+## self-test.
+var _moment_ends := 0
 
 var _is_jekyll := true
 var _labels := {}
@@ -59,6 +73,11 @@ func _ready() -> void:
 	stage.beats = beats
 	piles.bind(beats, travel)
 	travel.beats = beats
+	moments = ArenaCardMoments.new(beats, travel, piles, stage)
+	moments.joined.connect(func(_c: Array) -> void: _moment_ends += 1)
+	moments.brought.connect(func(_c: Array) -> void: _moment_ends += 1)
+	moments.side_changed.connect(func(_b: Dictionary, _a: Dictionary, _n: ArenaCard) -> void:
+		_moment_ends += 1)
 	beats.source = func() -> Dictionary: return engine
 	beats.shown.changed.connect(_on_shown)
 	beats.started.connect(_show_status)
@@ -138,6 +157,106 @@ func _act(keycode: int) -> void:
 		KEY_G:
 			if not beats.is_running():
 				piles.deck_mode = not piles.deck_mode
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+			if not beats.is_running():
+				_moment(keycode - KEY_0)
+				beats.run()
+
+
+# --- Card moments (TASK-19.9) ------------------------------------------------------------------
+
+## The twin of a sample card, as the engine would give it: the other side of the same Root.
+func _twin(data: Dictionary) -> Dictionary:
+	for s: Array in SAMPLES:
+		if data.name == s[0] or data.name == s[1]:
+			var ink: bool = not data.ink
+			return {"id": data.id, "name": s[1] if ink else s[0], "ink": ink,
+					"chips": s[2] + (1 if ink else 0)}
+	return data
+
+
+func _root(name: String) -> Dictionary:
+	var data := _sample()
+	for s: Array in SAMPLES:
+		if name == s[0] or name == s[1]:
+			data.name = name
+			data.ink = name == s[1]
+			data.chips = s[2] + (1 if data.ink else 0)
+	return data
+
+
+## The bench's stand-in hand takes cards that have arrived in the centre, and closes up.
+func _take_into_hand(nodes: Array) -> void:
+	for card: ArenaCard in nodes:
+		_hand.append(card)
+	var last: Signal
+	for i in _hand.size():
+		last = travel.fly(_hand[i], _hand_slot(i, _hand.size()), _hand_turn(i, _hand.size()),
+				1.0, ArenaTravel.UP, ArenaPace.TRAVEL, ArenaPace.travel_start(maxi(0, i - _hand.size() + nodes.size())))
+	await last
+
+
+## Bench set-up, not a move: puts n cards on the discards at once, if there are fewer.
+func _ensure_discards(n: int) -> void:
+	if int(engine.discard_count) < n:
+		engine.discard_count = n
+		beats.shown.set_value("discard_count", n)
+
+
+func _moment(which: int) -> void:
+	var ink_from := Vector2(930.0, 200.0)
+	match which:
+		1:
+			var cards := [_root("Fog"), _root("Fog"), _root("Appetite"), _root("Pride")]
+			_count_in(cards.size())
+			moments.join_deck(cards, ArenaCaptions.joins("arrival", []), ink_from)
+		2:
+			var card := _root("Kindness")
+			_count_in(1)
+			moments.join_deck([card], ArenaCaptions.joins("reward", [card.name]), Vector2(628.0, 70.0))
+		3:
+			var cards := [_root("Fog"), _root("Fog")]
+			engine.draw_count -= 2
+			moments.bring_to_hand("Hyde", cards, "draw", _take_into_hand)
+		4:
+			_ensure_discards(2)
+			var cards := [_root("Composure"), _root("Scruple")]
+			engine.discard_count -= 2
+			moments.bring_to_hand("Jekyll", cards, "discards", _take_into_hand)
+		5:
+			moments.bring_to_hand("Hyde", [], "draw", _take_into_hand)
+		6, 9:
+			var at := -1
+			for i in _hand.size():
+				if which == 6 or not (_hand[i].get_meta("data") as Dictionary).ink:
+					at = i
+					break
+			if at < 0:
+				return
+			var card := _hand[at]
+			var before: Dictionary = card.get_meta("data")
+			var after := _twin(before)
+			var change := "convert" if which == 9 else ("stain" if not before.ink else "turn")
+			moments.change_side(before, after, "hand", ArenaCaptions.changes(change, before.name, after.name),
+					card, _hand_slot(at, _hand.size()), _hand_turn(at, _hand.size()))
+		7, 8:
+			var where := "draw" if which == 7 else "discards"
+			if where == "discards":
+				_ensure_discards(1)
+			var to_ink: bool = _to_ink[where]
+			_to_ink[where] = not to_ink
+			var before := _root("Kindness" if to_ink else "Fog")
+			var after := _twin(before)
+			moments.change_side(before, after, where,
+					ArenaCaptions.changes("stain" if to_ink else "turn", before.name, after.name))
+
+
+## Cards joining: into the deck between rounds, else into the draw pile.
+func _count_in(n: int) -> void:
+	if piles.deck_mode:
+		beats.shown.set_value("deck_count", int(beats.shown.value("deck_count", 0)))
+	else:
+		engine.draw_count += n
 
 
 # --- Cards (TASK-19.5) -------------------------------------------------------------------------
@@ -385,11 +504,14 @@ func _build_column() -> void:
 
 
 func _build_help() -> void:
-	var help := _label(Vector2(50.0, 462.0), 11)
+	var help := _label(Vector2(50.0, 448.0), 10)
 	help.modulate = DIM
 	help.text = "B a move  E one the engine ends otherwise\nS speed  F reduce flashes" \
 			+ "\nD deal  X discard  P discard to hand\nC to the centre  N draw to the centre" \
 			+ "\nK into the draw pile  R reshuffle\nT turn over  G between rounds" \
+			+ "\n1 four join  2 one joins  3 brought from draw" \
+			+ "\n4 from the discards  5 none  6 side in the hand" \
+			+ "\n7 side in the draw pile  8 in the discards  9 rescue" \
 			+ "\nClick or key in a move: hurry; hold: skip"
 
 
@@ -493,6 +615,45 @@ func _selftest() -> void:
 	_expect(_hand.size() == 1 and _hand[0].face_up == false, "the hand holds 1, turned down")
 	_expect(int(engine.discard_count) == 0 and piles.discard_pile.count == 0, "the discards are empty after R")
 	_expect(piles.draw_pile.count == int(engine.draw_count), "the draw pile shows its count")
+	# 7. The card moments: each runs, ends with its signal, and leaves the counts right.
+	for which in range(1, 10):
+		var ends := _moment_ends
+		var hand_before := _hand.size()
+		var first: Dictionary = _hand[0].get_meta("data") if not _hand.is_empty() else {}
+		_moment(which)
+		if not beats.is_running():
+			beats.run()
+		beats.skip()
+		if beats.is_running():
+			await beats.emptied
+		_expect(_moment_ends == ends + 1 or which == 9 and first.get("ink", true),
+				"moment %d sends its signal at its end" % which)
+		_expect(beats.shown.differences(engine).is_empty(),
+				"counts match after moment %d: %s" % [which, str(beats.shown.differences(engine))])
+		if which == 3 or which == 4:
+			_expect(_hand.size() == hand_before + 2, "moment %d brings two to the hand" % which)
+		if which == 6:
+			var now: Dictionary = _hand[0].get_meta("data")
+			_expect(now.name == _twin(first).name and _hand[0].title == now.name,
+					"the hand card ends as its twin (%s to %s)" % [first.name, now.name])
+	_expect(travel.get_children().all(func(c: Node) -> bool: return c in _hand),
+			"no card is left lying on the travel layer")
+	# A caption stays at least a second at speed 1, unhurried.
+	var shown_for := 0.0
+	_moment(5)
+	beats.run()
+	while beats.is_running():
+		if stage.caption() != "":
+			shown_for += get_process_delta_time()
+		await get_tree().process_frame
+	_expect(shown_for >= ArenaPace.CAPTION_MIN - 0.05, "a caption stays a second (%.2f s)" % shown_for)
+	_expect(ArenaCaptions.brings("Hyde", ["Fog", "Fog"]) == "Hyde brings two Fog."
+			and ArenaCaptions.brings("Jekyll", ["Composure", "Scruple"]) == "Jekyll brings a Composure and a Scruple."
+			and ArenaCaptions.changes("stain", "Kindness", "Appetite") == "The draught stains a Kindness. It is an Appetite now."
+			and ArenaCaptions.joins("breakout", ["Fog", "Pride"]) == "He breaks out. A Fog and a Pride join the deck."
+			and ArenaCaptions.joins("dawn", ["Appetite", "Appetite"]) == "Dawn. Two Appetite join the deck."
+			and ArenaCaptions.joins("no_paper", ["Appetite"]) == "Nothing is left to stain. An Appetite joins the deck.",
+			"the captions read as doc-3's tables")
 	print("SELFTEST PASS" if _fails.is_empty() else "SELFTEST FAILED: %s" % str(_fails))
 
 

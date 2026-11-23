@@ -38,6 +38,8 @@ var shown := ArenaShown.new()
 var source := Callable()
 
 var _queue: Array[Dictionary] = []
+## Where `add_next` puts a beat: after those it has already put there during this beat.
+var _next_at := 0
 var _running := false
 var _choosing := false
 var _hurrying := false
@@ -85,6 +87,14 @@ func add(beat: Callable) -> void:
 	_queue.append({"call": beat, "choice": false})
 
 
+## Adds a beat to play next, right after the one playing now (after any others added with
+## add_next during it, in the order they were added). For a signal sent from a beat whose
+## answer must be seen at once: the line's tally after a card joins, say.
+func add_next(beat: Callable) -> void:
+	_queue.insert(_next_at, {"call": beat, "choice": false})
+	_next_at += 1
+
+
 ## Adds a beat that waits for the player to choose (a card of the reward, say). Hurrying and
 ## skipping stop before it, and input is let through until it returns.
 func add_choice(beat: Callable) -> void:
@@ -119,6 +129,7 @@ func run() -> void:
 	started.emit()
 	while not _queue.is_empty():
 		var beat: Dictionary = _queue.pop_front()
+		_next_at = 0
 		if beat.choice:
 			_hurrying = false
 			_skipping = false
@@ -127,6 +138,7 @@ func run() -> void:
 			_choosing = true
 		await (beat.call as Callable).call()
 		_choosing = false
+	_next_at = 0
 	_check()
 	_running = false
 	_hurrying = false
