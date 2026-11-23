@@ -8,7 +8,7 @@ extends Control
 ##   E  the same move, but the engine ends on another score: the check corrects it and logs it
 ##   S  cycles the speed setting (1, 1.5, 2)      F  turns "reduce flashes" on or off
 ##   Shift  gives the table to the other man
-## Cards (TASK-19.5's travel):
+## Cards (travel):
 ##   D  deal: cards from the draw pile to the hand, face down, turning over as they arrive
 ##   X  two cards from the hand to the discards       P  the top discard back to the hand
 ##   C  three hand cards laid in the centre under a caption, held, then sent to the discards
@@ -16,7 +16,7 @@ extends Control
 ##   K  a hand card pushed into the middle of the draw pile (the pile riffles)
 ##   R  the discards turned over into a new draw pile    T  the first hand card turns over
 ##   G  between rounds: the corner holds the whole deck, or the two piles again
-## Card moments (TASK-19.9's patterns):
+## Card moments (the three patterns):
 ##   1  four of his Roots join the deck (his first arrival)    2  one card joins (a reward)
 ##   3  Hyde brings two Fog from the draw pile    4  Jekyll brings two from the discards
 ##   5  none brought
@@ -163,7 +163,7 @@ func _act(keycode: int) -> void:
 				beats.run()
 
 
-# --- Card moments (TASK-19.9) ------------------------------------------------------------------
+# --- Card moments ------------------------------------------------------------------------------
 
 ## The twin of a sample card, as the engine would give it: the other side of the same Root.
 func _twin(data: Dictionary) -> Dictionary:
@@ -259,7 +259,7 @@ func _count_in(n: int) -> void:
 		engine.draw_count += n
 
 
-# --- Cards (TASK-19.5) -------------------------------------------------------------------------
+# --- Cards -------------------------------------------------------------------------------------
 
 ## The data of a new sample card, as the engine would give it.
 func _sample() -> Dictionary:
