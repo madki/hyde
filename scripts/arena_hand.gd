@@ -203,6 +203,21 @@ func settle(card: ArenaCard) -> void:
 	_restack()
 
 
+## The table changes hands while the cards lie in the row: each takes the face `entry_of`
+## (called with a card's id, returning its entry of RulesView.table().hand) gives it, a
+## Factor turning over to the other man's, and the cards he cannot play are printed dark.
+func turn_to(entry_of: Callable, hyde_has_table: bool) -> void:
+	is_jekyll = not hyde_has_table
+	for card in _cards:
+		var entry: Dictionary = entry_of.call(card.card_id)
+		if card.ink != (entry.ink or (entry.t == "factor" and hyde_has_table)):
+			card.change_face(card.show_entry.bind(entry, hyde_has_table), not _still)
+		else:
+			card.show_entry(entry, hyde_has_table)
+		card.dimmed = not entry.get("playable", true)
+		card.set_tag("")
+
+
 ## Empties the hand at once.
 func clear() -> void:
 	for card in _cards:

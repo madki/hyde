@@ -70,31 +70,35 @@ func bind() -> void:
 	beats.started.connect(_set_rate)
 
 
-## True while Hyde has the table after the move being played back.
+## True while the table shows Hyde at it: during a move, until the page's shift is played.
 func hyde() -> bool:
-	return after.get("stance", "jekyll") == "hyde"
+	return shown.value("stance", after.get("stance", "jekyll")) == "hyde"
 
 
-## A card as an entry of RulesView.table().hand, {id, t, key, ink, name, chips, text, ...},
-## as it stands after the move, whichever pile it is in.
+## A card as an entry of RulesView.table().hand, {id, t, key, ink, name, chips, text,
+## playable}, whichever pile it is in. A Factor's name and words are those of the man the
+## table shows now; `playable` is as RulesView has it once the move is over.
 func entry(id: int) -> Dictionary:
+	var stance := "hyde" if hyde() else "jekyll"
+	var playable := true
 	for e: Dictionary in after.get("hand", []):
 		if e.id == id:
-			return e
+			playable = e.playable
 	var c := Rules.card(run, id)
 	if c == null:
-		return {"id": id, "t": "root", "key": "", "ink": false, "name": "", "chips": 0, "text": ""}
+		return {"id": id, "t": "root", "key": "", "ink": false, "name": "", "chips": 0, "text": "", "playable": true}
 	return {
 		"id": id, "t": c.t, "key": c.key(), "ink": c.is_ink(),
-		"name": Rules.name_of(c, run.stance), "chips": Rules.chips_of(run, c),
-		"text": RulesConfig.factor_text(c.kind, run.stance, run.dials) if c.is_factor() else "",
+		"name": Rules.name_of(c, stance), "chips": Rules.chips_of(run, c),
+		"text": RulesConfig.factor_text(c.kind, stance, run.dials) if c.is_factor() else "",
+		"playable": playable,
 	}
 
 
 ## The same card as the data a travelling card is made from (ArenaTravel.make_card): its
 ## `ink` is how the card looks, so a Factor is on ink while Hyde has the table.
 func card_data(id: int) -> Dictionary:
-	var data := entry(id).duplicate()
+	var data := entry(id)
 	data.ink = data.ink or (data.t == "factor" and hyde())
 	return data
 

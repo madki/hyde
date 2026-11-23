@@ -112,6 +112,10 @@ var _total := 0
 var _travel := -1.0 ## -1 while the total is not on its way
 var _fly := -1.0 ## -1 while no drop is flying
 var _ticks := 0
+## Before a drink: this many drops outlined, as the restraint would be stored. Before a dose
+## of salt: the stored drops struck through.
+var _ghost_drops := 0
+var _struck := false
 
 
 func _init() -> void:
@@ -261,6 +265,14 @@ func set_discards(n: int) -> Tween:
 ## The stored restraint: drops come or go, beside the mult.
 func set_stored(n: int) -> Tween:
 	return _count("_stored", n, MARK_TIME, Tween.TRANS_LINEAR)
+
+
+## The marks before a drink or a dose of salt: `outlined` drops drawn faint beside the mult
+## (what a drink would store), and the stored drops `struck` through (what salt would lose).
+func preview_stored(outlined: int, struck: bool) -> void:
+	_ghost_drops = outlined
+	_struck = struck
+	_redraw()
 
 
 ## The sovereigns count to `to`.
@@ -615,6 +627,11 @@ func _draw_text() -> void:
 
 	for i in ceili(_stored):
 		_drop(_drop_at(i), clampf(_stored - i, 0.0, 1.0))
+	for i in _ghost_drops:
+		c.draw_arc(_drop_at(ceili(_stored) + i), 7.0, 0.0, TAU, 16, Color(CREAM, 0.75), 1.4)
+	if _struck and _stored >= 1.0:
+		c.draw_line(_drop_at(0) + Vector2(-10.0, 4.0), _drop_at(ceili(_stored) - 1) + Vector2(10.0, -4.0),
+				CREAM, 2.0)
 	if _fly >= 0.0:
 		var from := _drop_at(roundi(_stored))
 		var to := _mult_at() + Vector2(12.0, -12.0)
