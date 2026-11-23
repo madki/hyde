@@ -46,7 +46,7 @@ static func store(t: ArenaTable, n: int) -> void:
 			t.mark("restraint/meter", n - i - 1)
 			t.mark("restraint/stored", int(t.shown.value("restraint/stored", 0)) + 1)
 			await t.beats.wait(STORE_STEP))
-	t.beats.add(func() -> void: await t.stage.clear_caption())
+	# The caption stays while the page shifts: the next one takes its place.
 
 
 ## The page shifts to Hyde (`to_hyde`) or back to Jekyll.
@@ -71,8 +71,9 @@ static func joined(t: ArenaTable, e: Dictionary) -> void:
 	var from := Vector2(t.arena.size.x - 60.0, t.arena.size.y * 0.42)
 	t.moments.join_deck(cards, ArenaCaptions.joins(cause, names), from)
 	t.beats.add(func() -> void:
+		# The line's marks are drawn while the table goes on.
 		var ink: int = t.shown.add("line/ink", cards.size())
-		await t.play(t.symbols.set_line.bind(int(t.shown.value("line/paper", 0)), ink)))
+		t.play(t.symbols.set_line.bind(int(t.shown.value("line/paper", 0)), ink)))
 
 
 ## A Paper Root is stained where it lies: in the draw pile, the discards or the hand.
@@ -129,5 +130,5 @@ static func brought(t: ArenaTable, e: Dictionary) -> void:
 static func means(t: ArenaTable) -> void:
 	t.beats.add(func() -> void:
 		t.shown.set_value("salt/doses", t.after.salt.doses)
-		await t.play(t.means.set_draught.bind(t.after.draught))
-		await t.play(t.means.set_salt.bind(t.after.salt)))
+		# Input opens while the flask fills and the papers fold or unfold.
+		t.settle_means())

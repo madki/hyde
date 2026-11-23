@@ -60,6 +60,8 @@ var after: Dictionary = {}
 var unhandled := false
 
 var _followed: Array[Tween] = []
+## True while the flask and the papers are still moving to what the engine holds.
+var _means_settling := false
 
 
 ## Call once, when every part is set.
@@ -172,10 +174,24 @@ func sync() -> void:
 	hand.is_jekyll = table.stance == "jekyll"
 	column.show_table(table)
 	symbols.show_table(table)
-	means.show_table(table, run.dials)
+	if not _means_settling:
+		means.show_table(table, run.dials)
 	hand.show_table(table)
 	controls.show_table(table, hand.chosen().size())
 	synced.emit(table)
+
+
+## The flask is filled and corked or uncorked, and the papers fold or unfold, as the engine
+## now has them, in their own time: nothing waits for it. When the move is skipped they are
+## set at once at its end.
+func settle_means() -> void:
+	if beats.rate() >= 100.0 or _means_settling:
+		return
+	_means_settling = true
+	await means.set_draught(after.draught)
+	await means.set_salt(after.salt)
+	_means_settling = false
+	means.show_table(RulesView.table(run), run.dials)
 
 
 ## The table as the engine has it, at once: the end of a move some of which was not shown.
