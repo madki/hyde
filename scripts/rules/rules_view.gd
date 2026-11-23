@@ -112,6 +112,8 @@ static func _night(run: RulesRun) -> Dictionary:
 ##   Roots join) and the symbols of the two Ink Roots that join besides.
 ## - `craving`: for each symbol the play adds to: {adds, to, copies, habit_to}.
 ## - `turns`: for each Ink Root turned, in order: {id, sym, gain, temper_to}.
+## - `best_root`: the id of the play's best Root (the active Root with the most chips, ties
+##   going Lamp, Heart, Mirror), or -1 for a play without an active Root.
 ## - `score_to`, `target`, `meets_target`, `last_play`.
 ## - `result`: "goes_on", "won", "rescued" or "lost" (a rescue that cannot cover the round).
 ## - `rescue`: null, or for a last play that falls short {k, ids, names, pool, factor, score,
@@ -160,6 +162,11 @@ static func preview(run: RulesRun, ids: Array) -> Dictionary:
 			"k": info.k, "ids": info.ids, "names": info.names, "pool": info.pool, "factor": info.factor,
 			"score": sim.score, "ok": last.how == "rescued",
 		}
+	var active: Array = []
+	for id: int in ids:
+		var c := Rules.card(run, id)
+		if c.is_root() and c.ink == (run.stance == "hyde"):
+			active.append(c)
 	var li := Rules.line_info(sim)
 	var score_to: int = run.score + int(ev.score)
 	return {
@@ -171,6 +178,7 @@ static func preview(run: RulesRun, ids: Array) -> Dictionary:
 		"breakout": breakout,
 		"craving": craving,
 		"turns": turns,
+		"best_root": -1 if active.is_empty() else RulesHands.best_root(run, active).id,
 		"score_to": score_to, "target": Rules.target(run), "meets_target": score_to >= Rules.target(run),
 		"last_play": run.plays == 1,
 		"result": result,
