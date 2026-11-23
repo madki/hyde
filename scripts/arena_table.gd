@@ -47,6 +47,12 @@ var means: ArenaMeans
 var ink: ArenaInk
 var controls: ArenaControls
 var heading: ArenaHeading
+var reward: ArenaReward
+
+## The reward's choice, between the round that offered it and the next: the place of the
+## card taken (-1 or null for none), and the nodes of the cards that were offered.
+var picked: Variant = null
+var offered: Array = []
 
 ## RulesView.table() as it stands after the move being played back.
 var after: Dictionary = {}

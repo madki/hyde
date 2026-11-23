@@ -5,7 +5,7 @@ class_name ArenaBench
 ##   over: 1 to 9 and 0 choose the card at that place, P plays, D discards, N passes, Q drinks,
 ##   S takes salt, X lets the chosen cards go, B plays the best hand the rules find, and Z
 ##   leaves nothing to play (the cards that can be played go to the discards, and no discard
-##   is left), so that N can pass.
+##   is left), so that N can pass. At a reward 1 to 3 take that card and 0 none.
 ## - `--set=<name>:<value>,...`: numbers and names of the run to change before its first
 ##   round is shown, for looking at a moment that is far into a run: `restraint`, `stored`,
 ##   `plays`, `discards`, `score`, `sov`, `salt`, `stance`, `hyde_arrived` (0 or 1), and
@@ -40,7 +40,7 @@ static func run_if_requested(arena: Node) -> void:
 	var tree := arena.get_tree()
 	var began := 0
 	for i in keys.length():
-		await _idle(arena)
+		await _idle(arena, true)
 		if (at >= 0.0 or Shot.has_arg("time")) and i == keys.length() - 1:
 			ArenaPace.speed = 1.0
 		began = Time.get_ticks_msec()
@@ -51,7 +51,7 @@ static func run_if_requested(arena: Node) -> void:
 			await tree.process_frame
 		await tree.create_timer(at).timeout
 	else:
-		await _idle(arena)
+		await _idle(arena, true)
 	if Shot.has_arg("time"):
 		print("the last move took %.2f s" % ((Time.get_ticks_msec() - began) / 1000.0))
 	if Shot.has_arg("quit"):
@@ -118,13 +118,25 @@ static func _change(run: RulesRun, name: String, value: String) -> void:
 		(run.get(name.get_slice("_", 0)) as Dictionary)[name.get_slice("_", 1)] = int(value)
 
 
-static func _idle(arena: Node) -> void:
+# Waits until the player may act: a move, or a choice (`at_choice`). Without `at_choice` a
+# choice is made on the way: a card of a reward is taken, the first.
+static func _idle(arena: Node, at_choice: bool = false) -> void:
+	var reward: ArenaReward = arena.t.reward
 	while not arena.is_idle():
-		await arena.settled
+		if reward.waiting:
+			if at_choice:
+				return
+			reward.pick(0)
+		await arena.get_tree().process_frame
 
 
 static func _press(arena: Node, key: String) -> void:
 	var hand: ArenaHand = arena.t.hand
+	var reward: ArenaReward = arena.t.reward
+	if reward.waiting:
+		# At a reward: 1 to 3 take a card, anything else none.
+		reward.pick(int(key) - 1 if key.is_valid_int() else -1)
+		return
 	match key.to_upper():
 		"P":
 			arena.play_chosen()

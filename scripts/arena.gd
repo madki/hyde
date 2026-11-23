@@ -10,7 +10,7 @@ extends Control
 ## still made: the table then shows its outcome at once.
 ##
 ## Keys: 1 to 9 and 0 choose cards, Enter plays (or passes), D discards, Q drinks, S takes
-## salt, Esc lets the chosen cards go. During a move a click or a key hurries it, and held
+## salt, Esc lets the chosen cards go. At a reward 1 to 3 take a card and 0 or Esc none. During a move a click or a key hurries it, and held
 ## down skips to its end.
 ##
 ## For a screenshot: `--seed=<n>` (the run's seed), `--ink=<0..100>` and
@@ -144,10 +144,11 @@ func do_move(move: String, result: Dictionary) -> void:
 	if t.unhandled:
 		_beats.add_call(t.catch_up)
 	await _beats.run()
-	t.sync()
 	if _run.phase != "play":
+		# The round is over: the table stays as its end left it, and goes on.
 		await _go_on()
 		return
+	t.sync()
 	_busy = false
 	_hand.enabled = true
 	_controls.rise()
@@ -217,6 +218,9 @@ func _build() -> void:
 	t.ink = _ink
 	t.controls = _controls
 	t.heading = _heading
+	t.reward = ArenaReward.new()
+	t.reward.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(t.reward)
 	t.bind()
 
 
@@ -237,25 +241,28 @@ func _on_choice(ids: Array) -> void:
 	t.choice_changed.emit(table.play)
 
 
-# The round is over. Until its end has moments of its own (the pay, the line, the reward, the
-# dawn's places, the run's end), the table goes straight on to the next round, and after the
-# run's end to a new run.
+# The round is over: the reward's choice is made in the rules and the next round begins.
+# Until the dawn's places have pages of their own, the laboratory and the back alley are left
+# at once; and until the run's end is shown, a new run begins after it.
 func _go_on() -> void:
 	var events: Array = []
 	while _run.phase != "play" and _run.phase != "end":
 		var result: Dictionary
 		match _run.phase:
 			"result":
-				result = Rules.continue_result(_run)
+				result = Rules.continue_result(_run, t.picked)
 			"lab":
 				result = Rules.leave_lab(_run)
 			_:
 				result = Rules.alley_leave(_run)
-		events = result.events
+		events.append_array(result.events)
 	if _run.phase == "end":
 		t.add_caption("The run is over. A new one begins.")
 		_run = Rules.new_run()
 		t.run = _run
+		t.offered = []
+		t.picked = null
+		_symbols.line_reset()
 		events = _run.events
 	await do_move("round", {"ok": true, "events": events})
 

@@ -496,6 +496,15 @@ func mult_place() -> Vector2:
 	return get_global_transform() * (_mult_at() + Vector2(12.0, -12.0))
 
 
+## The purse's coin and the last mark of the plays' tally, on the page.
+func sov_place() -> Vector2:
+	return get_global_transform() * Vector2(size.x - 40.0, SOV_Y - 4.0)
+
+
+func plays_place() -> Vector2:
+	return get_global_transform() * Vector2(_tally_left(0) + 4.0 + maxf(_plays - 1.0, 0.0) * 8.0, TALLY_Y + 18.0)
+
+
 func _numbers_y() -> float:
 	return READOUT_TOP + READOUT_HEIGHT - 22.0
 

@@ -13,5 +13,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 		match e.t:
 			"restraint":
 				t.add_mark("restraint/meter", e.n)
+			"round_end":
+				ArenaMomentEnd.add(t, e)
 			_:
 				t.unhandled = true

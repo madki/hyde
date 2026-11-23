@@ -21,6 +21,9 @@ const HOP_TIME := 0.2
 
 static var _font: FontVariation
 
+## True for a mark that is a sovereign, not an eye.
+var _coin := false
+
 
 ## The colour of the man who scores.
 static func man(hyde: bool) -> Color:
@@ -85,6 +88,16 @@ static func hop(beats: ArenaBeats, card: Control) -> void:
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
+## A sovereign travels from `from` to `to` (points on the page) and is gone. Await it.
+static func coin(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2,
+		time: float = 0.28) -> void:
+	var mark := eye(layer, from)
+	mark._coin = true
+	mark.queue_redraw()
+	await mark.fly_to(beats, to, time)
+	mark.queue_free()
+
+
 ## A new eye mark on `layer`, its middle at `at` (a point on the page).
 static func eye(layer: Control, at: Vector2) -> ArenaPop:
 	var mark := ArenaPop.new()
@@ -114,6 +127,11 @@ func fade(beats: ArenaBeats) -> void:
 # The eye: a cream tag with an eye drawn on it in pencil.
 func _draw() -> void:
 	var middle := size * 0.5
+	if _coin:
+		draw_circle(middle, 8.5, Color(0.08, 0.05, 0.04))
+		draw_circle(middle, 7.0, Color(0.78, 0.64, 0.33))
+		draw_arc(middle, 4.6, 0.0, TAU, 16, Color(0.55, 0.42, 0.18), 1.0)
+		return
 	draw_set_transform(middle, 0.0, Vector2(1.0, 0.72))
 	draw_circle(Vector2.ZERO, 15.0, Color(0.08, 0.05, 0.04))
 	draw_circle(Vector2.ZERO, 13.4, Color(0.93, 0.88, 0.75))
