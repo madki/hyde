@@ -8,11 +8,19 @@ extends Control
 ##   E  the same move, but the engine ends on another score: the check corrects it and logs it
 ##   S  cycles the speed setting (1, 1.5, 2)      F  turns "reduce flashes" on or off
 ##   Shift  gives the table to the other man
+## Cards (TASK-19.5's travel):
+##   D  deal: cards from the draw pile to the hand, face down, turning over as they arrive
+##   X  two cards from the hand to the discards       P  the top discard back to the hand
+##   C  three hand cards laid in the centre under a caption, held, then sent to the discards
+##   N  a card drawn into the centre, shown, then sent to the hand
+##   K  a hand card pushed into the middle of the draw pile (the pile riffles)
+##   R  the discards turned over into a new draw pile    T  the first hand card turns over
+##   G  between rounds: the corner holds the whole deck, or the two piles again
 ## A click or a key during a move hurries it; holding one skips to its end.
 ##
 ## For a screenshot: `tools/shot.sh /abs/out.png res://scenes/arena_motion_bench.tscn
-## [--hyde] [--run=<key letter>] [--at=<seconds>]` runs that key's action and takes the shot
-## that many seconds later. `--selftest` (headless, under a time limit) checks the queue and quits.
+## [--hyde] [--run=<key letters>] [--at=<seconds>]` runs those keys' actions one after the
+## other and takes the shot that many seconds after the last has begun. `--selftest` (headless, under a time limit) checks the queue and quits.
 
 const CREAM := Color(0.93, 0.88, 0.75)
 const DIM := Color(0.93, 0.88, 0.75, 0.6)
@@ -24,7 +32,16 @@ const SHOWN := [["score", "Score"], ["plays", "Plays"], ["discards", "Discards"]
 
 var beats := ArenaBeats.new()
 ## What the made-up engine holds now: RulesView.table()'s shape, the parts the bench uses.
-var engine := {"score": 0, "plays": 4, "discards": 3, "restraint": {"meter": 1, "limit": 5}}
+var engine := {"score": 0, "plays": 4, "discards": 3, "restraint": {"meter": 1, "limit": 5},
+		"draw_count": 30, "discard_count": 0}
+## Sample cards, as RulesView.table().hand gives them: [paper name, ink name, chips].
+const SAMPLES := [["Composure", "Fog", 1], ["Kindness", "Appetite", 1], ["Scruple", "Pride", 2]]
+
+var travel := ArenaTravel.new()
+var piles := ArenaPiles.new()
+var stage := ArenaStage.new()
+var _hand: Array[ArenaCard] = []
+var _next_id := 1
 
 var _is_jekyll := true
 var _labels := {}
@@ -36,6 +53,12 @@ var _press_button := Button.new()
 
 func _ready() -> void:
 	add_child(beats)
+	add_child(stage)
+	add_child(piles)
+	add_child(travel)
+	stage.beats = beats
+	piles.bind(beats, travel)
+	travel.beats = beats
 	beats.source = func() -> Dictionary: return engine
 	beats.shown.changed.connect(_on_shown)
 	beats.started.connect(_show_status)
@@ -50,7 +73,9 @@ func _ready() -> void:
 	_is_jekyll = not Shot.has_arg("hyde")
 	_ink.set_ink(60.0 if not _is_jekyll else 45.0, 50.0, _is_jekyll)
 	_ink.snap_to_stance()
-	beats.shown.snap_to(engine, ["score", "plays", "discards", "restraint/meter"])
+	beats.shown.snap_to(engine, ["score", "plays", "discards", "restraint/meter", "draw_count",
+			"discard_count"])
+	beats.shown.set_value("deck_count", 40)
 	beats.shown.set_value("chips", 0)
 	beats.shown.set_value("mult", 0)
 	_show_status()
@@ -60,8 +85,13 @@ func _ready() -> void:
 		await _selftest()
 		get_tree().quit()
 		return
-	if Shot.arg("run") != "":
-		_act(Shot.arg("run").to_upper().unicode_at(0))
+	# The keys of --run one after the other, each once the last has played; the last is not
+	# waited on, so that --at can catch it on its way.
+	var keys := Shot.arg("run").to_upper()
+	for i in keys.length():
+		if i > 0 and beats.is_running():
+			await beats.emptied
+		_act(keys.unicode_at(i))
 	if Shot.has_arg("at"):
 		await get_tree().create_timer(float(Shot.arg("at"))).timeout
 	Shot.run_if_requested(self)
@@ -89,6 +119,178 @@ func _act(keycode: int) -> void:
 		KEY_SHIFT:
 			_is_jekyll = not _is_jekyll
 			_ink.is_jekyll = _is_jekyll
+		KEY_D:
+			_deal(5)
+		KEY_X:
+			_discard(2)
+		KEY_P:
+			_from_discards()
+		KEY_C:
+			_to_centre(3)
+		KEY_N:
+			_draw_to_centre()
+		KEY_K:
+			_push_into_draw()
+		KEY_R:
+			_reshuffle()
+		KEY_T:
+			_turn_first()
+		KEY_G:
+			if not beats.is_running():
+				piles.deck_mode = not piles.deck_mode
+
+
+# --- Cards (TASK-19.5) -------------------------------------------------------------------------
+
+## The data of a new sample card, as the engine would give it.
+func _sample() -> Dictionary:
+	var s: Array = SAMPLES[_next_id % SAMPLES.size()]
+	var ink := _next_id % 4 == 1
+	var data := {"id": _next_id, "name": s[1] if ink else s[0], "ink": ink, "chips": s[2] + (1 if ink else 0)}
+	_next_id += 1
+	return data
+
+
+## The centre of the i-th of n cards in the bench's stand-in hand.
+func _hand_slot(i: int, n: int) -> Vector2:
+	return Vector2(628.0 + (i - (n - 1) * 0.5) * 90.0, 458.0 + absf(i - (n - 1) * 0.5) * 2.0)
+
+
+func _hand_turn(i: int, n: int) -> float:
+	return (i - (n - 1) * 0.5) * 1.5
+
+
+## A beat: the hand closes up or opens to make room, every card to its place.
+func _add_relay() -> void:
+	beats.add(func() -> void:
+		var last: Signal
+		for i in _hand.size():
+			last = travel.fly(_hand[i], _hand_slot(i, _hand.size()), _hand_turn(i, _hand.size()))
+		if not _hand.is_empty():
+			await last)
+
+
+func _deal(n: int) -> void:
+	if beats.is_running():
+		return
+	n = mini(n, mini(8 - _hand.size(), int(engine.draw_count)))
+	if n <= 0:
+		return
+	var datas: Array = []
+	for i in n:
+		datas.append(_sample())
+	engine.draw_count -= n
+	beats.add(func() -> void:
+		var cards: Array = []
+		var to: Array = []
+		var turns: Array = []
+		var size := _hand.size() + n
+		for i in n:
+			var card := piles.take("draw", datas[i])
+			cards.append(card)
+			to.append(_hand_slot(_hand.size() + i, size))
+			turns.append(_hand_turn(_hand.size() + i, size))
+		_hand.append_array(cards)
+		await travel.fly_group(cards, to, turns, 1.0, ArenaTravel.UP))
+	_add_relay()
+	beats.run()
+
+
+func _discard(n: int) -> void:
+	if beats.is_running() or _hand.is_empty():
+		return
+	n = mini(n, _hand.size())
+	var cards: Array = _hand.slice(0, n)
+	engine.discard_count += n
+	beats.add(func() -> void:
+		for card: ArenaCard in cards:
+			_hand.erase(card)
+		await piles.put("discards", cards))
+	_add_relay()
+	beats.run()
+
+
+func _from_discards() -> void:
+	if beats.is_running() or int(engine.discard_count) == 0 or _hand.size() >= 8:
+		return
+	engine.discard_count -= 1
+	var data := _sample()
+	beats.add(func() -> void:
+		var card := piles.take("discards", data)
+		_hand.append(card)
+		await travel.fly(card, _hand_slot(_hand.size() - 1, _hand.size()),
+				_hand_turn(_hand.size() - 1, _hand.size()), 1.0, ArenaTravel.UP))
+	_add_relay()
+	beats.run()
+
+
+func _to_centre(n: int) -> void:
+	if beats.is_running() or _hand.is_empty():
+		return
+	n = mini(n, _hand.size())
+	var cards: Array = _hand.slice(_hand.size() - n)
+	engine.discard_count += n
+	beats.add(func() -> void:
+		for card: ArenaCard in cards:
+			_hand.erase(card)
+		stage.show_caption("A group of %d is held in the centre." % n)
+		await stage.lay(travel, cards))
+	_add_relay()
+	beats.add_wait(ArenaPace.HOLD)
+	beats.add(func() -> void:
+		await stage.clear_caption()
+		await piles.put("discards", cards))
+	beats.run()
+
+
+func _draw_to_centre() -> void:
+	if beats.is_running() or int(engine.draw_count) == 0 or _hand.size() >= 8:
+		return
+	engine.draw_count -= 1
+	var data := _sample()
+	var card_box := [null]
+	beats.add(func() -> void:
+		var card := piles.take("draw", data)
+		card_box[0] = card
+		stage.show_caption("%s is drawn." % data.name)
+		await stage.lay(travel, [card]))
+	beats.add_wait(ArenaPace.HOLD)
+	beats.add(func() -> void:
+		var card: ArenaCard = card_box[0]
+		_hand.append(card)
+		stage.clear_caption()
+		await travel.fly(card, _hand_slot(_hand.size() - 1, _hand.size()),
+				_hand_turn(_hand.size() - 1, _hand.size())))
+	_add_relay()
+	beats.run()
+
+
+func _push_into_draw() -> void:
+	if beats.is_running() or _hand.is_empty():
+		return
+	var card: ArenaCard = _hand[0]
+	engine.draw_count += 1
+	beats.add(func() -> void:
+		_hand.erase(card)
+		await piles.put("draw", [card], true))
+	_add_relay()
+	beats.run()
+
+
+func _reshuffle() -> void:
+	if beats.is_running() or int(engine.discard_count) == 0:
+		return
+	engine.draw_count += engine.discard_count
+	engine.discard_count = 0
+	beats.add(func() -> void: await piles.reshuffle())
+	beats.run()
+
+
+func _turn_first() -> void:
+	if beats.is_running() or _hand.is_empty():
+		return
+	beats.add(func() -> void: await travel.turn_over(_hand[0], not _hand[0].face_up))
+	beats.run()
 
 
 ## A made-up play: the engine answers at once, then the table plays it back beat by beat.
@@ -107,8 +309,9 @@ func _made_up_play(wrong: bool) -> void:
 	for t: int in ticks:
 		total_chips += t
 	var total := total_chips * (mult + 2)
-	engine = {"score": score + total + (15 if wrong else 0), "plays": maxi(0, plays - 1),
-			"discards": engine.discards, "restraint": {"meter": mini(5, meter + 1), "limit": 5}}
+	engine.score = score + total + (15 if wrong else 0)
+	engine.plays = maxi(0, plays - 1)
+	engine.restraint.meter = mini(5, meter + 1)
 
 	# The beats.
 	beats.add_set("plays", maxi(0, plays - 1))
@@ -182,10 +385,12 @@ func _build_column() -> void:
 
 
 func _build_help() -> void:
-	var help := _label(Vector2(320.0, 100.0), 12)
+	var help := _label(Vector2(50.0, 462.0), 11)
 	help.modulate = DIM
-	help.text = "B a move   E a move the engine ends otherwise   S speed   F reduce flashes" \
-			+ "\nClick or key during a move: hurry. Hold: skip to its end."
+	help.text = "B a move  E one the engine ends otherwise\nS speed  F reduce flashes" \
+			+ "\nD deal  X discard  P discard to hand\nC to the centre  N draw to the centre" \
+			+ "\nK into the draw pile  R reshuffle\nT turn over  G between rounds" \
+			+ "\nClick or key in a move: hurry; hold: skip"
 
 
 func _label(at: Vector2, font_size: int) -> Label:
@@ -278,6 +483,16 @@ func _selftest() -> void:
 	# 5. The pace.
 	_expect(ArenaPace.tick(0) == 0.30 and ArenaPace.tick(4) == 0.30 and ArenaPace.tick(5) == 0.20
 			and ArenaPace.tick(10) == 0.14, "the scoring tick quickens after the fifth")
+	# 6. Cards travel between the piles, the hand and the centre, and the counts follow.
+	for keycode in [KEY_D, KEY_X, KEY_C, KEY_N, KEY_P, KEY_K, KEY_R, KEY_T]:
+		_act(keycode)
+		if beats.is_running():
+			await beats.emptied
+		_expect(beats.shown.differences(engine).is_empty(),
+				"counts match after %s: %s" % [OS.get_keycode_string(keycode), str(beats.shown.differences(engine))])
+	_expect(_hand.size() == 1 and _hand[0].face_up == false, "the hand holds 1, turned down")
+	_expect(int(engine.discard_count) == 0 and piles.discard_pile.count == 0, "the discards are empty after R")
+	_expect(piles.draw_pile.count == int(engine.draw_count), "the draw pile shows its count")
 	print("SELFTEST PASS" if _fails.is_empty() else "SELFTEST FAILED: %s" % str(_fails))
 
 

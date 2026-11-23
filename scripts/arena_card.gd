@@ -10,6 +10,10 @@ extends Control
 ## the picture by shaders/card_picture.gdshader. All three are printed coarsely, in texels of
 ## TEXEL pixels. `rng_seed` changes the wear, the stains and the hand of
 ## the lines, so that no two cards are alike. Set a card up with `show_card`.
+##
+## A card can lie face down (`face_up`): then it shows the same back whichever side it is on, a
+## plain paper card printed with a frame and a lattice. To turn it over, squeeze it across
+## (scale.x) to nothing, change `face_up`, and open it again: scripts/arena_travel.gd does that.
 
 const SIZE := Vector2(96.0, 140.0)
 ## The card is printed coarsely, in square texels this many pixels wide: 0 prints it smooth.
@@ -43,10 +47,18 @@ var ink := false
 var picture: Texture2D
 var chips := 0
 var rng_seed := 1
+## False while the card lies face down.
+var face_up := true:
+	set(value):
+		if value == face_up:
+			return
+		face_up = value
+		_refresh()
 
 var _body := Control.new()
 var _picture := TextureRect.new()
 var _lines := Control.new()
+var _back := Control.new()
 var _title := Label.new()
 var _chips := Label.new()
 var _upright := FontVariation.new()
@@ -71,6 +83,8 @@ func _init() -> void:
 	_lines.draw.connect(_draw_lines)
 	# Each card has its own copy, for its own seed.
 	_lines.material = LINE_MATERIAL.duplicate()
+	_back.draw.connect(_draw_back)
+	_back.material = LINE_MATERIAL.duplicate()
 	var picture_material := ShaderMaterial.new()
 	picture_material.shader = PICTURE_SHADER
 	_picture.material = picture_material
@@ -88,7 +102,7 @@ func _init() -> void:
 		label.clip_text = true
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	for child: Control in [_body, _picture, _lines, _title, _chips]:
+	for child: Control in [_body, _picture, _lines, _title, _chips, _back]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	_refresh()
@@ -106,7 +120,8 @@ func show_card(new_title: String, on_ink: bool, new_picture: Texture2D, new_chip
 
 
 func _refresh() -> void:
-	var body := (INK_MATERIAL if ink else PAPER_MATERIAL).duplicate() as ShaderMaterial
+	# Face down, every card has the paper's body, so the back does not tell the side.
+	var body := (INK_MATERIAL if ink and face_up else PAPER_MATERIAL).duplicate() as ShaderMaterial
 	body.set_shader_parameter("card_size", SIZE)
 	body.set_shader_parameter("seed", float(rng_seed))
 	body.set_shader_parameter("texel", TEXEL)
@@ -138,8 +153,15 @@ func _refresh() -> void:
 	line_material.set_shader_parameter("texel", TEXEL)
 	line_material.set_shader_parameter("seed", float(rng_seed))
 
+	for face: Control in [_picture, _lines, _title, _chips]:
+		face.visible = face_up
+	_back.visible = not face_up
+	(_back.material as ShaderMaterial).set_shader_parameter("texel", TEXEL)
+	(_back.material as ShaderMaterial).set_shader_parameter("seed", float(rng_seed))
+
 	_body.queue_redraw()
 	_lines.queue_redraw()
+	_back.queue_redraw()
 
 
 ## Gives a label the largest font size, from `largest` down to 7, at which its text fits its
@@ -201,3 +223,49 @@ func _hatch(pencil: Pencil, corner: Vector2, inward: Vector2, reach: float) -> v
 		var kept := pencil.randf_range(0.65, 1.0)
 		pencil.stroke(PackedVector2Array([from, from.lerp(to, kept)]), 0.9, 0.3, 0.0)
 		k += pencil.randf_range(2.6, 3.6)
+
+
+## The back: a frame, a second frame inside it, and a lattice between them, all in the paper
+## card's ink. The same on every card but for the hand of the lines.
+func _draw_back() -> void:
+	var pencil := Pencil.new(rng_seed)
+	pencil.colour = PAPER_LINE
+	var outer := Rect2(Vector2(FRAME_INSET, FRAME_INSET), SIZE - Vector2(FRAME_INSET, FRAME_INSET) * 2.0)
+	var inner := outer.grow(-6.0)
+	for rect: Rect2 in [outer, inner]:
+		var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
+				Vector2(rect.position.x, rect.end.y)]
+		for i in 4:
+			_rule(pencil, corners[i], corners[(i + 1) % 4], FRAME_WIDTH if rect == outer else 1.2)
+	# The lattice: lines at 45 degrees both ways, cut to the inner frame.
+	var lattice := inner.grow(-3.0)
+	var step := 11.0
+	var k := -lattice.size.y
+	while k < lattice.size.x:
+		for dir: float in [1.0, -1.0]:
+			var a := Vector2(k, 0.0) if dir > 0.0 else Vector2(lattice.size.x - k, 0.0)
+			var line := _cut(lattice, lattice.position + a, Vector2(dir, 1.0))
+			if line.size() == 2:
+				pencil.stroke(line, 0.8, 0.3, 0.2)
+		k += step
+	pencil.draw(_back)
+
+
+## The part inside `rect` of the line through `from` going `dir`, as two points, or none.
+static func _cut(rect: Rect2, from: Vector2, dir: Vector2) -> PackedVector2Array:
+	var t0 := -INF
+	var t1 := INF
+	for axis in 2:
+		var lo := rect.position[axis]
+		var hi := rect.end[axis]
+		if absf(dir[axis]) < 0.0001:
+			if from[axis] < lo or from[axis] > hi:
+				return PackedVector2Array()
+			continue
+		var a := (lo - from[axis]) / dir[axis]
+		var b := (hi - from[axis]) / dir[axis]
+		t0 = maxf(t0, minf(a, b))
+		t1 = minf(t1, maxf(a, b))
+	if t1 - t0 < 2.0:
+		return PackedVector2Array()
+	return PackedVector2Array([from + dir * t0, from + dir * t1])

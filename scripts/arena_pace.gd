@@ -33,6 +33,15 @@ const PAGE_SHIFT := 1.2
 ## The least time a caption is on the page; it stays as long as its beat if that is longer.
 const CAPTION_MIN := 1.0
 
+## Not in doc-3's table: a pile's short riffle when a card is pushed into its middle, and the
+## longer one when the discards are shuffled into a new draw pile; the slide of a card from
+## beside the pile into it.
+const RIFFLE := 0.25
+const RESHUFFLE_RIFFLE := 0.6
+const SLIDE_IN := 0.12
+## How long a caption takes to come and to go.
+const CAPTION_FADE := 0.12
+
 ## Hurrying: a click or a key during the queue plays the rest this many times faster. Held
 ## down for HOLD_TO_SKIP, it skips to the end of the move: the rest plays at SKIP times.
 const HURRY := 3.0
