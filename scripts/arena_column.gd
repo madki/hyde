@@ -21,7 +21,8 @@ extends Control
 ## - `restraint`: the restraint gauge (scripts/arena_restraint.gd) lies in the column, between
 ##   the tallies and the sovereigns, and is driven through its own calls.
 ##
-## The times are doc'd in the constants below; `speed` scales them all (hurrying).
+## The times are the constants below, from the pace of the table; `speed` scales them all
+## (hurrying).
 ##
 ## A debug build runs every call once with the C key (`demo`).
 
@@ -35,8 +36,9 @@ const COUNT_TIME := 0.6 ## a number counts from one value to another
 const PULSE_TIME := 0.3
 const DROP_TIME := 0.45 ## a drop flies into the mult
 
-## Where each part lies, from the column's top, in pixels. The column is laid out for the
-## page's smallest size (the left column of a 1152 × 648 window is 254 × 576).
+## Where each part lies, from the column's top, in pixels. Everything ends above 470, so the
+## column fits the page's smallest size (the window's 648 pixels less the border) with room
+## to spare. It wants about 240 pixels of width.
 const HEAD_Y := 18.0
 const TITLE_Y := 40.0
 const TARGET_Y := 90.0
@@ -72,7 +74,7 @@ const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_materia
 
 ## Who scores: the colour a tick lights in.
 var is_jekyll := true
-## How fast every call plays: 1 as doc'd, 3 to hurry.
+## How fast every call plays: 1 at the usual pace, 3 to hurry.
 var speed := 1.0
 
 ## The restraint gauge, laid out in the column.
@@ -302,9 +304,9 @@ func pulse_mult() -> Tween:
 
 ## One stored drop flies from beside the mult into it, and the mult ticks up by `by`.
 func fly_drop(by: int) -> Tween:
-	var t := _tween()
 	if _stored < 1.0:
 		return _tick("_mult", by)
+	var t := _tween()
 	_stored = ceilf(_stored) - 1.0
 	_fly = 0.0
 	t.tween_property(self, "_fly", 1.0, DROP_TIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
