@@ -3,7 +3,42 @@ class_name Rules
 ## a RulesRun, which holds the whole state and saves as JSON (to_json, from_json), so a run
 ## can be replayed from its seed and its moves.
 ##
-## A move returns {ok: true, ...} or {ok: false, reason}. The names of things are in
+## A move returns {ok: true, ...} or {ok: false, reason}. start_round, play, discard,
+## pass_play, drink and take_salt (and continue_result, alley_leave and leave_lab, which start
+## a round) also return `events`: what the move did, in the order the rules did it, so that a
+## table can play it back card by card. Each event is a Dictionary with its type in `t`:
+##
+## - shuffle {ids}: the deck shuffled into the draw pile at a round's start (top last).
+## - drawn {why, ids}: cards drawn to the hand, in order. `why` is "deal", "refill" or
+##   "draws" (one more for each Curiosity or Impulse).
+## - reshuffle {ids}: the discards turned into the draw pile, as it now lies (top last),
+##   placed among the draws where it happened.
+## - scored {score, to}: a play's score, and the round's after it.
+## - stored_spent {n, mult}: his stored restraint paid into a play.
+## - craving {sym, n}, breed {sym, habit, id, at}: Craving rose; a rollover's copy joined the
+##   draw pile at place `at`.
+## - cheque {sov}: the Cheque book paid 1.
+## - turn {id, sym, gain, temper}: a Sublimation turned an Ink Root.
+## - restraint {n}: the meter after a step.
+## - discarded {why, ids}: cards from the hand to the discards ("play" or "discard").
+## - shift {ev} (a drink, night 4's window, salt) and breakout {ev} (a breakout or walking in
+##   full): the stance changes. `ev` is the shift's record (to, how, stored, lost_restraint,
+##   lost_stored, first, added, stained, brought).
+## - joined {why, cards: [{id, sym, at}]}: Ink Roots join the deck. `why` is "first" (his
+##   first four), "breakout" (a breakout's two), "stain" (a drink with nothing left to
+##   stain), "reward" (the card taken after a round, which may be any card: see `key`) or
+##   "dawn" (the two the dawn brings). `at` is the place in the draw pile,
+##   or -1 when the card goes into no pile.
+## - stained {id, sym, from}: a Paper Root turned to ink where it lay.
+## - brought {who, cards: [{id, sym, from}]}: Roots brought to the hand by whoever arrived,
+##   each from "draw" or "discard".
+## - rescue {prior, last, target, k}, then converted {id, sym, score} for each Root taken,
+##   in order, with the round's score after it.
+## - round_end {how, broke_out, pay, plays_left, score, target, stance, was, first, ink,
+##   paper, over, offers_card, ending, ended_by}: the round won, rescued or lost, the line
+##   as it then stands, and whether a card is offered. The piles are gathered.
+##
+## The names of things are in
 ## RulesConfig, the numbers in RulesDials, the reading of a play in RulesHands, and what a
 ## table shows in RulesView.
 
@@ -177,7 +212,8 @@ static func make_card(run: RulesRun, key: String, ink: bool) -> RulesCard:
 	return RulesCard.make(run.uid, key, ink)
 
 
-## Adds a new card to the deck. During a round it goes into the draw pile at a random place.
+## Adds a new card to the deck. During a round it goes into the draw pile at a random place:
+## `place_of` gives it.
 static func add_card(run: RulesRun, key: String, ink: bool, mid_round: bool) -> RulesCard:
 	var c := make_card(run, key, ink)
 	run.cards.append(c)
@@ -185,6 +221,12 @@ static func add_card(run: RulesRun, key: String, ink: bool, mid_round: bool) -> 
 		var draw: Array = run.draw
 		draw.insert(RulesRng.below(run, draw.size() + 1), c.id)
 	return c
+
+
+# A card that joins, as its events give it: {id, sym, at}, `at` its place in the draw pile
+# just after it was put there (later cards put in may move it on).
+static func _joined(run: RulesRun, c: RulesCard) -> Dictionary:
+	return {"id": c.id, "sym": c.sym, "at": run.draw.find(c.id)}
 
 
 ## A sorted copy: by the list of numbers `keys` gives for each item, smallest first. Items
@@ -213,26 +255,45 @@ static func _before(a: Array, b: Array) -> bool:
 
 ## Draws the top card. An empty draw pile is first rebuilt from the shuffled discards.
 ## Returns the card's id, or -1 if there is nothing to draw.
-static func draw_one(run: RulesRun) -> int:
+## `why` names the draw in its event: "deal", "refill" or "draws".
+static func draw_one(run: RulesRun, why: String = "refill") -> int:
 	if run.draw.is_empty():
 		if run.discard.is_empty():
 			return -1
 		run.draw = RulesRng.shuffle(run, run.discard)
 		run.discard = []
+		_emit(run, {"t": "reshuffle", "ids": run.draw.duplicate()})
 	var id: int = run.draw.pop_back()
 	run.hand.append(id)
+	var last: Variant = run.events.back() if not run.events.is_empty() else null
+	if last != null and last.t == "drawn" and last.why == why:
+		last.ids.append(id)
+	else:
+		_emit(run, {"t": "drawn", "why": why, "ids": [id]})
 	return id
 
 
-static func refill(run: RulesRun) -> void:
+static func refill(run: RulesRun, why: String = "refill") -> void:
 	while run.hand.size() < run.dials.hand_size:
-		if draw_one(run) < 0:
+		if draw_one(run, why) < 0:
 			break
+
+
+# Starts the events of a move and returns the list.
+static func _begin(run: RulesRun) -> Array:
+	run.events = []
+	return run.events
+
+
+static func _emit(run: RulesRun, e: Dictionary) -> void:
+	run.events.append(e)
 
 
 ## Begins the round `run.night` and `run.round` point at: shuffles the whole deck, deals, and
 ## applies what comes before the first play (night 4's forced shift, walking in full).
-static func start_round(run: RulesRun) -> void:
+## Returns {ok, events}.
+static func start_round(run: RulesRun) -> Dictionary:
+	var events := _begin(run)
 	var d := run.dials
 	run.score = 0
 	run.plays = d.plays
@@ -241,6 +302,7 @@ static func start_round(run: RulesRun) -> void:
 	for c: RulesCard in run.cards:
 		ids.append(c.id)
 	run.draw = RulesRng.shuffle(run, ids)
+	_emit(run, {"t": "shuffle", "ids": run.draw.duplicate()})
 	run.hand = []
 	run.discard = []
 	run.phase = "play"
@@ -249,7 +311,7 @@ static func start_round(run: RulesRun) -> void:
 	run.alley = null
 	run.shop = null
 	run.dawn = null
-	refill(run)
+	refill(run, "deal")
 	# Night 4: the scene begins as Hyde, whoever ended round 2. The shift stains nothing.
 	if twist_now(run) == "window" and run.stance == "jekyll":
 		var ev := _arrive(run, "window")
@@ -260,6 +322,7 @@ static func start_round(run: RulesRun) -> void:
 	if run.stance == "jekyll" and run.restraint >= limit(run):
 		var ev := _break_out(run, "walkedin")
 		ev.brought = _bring_roots(run)
+	return {"ok": true, "events": events}
 
 
 # ---------- the two stances ----------
@@ -283,15 +346,18 @@ static func _hand_has(run: RulesRun, sym: String, ink: bool) -> bool:
 
 
 # Moves one such Root into the hand: from the draw pile, or from the discards if the draw
-# pile has none. Each pile is searched from its end. Returns its id, or -1.
-static func _pull(run: RulesRun, sym: String, ink: bool) -> int:
-	for pile: Array in [run.draw, run.discard]:
+# pile has none. Each pile is searched from its end. Returns its id, or -1, and adds
+# {id, sym, from} to `moved`.
+static func _pull(run: RulesRun, sym: String, ink: bool, moved: Array) -> int:
+	for named: Array in [["draw", run.draw], ["discard", run.discard]]:
+		var pile: Array = named[1]
 		var i := pile.size() - 1
 		while i >= 0:
 			var c := card(run, pile[i])
 			if c.is_root() and c.sym == sym and c.ink == ink:
 				pile.remove_at(i)
 				run.hand.append(c.id)
+				moved.append({"id": c.id, "sym": c.sym, "from": named[0]})
 				return c.id
 			i -= 1
 	return -1
@@ -304,6 +370,8 @@ static func _pull(run: RulesRun, sym: String, ink: bool) -> int:
 # Remaining ties go Lamp, Heart, Mirror.
 static func _bring_roots(run: RulesRun) -> Array:
 	var out: Array = []
+	var moved: Array = []
+	_emit(run, {"t": "brought", "who": run.stance, "cards": moved})
 	var ink: bool = run.stance == "hyde"
 	var roots := RulesConfig.ROOTS
 	var avail: Array = []
@@ -318,8 +386,8 @@ static func _bring_roots(run: RulesRun) -> Array:
 		if not pairs.is_empty():
 			pairs = sort_by(pairs, func(s: String) -> Array:
 				return [-run.habit[s], -_pile_count(run, s, true), roots.find(s)])
-			out.append(_pull(run, pairs[0], true))
-			out.append(_pull(run, pairs[0], true))
+			out.append(_pull(run, pairs[0], true, moved))
+			out.append(_pull(run, pairs[0], true, moved))
 			return out
 		avail = sort_by(avail, func(s: String) -> Array:
 			return [-int(_hand_has(run, s, true)), -run.habit[s], roots.find(s)])
@@ -327,7 +395,7 @@ static func _bring_roots(run: RulesRun) -> Array:
 		avail = sort_by(avail, func(s: String) -> Array:
 			return [int(_hand_has(run, s, false)), -int(_hand_has(run, s, true)), roots.find(s)])
 	for sym: String in avail.slice(0, 2):
-		out.append(_pull(run, sym, ink))
+		out.append(_pull(run, sym, ink, moved))
 	return out
 
 
@@ -361,9 +429,11 @@ static func _stain_one(run: RulesRun) -> Dictionary:
 		else:
 			taken = papers[RulesRng.below(run, papers.size())]
 		taken.ink = true
+		_emit(run, {"t": "stained", "id": taken.id, "sym": taken.sym, "from": pool[0]})
 		return {"id": taken.id, "sym": taken.sym, "from": pool[0], "added": false}
 	var added: String = roots[RulesRng.below(run, roots.size())]
-	add_card(run, added, true, true)
+	var c := add_card(run, added, true, true)
+	_emit(run, {"t": "joined", "why": "stain", "cards": [_joined(run, c)]})
 	return {"id": null, "sym": added, "from": "none", "added": true}
 
 
@@ -381,6 +451,7 @@ static func _arrive(run: RulesRun, how: String) -> Dictionary:
 		"t": "shift", "to": "hyde", "how": how, "stored": 0, "lost_restraint": 0, "first": false,
 		"brought": [], "stained": null, "added": [],
 	}
+	_emit(run, {"t": "breakout" if how == "breakout" or how == "walkedin" else "shift", "ev": ev})
 	if how == "drink" or how == "window":
 		run.stored = run.restraint
 		ev.stored = run.stored
@@ -393,8 +464,10 @@ static func _arrive(run: RulesRun, how: String) -> Dictionary:
 	if not run.hyde_arrived:
 		run.hyde_arrived = true
 		ev.first = true
+		var joined: Array = []
 		for sym in RulesConfig.FIRST_ARRIVAL:
-			add_card(run, sym, true, true)
+			joined.append(_joined(run, add_card(run, sym, true, true)))
+		_emit(run, {"t": "joined", "why": "first", "cards": joined})
 	elif how == "drink":
 		ev.stained = _stain_one(run)
 		if not ev.stained.added:
@@ -402,9 +475,11 @@ static func _arrive(run: RulesRun, how: String) -> Dictionary:
 	# A breakout adds a copy of each of his two lowest-count Roots, counted after any
 	# first-arrival cards.
 	if how == "breakout" or how == "walkedin":
+		var joined: Array = []
 		for sym: String in lowest_two(run):
-			add_card(run, sym, true, true)
+			joined.append(_joined(run, add_card(run, sym, true, true)))
 			ev.added.append(sym)
+		_emit(run, {"t": "joined", "why": "breakout", "cards": joined})
 	return ev
 
 
@@ -457,11 +532,12 @@ static func drink(run: RulesRun) -> Dictionary:
 	var c := can_drink(run)
 	if not c.ok:
 		return {"ok": false, "reason": c.why}
+	var events := _begin(run)
 	run.stats.drinks += 1
 	var ev := _arrive(run, "drink")
 	ev.brought = _bring_roots(run)
 	run.log.append(ev)
-	return {"ok": true, "ev": ev}
+	return {"ok": true, "ev": ev, "events": events}
 
 
 ## Hyde to Jekyll. One dose is spent, restraint is 0, stored restraint is lost, and Jekyll
@@ -470,15 +546,17 @@ static func take_salt(run: RulesRun) -> Dictionary:
 	var c := can_salt(run)
 	if not c.ok:
 		return {"ok": false, "reason": c.why}
+	var events := _begin(run)
 	run.salt -= 1
 	run.stats.salts += 1
 	var ev := {"t": "shift", "to": "jekyll", "how": "salt", "stored": 0, "lost_stored": run.stored, "first": false, "brought": []}
+	_emit(run, {"t": "shift", "ev": ev})
 	run.stance = "jekyll"
 	run.restraint = 0
 	run.stored = 0
 	ev.brought = _bring_roots(run)
 	run.log.append(ev)
-	return {"ok": true, "ev": ev}
+	return {"ok": true, "ev": ev, "events": events}
 
 
 # ---------- playing ----------
@@ -505,7 +583,8 @@ static func _in_hand(run: RulesRun, ids: Array) -> bool:
 	return true
 
 
-static func _to_discards(run: RulesRun, ids: Array) -> void:
+static func _to_discards(run: RulesRun, ids: Array, why: String) -> void:
+	_emit(run, {"t": "discarded", "why": why, "ids": ids.duplicate()})
 	for id: int in ids:
 		run.hand.erase(id)
 		run.discard.append(id)
@@ -526,11 +605,12 @@ static func play(run: RulesRun, ids: Array) -> Dictionary:
 		return {"ok": false, "reason": ev.reason}
 	var d := run.dials
 	var st: String = run.stance
-	var out := {"ok": true, "ev": ev, "events": [], "stance": st, "phase": ""}
+	var out := {"ok": true, "ev": ev, "events": _begin(run), "stance": st, "phase": ""}
 	var stats: Dictionary = run.stats
 	# 1. The score.
 	run.plays -= 1
 	run.score += int(ev.score)
+	_emit(run, {"t": "scored", "score": ev.score, "to": run.score})
 	var entry := {"t": "play", "who": st, "name": ev.name, "key": ev.key, "chips": ev.chips, "mult": ev.mult, "score": ev.score, "notes": []}
 	if int(ev.score) > int(stats.best):
 		stats.best = ev.score
@@ -541,6 +621,7 @@ static func play(run: RulesRun, ids: Array) -> Dictionary:
 		if ev.kind == "hand":
 			if run.stored > 0:
 				entry.notes.append("stored restraint paid +%d mult" % (run.stored * d.restraint_pay))
+				_emit(run, {"t": "stored_spent", "n": run.stored, "mult": run.stored * d.restraint_pay})
 				run.stored = 0
 			for sym in RulesConfig.ROOTS:
 				if not ev.craving_on.has(sym):
@@ -550,15 +631,16 @@ static func play(run: RulesRun, ids: Array) -> Dictionary:
 				while run.craving[sym] >= d.craving_cap:
 					run.craving[sym] -= d.craving_cap
 					run.habit[sym] += 1
-					add_card(run, sym, true, true)
+					var copy := add_card(run, sym, true, true)
 					stats.bred += 1
-					out.events.append({"t": "breed", "sym": sym, "habit": run.habit[sym]})
+					_emit(run, {"t": "breed", "sym": sym, "habit": run.habit[sym], "id": copy.id, "at": run.draw.find(copy.id)})
 					entry.notes.append("%s became a Habit and left a copy" % RulesConfig.ROOT[sym].ink)
-				out.events.append({"t": "craving", "sym": sym, "n": run.craving[sym]})
+				_emit(run, {"t": "craving", "sym": sym, "n": run.craving[sym]})
 			if ev.no_craving:
 				entry.notes.append("no Craving")
 			if has_inst(run, "cheque"):
 				run.sov += 1
+				_emit(run, {"t": "cheque", "sov": run.sov})
 				entry.notes.append("Cheque book paid 1")
 	else:
 		stats.jekyll_hands += 1
@@ -572,19 +654,19 @@ static func play(run: RulesRun, ids: Array) -> Dictionary:
 				c.ink = false
 				stats.turns += 1
 				stats.temper += gain
-				out.events.append({"t": "turn", "sym": sym, "gain": gain, "temper": run.temper[sym]})
+				_emit(run, {"t": "turn", "id": id, "sym": sym, "gain": gain, "temper": run.temper[sym]})
 				entry.notes.append("%s turned to %s%s" % [RulesConfig.ROOT[sym].ink, RulesConfig.ROOT[sym].paper, ", Temper +%d" % gain if gain > 0 else ""])
 		elif ev.adds_restraint:
 			run.restraint += 1
-			out.events.append({"t": "restraint", "n": run.restraint})
+			_emit(run, {"t": "restraint", "n": run.restraint})
 		else:
 			entry.notes.append("no restraint")
 	# 3. The played cards leave. What stays in hand now is what a rescue may convert.
-	_to_discards(run, ids)
+	_to_discards(run, ids, "play")
 	var held: Array = run.hand.duplicate()
 	refill(run)
 	for i in int(ev.draws):
-		draw_one(run)
+		draw_one(run, "draws")
 	run.log.append(entry)
 	_settle(run, st, int(ev.score), str(ev.name), held, out)
 	out.phase = run.phase
@@ -595,7 +677,6 @@ static func play(run: RulesRun, ids: Array) -> Dictionary:
 static func _settle(run: RulesRun, st: String, last_score: int, last_name: String, held: Array, out: Dictionary) -> void:
 	if st == "jekyll" and run.restraint >= limit(run):
 		var bo := _break_out(run, "breakout")
-		out.events.append({"t": "breakout", "ev": bo})
 		if run.score >= target(run):
 			# Won, in his stance: he brings no Roots.
 			_end_round(run, {"how": "won", "broke_out": true})
@@ -618,11 +699,12 @@ static func discard(run: RulesRun, ids: Array) -> Dictionary:
 		return {"ok": false, "reason": "Choose cards to discard."}
 	if ids.size() > run.dials.max_play:
 		return {"ok": false, "reason": "Discard up to %d cards." % run.dials.max_play}
+	var events := _begin(run)
 	run.discards -= 1
-	_to_discards(run, ids)
+	_to_discards(run, ids, "discard")
 	refill(run)
 	run.log.append({"t": "discard", "n": ids.size()})
-	return {"ok": true}
+	return {"ok": true, "events": events}
 
 
 ## Whether the hand holds anything the man at the table can play: a Factor or a Root of his.
@@ -653,12 +735,12 @@ static func pass_play(run: RulesRun) -> Dictionary:
 	if not c.ok:
 		return {"ok": false, "reason": c.why}
 	var st: String = run.stance
-	var out := {"ok": true, "events": [], "stance": st, "passed": true, "phase": ""}
+	var out := {"ok": true, "events": _begin(run), "stance": st, "passed": true, "phase": ""}
 	run.plays -= 1
 	run.stats.passes += 1
 	if st == "jekyll":
 		run.restraint += 1
-		out.events.append({"t": "restraint", "n": run.restraint})
+		_emit(run, {"t": "restraint", "n": run.restraint})
 	run.log.append({"t": "play", "who": st, "name": "No play", "key": "pass", "chips": 0, "mult": 0, "score": 0, "notes": ["nothing in hand could be played"]})
 	_settle(run, st, 0, "No play", run.hand.duplicate(), out)
 	out.phase = run.phase
@@ -705,11 +787,13 @@ static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, b
 static func _rescue(run: RulesRun, last_score: int, last_name: String, held: Array) -> void:
 	var prior: int = run.score - last_score
 	var plan := plan_rescue(run, prior, last_score, held, false)
+	_emit(run, {"t": "rescue", "prior": prior, "last": last_score, "target": target(run), "k": plan.k})
 	var names: Array = []
-	for id: int in plan.ids:
-		var c := card(run, id)
+	for i in plan.ids.size():
+		var c := card(run, plan.ids[i])
 		names.append([RulesConfig.ROOT[c.sym].paper, RulesConfig.ROOT[c.sym].ink])
 		c.ink = true
+		_emit(run, {"t": "converted", "id": c.id, "sym": c.sym, "score": prior + last_score * (1 << (i + 1))})
 	run.stats.converted += int(plan.k)
 	var info := {
 		"k": plan.k, "ids": plan.ids, "pool": plan.pool, "names": names, "factor": plan.factor,
@@ -723,8 +807,10 @@ static func _rescue(run: RulesRun, last_score: int, last_name: String, held: Arr
 	if not run.hyde_arrived:
 		run.hyde_arrived = true
 		first = true
+		var joined: Array = []
 		for sym in RulesConfig.FIRST_ARRIVAL:
-			add_card(run, sym, true, false)
+			joined.append(_joined(run, add_card(run, sym, true, false)))
+		_emit(run, {"t": "joined", "why": "first", "cards": joined})
 	var was: String = run.stance
 	var lost: int = run.restraint
 	run.stance = "hyde"
@@ -772,17 +858,20 @@ static func _end_round(run: RulesRun, res: Dictionary) -> void:
 		run.ending = "hyde"
 		run.ended_by = res.reason
 		run.phase = "end"
+		_round_end(run, res)
 		return
 	# The line is checked at the end of every round, never at dawn.
 	if li.over:
 		run.ending = "hyde"
 		run.ended_by = "line"
 		run.phase = "end"
+		_round_end(run, res)
 		return
 	if run.night == night_count() - 1 and is_scene(run):
 		run.ending = "double" if run.stance == "hyde" else "myself"
 		run.ended_by = "scene"
 		run.phase = "end"
+		_round_end(run, res)
 		return
 	# An ordinary round won in Jekyll's stance: one of three different cards, or none.
 	if not is_scene(run) and res.how == "won" and run.stance == "jekyll":
@@ -790,22 +879,40 @@ static func _end_round(run: RulesRun, res: Dictionary) -> void:
 		if not offers.is_empty():
 			run.offer = offers
 	run.phase = "result"
+	_round_end(run, res)
+
+
+static func _round_end(run: RulesRun, res: Dictionary) -> void:
+	_emit(run, {
+		"t": "round_end", "how": res.how, "broke_out": res.get("broke_out", false),
+		"pay": res.get("pay", 0), "plays_left": res.get("plays_left", 0),
+		"score": res.score, "target": res.target, "stance": res.stance, "was": res.get("was", res.stance),
+		"first": res.get("first", false), "ink": res.ink, "paper": res.paper, "over": res.ink > res.paper,
+		"offers_card": run.offer != null, "ending": run.ending, "ended_by": run.ended_by,
+	})
 
 
 ## Leaves the result of a round, taking the offered card at index `pick` (null: none). Next
 ## comes the next round, or after a scene the dawn.
+## Returns {ok, events}: the card taken (joined, "reward"), then the next round's start or
+## the Roots the dawn brings (joined, "dawn").
 static func continue_result(run: RulesRun, pick: Variant = null) -> Dictionary:
 	if run.phase != "result":
 		return {"ok": false, "reason": "Not now."}
+	var events: Array = []
 	if run.offer != null and pick != null and int(pick) >= 0 and int(pick) < run.offer.size():
-		run.cards.append(make_card(run, run.offer[int(pick)], false))
+		var c := make_card(run, run.offer[int(pick)], false)
+		run.cards.append(c)
+		events.append({"t": "joined", "why": "reward", "cards": [{"id": c.id, "sym": c.sym, "key": c.key(), "at": -1}]})
 	run.offer = null
 	if not is_scene(run):
 		run.round += 1
-		start_round(run)
+		events.append_array(start_round(run).events)
 	else:
+		_begin(run)
 		_enter_dawn(run)
-	return {"ok": true}
+		events.append_array(run.events)
+	return {"ok": true, "events": events}
 
 
 # ---------- what is on offer ----------
@@ -871,8 +978,10 @@ static func _enter_dawn(run: RulesRun) -> void:
 	}
 	var sym: String = highest_habit(run) if night.brings == "habit" else night.brings
 	if sym != "":
-		add_card(run, sym, true, false)
-		add_card(run, sym, true, false)
+		var joined: Array = []
+		for i in 2:
+			joined.append(_joined(run, add_card(run, sym, true, false)))
+		_emit(run, {"t": "joined", "why": "dawn", "cards": joined})
 		run.dawn.brings = sym
 	if night.unlocks != "":
 		run.unlocked[night.unlocks] = true
@@ -931,10 +1040,10 @@ static func _open_alley(run: RulesRun) -> void:
 	run.phase = "alley"
 
 
-static func _next_night(run: RulesRun) -> void:
+static func _next_night(run: RulesRun) -> Array:
 	run.night += 1
 	run.round = 0
-	start_round(run)
+	return start_round(run).events
 
 
 # ---------- the back alley ----------
@@ -978,8 +1087,7 @@ static func alley_salt(run: RulesRun) -> Dictionary:
 static func alley_leave(run: RulesRun) -> Dictionary:
 	if run.phase != "alley":
 		return {"ok": false, "reason": "Not now."}
-	_next_night(run)
-	return {"ok": true}
+	return {"ok": true, "events": _next_night(run)}
 
 
 # ---------- the laboratory ----------
@@ -1066,5 +1174,4 @@ static func strike(run: RulesRun, id: int) -> Dictionary:
 static func leave_lab(run: RulesRun) -> Dictionary:
 	if run.phase != "lab":
 		return {"ok": false, "reason": "Not now."}
-	_next_night(run)
-	return {"ok": true}
+	return {"ok": true, "events": _next_night(run)}
