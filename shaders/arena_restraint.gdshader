@@ -67,7 +67,8 @@ float stain(vec2 p) {
 		// The blot's outline as seen from its centre: lumps, and a few thin arms thrown out.
 		// At its narrowest it still covers the round piece of paper under its number.
 		float lump = value_noise(dir * 1.7 + n);
-		float arms = pow(value_noise(dir * 5.5 + n * 0.7 + threat * clock * 0.02), 6.0);
+		// The clock stands still without a threat, so the arms stay where it left them.
+		float arms = pow(value_noise(dir * 5.5 + n * 0.7 + clock * 0.02), 6.0);
 		float radius = pitch * (0.6 + 0.16 * lump) + pitch * arms * mix(0.45, 1.1, threat);
 		inside = max(inside, radius * smoothstep(0.0, 1.0, grown) - far);
 	}

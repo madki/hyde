@@ -33,6 +33,9 @@ const BEAD := 17.0
 ## Seconds the ink takes to cover a step, and to turn threatening or calm again.
 const INK_TIME := 0.6
 const THREAT_TIME := 1.2
+## The most one frame moves the ink's clock, in seconds: a long frame (a hidden browser tab
+## coming back) does not make the ink jump.
+const MAX_FRAME := 0.1
 
 const PENCIL := Color(0.015, 0.025, 0.035)
 const PAPER_TEXT := Color(0.16, 0.13, 0.15)
@@ -100,7 +103,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_clock += delta
+	_clock += minf(delta, MAX_FRAME)
 	_ink_material.set_shader_parameter("clock", _clock)
 
 
@@ -205,6 +208,9 @@ func _draw_text() -> void:
 	# Written by hand above the last step, slanting up and away from it.
 	var whose := "HYDE!"
 	var width := _slanted.get_string_size(whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12).x
-	_text.draw_set_transform(_step(limit) + Vector2(-width * 0.5 - 2.0, -TRACK_HALF - TICK_LONG - 4.0), deg_to_rad(-9.0))
+	# On a short track it keeps clear of the heading, and stands a little past the last step.
+	var heading_end := left + 3.0 + _heavy.get_string_size("RESTRAINT", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14).x
+	var whose_x := maxf(_step(limit).x - width * 0.5 - 2.0, heading_end + 8.0)
+	_text.draw_set_transform(Vector2(whose_x, TRACK_Y - TRACK_HALF - TICK_LONG - 4.0), deg_to_rad(-9.0))
 	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, PENCIL)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
