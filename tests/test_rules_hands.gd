@@ -24,10 +24,11 @@ func _read(run: RulesRun, list: String) -> Array:
 	return [e.name, e.chips, e.mult]
 
 
-func test_score_table() -> void:
+# The 33 rows of the rules' score table: [state, the play, hand, chips, mult, score, what
+# else the reading must say].
+func _score_rows() -> Array:
 	var hyde := {"stance": "hyde"}
-	# [state, the play, hand, chips, mult, score, what else the reading must say]
-	var rows := [
+	return [
 		[{}, "P:lamp P:heart P:mirror F:cup F:lock", "Lucid Mind", 120, 7, 840, {"adds_restraint": false}],
 		[{}, "P:lamp", "Spark", 30, 2, 60, {"adds_restraint": true}],
 		[{}, "P:lamp P:lamp", "Rumination", 55, 2, 110, {"adds_restraint": true}],
@@ -62,6 +63,10 @@ func test_score_table() -> void:
 		[{"stance": "hyde", "inst": ["hcane"]}, "I:lamp I:lamp I:lamp", "Mania", 105, 11, 1155, {"craving_on": {"lamp": 1}}],
 		[hyde, "F:cup F:eye", "Passing Thought", 10, 1, 10, {"craving_on": {}, "no_craving": true, "draws": 1, "spends_stored": false}],
 	]
+
+
+func test_score_table() -> void:
+	var rows := _score_rows()
 	eq(rows.size(), 33, "33 rows")
 	for i in rows.size():
 		var row: Array = rows[i]
@@ -80,6 +85,85 @@ func test_score_table() -> void:
 			mult += int(p.v)
 		eq([chips, mult], [e.chips, e.mult], label + ": the parts add up")
 
+
+
+# The steps of a reading as [kind, chips, mult], and the ids of the cards in its root and
+# factor steps.
+static func _shape(e: Dictionary) -> Array:
+	var out: Array = []
+	for s: Dictionary in e.steps:
+		out.append([s.kind, s.chips, s.mult])
+	return out
+
+
+func test_score_table_steps() -> void:
+	var rows := _score_rows()
+	for i in rows.size():
+		var row: Array = rows[i]
+		var cs := cards(row[1])
+		var e := Rules.evaluate(_run_with(row[0]), cs)
+		check_steps(e, ids(cs), "row %d (%s)" % [i + 1, row[1]])
+	# Four plays written out, beat by beat.
+	var e := Rules.evaluate(_run_with(rows[0][0]), cards(rows[0][1]))
+	eq(_shape(e), [
+		["base", 55, 5], ["root", 15, 0], ["root", 15, 0], ["root", 15, 0],
+		["factor", 10, 0], ["effect", 0, 2], ["factor", 10, 0], ["effect", 0, 0],
+	], "row 1: Lucid Mind, three Roots, Good Cheer and its mult, Resolve and its lock")
+	eq(e.steps.map(func(s: Dictionary) -> String: return s.sym), ["", "lamp", "heart", "mirror", "", "", "", ""], "row 1: Lamp, Heart, Mirror")
+	eq(e.steps[-1].label, "no restraint", "row 1: Resolve's effect")
+	e = Rules.evaluate(_run_with(rows[13][0]), cards(rows[13][1]))
+	eq(_shape(e), [
+		["base", 25, 2], ["root", 15, 0], ["root", 35, 0], ["gauge", 0, 6], ["factor", 10, 0], ["effect", 0, 2],
+	], "row 14: Sublimation, Composure, Fog and its burst, Good Cheer")
+	eq([e.steps[2].id, e.steps[3].id, e.steps[3].gauge], [e.turns[0], e.turns[0], "burst"], "row 14: the burst follows the Fog")
+	eq([e.steps[-1].chips_to, e.steps[-1].mult_to], [85, 10], "row 14: 85 x 10")
+	e = Rules.evaluate(_run_with(rows[18][0]), cards(rows[18][1]))
+	eq(_shape(e), [
+		["base", 35, 5], ["root", 15, 0], ["root", 15, 0], ["factor", 10, 0], ["effect", 25, 0],
+		["factor", 10, 0], ["effect", 0, 0], ["stored", 0, 2], ["stored", 0, 2], ["stored", 0, 2],
+	], "row 19: Fixation, two Fog, Glee and its 25, Impulse and its draw, three stored drops")
+	eq(e.steps[6].label, "draws 1 more", "row 19: Impulse's effect")
+	e = Rules.evaluate(_run_with(rows[25][0]), cards(rows[25][1]))
+	eq(_shape(e), [["base", 35, 5], ["root", 35, 0], ["root", 35, 0]], "row 26: Fixation, two Fog at 35")
+
+
+func test_steps_of_gauges_and_factors() -> void:
+	# Temper fires once a symbol, after the first Paper Root of it.
+	var run := _run_with({"temper": {"lamp": 2, "heart": 1}})
+	var cs := cards("P:heart P:lamp P:lamp F:pen")
+	var e := Rules.evaluate(run, cs)
+	eq(_shape(e), [
+		["base", 30, 3], ["root", 45, 0], ["gauge", 0, 4], ["root", 45, 0], ["root", 30, 0], ["gauge", 0, 2],
+		["factor", 10, 0], ["effect", 0, 2], ["effect", 0, 2],
+	], "Temper after the first Lamp and the first Heart; Reason once a symbol")
+	eq([e.steps[2].id, e.steps[5].id], [cs[1].id, cs[0].id], "Temper names the Root it follows")
+	eq([e.steps[7].of, e.steps[8].of], [cs[1].id, cs[0].id], "Reason names the Roots it counts")
+	# Habit fires after every Ink Root; Alibi counts the largest set; Restlessness repeats the best.
+	run = _run_with({"stance": "hyde", "habit": {"heart": 1}, "craving": {"lamp": 1}})
+	cs = cards("I:heart I:lamp I:heart F:cane F:pen")
+	e = Rules.evaluate(run, cs)
+	eq(_shape(e), [
+		["base", 35, 5], ["root", 25, 0], ["root", 30, 0], ["gauge", 0, 1], ["root", 30, 0], ["gauge", 0, 1],
+		["factor", 10, 0], ["effect", 0, 2], ["effect", 0, 2],
+		["factor", 10, 0], ["again", 30, 0], ["effect", 0, 2],
+	], "Habit after each Heart, Alibi on the two Hearts, Restlessness repeats a Root")
+	eq([e.steps[7].of, e.steps[8].of], [cs[0].id, cs[2].id], "Alibi names the Roots of the largest set")
+	eq(e.steps[10].of, cs[0].id, "Restlessness names the best Root: the first Heart, at 30")
+	# Hunted: the base already carries the halved mult.
+	e = Rules.evaluate(_run_with({"stance": "hyde", "hunted": true}), cards("I:lamp I:lamp I:lamp"))
+	eq(e.steps[0].mult, 4, "hunted: the base mult is halved")
+	# The Cane after stored restraint.
+	e = Rules.evaluate(_run_with({"stance": "hyde", "stored": 1, "inst": ["hcane"]}), cards("I:lamp I:lamp I:lamp"))
+	eq(_shape(e).slice(-2), [["stored", 0, 2], ["instrument", 0, 4]], "stored restraint, then The Cane")
+	# With the Glass saucers, the second Fog scores and bursts at 0 Craving.
+	e = Rules.evaluate(_run_with({"inst": ["saucers"], "craving": {"lamp": 2}}), cards("P:lamp I:lamp I:lamp"))
+	eq(_shape(e), [["base", 25, 2], ["root", 15, 0], ["root", 35, 0], ["gauge", 0, 6], ["root", 15, 0], ["gauge", 0, 2]], "two Fog turn")
+	# A Passing Thought: its base is one Factor's chips; no Factor adds more.
+	cs = cards("F:cup F:eye")
+	e = Rules.evaluate(_run_with({}), cs)
+	eq(_shape(e), [["base", 10, 1], ["factor", 0, 0], ["factor", 0, 0], ["effect", 0, 0]], "a Passing Thought")
+	# A refused play has no steps.
+	eq(Rules.evaluate(_run_with({}), cards("I:lamp")).steps, [], "a refused play has no steps")
 
 func test_plays_not_allowed() -> void:
 	var saucers := {"inst": ["saucers"]}
