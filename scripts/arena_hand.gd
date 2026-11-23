@@ -5,18 +5,25 @@ extends Control
 ## right. The card under the pointer rises and straightens. While Hyde has the table the row
 ## is a little out of true: each card is pushed and turned a little its own way.
 ##
-## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, after
-## every move and every change of the chosen cards. It keeps one card for each id. A card new
-## to the hand appears, one that has gone leaves, and a Root whose side has changed changes
-## face where it lies. A click chooses a card or lets it go, up to `max_chosen`; one more is
-## refused with a small shake. `chosen_changed` then asks for the table again, with
-## `chosen()`, so that the marks of the play it would make can be shown:
+## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, when
+## nothing is moving and after every change of the chosen cards. It keeps one card for each
+## id, in a fixed order whatever order they were drawn in: Paper Roots, Ink Roots, Factors,
+## each by symbol. A card new to the hand appears, one that has gone leaves, and a Root whose
+## side has changed changes face where it lies. A click chooses a card or lets it go, up to
+## `max_chosen`; one more is refused with a small shake. `chosen_changed` then asks for the
+## table again, with `chosen()`, so that the marks of the play it would make can be shown:
 ##
 ## - cannot be played now: printed dark;
 ## - can be turned: "turns +N", N being the Craving it would move;
 ## - chosen: lifted;
-## - in the chosen play: "best" on its best Root, "turning +N" on each Root being turned;
-## - "he takes" on each held Root the rescue would convert.
+## - in the chosen play: "best" on its best Root, "turning +N" on each Root being turned.
+##
+## Nothing that follows from the play's score is marked: the score is hidden until the play
+## is made.
+##
+## While a move is played back the cards travel instead (ArenaTravel): `give` hands a card's
+## node over and the row closes up; `take_in` makes room for a card on its way and says where
+## it is to land, and `settle` puts it in the row when it has arrived.
 
 ## The chosen cards changed: their ids, in the hand's order.
 signal chosen_changed(ids: Array)
@@ -36,6 +43,10 @@ const CHOSEN_RISE := 30.0
 const RISE_TIME := 0.12
 ## How far a refused card turns each way, in degrees.
 const SHAKE := 4.0
+## The time the row takes to close up or to make room.
+const SLIDE_TIME := 0.2
+## The fixed order of the symbols and kinds within each group of cards.
+const KEY_ORDER: Array[String] = ["lamp", "heart", "mirror", "cup", "eye", "lock", "pen", "cane"]
 
 ## Where the table begins, from the page's left edge, and the room kept free at its right and
 ## under the hand, all in pixels.
@@ -73,12 +84,14 @@ func _ready() -> void:
 ## Shows the hand of RulesView.table(): see the top of this script.
 func show_table(table: Dictionary) -> void:
 	var hyde: bool = table.stance == "hyde"
+	var entries := _sorted(table.hand)
 	var by_id := {}
 	for card in _cards:
+		settle(card)
 		by_id[card.card_id] = card
 	var next: Array[ArenaCard] = []
 	var fresh: Array[ArenaCard] = []
-	for entry: Dictionary in table.hand:
+	for entry: Dictionary in entries:
 		var card: ArenaCard = by_id.get(entry.id)
 		if card == null:
 			card = _new_card()
@@ -88,6 +101,8 @@ func show_table(table: Dictionary) -> void:
 			card.change_face(card.show_entry.bind(entry, hyde), not _still)
 		else:
 			card.show_entry(entry, hyde)
+		card.face_down = false
+		card.set_meta("rank", _rank(entry))
 		by_id.erase(entry.id)
 		next.append(card)
 	var let_go := false
@@ -95,9 +110,8 @@ func show_table(table: Dictionary) -> void:
 		let_go = let_go or card.chosen
 		card.leave(not _still)
 	_cards = next
-	for i in _cards.size():
-		move_child(_cards[i], i)
-	_mark(table)
+	_restack()
+	_mark(table, entries)
 	for card in _cards:
 		if card in fresh:
 			card.position = _place(card)
@@ -107,6 +121,94 @@ func show_table(table: Dictionary) -> void:
 			_move(card, UNRULY_TIME)
 	if let_go:
 		chosen_changed.emit(chosen())
+
+
+## The ids of the cards in the hand, in the row's order.
+func ids() -> Array:
+	var out: Array = []
+	for card in _cards:
+		out.append(card.card_id)
+	return out
+
+
+## The node of the card with this id, or null.
+func card_of(id: int) -> ArenaCard:
+	for card in _cards:
+		if card.card_id == id:
+			return card
+	return null
+
+
+## Where the card with this id rests in the row: {centre (on the page), turn (degrees)}.
+func rest_of(id: int) -> Dictionary:
+	var card := card_of(id)
+	if card == null:
+		return {"centre": Vector2.ZERO, "turn": 0.0}
+	return {"centre": get_global_transform() * (_rest(card) + card.pivot_offset), "turn": _rest_turn(card)}
+
+
+## Hands over the node of the card with this id, which leaves the hand: the row closes up.
+## The node is still where it lay; whoever takes it moves it (ArenaTravel.take). Null if the
+## hand has no such card.
+func give(id: int) -> ArenaCard:
+	var card := card_of(id)
+	if card == null:
+		return null
+	_stop(card)
+	_cards.erase(card)
+	card.chosen = false
+	card.dimmed = false
+	card.set_tag("")
+	card.set_meta("away", true)
+	for other in _cards:
+		_move(other, SLIDE_TIME)
+	return card
+
+
+## Makes room in the row for a card on its way to the hand: `card` is its node, wherever it
+## is, and `entry` its entry of RulesView.table().hand. The row opens at its place. Returns
+## where it is to land: {centre (on the page), turn (degrees)}. Call `settle` when it is there.
+func take_in(card: ArenaCard, entry: Dictionary, hyde_has_table: bool) -> Dictionary:
+	var lies_face_down := card.face_down
+	card.show_entry(entry, hyde_has_table)
+	card.face_down = lies_face_down
+	card.dimmed = not entry.get("playable", true)
+	card.chosen = false
+	_give_metas(card)
+	card.set_meta("rank", _rank(entry))
+	card.set_meta("away", true)
+	var at := 0
+	while at < _cards.size() and int(_cards[at].get_meta("rank")) < int(card.get_meta("rank")):
+		at += 1
+	_cards.insert(at, card)
+	for other in _cards:
+		if other != card:
+			_move(other, SLIDE_TIME)
+	return {"centre": get_global_transform() * (_rest(card) + card.pivot_offset), "turn": _rest_turn(card)}
+
+
+## A card that `take_in` made room for has arrived: it lies in the row from now on.
+func settle(card: ArenaCard) -> void:
+	if not is_instance_valid(card) or not _away(card) or not card in _cards:
+		return
+	card.set_meta("away", false)
+	if card.get_parent() != self:
+		if card.get_parent():
+			card.get_parent().remove_child(card)
+		add_child(card)
+	card.scale = Vector2.ONE
+	card.face_down = false
+	card.position = _place(card)
+	card.rotation_degrees = _turn(card)
+	_restack()
+
+
+## Empties the hand at once.
+func clear() -> void:
+	for card in _cards:
+		_stop(card)
+		card.queue_free()
+	_cards.clear()
 
 
 ## The ids of the chosen cards, in the hand's order.
@@ -132,30 +234,27 @@ func clear_chosen() -> void:
 ## Puts every card where it belongs at once, without the move there.
 func snap() -> void:
 	for card in _cards:
+		if _away(card):
+			continue
 		_stop(card)
 		card.position = _place(card)
 		card.rotation_degrees = _turn(card)
 
 
 ## Marks each card with what the table says of it.
-func _mark(table: Dictionary) -> void:
+func _mark(table: Dictionary, entries: Array) -> void:
 	var play: Variant = table.play
-	var takes: Array = []
 	var turning := {}
 	var best := -1
 	if play != null and play.ok:
 		best = play.best_root
 		for turn: Dictionary in play.turns:
 			turning[turn.id] = turn.gain
-		if play.rescue != null:
-			takes = play.rescue.ids
 	for i in _cards.size():
 		var card := _cards[i]
-		var entry: Dictionary = table.hand[i]
+		var entry: Dictionary = entries[i]
 		card.dimmed = not entry.playable
-		if card.card_id in takes:
-			card.set_tag("he takes", true)
-		elif turning.has(card.card_id):
+		if turning.has(card.card_id):
 			card.set_tag("turning +%d" % turning[card.card_id], true)
 		elif card.card_id == best:
 			card.set_tag("best")
@@ -167,12 +266,46 @@ func _mark(table: Dictionary) -> void:
 
 func _new_card() -> ArenaCard:
 	var card := ArenaCard.new()
+	_give_metas(card)
+	add_child(card)
+	return card
+
+
+## What the hand keeps on each of its cards: how it lies askew, how far out of true it goes
+## for Hyde, whether the pointer has raised it, and whether it is away (travelling).
+func _give_metas(card: ArenaCard) -> void:
 	card.set_meta("askew", Vector2(_rng.randf_range(-3.0, 3.0), _rng.randf_range(-1.5, 1.5)))
 	card.set_meta("unruly", Vector3(_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0),
 			_rng.randf_range(-1.0, 1.0)) * UNRULY)
 	card.set_meta("raised", false)
-	add_child(card)
-	return card
+	card.set_meta("away", false)
+
+
+func _away(card: ArenaCard) -> bool:
+	return card.get_meta("away", false)
+
+
+## A card's place in the fixed order: Paper Roots, Ink Roots, Factors, each by symbol or
+## kind, then by id.
+static func _rank(entry: Dictionary) -> int:
+	var group := 2 if entry.t == "factor" else (1 if entry.ink else 0)
+	return (group * 16 + KEY_ORDER.find(entry.key)) * 100000 + int(entry.id)
+
+
+func _sorted(entries: Array) -> Array:
+	var out := entries.duplicate()
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return _rank(a) < _rank(b))
+	return out
+
+
+## Puts the nodes of the cards that lie in the row in the row's order, so that each overlaps
+## the one before it.
+func _restack() -> void:
+	var at := 0
+	for card in _cards:
+		if card.get_parent() == self:
+			move_child(card, at)
+			at += 1
 
 
 func _notification(what: int) -> void:
@@ -185,6 +318,8 @@ func _notification(what: int) -> void:
 func _process(_delta: float) -> void:
 	var under := _card_under(get_local_mouse_position()) if _pointer_here else null
 	for card in _cards:
+		if _away(card):
+			continue
 		if _raised(card) != (card == under):
 			card.set_meta("raised", card == under)
 			_move(card, RISE_TIME)
@@ -205,7 +340,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## is refused: the card shakes and nothing changes.
 func toggle(id: int) -> void:
 	for card in _cards:
-		if card.card_id != id:
+		if card.card_id != id or _away(card):
 			continue
 		if not card.chosen and chosen().size() >= max_chosen:
 			_shake(card)
@@ -216,6 +351,12 @@ func toggle(id: int) -> void:
 		return
 
 
+## Chooses the card at this place in the row (from 0), or lets it go: for the number keys.
+func toggle_at(place: int) -> void:
+	if enabled and place >= 0 and place < _cards.size():
+		toggle(_cards[place].card_id)
+
+
 ## The card the pointer is on, or null: the topmost one whose place in the row holds the
 ## point. A card's place stays where it is, turned as the card lies, while the card rises, so
 ## a card cannot rise away from the pointer and drop again. A raised or chosen card also
@@ -224,6 +365,8 @@ func _card_under(point: Vector2) -> ArenaCard:
 	var half := ArenaCard.SIZE * 0.5
 	for i in range(_cards.size() - 1, -1, -1):
 		var card := _cards[i]
+		if _away(card):
+			continue
 		var rest := Rect2(_rest(card), ArenaCard.SIZE)
 		# The point as the card at rest sees it: the card is turned about its middle.
 		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(card)))
@@ -296,6 +439,8 @@ func _stop(card: ArenaCard) -> void:
 
 ## Moves a card to where it belongs now, over `time` seconds.
 func _move(card: ArenaCard, time: float) -> void:
+	if _away(card):
+		return
 	_stop(card)
 	if _still or not is_inside_tree():
 		card.position = _place(card)
