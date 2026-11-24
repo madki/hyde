@@ -76,6 +76,17 @@ uniform vec3 band_colour : source_color = vec3(0.1, 0.05, 0.1);
 uniform float band_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float band_height : hint_range(0.0, 120.0) = 30.0;
 
+group_uniforms hatch;
+/** Pencil hatching on the stock: its colour (Palette.OUTLINE), strength, the distance between
+ * strokes and their width in pixels, their slant from level, and the share of the card the
+ * hatched patches take. */
+uniform vec3 hatch_colour : source_color = vec3(0.051, 0.012, 0.125);
+uniform float hatch_strength : hint_range(0.0, 1.0) = 0.35;
+uniform float hatch_spacing : hint_range(2.0, 16.0) = 4.0;
+uniform float hatch_width : hint_range(0.5, 4.0) = 1.1;
+uniform float hatch_angle : hint_range(-1.6, 1.6) = -0.75;
+uniform float hatch_cover : hint_range(0.0, 1.0) = 0.6;
+
 group_uniforms shadow;
 uniform vec3 shadow_colour : source_color = vec3(0.01, 0.015, 0.03);
 /** The wide soft shadow: how far it falls, how soft it is (both in pixels) and how dark. */
@@ -163,6 +174,18 @@ void fragment() {
 	float band = 1.0 - smoothstep(band_edge - 2.0, band_edge + 1.0, p.y);
 	col = mix(col, band_colour * (0.7 + 0.6 * t), band * band_strength);
 	col = mix(col, band_colour * 0.6, band * smoothstep(band_edge - 3.0, band_edge, p.y) * band_strength * 0.6);
+
+	// Pencil hatching: slanted strokes, each row broken by a noise, in patches.
+	vec2 hatch_dir = vec2(cos(hatch_angle), sin(hatch_angle));
+	float hatch_across = dot(s, vec2(-hatch_dir.y, hatch_dir.x)) + (value_noise(s / 20.0 + 61.0) - 0.5) * hatch_spacing * 0.4;
+	float hatch_along = dot(s, hatch_dir);
+	float hatch_row = floor(hatch_across / hatch_spacing);
+	float hatch = 1.0 - smoothstep(hatch_width * 0.5 - 0.5, hatch_width * 0.5 + 0.5,
+			abs(fract(hatch_across / hatch_spacing) - 0.5) * hatch_spacing);
+	float hatch_run = value_noise(vec2(hatch_row * 7.3, hatch_along / (hatch_spacing * 5.0)));
+	hatch *= smoothstep(0.35, 0.5, hatch_run) * mix(0.55, 1.0, hatch_run);
+	hatch *= smoothstep(1.0 - hatch_cover - 0.1, 1.0 - hatch_cover + 0.1, value_noise(s / 28.0 + 71.0));
+	col = mix(col, hatch_colour, hatch * hatch_strength);
 
 	// Age: darker toward the edge, by an uneven amount.
 	float reach = edge_reach * (0.45 + 1.1 * value_noise(s / 18.0 + 31.0));

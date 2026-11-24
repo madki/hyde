@@ -10,3 +10,6 @@ shader_parameter/mid_at = 0.48
 shader_parameter/paper_dark = Color(0.016, 0.114, 0.165, 1)
 shader_parameter/paper_mid = Color(0.004, 0.176, 0.247, 1)
 shader_parameter/paper_light = Color(0.063, 0.263, 0.333, 1)
+shader_parameter/hatch_colour = Color(0.05098, 0.01176, 0.1255, 1)
+shader_parameter/lamp_jekyll = Color(0.2902, 0.9137, 0.9765, 1)
+shader_parameter/lamp_hyde = Color(1, 0.3098, 0.698, 1)
