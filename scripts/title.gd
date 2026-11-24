@@ -77,13 +77,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		change = Change.DARK if change == Change.VISIT else Change.VISIT
 		print("Change: ", Change.find_key(change))
 	elif key.keycode == KEY_SHIFT:
+		if not _begun:
+			Sfx.play("button") # the press the panel asks for
 		_shift()
 
 
 func _on_row_chosen(_index: int) -> void:
 	if _begun:
+		Sfx.play("button")
 		SceneFlow.next() # as Enter does anywhere
 	elif not _is_busy():
+		Sfx.play("button")
 		_shift()
 
 

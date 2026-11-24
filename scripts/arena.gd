@@ -72,11 +72,11 @@ func _ready() -> void:
 	_hand.enabled = false
 	_hand.chosen_changed.connect(_on_choice)
 	_controls.lower(false)
-	_controls.play_pressed.connect(play_chosen)
-	_controls.discard_pressed.connect(discard_chosen)
-	_controls.pass_pressed.connect(pass_play)
-	_means.drink_pressed.connect(drink)
-	_means.salt_pressed.connect(take_salt)
+	_controls.play_pressed.connect(_pressed.bind(play_chosen))
+	_controls.discard_pressed.connect(_pressed.bind(discard_chosen))
+	_controls.pass_pressed.connect(_pressed.bind(pass_play))
+	_means.drink_pressed.connect(_pressed.bind(drink))
+	_means.salt_pressed.connect(_pressed.bind(take_salt))
 	for extra: String in ["ghosts", "previews", "views"]:
 		var script := _script("res://scripts/arena_extra_%s.gd" % extra)
 		if script:
@@ -182,26 +182,45 @@ func _unhandled_input(event: InputEvent) -> void:
 	match key.keycode:
 		KEY_ENTER, KEY_KP_ENTER:
 			if _controls.can_pass():
-				pass_play()
+				_pressed(pass_play)
 			elif _controls.can_play():
-				play_chosen()
+				_pressed(play_chosen)
+			else:
+				Sfx.play("refuse")
 		KEY_D:
 			if _controls.can_discard():
-				discard_chosen()
+				_pressed(discard_chosen)
+			else:
+				Sfx.play("refuse")
 		KEY_Q:
-			drink()
+			if Rules.can_drink(_run).ok:
+				_pressed(drink)
+			else:
+				Sfx.play("refuse")
 		KEY_S:
-			take_salt()
+			if Rules.can_salt(_run).ok:
+				_pressed(take_salt)
+			else:
+				Sfx.play("refuse")
 		KEY_ESCAPE:
-			_hand.clear_chosen()
+			_hand.put_back_all()
 		KEY_0:
-			_hand.toggle_at(9)
+			_hand.press_at(9)
 		_:
 			if key.keycode >= KEY_1 and key.keycode <= KEY_9:
-				_hand.toggle_at(key.keycode - KEY_1)
+				_hand.press_at(key.keycode - KEY_1)
 			else:
 				return
 	get_viewport().set_input_as_handled()
+
+
+# The player pressed a control that may be used now: its sound, then `move`. Nothing while a
+# move is being played back.
+func _pressed(move: Callable) -> void:
+	if _busy:
+		return
+	Sfx.play("button")
+	move.call()
 
 
 # Makes the parts that are not in the scene, in the order they lie on the page (the cards

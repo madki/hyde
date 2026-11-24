@@ -76,6 +76,7 @@ func _init() -> void:
 		button.add_theme_stylebox_override("disabled", _box(Palette.NIGHT_2, Color.TRANSPARENT, EDGE))
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.draw.connect(_draw_dashes.bind(button))
+		button.gui_input.connect(_refuse_if_off.bind(button))
 		add_child(button)
 	_play.text = "PLAY"
 	_discard.text = "DISCARD"
@@ -258,6 +259,14 @@ func _draw() -> void:
 	for i: int in range(1, GLOW_REACH + 1):
 		var fade := 1.0 - float(i - 1) / GLOW_REACH
 		draw_rect(rect.grow(i), Color(box.bg_color, glow * 0.35 * fade * fade), false, 1.0)
+
+
+## A click on a button that is off, while input is open, is refused. (While a move is played
+## back the buttons take no clicks.)
+func _refuse_if_off(event: InputEvent, button: Button) -> void:
+	var click := event as InputEventMouseButton
+	if click and click.pressed and click.button_index == MOUSE_BUTTON_LEFT and button.disabled and _up:
+		Sfx.play("refuse")
 
 
 ## Draws an off button's dashed edge over its box.
