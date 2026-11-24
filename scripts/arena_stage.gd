@@ -19,8 +19,8 @@ const REWARD_SCALE := 1.25
 const REWARD_GAP := 20.0
 ## The caption's box: it may run to a second line, which then spreads above and below its zone.
 const CAPTION_SIZE := Vector2(600.0, 48.0)
-const CAPTION_COLOUR := Color(0.95, 0.9, 0.78)
-const CAPTION_OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+const CAPTION_COLOUR := Palette.CHALK
+const CAPTION_OUTLINE := Color(Palette.OUTLINE, 0.9)
 
 var beats: ArenaBeats
 

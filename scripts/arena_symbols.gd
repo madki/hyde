@@ -94,13 +94,11 @@ const GROW_TIME := 0.5
 const HOLD_TIME := 0.9
 const FLOOD_TIME := 0.7
 
-const PENCIL := Color(0.015, 0.025, 0.035)
-const INK := Color(0.27, 0.07, 0.26)
-const CREAM := Color(0.87, 0.81, 0.67)
-const CREAM_TEXT := Color(0.93, 0.89, 0.78)
-const INK_WASH := Color(0.80, 0.70, 0.75)
-const SHADOW := Color(0.0, 0.0, 0.0, 0.28)
-const LABEL := Color(0.33, 0.28, 0.27)
+## The gauges are night surfaces: lines and labels in chalk, Hyde's marks in his light.
+const SURFACE := Palette.NIGHT_2
+const FRAME := Palette.CHALK_2
+const MARK := Palette.CHALK
+const INK := Palette.HYDE
 
 ## Changes the lines and the tags' edges a little while keeping the look.
 @export var rng_seed := 11
@@ -347,7 +345,7 @@ func turn(sym: String, temper_to: int) -> void:
 		return
 	for i in gain:
 		var k: int = filled[maxi(filled.size() - 1 - i, 0)]
-		var mover := _traveller(_pip_at(sym, k), _tally_at(sym, "temper", int(s.temper) + i), INK, PENCIL, false)
+		var mover := _traveller(_pip_at(sym, k), _tally_at(sym, "temper", int(s.temper) + i), INK, MARK, false)
 		await _tween(TRAVEL_TIME, func(t: float) -> void:
 			mover.t = t
 			s.fill[k] = minf(s.fill[k], 1.0 - t))
@@ -432,7 +430,7 @@ func line_across(to_ink: bool) -> void:
 		return
 	var from := _line_mark(from_n, not to_ink)
 	var to := _line_mark(_ink if to_ink else _paper, to_ink)
-	var mover := _traveller(from, to, PENCIL if to_ink else INK, INK if to_ink else PENCIL, true)
+	var mover := _traveller(from, to, MARK if to_ink else INK, INK if to_ink else MARK, true)
 	if to_ink:
 		_paper -= 1
 		_paper_shown = float(_paper)
@@ -696,33 +694,28 @@ func _notification(what: int) -> void:
 ## The gauges' slips with their shadows and their pulse, the slip of a rollover's card, and
 ## the line's banner.
 func _draw_back() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = rng_seed
 	for sym in SYMS:
 		var s: Dictionary = _s[sym]
 		var flash: float = s.flash
-		_slip(_gauge_rect(sym), rng, CREAM.lerp(Color(1.0, 0.96, 0.84), flash * 0.8))
+		_slip(_gauge_rect(sym), SURFACE.lerp(Palette.NIGHT_3, flash))
 		if s.ghost_roll:
-			_slip(_roll_slip(sym), rng, CREAM)
+			_slip(_roll_slip(sym), SURFACE)
 	_back.draw_set_transform_matrix(_line_xform())
 	var banner := _banner()
-	var shadow := PackedVector2Array()
-	for p in banner:
-		shadow.append(p + Vector2(2.0, 3.0))
-	_back.draw_colored_polygon(shadow, SHADOW)
-	_back.draw_colored_polygon(banner, CREAM)
-	_back.draw_rect(Rect2(0.0, -LINE_H + 2.0, LINE_HALF - LINE_COUNT, LINE_H * 2.0 - 4.0), INK_WASH)
+	_back.draw_colored_polygon(banner, SURFACE)
+	# Each man's share of the banner, either side of the line.
+	var share := LINE_HALF - LINE_COUNT
+	_back.draw_rect(Rect2(-share, -LINE_H + 2.0, share, LINE_H * 2.0 - 4.0), Palette.JEKYLL_DEEP)
+	_back.draw_rect(Rect2(0.0, -LINE_H + 2.0, share, LINE_H * 2.0 - 4.0), Palette.HYDE_DEEP)
+	banner.append(banner[0])
+	_back.draw_polyline(banner, Palette.RULE, 1.5)
 	_back.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
-## A slip of cream stock with its shadow.
-func _slip(r: Rect2, rng: RandomNumberGenerator, colour: Color) -> void:
-	var edge := _ragged(r, rng)
-	var shadow := PackedVector2Array()
-	for p in edge:
-		shadow.append(p + Vector2(2.0, 3.0))
-	_back.draw_colored_polygon(shadow, SHADOW)
-	_back.draw_colored_polygon(edge, colour)
+## A night surface with its square rule border.
+func _slip(r: Rect2, colour: Color) -> void:
+	_back.draw_rect(r, colour)
+	_back.draw_rect(r, Palette.RULE, false, 1.5)
 
 
 ## The words on the slip of a rollover's card, and the slip: at the gauge's right end, level
@@ -737,20 +730,6 @@ func _roll_slip(sym: String) -> Rect2:
 	return Rect2(r.end.x + 3.0, r.get_center().y - 8.0, w, 16.0)
 
 
-## A rectangle's outline with its edges a little uneven, as torn card.
-static func _ragged(r: Rect2, rng: RandomNumberGenerator) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
-	for c in 4:
-		var a: Vector2 = corners[c]
-		var b: Vector2 = corners[(c + 1) % 4]
-		var pieces := maxi(2, int(a.distance_to(b) / 14.0))
-		var inward := (b - a).normalized().orthogonal()
-		for k in pieces:
-			out.append(a.lerp(b, float(k) / pieces) + inward * rng.randf_range(-1.2, 1.2))
-	return out
-
-
 ## Every pencil line: the brackets, the sketches, the pips' rims, the tallies, the ghosts, the
 ## lock and the line.
 func _draw_lines() -> void:
@@ -762,7 +741,7 @@ func _draw_lines() -> void:
 		var seed_base := rng_seed * 1000 + i * 200
 		# The two brackets, and the bar between the pips and Temper.
 		var frame := Pencil.new(seed_base + 2)
-		frame.colour = PENCIL
+		frame.colour = FRAME
 		var top := r.position.y + 5.0
 		var bottom := r.end.y - 5.0
 		frame.stroke(PackedVector2Array([Vector2(r.position.x + 8.5, top), Vector2(r.position.x + 4.0, top),
@@ -772,7 +751,7 @@ func _draw_lines() -> void:
 		var bar_x: float = g.bar_x
 		frame.stroke(PackedVector2Array([Vector2(bar_x, g.y - 9.0), Vector2(bar_x + 0.4, g.y + 9.0)]), 1.4, 0.3)
 		# A side with no mark on it, and none coming, has a dash.
-		frame.colour = _faint(PENCIL, 0.55)
+		frame.colour = _faint(FRAME, 0.55)
 		for row: String in ["habit", "temper"]:
 			var coming: bool = s.ghost_roll if row == "habit" else int(s.ghost_temper) > 0
 			if s[row + "_shown"] < 0.01 and not coming:
@@ -780,7 +759,7 @@ func _draw_lines() -> void:
 				frame.stroke(PackedVector2Array([Vector2(x + 2.0, g.y + 0.5), Vector2(x + 9.0, g.y)]), 1.5, 0.3)
 		frame.draw(_lines)
 		var sketch := Pencil.new(seed_base)
-		sketch.colour = PENCIL.lerp(INK, s.flash * 0.6)
+		sketch.colour = MARK.lerp(INK, s.flash * 0.6)
 		_sketch(sketch, sym, Vector2(g.sketch_x, g.y), SKETCH_SCALE)
 		sketch.draw(_lines)
 		# The pips' rims: two always, the third while it is there.
@@ -793,7 +772,7 @@ func _draw_lines() -> void:
 				present = 1.0
 			if present <= 0.01:
 				continue
-			rims.colour = _faint(INK if ghost else PENCIL, present * (1.0 if ghost else 0.8))
+			rims.colour = _faint(INK if ghost else FRAME, present * (1.0 if ghost else 0.8))
 			rims.stroke(_circle(_pip_at(sym, k), PIP_R, 12), 2.0 if ghost else 1.4, 0.25)
 		if s.ghost_roll:
 			# The three pips joined by a loop round them.
@@ -802,7 +781,7 @@ func _draw_lines() -> void:
 			rims.stroke(_ellipse(mid, Vector2(PIP_PITCH + PIP_R + 2.5, PIP_R + 3.5), 24), 1.4, 0.4)
 		rims.draw(_lines)
 		_draw_tallies(sym, "habit", seed_base + 10, INK)
-		_draw_tallies(sym, "temper", seed_base + 60, PENCIL)
+		_draw_tallies(sym, "temper", seed_base + 60, MARK)
 		var ghosts := Pencil.new(seed_base + 120)
 		ghosts.colour = _faint(INK, 0.4)
 		if s.ghost_roll and int(s.habit) < TALLY_MAX:
@@ -810,21 +789,21 @@ func _draw_lines() -> void:
 		for n_ghost in int(s.ghost_temper):
 			var n: int = int(s.temper) + n_ghost
 			if n < TALLY_MAX:
-				ghosts.colour = _faint(PENCIL, 0.45)
+				ghosts.colour = _faint(MARK, 0.45)
 				ghosts.stroke(_tally_path(sym, "temper", n, 1.0), 1.5, 0.3)
 		if _lock > 0.01:
 			_lock_path(ghosts, _pip_at(sym, 2) + Vector2(0.0, -3.0), _lock)
 		ghosts.draw(_lines)
 	_lines.draw_set_transform_matrix(_line_xform())
 	var line := Pencil.new(rng_seed * 1000 + 900)
-	line.colour = PENCIL
+	line.colour = MARK
 	line.stroke(PackedVector2Array([Vector2(0.0, -LINE_H - 3.0), Vector2(0.5, LINE_H + 3.0)]), 2.2, 0.4)
 	line.draw(_lines)
 	_draw_line_side(false, _paper_shown, rng_seed * 1000 + 1000)
 	_draw_line_side(true, _ink_shown, rng_seed * 1000 + 3000)
 	if _lead > 0.01:
 		var under := Pencil.new(rng_seed * 1000 + 950)
-		under.colour = CREAM_TEXT
+		under.colour = MARK
 		var y := LINE_H + 6.0
 		for ink: bool in [false, true]:
 			var count := _ink if ink else _paper
@@ -856,7 +835,7 @@ func _draw_line_side(ink: bool, shown: float, pencil_seed: int) -> void:
 	var whole := floori(shown)
 	for n in ceili(shown):
 		var pencil := Pencil.new(pencil_seed + n)
-		pencil.colour = INK if ink else PENCIL
+		pencil.colour = MARK
 		var x := LINE_GAP + p
 		var top := Vector2(x if ink else -x, -LINE_MARK_H)
 		var path := _tally_path_at(top, n, p, p * 1.6, LINE_MARK_H * 2.0, 1.0 if ink else -1.0,
@@ -898,14 +877,14 @@ func _draw_fills() -> void:
 		var spread := PackedVector2Array([Vector2(-w, -LINE_H), Vector2(0.0, -LINE_H), Vector2(0.0, LINE_H),
 				Vector2(-w, LINE_H)])
 		for part in Geometry2D.intersect_polygons(spread, _banner()):
-			_fills.draw_colored_polygon(part, Color(INK, 0.92))
+			_fills.draw_colored_polygon(part, Color(Palette.HYDE_DEEP, 0.92))
 		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
 ## The numbers when they show, the slip of a rollover's card, the line's counts, and the
 ## ledger.
 func _draw_text() -> void:
-	var edge := Color(0.05, 0.035, 0.06, 0.85)
+	var edge := Color(Palette.OUTLINE, 0.85)
 	for sym in SYMS:
 		var s: Dictionary = _s[sym]
 		var g: Dictionary = _g[sym]
@@ -913,7 +892,7 @@ func _draw_text() -> void:
 		for row: String in ["habit", "temper"]:
 			if int(s[row]) > TALLY_MAX:
 				var end := _tally_top(sym, row, TALLY_MAX - 1) + Vector2(4.0, TALLY_H_TWO - 1.0)
-				_text.draw_string(_heavy, end, "+%d" % (int(s[row]) - TALLY_MAX), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, LABEL)
+				_text.draw_string(_heavy, end, "+%d" % (int(s[row]) - TALLY_MAX), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, Palette.CHALK_2)
 		# What changed on a gauge, by name, for a moment after: right of the column and level
 		# with the gauge, on the page's own ground. In the gauge's own order, one line each
 		# about the gauge's middle: side by side, two would reach the line's banner. Not while
@@ -929,11 +908,11 @@ func _draw_text() -> void:
 				var words := "%s %d" % [lit[i].capitalize(), int(s[lit[i]])]
 				var at := Vector2(_beside_x(), base + i * NOTE_STEP)
 				_text.draw_string_outline(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, 4, Color(edge, edge.a * note))
-				_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, Color(CREAM_TEXT, note))
+				_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, Color(Palette.CHALK, note))
 		if s.ghost_roll:
 			var slip := _roll_slip(sym)
 			_text.draw_string(_slanted, slip.position + Vector2(0.0, 12.0), _roll_words(sym), HORIZONTAL_ALIGNMENT_CENTER,
-					slip.size.x, 11, _faint(INK, 0.85))
+					slip.size.x, 11, Palette.CHALK)
 	# The line's counts, at the banner's two ends: each a little larger for a moment when it changes.
 	var xf := _line_xform()
 	var scale := xf.get_scale().x
@@ -945,9 +924,9 @@ func _draw_text() -> void:
 	var ink_w := _heavy.get_string_size(ink_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px).x
 	# Once the ink has flooded the paper's side, the paper's count is read through it.
 	_text.draw_string(_heavy, xf * Vector2(-LINE_HALF + LINE_NOTCH + 5.0, 0.0) + Vector2(0.0, drop), paper_text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, paper_px, PENCIL.lerp(INK_WASH, _flood))
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, paper_px, Palette.CHALK)
 	_text.draw_string(_heavy, xf * Vector2(LINE_HALF - LINE_NOTCH - 5.0, 0.0) + Vector2(-ink_w, drop), ink_text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px, INK)
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px, Palette.CHALK)
 	if _hover != "" and not _numbers:
 		_draw_ledger(_hover)
 
@@ -960,26 +939,25 @@ func _draw_ledger(sym: String) -> void:
 	var top := maxf(_gauge_rect(sym).position.y, ArenaLayout.readout(size).position.y)
 	var box := Rect2(Vector2(_beside_x(), top), LEDGER)
 	box.position = box.position.clamp(Vector2.ZERO, (size - box.size).max(Vector2.ZERO))
-	_text.draw_rect(Rect2(box.position + Vector2(3.0, 4.0), box.size), SHADOW)
-	_text.draw_rect(box, Color(0.95, 0.91, 0.80))
-	_text.draw_rect(box, PENCIL, false, 1.0)
+	_text.draw_rect(box, SURFACE)
+	_text.draw_rect(box, Palette.RULE, false, 1.5)
 	var x := box.position.x + 10.0
 	var y := box.position.y + 19.0
 	var names: Array = [RulesConfig.ROOT[sym].paper, RulesConfig.ROOT[sym].ink]
 	_text.draw_string(_heavy, Vector2(x, y), "Habit %d   Craving %d   Temper %d" % [s.habit, s.craving, s.temper],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 13, PENCIL)
+			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 13, Palette.CHALK)
 	_text.draw_string(_slanted, Vector2(x, y + 24.0), "%d %s in the deck, %d chips each" % [s.paper, names[0], s.paper_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, PENCIL)
+			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
 	_text.draw_string(_slanted, Vector2(x, y + 46.0), "%d %s in the deck, %d chips each" % [s.ink, names[1], s.ink_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, INK)
+			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
 
 
 # --- Shapes ---------------------------------------------------------------------------------
 
 
-## A colour as drawn faintly on the cream: `a` 0 is the cream, 1 the colour itself.
+## A colour as drawn faintly on the night surface: `a` 0 is the surface, 1 the colour itself.
 static func _faint(colour: Color, a: float) -> Color:
-	return CREAM.lerp(colour, clampf(a, 0.0, 1.0))
+	return SURFACE.lerp(colour, clampf(a, 0.0, 1.0))
 
 
 ## The path of the n-th tally of a gauge's side, `part` of it drawn.
@@ -1033,7 +1011,7 @@ static func _rect_path(r: Rect2) -> PackedVector2Array:
 
 ## A small padlock at `at`, faint by `a`.
 func _lock_path(pencil: Pencil, at: Vector2, a: float) -> void:
-	pencil.colour = _faint(PENCIL, a)
+	pencil.colour = _faint(FRAME, a)
 	pencil.stroke(_rect_path(Rect2(at + Vector2(-4.5, 0.0), Vector2(9.0, 8.0))), 1.4, 0.15)
 	pencil.stroke(_arc(at, Vector2(3.0, 4.0), PI, TAU, 8), 1.4, 0.15)
 

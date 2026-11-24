@@ -6,3 +6,16 @@
 [resource]
 shader = ExtResource("1")
 shader_parameter/fibre = ExtResource("2")
+shader_parameter/fray = 0.2
+shader_parameter/bite = 0.8
+shader_parameter/corner_wear = 1.25
+shader_parameter/line_colour = Color(0.05098, 0.01176, 0.1255, 1)
+shader_parameter/line_strength = 0.9
+shader_parameter/paper_dark = Color(0.07843, 0.09804, 0.2235, 1)
+shader_parameter/paper_mid = Color(0.1059, 0.1843, 0.3216, 1)
+shader_parameter/paper_light = Color(0.1647, 0.2745, 0.4471, 1)
+shader_parameter/edge_colour = Color(0.04706, 0.07843, 0.1569, 1)
+shader_parameter/wash_colour = Color(0.0902, 0.1647, 0.298, 1)
+shader_parameter/wash_rim_colour = Color(0.05882, 0.102, 0.2078, 1)
+shader_parameter/band_colour = Color(0.06667, 0.1137, 0.2196, 1)
+shader_parameter/shadow_colour = Color(0.05098, 0.01176, 0.1255, 1)

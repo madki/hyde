@@ -86,6 +86,13 @@ uniform float shadow_strength : hint_range(0.0, 1.0) = 0.8;
 uniform float contact_soft : hint_range(0.5, 12.0) = 4.0;
 uniform float contact_strength : hint_range(0.0, 1.0) = 0.7;
 
+group_uniforms rim;
+/** Light along the card's outline: a thin line on it and a falloff outward over `rim_reach`
+ * pixels, which must stay under the margin the card is drawn with (24 pixels). */
+uniform vec3 rim_colour : source_color = vec3(1.0);
+uniform float rim_strength : hint_range(0.0, 1.0) = 0.0;
+uniform float rim_reach : hint_range(1.0, 20.0) = 12.0;
+
 varying vec2 at;
 
 float hash(vec2 p) {
@@ -173,5 +180,13 @@ void fragment() {
 	float shade = max(cast, contact) * (1.0 - inside);
 
 	float alpha = inside + shade;
-	COLOR = vec4(mix(shadow_colour, col, inside / max(alpha, 0.0001)), alpha);
+	vec3 lit = mix(shadow_colour, col, inside / max(alpha, 0.0001));
+
+	// The rim light, added on top: a 1.5 pixel line on the outline and a glow outside it.
+	float rim_line = 1.0 - smoothstep(0.75, 0.75 + pixel + 0.5, abs(torn));
+	float out_from = max(torn, 0.0) / rim_reach;
+	float rim_fall = 0.55 * (1.0 - smoothstep(0.0, 1.0, out_from)) * (1.0 - smoothstep(0.0, 1.0, out_from));
+	float rim = rim_strength * max(rim_line, rim_fall * (1.0 - inside));
+	float total = clamp(alpha + rim, 0.0, 1.0);
+	COLOR = vec4((lit * alpha + rim_colour * rim) / max(total, 0.0001), total);
 }

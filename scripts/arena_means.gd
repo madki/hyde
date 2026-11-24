@@ -102,23 +102,23 @@ const LAY_TIME := 0.35
 const HOP_TIME := 0.4
 const GLINT_TIME := 0.6
 
-const PENCIL := Color(0.015, 0.025, 0.035)
-const INK := Color(0.27, 0.07, 0.26)
-const CREAM := Color(0.87, 0.81, 0.67)
-const NOTE_CREAM := Color(0.95, 0.91, 0.80)
-const SHADOW := Color(0.0, 0.0, 0.0, 0.28)
+const PENCIL := Palette.OUTLINE
+const INK := Palette.INK_BODY
+const CREAM := Palette.CHALK
+const NOTE_CREAM := Palette.CHALK
+const SHADOW := Color(Palette.OUTLINE, 0.28)
 ## What is drawn and written straight on the page, and the same when it is refused.
-const CHALK := Color(0.95, 0.9, 0.78)
-const CHALK_DIM := Color(0.95, 0.9, 0.78, 0.55)
-const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+const CHALK := Palette.CHALK
+const CHALK_DIM := Color(Palette.CHALK, 0.55)
+const OUTLINE := Color(Palette.OUTLINE, 0.9)
 ## A seal's wax, the part the die pressed flat, and what the die left raised (and its rim).
-const WAX := Color(0.36, 0.1, 0.33)
-const WAX_PRESSED := Color(0.25, 0.06, 0.24)
-const WAX_LINE := Color(0.9, 0.74, 0.86)
+const WAX := Palette.INK_BLOOM
+const WAX_PRESSED := Palette.INK_BODY
+const WAX_LINE := Palette.CHALK
 ## The draught in the flask, and its cork.
-const DRAUGHT := Color(0.62, 0.1, 0.14)
-const CORK := Color(0.78, 0.6, 0.4)
-const SALT := Color(0.99, 0.98, 0.95)
+const DRAUGHT := Palette.HYDE_DEEP
+const CORK := Palette.GOLD
+const SALT := Palette.SALT
 
 ## Changes the lines and the edges a little while keeping the look.
 @export var rng_seed := 23
@@ -648,9 +648,9 @@ func _draw_fills() -> void:
 		var bar := PackedVector2Array([Vector2(x - 5.0, -ROUND_R), Vector2(x + 1.0, -ROUND_R),
 				Vector2(x - 3.0, ROUND_R), Vector2(x - 9.0, ROUND_R)])
 		for lit in Geometry2D.intersect_polygons(bar, round_edge):
-			_fills.draw_colored_polygon(lit, Color(1.0, 0.98, 0.88, 0.75 * light))
+			_fills.draw_colored_polygon(lit, Color(Palette.HOT, 0.75 * light))
 		if absf(x - 2.0) < ROUND_R - 4.0:
-			_fills.draw_circle(Vector2(x - 2.0, -3.0), 2.5 * light, Color(1.0, 1.0, 0.95, light))
+			_fills.draw_circle(Vector2(x - 2.0, -3.0), 2.5 * light, Color(Palette.HOT, light))
 		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 

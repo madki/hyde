@@ -27,10 +27,10 @@ uniform vec2 rect_size = vec2(300.0, 150.0);
 
 group_uniforms colours;
 /** Hyde's ink as it is on the page (arena_paper.gdshader): pale wash, pink, wine, darkest. */
-uniform vec3 ink_wash : source_color = vec3(0.415, 0.325, 0.455);
-uniform vec3 ink_bloom : source_color = vec3(0.40, 0.21, 0.37);
-uniform vec3 ink_body : source_color = vec3(0.29, 0.14, 0.25);
-uniform vec3 ink_deep : source_color = vec3(0.13, 0.05, 0.115);
+uniform vec3 ink_wash : source_color = vec3(0.361, 0.184, 0.349);
+uniform vec3 ink_bloom : source_color = vec3(0.369, 0.063, 0.251);
+uniform vec3 ink_body : source_color = vec3(0.247, 0.012, 0.173);
+uniform vec3 ink_deep : source_color = vec3(0.122, 0.012, 0.090);
 /** How strongly the pale wash around the stain shows. */
 uniform float wash_cover : hint_range(0.0, 1.0) = 0.45;
 

@@ -18,8 +18,8 @@ extends Control
 ## None of it shows the score of the chosen cards. It reads RulesView.table() and the run's
 ## deck; it works out no rule.
 
-const CREAM := Color(0.95, 0.91, 0.8)
-const PENCIL := Color(0.08, 0.05, 0.04)
+const CREAM := Palette.CHALK
+const PENCIL := Palette.OUTLINE
 const SMALL := 0.46
 ## The Notebook's first card, from the middle of the draw pile's zone.
 const NOTEBOOK_FROM_PILE := Vector2(-20.0, -104.0)
@@ -53,7 +53,7 @@ func _init() -> void:
 	box.set_border_width_all(2)
 	box.set_corner_radius_all(3)
 	box.set_content_margin_all(12)
-	box.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+	box.shadow_color = Color(Palette.OUTLINE, 0.3)
 	box.shadow_size = 5
 	_note.add_theme_stylebox_override("panel", box)
 	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -73,7 +73,7 @@ func _init() -> void:
 	_deck_title.add_theme_font_override("font", font)
 	_deck_title.add_theme_font_size_override("font_size", 17)
 	_deck_title.add_theme_color_override("font_color", CREAM)
-	_deck_title.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
+	_deck_title.add_theme_color_override("font_outline_color", Color(Palette.OUTLINE, 0.9))
 	_deck_title.add_theme_constant_override("outline_size", 6)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
@@ -82,11 +82,11 @@ func _init() -> void:
 	_hint.tooltip_text = "Chooses the cards of a good hand."
 	_hint.add_theme_font_override("font", font)
 	_hint.add_theme_font_size_override("font_size", 14)
-	_hint.add_theme_color_override("font_color", Color(CREAM, 0.8))
-	_hint.add_theme_color_override("font_focus_color", Color(CREAM, 0.8))
-	_hint.add_theme_color_override("font_hover_color", Color.WHITE)
-	_hint.add_theme_color_override("font_pressed_color", Color.WHITE)
-	_hint.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
+	_hint.add_theme_color_override("font_color", Palette.CHALK_2)
+	_hint.add_theme_color_override("font_focus_color", Palette.CHALK_2)
+	_hint.add_theme_color_override("font_hover_color", Palette.CHALK)
+	_hint.add_theme_color_override("font_pressed_color", Palette.CHALK)
+	_hint.add_theme_color_override("font_outline_color", Color(Palette.OUTLINE, 0.9))
 	_hint.add_theme_constant_override("outline_size", 5)
 	for state: String in ["normal", "hover", "pressed", "focus"]:
 		_hint.add_theme_stylebox_override(state, StyleBoxEmpty.new())
@@ -276,7 +276,7 @@ func _open_pile(which: String) -> void:
 	for id: int in ids:
 		entries.append(t.entry(id))
 	var shade := ColorRect.new()
-	shade.color = Color(0.03, 0.02, 0.05, 0.78)
+	shade.color = Color(Palette.NIGHT_1, 0.78)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_deck.add_child(shade)

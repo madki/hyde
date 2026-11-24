@@ -1,9 +1,9 @@
 class_name ArenaPile
 extends Control
 ## One pile of cards on the table, the draw pile or the discards: a small stack, as high as
-## the pile is big, with its name and its count written on a cream label on the pile itself,
+## the pile is big, with its name and its count written on a dark label on the pile itself,
 ## so that they read on a card's back, on a face and on an empty place alike. An empty pile
-## is a pencilled outline.
+## is a dashed outline.
 ##
 ## The draw pile lies square and face down. The discards lie a little askew, and keep the last
 ## few cards that landed on them face up on top. The pile shows `count`; it works out nothing.
@@ -20,10 +20,8 @@ const LAYER_STEP := Vector2(-2.0, -2.6)
 const TOPS := 3
 ## The label on the pile.
 const LABEL_SIZE := Vector2(56.0, 38.0)
-const TAG_COLOUR := Color(0.93, 0.88, 0.75)
-const TAG_TEXT := Color(0.08, 0.05, 0.04)
-const TAG_LINE := Color(0.08, 0.05, 0.04, 0.8)
-const OUTLINE := Color(0.93, 0.88, 0.75, 0.55)
+## The label's border width.
+const TAG_EDGE := 1.5
 
 ## Written on the label over the count.
 @export var title := "Draw"
@@ -53,12 +51,12 @@ func _init() -> void:
 	_tag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tag_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_tag_label.add_theme_color_override("font_color", TAG_TEXT)
+	_tag_label.add_theme_color_override("font_color", Palette.CHALK_2)
 	_tag_label.add_theme_font_size_override("font_size", 10)
 	_tag_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tag_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tag_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_tag_count.add_theme_color_override("font_color", TAG_TEXT)
+	_tag_count.add_theme_color_override("font_color", Palette.CHALK)
 	_tag_count.add_theme_font_size_override("font_size", 19)
 	var heavy := FontVariation.new()
 	heavy.base_font = ThemeDB.fallback_font
@@ -211,15 +209,15 @@ func _turn_of(i: int) -> float:
 func _draw() -> void:
 	if count > 0:
 		return
-	# An empty pile: a pencilled outline where it lies.
+	# An empty pile: a dashed outline where it lies.
 	var rect := Rect2(Vector2.ZERO, size).grow(-2.0)
 	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
 			Vector2(rect.position.x, rect.end.y)]
 	for i in 4:
-		draw_dashed_line(corners[i], corners[(i + 1) % 4], OUTLINE, 1.5, 6.0)
+		draw_dashed_line(corners[i], corners[(i + 1) % 4], Palette.CHALK_3, 1.5, 6.0)
 
 
 func _draw_tag() -> void:
 	var rect := Rect2(Vector2.ZERO, _tag.size)
-	_tag.draw_rect(rect, TAG_COLOUR)
-	_tag.draw_rect(rect.grow(-1.5), TAG_LINE, false, 1.0)
+	_tag.draw_rect(rect, Palette.NIGHT_2)
+	_tag.draw_rect(rect.grow(-TAG_EDGE * 0.5), Palette.RULE, false, TAG_EDGE)
