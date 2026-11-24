@@ -42,7 +42,7 @@ func say(words: String, at: Vector2 = Vector2.ZERO) -> void:
 func _draw() -> void:
 	var card := ArenaCard.SIZE * ArenaPile.SCALE
 	for i in _draws:
-		var corner := _pile - card * 0.5 + Vector2(-16.0 - 12.0 * i, -14.0 - 8.0 * i)
+		var corner := _pile - card * 0.5 + Vector2(16.0 + 12.0 * i, -14.0 - 8.0 * i)
 		var points := [corner, corner + Vector2(card.x, 0.0), corner + card, corner + Vector2(0.0, card.y), corner]
 		for k in 4:
 			draw_dashed_line(points[k], points[k + 1], Color(CREAM, 0.85), 2.0, 7.0)

@@ -54,7 +54,7 @@ static func page(t: ArenaTable, to_hyde: bool) -> void:
 	t.beats.add(func() -> void:
 		t.shown.set_value("stance", "hyde" if to_hyde else "jekyll")
 		t.ink.is_jekyll = not to_hyde
-		t.column.is_jekyll = not to_hyde
+		t.numbers.is_jekyll = not to_hyde
 		t.hand.turn_to(t.entry, to_hyde)
 		await t.beats.wait(PAGE_WAIT))
 
@@ -121,7 +121,7 @@ static func brought(t: ArenaTable, e: Dictionary) -> void:
 			for node: ArenaCard in nodes:
 				var id: int = node.get_meta("data").id
 				var to: Dictionary = t.hand.take_in(node, t.entry(id), t.hyde())
-				last = t.travel.fly(node, to.centre, to.turn, 1.0, ArenaTravel.UP)
+				last = t.travel.fly(node, to.centre, to.turn, to.size, ArenaTravel.UP)
 				last.connect(t.hand.settle.bind(node), CONNECT_ONE_SHOT)
 			if not nodes.is_empty():
 				await last)

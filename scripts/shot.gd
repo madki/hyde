@@ -1,9 +1,10 @@
 class_name Shot
 ## Screenshot hook shared by every screen, used to check the look from the command line:
 ##
-##   godot --path . -- --shot=/abs/path.png [--fullscreen]
+##   godot --path . -- --shot=/abs/path.png [--fullscreen] [--size=1600x648]
 ##
-## renders a few frames, saves a screenshot and quits. Each screen calls
+## renders a few frames, saves a screenshot and quits. `--size` takes the shot in a window of
+## that size instead of the project's base size, to see a screen in a wider window. Each screen calls
 ## `Shot.run_if_requested(self)` at the end of its `_ready`. `arg` / `has_arg` also read any
 ## other `--name=value` user argument a screen wants to take (seed, level, actions, ...).
 
@@ -36,6 +37,9 @@ static func _take(screen: Node, path: String) -> void:
 	var window := screen.get_window()
 	var shot_size := Vector2i(ProjectSettings.get_setting("display/window/size/viewport_width"),
 			ProjectSettings.get_setting("display/window/size/viewport_height"))
+	var asked := arg("size").split("x")
+	if asked.size() == 2 and int(asked[0]) > 0 and int(asked[1]) > 0:
+		shot_size = Vector2i(int(asked[0]), int(asked[1]))
 	# Leaving full screen takes the OS a moment: keep asking until the window has settled.
 	for i in 300:
 		if has_arg("fullscreen"): # shoot the game as it starts on this display instead

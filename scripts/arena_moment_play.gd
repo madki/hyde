@@ -111,7 +111,7 @@ static func _score(t: ArenaTable, steps: Array, laid: Dictionary, eyes: Array, c
 	var note := "(hunted)" if str(base.label).ends_with(", hunted") else ""
 	var hand_name := str(base.label).trim_suffix(", hunted")
 	t.beats.add(func() -> void:
-		await t.follow(t.column.name_hand(hand_name, base.chips, base.mult, note)).finished
+		await t.follow(t.numbers.name_hand(hand_name, base.chips, base.mult, note)).finished
 		if Shot.has_arg("trace"):
 			print("  %s %s  %d x %d" % [hand_name, note, base.chips, base.mult]))
 	var tick := 0
@@ -139,7 +139,7 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			if step.gauge in ["temper", "habit"]:
 				# The gauge pays from its sketch: its tallies flash and the mult travels.
 				t.play(t.symbols.flash.bind(step.sym))
-				ArenaPop.fly_text(t.beats, t.travel, t.symbols.sketch_place(step.sym), t.column.mult_place(),
+				ArenaPop.fly_text(t.beats, t.travel, t.symbols.sketch_place(step.sym), t.numbers.mult_place(),
 						words, colour, ArenaPace.tick(n))
 				words = ""
 			else:
@@ -156,7 +156,7 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			if step.chips == 0 and step.mult == 0:
 				words = step.label
 				if step.label == "no restraint":
-					t.follow(t.column.restraint.set_lock(true))
+					t.follow(t.numbers.restraint.set_lock(true))
 				elif step.label == "no Craving":
 					t.play(t.symbols.set_lock.bind(true))
 				if str(step.label).begins_with("draws") and card:
@@ -165,34 +165,34 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 					mark.fly_to(t.beats, t.piles.draw_pile.top_centre() + Vector2(-34.0, -40.0))
 		"stored":
 			t.shown.set_value("restraint/stored", maxi(0, int(t.shown.value("restraint/stored", 0)) - 1))
-			await t.follow(t.column.fly_drop(step.mult)).finished
+			await t.follow(t.numbers.fly_drop(step.mult)).finished
 			return
 		"instrument":
 			t.play(t.means.hop.bind("hcane"))
-			at = t.means.get_global_transform() * Vector2(ArenaMeans.SIZE.x * 0.5, 40.0)
+			at = t.means.spot("hcane")
 	if words != "" and at != Vector2.ZERO:
 		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)
 	if step.chips != 0:
-		await t.follow(t.column.tick_chips(step.chips)).finished
+		await t.follow(t.numbers.tick_chips(step.chips)).finished
 	elif step.mult != 0:
-		await t.follow(t.column.tick_mult(step.mult)).finished
+		await t.follow(t.numbers.tick_mult(step.mult)).finished
 	else:
 		await t.beats.wait(ArenaPace.tick(n) * QUIET)
 	if Shot.has_arg("trace"):
-		print("  %-9s %-18s %d x %d" % [step.kind, step.label, roundi(t.column.get("_chips")), roundi(t.column.get("_mult"))])
+		print("  %-9s %-18s %d x %d" % [step.kind, step.label, roundi(t.numbers.get("_chips")), roundi(t.numbers.get("_mult"))])
 
 
 # Beats 6 and 7: the total lands, travels to the round's score, and may strike the target.
 static func _total(t: ArenaTable, score_to: int) -> void:
 	t.beats.add(func() -> void:
-		await t.follow(t.column.land_total()).finished
+		await t.follow(t.numbers.land_total()).finished
 		if Shot.has_arg("trace"):
-			print("  total     %d, the round's score to %d" % [t.column.get("_total"), score_to]))
+			print("  total     %d, the round's score to %d" % [t.numbers.get("_total"), score_to]))
 	t.beats.add(func() -> void:
 		t.shown.set_value("score", score_to)
-		await t.follow(t.column.send_total(score_to)).finished)
+		await t.follow(t.numbers.send_total(score_to)).finished)
 	if score_to >= int(t.after.target):
-		t.beats.add(func() -> void: await t.follow(t.column.strike_target()).finished)
+		t.beats.add(func() -> void: await t.follow(t.numbers.strike_target()).finished)
 
 
 # The laid cards go to the discards.
@@ -214,8 +214,8 @@ static func _draw_with_eyes(t: ArenaTable, ids: Array, eyes: Array) -> void:
 			var card := t.piles.take("draw", t.card_data(id))
 			var to: Dictionary = t.hand.take_in(card, t.entry(id), t.hyde())
 			if mark:
-				mark.fly_to(t.beats, to.centre + Vector2(0.0, -ArenaCard.SIZE.y * 0.5 - 6.0), ArenaPace.TRAVEL)
-			await t.travel.fly(card, to.centre, to.turn, 1.0, ArenaTravel.UP)
+				mark.fly_to(t.beats, to.centre + Vector2(0.0, -ArenaCard.SIZE.y * to.size * 0.5 - 6.0), ArenaPace.TRAVEL)
+			await t.travel.fly(card, to.centre, to.turn, to.size, ArenaTravel.UP)
 			t.hand.settle(card)
 			await t.beats.wait(ArenaPace.MARK)
 			if mark:
@@ -224,4 +224,4 @@ static func _draw_with_eyes(t: ArenaTable, ids: Array, eyes: Array) -> void:
 
 # The point just above a card's middle, on the page: where what it gives rises from.
 static func _above(card: ArenaCard) -> Vector2:
-	return ArenaTravel.centre_of(card) + Vector2(0.0, -ArenaCard.SIZE.y * 0.5 + 6.0)
+	return ArenaTravel.centre_of(card) + Vector2(0.0, -ArenaCard.SIZE.y * card.scale.y * 0.5 + 6.0)

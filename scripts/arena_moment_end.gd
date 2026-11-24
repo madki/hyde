@@ -3,7 +3,7 @@ class_name ArenaMomentEnd
 ## taking his Roots), or lost. Every round that is covered ends with the line's check, which
 ## can end the run; so can night 5's scene, and a rescue that falls short. A round that is won:
 ##
-## 1. The hand and both piles gather into the deck in the corner.
+## 1. The hand and both piles gather into the deck, at the bottom left.
 ## 2. The pay: "Round won." in the centre, the round's sovereigns drop into the purse one by
 ##    one, then each unused play mark turns into a sovereign and follows.
 ## 3. The line: its tally grows to the centre. It holds, with a line of words, and shrinks
@@ -49,8 +49,8 @@ static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		t.stage.show_caption("Rescued. No pay, no card.")
 		t.hand.lift(false)
-		t.column.clear_readout()
-		await t.follow(t.column.strike_target()).finished
+		t.numbers.clear_readout()
+		await t.follow(t.numbers.strike_target()).finished
 		await t.stage.clear_caption())
 	if e.was == "jekyll":
 		ArenaMomentShift.page(t, true)
@@ -68,7 +68,7 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 	var ending: String = e.ending
 	t.beats.add(func() -> void:
 		t.hand.lift(false)
-		t.column.clear_readout()
+		t.numbers.clear_readout()
 		if ending == "hyde":
 			# The ink takes the whole page, and the cards sink into it.
 			t.ink.is_jekyll = false
@@ -96,7 +96,7 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 		await t.stage.clear_caption())
 
 
-## The hand and both piles gather into the deck in the corner.
+## The hand and both piles gather into the deck, at the bottom left.
 static func gather(t: ArenaTable) -> void:
 	t.beats.add(func() -> void:
 		var cards: Array = []
@@ -132,13 +132,13 @@ static func _pay(t: ArenaTable, e: Dictionary) -> void:
 	t.beats.add_call(func() -> void: t.stage.show_caption("Round won."))
 	for i in for_round:
 		t.beats.add(func() -> void:
-			await ArenaPop.coin(t.beats, t.travel, t.stage.slot(0, 1), t.column.sov_place())
+			await ArenaPop.coin(t.beats, t.travel, t.stage.slot(0, 1), t.numbers.sov_place())
 			t.mark("sov", int(t.shown.value("sov", 0)) + 1))
 	for i in unused:
 		t.beats.add(func() -> void:
 			# The tally is only drawn down: the plays left are the engine's to the round's end.
-			t.follow(t.column.set_plays(unused - i - 1))
-			await ArenaPop.coin(t.beats, t.travel, t.column.plays_place(), t.column.sov_place())
+			t.follow(t.numbers.set_plays(unused - i - 1))
+			await ArenaPop.coin(t.beats, t.travel, t.numbers.plays_place(), t.numbers.sov_place())
 			t.mark("sov", int(t.shown.value("sov", 0)) + dials.unused_play_pay))
 	t.beats.add(func() -> void: await t.stage.clear_caption())
 
@@ -164,7 +164,7 @@ static func _reward(t: ArenaTable) -> void:
 		await t.stage.lay(t.travel, nodes))
 	t.beats.add_choice(func() -> void:
 		t.freshen()
-		t.reward.offer(nodes, t.stage.slot(0, 1) + Vector2(0.0, ArenaCard.SIZE.y * 0.5 + 14.0))
+		t.reward.offer(nodes, t.stage.slot(0, 1) + Vector2(0.0, ArenaCard.SIZE.y * ArenaStage.LAID_SCALE * 0.5 + 22.0))
 		t.picked = await t.reward.chosen
 		t.offered = nodes)
 	t.beats.add(func() -> void: await t.stage.clear_caption())

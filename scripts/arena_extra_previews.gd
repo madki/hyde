@@ -8,5 +8,5 @@ class_name ArenaExtraPreviews
 static func setup(t: ArenaTable) -> void:
 	t.means.preview_changed.connect(func(kind: String) -> void:
 		var restraint: Dictionary = t.after.get("restraint", {"meter": 0})
-		t.column.preview_stored(int(restraint.meter) if kind == "drink" else 0, kind == "salt"))
-	t.move_begun.connect(func(_move: String) -> void: t.column.preview_stored(0, false))
+		t.numbers.preview_stored(int(restraint.meter) if kind == "drink" else 0, kind == "salt"))
+	t.move_begun.connect(func(_move: String) -> void: t.numbers.preview_stored(0, false))

@@ -33,7 +33,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("5")
-column_at = 290.0
 
 [node name="Ink" type="Node" parent="." node_paths=PackedStringArray("paper")]
 script = ExtResource("6")

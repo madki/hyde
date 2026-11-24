@@ -10,12 +10,14 @@ extends Control
 ## still made: the table then shows its outcome at once.
 ##
 ## Keys: 1 to 9 and 0 choose cards, Enter plays (or passes), D discards, Q drinks, S takes
-## salt, Esc lets the chosen cards go. At a reward 1 to 3 take a card and 0 or Esc none. During a move a click or a key hurries it, and held
-## down skips to its end.
+## salt, Esc lets the chosen cards go, and Shift (or Tab) held down shows every number. At a
+## reward 1 to 3 take a card and 0 or Esc none. During a move a click or a key hurries it,
+## and held down skips to its end.
 ##
 ## For a screenshot: `--seed=<n>` (the run's seed), `--ink=<0..100>` and
 ## `--volatility=<0..100>` (the page's ink), and `--keys=` to make moves first (see
 ## scripts/arena_bench.gd): `tools/shot.sh /abs/out.png res://scenes/arena.tscn --seed=3 --keys=12D`.
+## `--zones` outlines and names every zone of the page's layout (ArenaLayout).
 
 ## A move has been played back to its end and input is open again.
 signal settled
@@ -36,9 +38,10 @@ var ink_volatility := 50.0:
 ## The table's parts, as the moments' scripts are handed them.
 var t := ArenaTable.new()
 
+@onready var _border: ArenaBorder = $Border
 @onready var _ink: ArenaInk = $Ink
 @onready var _hand: ArenaHand = $Hand
-@onready var _column: ArenaColumn = $Column
+@onready var _numbers: ArenaNumbers = $Numbers
 @onready var _symbols: ArenaSymbols = $Symbols
 @onready var _means: ArenaMeans = $Means
 @onready var _controls: ArenaControls = $Controls
@@ -57,6 +60,10 @@ func _ready() -> void:
 	_run = Rules.new_run({}, int(Shot.arg("seed")) if Shot.has_arg("seed") else null)
 	ArenaBench.apply_set(_run)
 	_build()
+	resized.connect(_lay_out)
+	_lay_out()
+	if Shot.has_arg("zones"):
+		add_child(ArenaZones.new())
 	_ink.set_ink(ink_percent, ink_volatility, _run.stance == "jekyll")
 	_ink.snap_to_stance()
 	_hand.max_chosen = _run.dials.max_play
@@ -132,7 +139,7 @@ func do_move(move: String, result: Dictionary) -> void:
 	if not move in ["play", "discard"]:
 		_hand.clear_chosen()
 	if move != "play":
-		_column.show_choice(null)
+		_numbers.show_choice(null)
 	t.move_begun.emit(move)
 	t.after = RulesView.table(_run)
 	t.unhandled = false
@@ -201,9 +208,6 @@ func _build() -> void:
 	var stage := ArenaStage.new()
 	var piles := ArenaPiles.new()
 	var travel := ArenaTravel.new()
-	stage.row_y = 322.0
-	# Five laid cards must stay clear of the flask's tag at the right.
-	stage.room_right = 236.0
 	add_child(stage)
 	move_child(stage, _hand.get_index())
 	add_child(piles)
@@ -223,7 +227,7 @@ func _build() -> void:
 	t.stage = stage
 	t.moments = ArenaCardMoments.new(_beats, travel, piles, stage)
 	t.hand = _hand
-	t.column = _column
+	t.numbers = _numbers
 	t.symbols = _symbols
 	t.means = _means
 	t.ink = _ink
@@ -233,6 +237,11 @@ func _build() -> void:
 	t.reward.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(t.reward)
 	t.bind()
+
+
+# Gives every part that takes its place from the page's size that place.
+func _lay_out() -> void:
+	_border.rules = ArenaLayout.rules(size)
 
 
 # The run's first round: Rules.new_run has begun it, and left its events on the run.
@@ -246,7 +255,7 @@ func _on_choice(ids: Array) -> void:
 		return
 	var table := RulesView.table(_run, ids)
 	t.after = table
-	_column.show_choice(table.play)
+	_numbers.show_choice(table.play)
 	_hand.show_table(table)
 	_controls.show_table(table, ids.size())
 	t.choice_changed.emit(table.play)

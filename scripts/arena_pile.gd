@@ -1,8 +1,9 @@
 class_name ArenaPile
 extends Control
 ## One pile of cards on the table, the draw pile or the discards: a small stack, as high as
-## the pile is big, with its count on a cream tag pinned to its foot so that it reads on
-## Jekyll's slate and on Hyde's ink alike. An empty pile is a pencilled outline.
+## the pile is big, with its name and its count written on a cream label on the pile itself,
+## so that they read on a card's back, on a face and on an empty place alike. An empty pile
+## is a pencilled outline.
 ##
 ## The draw pile lies square and face down. The discards lie a little askew, and keep the last
 ## few cards that landed on them face up on top. The pile shows `count`; it works out nothing.
@@ -17,12 +18,14 @@ const PER_LAYER := 6
 const LAYER_STEP := Vector2(-2.0, -2.6)
 ## How many cards that landed face up stay on top of the discards.
 const TOPS := 3
+## The label on the pile.
+const LABEL_SIZE := Vector2(56.0, 38.0)
 const TAG_COLOUR := Color(0.93, 0.88, 0.75)
 const TAG_TEXT := Color(0.08, 0.05, 0.04)
 const TAG_LINE := Color(0.08, 0.05, 0.04, 0.8)
 const OUTLINE := Color(0.93, 0.88, 0.75, 0.55)
 
-## Written on the tag before the count.
+## Written on the label over the count.
 @export var title := "Draw"
 ## True for the discards: askew, and the cards that land stay face up on top.
 @export var messy := false
@@ -38,6 +41,7 @@ var _layers: Array[ArenaCard] = []
 var _tops: Array[ArenaCard] = []
 var _tag := Control.new()
 var _tag_label := Label.new()
+var _tag_count := Label.new()
 var _riffle: Tween
 
 
@@ -50,8 +54,18 @@ func _init() -> void:
 	_tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tag_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_tag_label.add_theme_color_override("font_color", TAG_TEXT)
-	_tag_label.add_theme_font_size_override("font_size", 13)
+	_tag_label.add_theme_font_size_override("font_size", 10)
+	_tag_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tag_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tag_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_tag_count.add_theme_color_override("font_color", TAG_TEXT)
+	_tag_count.add_theme_font_size_override("font_size", 19)
+	var heavy := FontVariation.new()
+	heavy.base_font = ThemeDB.fallback_font
+	heavy.variation_embolden = 0.8
+	_tag_count.add_theme_font_override("font", heavy)
 	_tag.add_child(_tag_label)
+	_tag.add_child(_tag_count)
 	add_child(_tag)
 
 
@@ -170,12 +184,15 @@ func _lay_out() -> void:
 		_layers[i].scale = Vector2(SCALE, SCALE)
 		_layers[i].position = _rest_of(i)
 		_layers[i].rotation_degrees = _turn_of(i)
-	_tag_label.text = "%s  %d" % [title, count]
-	var font := _tag_label.get_theme_font("font")
-	var width := font.get_string_size(_tag_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x + 16.0
-	_tag.size = Vector2(width, 20.0)
-	_tag.position = Vector2((size.x - width) * 0.5, size.y - 12.0)
-	_tag_label.size = _tag.size
+	# The label lies on the lower part of the pile: the name, and under it the count.
+	_tag_label.text = title
+	_tag_count.text = str(count)
+	_tag.size = LABEL_SIZE
+	_tag.position = Vector2((size.x - LABEL_SIZE.x) * 0.5, size.y - LABEL_SIZE.y - 12.0)
+	_tag_label.position = Vector2(0.0, 2.0)
+	_tag_label.size = Vector2(LABEL_SIZE.x, 14.0)
+	_tag_count.position = Vector2(0.0, 13.0)
+	_tag_count.size = Vector2(LABEL_SIZE.x, LABEL_SIZE.y - 14.0)
 	queue_redraw()
 	_tag.queue_redraw()
 

@@ -1,18 +1,14 @@
 class_name ArenaPiles
 extends Control
-## The two piles in the bottom right corner of the table: the draw pile, with the discards
-## above it. Between rounds (`deck_mode`) the same corner holds the whole deck as one pile.
+## The two piles, one in each corner at the foot of the page: the draw pile on the left and
+## the discards on the right (ArenaLayout.pile_draw and pile_discard). Between rounds
+## (`deck_mode`) the draw pile's corner holds the whole deck as one pile.
 ##
 ## The counts are shown values (ArenaShown "draw_count" and "discard_count", and "deck_count"
 ## between rounds), so they move only in beats: a card leaving a pile takes one off as it
 ## lifts, and a card arriving adds one as it lands. Cards travel on an ArenaTravel layer.
 ##
 ## Call `bind` once with the queue and the travel layer.
-
-## The corner: the draw pile's centre, from the page's bottom right corner, and how far
-## above it the discards lie.
-@export var draw_from_corner := Vector2(-104.0, -118.0)
-@export var discards_above := 148.0
 
 ## True between rounds: the discards are not shown and the draw pile is the deck.
 var deck_mode := false:
@@ -91,9 +87,11 @@ func put(which: String, cards: Array, into_middle: bool = false) -> void:
 func _put_one(which: String, to: ArenaPile, card: ArenaCard, face: int, into_middle: bool,
 		delay: float, left: Array) -> void:
 	if into_middle:
-		# Beside the pile, half over it, then in.
-		var beside := to.top_centre() + Vector2(-ArenaCard.SIZE.x * ArenaPile.SCALE * 0.55, 8.0)
-		await travel.fly(card, beside, -6.0, ArenaPile.SCALE, face, ArenaPace.TRAVEL, delay)
+		# Beside the pile, half over it, then in: on the side of the page's middle, since the
+		# pile lies in a corner and its other side is the page's edge.
+		var inward := 1.0 if to.top_centre().x < get_global_rect().get_center().x else -1.0
+		var beside := to.top_centre() + Vector2(inward * ArenaCard.SIZE.x * ArenaPile.SCALE * 0.55, 8.0)
+		await travel.fly(card, beside, inward * 6.0, ArenaPile.SCALE, face, ArenaPace.TRAVEL, delay)
 		to.riffle(beats)
 		await travel.fly(card, to.top_centre() + Vector2(0.0, 4.0), 0.0, ArenaPile.SCALE, face,
 				ArenaPace.SLIDE_IN)
@@ -109,7 +107,8 @@ func _put_one(which: String, to: ArenaPile, card: ArenaCard, face: int, into_mid
 
 ## The discards turn over into a new draw pile: the whole stack lifts, turns face down on its
 ## way across, lands on the draw pile, and the new pile is given a long riffle. Unlike a deal,
-## the cards go together as one stack, up the corner and into the draw pile. Await it.
+## the cards go together as one stack, across the foot of the page and into the draw pile.
+## Await it.
 func reshuffle() -> void:
 	var n := int(beats.shown.value("discard_count", 0))
 	if n == 0:
@@ -153,6 +152,5 @@ func _shown_count(key: String) -> Variant:
 
 
 func _place_piles() -> void:
-	var corner := size + draw_from_corner
-	draw_pile.position = corner - draw_pile.size * 0.5
-	discard_pile.position = corner - Vector2(0.0, discards_above) - discard_pile.size * 0.5
+	draw_pile.position = ArenaLayout.pile_draw(size).get_center() - draw_pile.size * 0.5
+	discard_pile.position = ArenaLayout.pile_discard(size).get_center() - discard_pile.size * 0.5

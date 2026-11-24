@@ -1,7 +1,7 @@
 class_name ArenaExtraViews
-## Views on demand (ArenaViews): every number on a held Tab, the night and the restraint
-## under the pointer, the deck on a click of the draw pile, the Notebook's three cards, and
-## night 1's hint.
+## Views on demand (ArenaViews): every number on a held Shift, the two edge tabs, the
+## restraint under the pointer, a pile's cards on a click of it, the Notebook's three cards,
+## and night 1's hint.
 
 
 static func setup(t: ArenaTable) -> void:

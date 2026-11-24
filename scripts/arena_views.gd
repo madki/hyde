@@ -2,16 +2,17 @@ class_name ArenaViews
 extends Control
 ## Views on demand: what the table does not keep on the page, one step away.
 ##
-## - Hold Tab: every number at once, for as long as it is held. The three symbols write
-##   their gauges in numbers, and a note in the centre gives each symbol's Roots and what
-##   one is worth, the restraint's limit and why, what the next drink costs, the scene's
-##   twist, what the dawn brings, and both men's hands with their base chips and mult.
-## - Rest the pointer on the night's heading: the scene's twist and what the dawn brings.
-##   On the restraint track: its limit and why.
+## - Hold Shift (or Tab, or rest the pointer on the tab at the right edge, which says so):
+##   every number at once, for as long as it is held. The three symbols write their gauges in
+##   numbers, and a note in the centre gives each symbol's Roots and what one is worth, the
+##   restraint's limit and why, what the next drink costs, the scene's twist, what the dawn
+##   brings, and both men's hands with their base chips and mult.
+## - Rest the pointer on the tab at the left edge, which names the scene's twist: the twist
+##   and what the dawn brings. On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
 ##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
-## - With the Notebook held, the next three cards of the draw pile lie face up beside it.
-## - On night 1 a small "Hint" control chooses the cards of the best hand the rules find.
+## - With the Notebook held, the next three cards of the draw pile lie face up over it.
+## - On night 1 the small word "Hint", over PLAY, chooses the cards of the best hand the rules find.
 ##   It shows no score.
 ##
 ## None of it shows the score of the chosen cards. It reads RulesView.table() and the run's
@@ -29,10 +30,13 @@ var _deck := Control.new()
 var _deck_title := Label.new()
 var _notebook := Control.new()
 var _hint := Button.new()
+var _tabs := ArenaTabs.new()
 var _table: Dictionary = {}
 var _open := true
 var _held := false
 var _hover := ""
+## False while the pointer is outside the window.
+var _pointer_here := true
 
 
 func _init() -> void:
@@ -70,24 +74,25 @@ func _init() -> void:
 	_deck_title.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
 	_deck_title.add_theme_constant_override("outline_size", 6)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A written word, as PLAY and DISCARD are, and smaller.
 	_hint.text = "Hint"
-	_hint.size = Vector2(64.0, 28.0)
+	_hint.size = Vector2(64.0, 24.0)
 	_hint.focus_mode = Control.FOCUS_NONE
 	_hint.tooltip_text = "Chooses the cards of a good hand."
 	_hint.add_theme_font_override("font", font)
-	_hint.add_theme_font_size_override("font_size", 13)
-	for state: String in ["font_color", "font_hover_color", "font_pressed_color"]:
-		_hint.add_theme_color_override(state, PENCIL)
-	for state: String in ["normal", "hover", "pressed"]:
-		var tag := StyleBoxFlat.new()
-		tag.bg_color = Color(CREAM, 0.85 if state == "normal" else 1.0)
-		tag.border_color = PENCIL
-		tag.set_border_width_all(1)
-		tag.set_corner_radius_all(3)
-		_hint.add_theme_stylebox_override(state, tag)
+	_hint.add_theme_font_size_override("font_size", 14)
+	_hint.add_theme_color_override("font_color", Color(CREAM, 0.8))
+	_hint.add_theme_color_override("font_focus_color", Color(CREAM, 0.8))
+	_hint.add_theme_color_override("font_hover_color", Color.WHITE)
+	_hint.add_theme_color_override("font_pressed_color", Color.WHITE)
+	_hint.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
+	_hint.add_theme_constant_override("outline_size", 5)
+	for state: String in ["normal", "hover", "pressed", "focus"]:
+		_hint.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_hint.visible = false
 	_hint.pressed.connect(_show_a_hand)
-	for child: Control in [_notebook, _hint, _note, _deck]:
+	_tabs.right = "Hold Shift"
+	for child: Control in [_tabs, _notebook, _hint, _note, _deck]:
 		add_child(child)
 
 
@@ -96,6 +101,7 @@ func bind(table: ArenaTable) -> void:
 	t = table
 	t.synced.connect(_on_synced)
 	t.move_begun.connect(func(_move: String) -> void:
+		_name_twist(RulesView.table(t.run).night)
 		_open = false
 		_hint.visible = false
 		_clear(_notebook)
@@ -106,21 +112,24 @@ func _on_synced(table: Dictionary) -> void:
 	_table = table
 	_open = table.phase == "play"
 	_hint.visible = _open and int(table.night.no) == 1
-	_hint.position = Vector2((295.0 + size.x - 190.0) * 0.5 + 142.0, size.y - 83.0)
+	var play := ArenaLayout.controls_play(size)
+	_hint.position = Vector2(play.get_center().x - _hint.size.x * 0.5, play.position.y - 46.0)
+	_name_twist(table.night)
 	_show_notebook()
 
 
 func _process(_delta: float) -> void:
 	if t == null or _table.is_empty():
 		return
-	var held := Input.is_key_pressed(KEY_TAB) and not _deck.visible
+	var point := get_global_mouse_position()
+	var tab := "" if _deck.visible or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
+	_tabs.lit = tab
+	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible
 	var hover := ""
-	if not held and not _deck.visible:
-		var point := get_global_mouse_position()
-		var column := t.column.get_global_rect()
-		if Rect2(column.position, Vector2(column.size.x, 52.0)).has_point(point):
+	if not held and not _deck.visible and _pointer_here:
+		if tab == "left":
 			hover = "night"
-		elif t.column.restraint.get_global_rect().has_point(point):
+		elif t.numbers.restraint.get_global_rect().has_point(point):
 			hover = "restraint"
 	if held == _held and hover == _hover:
 		return
@@ -128,11 +137,13 @@ func _process(_delta: float) -> void:
 	_hover = hover
 	t.symbols.show_numbers(held)
 	if held:
-		_say(_every_number(), Vector2(310.0, 210.0))
+		# In the middle of the page, under the numbers the symbols write below their gauges.
+		_say(_every_number(), Vector2(0.0, ArenaLayout.restraint(size).position.y + 4.0), true)
 	elif hover == "night":
-		_say(_night_words(), Vector2(300.0, 60.0))
+		var left := _tabs.rect_of("left")
+		_say(_night_words(), Vector2(left.end.x + 12.0, left.position.y))
 	elif hover == "restraint":
-		_say(_restraint_words(), Vector2(300.0, 372.0))
+		_say(_restraint_words(), ArenaLayout.stage(size).position + Vector2(0.0, 6.0))
 	else:
 		_note.visible = false
 
@@ -145,7 +156,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			_close_deck()
 		return
-	if key and key.keycode == KEY_TAB:
+	# A key held to look is no press: it must not reach the table, which may wait for one.
+	if key and key.keycode in ArenaBeats.LOOK_KEYS:
 		get_viewport().set_input_as_handled()
 	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
 		for which: String in ["draw", "discards"]:
@@ -155,13 +167,30 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 
 
-func _say(words: String, at: Vector2) -> void:
+# Writes the scene's twist on the left tab: `night` is RulesView.table().night.
+func _name_twist(night: Dictionary) -> void:
+	var twist: String = night.twist
+	_tabs.left = "Twist: %s" % (twist.capitalize() if twist != "" else "none")
+
+
+# Shows the note with these words, its top left corner at `at`, or `centred` across the page
+# at that height.
+func _say(words: String, at: Vector2, centred: bool = false) -> void:
 	_words.text = words
 	_note.size = Vector2.ZERO
 	_note.reset_size()
+	if centred:
+		at.x = (size.x - _note.size.x) * 0.5
 	# Kept on the page, whatever its words' length.
-	_note.position = Vector2(minf(at.x, size.x - _note.size.x - 44.0), minf(at.y, size.y - _note.size.y - 44.0))
+	_note.position = Vector2(clampf(at.x, 8.0, maxf(8.0, size.x - _note.size.x - 44.0)), minf(at.y, size.y - _note.size.y - 44.0))
 	_note.visible = true
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_MOUSE_ENTER:
+		_pointer_here = true
+	elif what == NOTIFICATION_WM_MOUSE_EXIT:
+		_pointer_here = false
 
 
 # ---------- the words ----------
@@ -289,7 +318,8 @@ func _show_notebook() -> void:
 	if next == null or not _open:
 		return
 	var pile := t.piles.draw_pile.top_centre()
-	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-96.0, -8.0)
+	# Over the pile, between it and the lower rule.
+	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-18.0, -90.0)
 	# The next card lies on top, at the right.
 	for i in range(next.size() - 1, -1, -1):
 		var card := ArenaTravel.make_card(t.card_data(next[i].id))

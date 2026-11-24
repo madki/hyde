@@ -40,8 +40,8 @@ static func _steps_in(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 		for id: int in t.hand.ids():
 			var card := t.hand.card_of(id)
 			card.dimmed = card.ink or not RulesConfig.ROOT.has(card.key)
-		t.column.is_jekyll = false
-		await t.follow(t.column.name_hand("The last play", state.last, 1)).finished
+		t.numbers.is_jekyll = false
+		await t.follow(t.numbers.name_hand("The last play", state.last, 1)).finished
 		await t.stage.clear_caption())
 
 
@@ -60,7 +60,7 @@ static func _takes(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 		var at := t.hand.rest_of(e.id)
 		if card:
 			card.set_meta("away", true)
-		return {"centre": at.centre + Vector2(0.0, -ArenaHand.RISE), "turn": at.turn}
+		return {"centre": at.centre + Vector2(0.0, -ArenaHand.RISE), "turn": at.turn, "size": at.size}
 	t.moments.change_side(before, after, "hand", ArenaCaptions.changes("convert", before.name, after.name),
 			card, Vector2.ZERO, 0.0, rest)
 	t.beats.add_call(func() -> void:
@@ -71,8 +71,8 @@ static func _takes(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 	# The last play's total doubles, and the round's score follows.
 	@warning_ignore("integer_division")
 	t.beats.add(func() -> void:
-		await t.follow(t.column.tick_mult(doubled - doubled / 2)).finished)
-	t.add_mark("score", e.score, ArenaColumn.COUNT_TIME)
+		await t.follow(t.numbers.tick_mult(doubled - doubled / 2)).finished)
+	t.add_mark("score", e.score, ArenaNumbers.COUNT_TIME)
 	t.beats.add(func() -> void:
 		t.shown.add("line/paper", -1)
 		t.shown.add("line/ink", 1)

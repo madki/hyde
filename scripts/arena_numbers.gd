@@ -1,15 +1,17 @@
-class_name ArenaColumn
+class_name ArenaNumbers
 extends Control
-## The left column of the arena's page: everything a play changes about the round, in one
-## place, top to bottom: the night and the round with the night's title, the target and the
-## round's score, the hand readout (a name, chips × mult, and the stored restraint as ink
-## drops under the mult), plays and discards left as tallies, the restraint gauge, and the
-## sovereigns.
+## The round's numbers, drawn across the arena's page, each in its zone of ArenaLayout:
+## everything a play changes about the round. Top left the night and the round with the
+## night's title, and under them the target and the round's score; top right the sovereigns,
+## a pile of coins with the count; in the centre the restraint gauge and under it the hand
+## readout, one written line (a name, chips × mult, and the total once it is counted) with
+## the stored restraint as ink drops at the line's end; at the foot the plays and discards
+## left as tallies.
 ##
-## The column works out no rule. `show_table` puts up what RulesView.table() gives, at once,
+## It works out no rule. `show_table` puts up what RulesView.table() gives, at once,
 ## and `show_choice` the readout of RulesView.preview() for the chosen cards. Everything else
 ## is a call that moves one thing in its own time and returns the Tween doing it, so that a
-## beat can wait for it (`await column.tick_chips(15).finished`):
+## beat can wait for it (`await numbers.tick_chips(15).finished`):
 ##
 ## - `count_target(to)`, `count_score(to)`, `strike_target()`: the round's two numbers.
 ## - `name_hand(name, chips, mult)`, `tick_chips(by)`, `tick_mult(by)`, `pulse_chips()`,
@@ -18,8 +20,10 @@ extends Control
 ## - `set_plays(n)`, `set_discards(n)`: a tally mark is drawn or rubbed out.
 ## - `set_stored(n)`, `fly_drop(by)`: ink drops come and go; one flies into the mult.
 ## - `count_sov(to)`.
-## - `restraint`: the restraint gauge (scripts/arena_restraint.gd) lies in the column, between
-##   the tallies and the sovereigns, and is driven through its own calls.
+## - `restraint`: the restraint gauge (scripts/arena_restraint.gd) lies in its own zone and
+##   is driven through its own calls.
+## - `mult_place()`, `sov_place()`, `plays_place()`, `heading_place()`, `heading_rect()`:
+##   where things are, on the page.
 ##
 ## The times are the constants below, from the pace of the table; `speed` scales them all
 ## (hurrying).
@@ -36,26 +40,18 @@ const COUNT_TIME := 0.6 ## a number counts from one value to another
 const PULSE_TIME := 0.3
 const DROP_TIME := 0.45 ## a drop flies into the mult
 
-## Where each part lies, from the column's top, in pixels. Everything ends above 470, so the
-## column fits the page's smallest size (the window's 648 pixels less the border) with room
-## to spare. It wants about 240 pixels of width.
-const HEAD_Y := 18.0
-const TITLE_Y := 40.0
-const TARGET_Y := 90.0
-const SCORE_Y := 128.0
-const READOUT_TOP := 148.0
-const READOUT_HEIGHT := 92.0
-const DROPS_Y := 254.0
-const TALLY_Y := 288.0
-const RESTRAINT_TOP := 324.0
-const RESTRAINT_HEIGHT := 92.0
-const SOV_Y := 448.0
-
-const LABEL_SIZE := 13
-const NUMBER_SIZE := 26
-const READOUT_SIZE := 32
-const NAME_SIZE := 16
-const REASON_SIZE := 13
+## Text sizes.
+const HEAD_SIZE := 13
+const LABEL_SIZE := 11
+const NUMBER_SIZE := 20
+const READOUT_SIZE := 30
+const NAME_SIZE := 22
+const REASON_SIZE := 16
+## The most coins drawn in the sovereigns' pile.
+const COINS := 14
+## Room kept for the stored drops at the end of the readout's line, and from one to the next.
+const DROPS_ROOM := 100.0
+const DROP_PITCH := 19.0
 
 const PENCIL := Color(0.015, 0.025, 0.035)
 ## The numbers are cream, the brightest thing on the board; a tick lights them in the colour
@@ -65,6 +61,11 @@ const CYAN := Color(0.36, 0.9, 1.0)
 const MAGENTA := Color(1.0, 0.34, 0.78)
 const DROP_INK := Color(0.42, 0.13, 0.44)
 const DROP_SHINE := Color(0.8, 0.55, 0.8)
+## The small words (TARGET, SCORE, sovereigns): cream too, a little back, to read on slate and on ink.
+const LABEL := Color(0.93, 0.87, 0.74, 0.62)
+const GOLD := Color(0.78, 0.64, 0.33)
+const GOLD_DARK := Color(0.42, 0.31, 0.12)
+const COIN_EDGE := Color(0.07, 0.05, 0.04)
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
 ## Changes the hand of the lines a little while keeping the look.
@@ -77,7 +78,7 @@ var is_jekyll := true
 ## How fast every call plays: 1 at the usual pace, 3 to hurry.
 var speed := 1.0
 
-## The restraint gauge, laid out in the column.
+## The restraint gauge, laid out in its zone.
 var restraint := ArenaRestraint.new()
 
 var _marks := Control.new()
@@ -112,6 +113,12 @@ var _total := 0
 var _travel := -1.0 ## -1 while the total is not on its way
 var _fly := -1.0 ## -1 while no drop is flying
 var _ticks := 0
+## Where the readout's line begins, from its zone's left: set when a hand is put up, so that
+## the line is centred then and does not shift as its numbers grow.
+var _line_inset := 0.0
+## The most plays and discards the tallies have shown: they are centred for that many.
+var _plays_most := 0.0
+var _discards_most := 0.0
 ## Before a drink: this many drops outlined, as the restraint would be stored. Before a dose
 ## of salt: the stored drops struck through.
 var _ghost_drops := 0
@@ -172,6 +179,8 @@ func show_table(table: Dictionary) -> void:
 	_strike = 1.0 if table.score >= table.target else 0.0
 	_plays = table.plays
 	_discards = table.discards
+	_plays_most = maxf(_plays, 1.0)
+	_discards_most = maxf(_discards, 1.0)
 	_stored = table.restraint.stored
 	_sov = table.sov
 	restraint.show_table(table)
@@ -211,6 +220,7 @@ func show_hand(hand_name: String, chips: int, mult: int, note: String = "") -> v
 	_mult = mult
 	_merge = 0.0
 	_travel = -1.0
+	_line_inset = maxf((ArenaLayout.readout(size).size.x - _line().end) * 0.5, 0.0)
 	_redraw()
 
 
@@ -256,20 +266,22 @@ func strike_target(struck: bool = true) -> Tween:
 
 ## The plays left: a tally mark is drawn, or rubbed out.
 func set_plays(n: int) -> Tween:
+	_plays_most = maxf(_plays_most, n)
 	return _count("_plays", n, MARK_TIME, Tween.TRANS_LINEAR)
 
 
 ## The discards left: a tally mark is drawn, or rubbed out.
 func set_discards(n: int) -> Tween:
+	_discards_most = maxf(_discards_most, n)
 	return _count("_discards", n, MARK_TIME, Tween.TRANS_LINEAR)
 
 
-## The stored restraint: drops come or go, beside the mult.
+## The stored restraint: drops come or go, at the end of the readout's line.
 func set_stored(n: int) -> Tween:
 	return _count("_stored", n, MARK_TIME, Tween.TRANS_LINEAR)
 
 
-## The marks before a drink or a dose of salt: `outlined` drops drawn faint beside the mult
+## The marks before a drink or a dose of salt: `outlined` drops drawn faint after the stored
 ## (what a drink would store), and the stored drops `struck` through (what salt would lose).
 func preview_stored(outlined: int, struck: bool) -> void:
 	_ghost_drops = outlined
@@ -322,7 +334,7 @@ func pulse_mult() -> Tween:
 	return t
 
 
-## One stored drop flies from beside the mult into it, and the mult ticks up by `by`.
+## One stored drop flies from the line's end into the mult, and the mult ticks up by `by`.
 func fly_drop(by: int) -> Tween:
 	if _stored < 1.0:
 		return _tick("_mult", by)
@@ -335,7 +347,7 @@ func fly_drop(by: int) -> Tween:
 	return t
 
 
-## Chips and mult slide together and become one total, chips × mult, in the scorer's colour.
+## The total is written after chips × mult, in the scorer's colour.
 func land_total() -> Tween:
 	_total = roundi(_chips) * roundi(_mult)
 	var t := _tween()
@@ -487,8 +499,9 @@ func _redraw() -> void:
 func _lay_out() -> void:
 	for child: Control in [_marks, _text]:
 		child.size = size
-	restraint.position = Vector2(0.0, RESTRAINT_TOP)
-	restraint.size = Vector2(size.x, RESTRAINT_HEIGHT)
+	var gauge := ArenaLayout.restraint(size)
+	restraint.position = gauge.position
+	restraint.size = gauge.size
 	_redraw()
 
 
@@ -507,86 +520,147 @@ static func _thousands(n: int) -> String:
 
 # --- Where things are --------------------------------------------------------------------
 
-func _readout_rect() -> Rect2:
-	return Rect2(Vector2(4.0, READOUT_TOP), Vector2(size.x - 8.0, READOUT_HEIGHT))
-
-
 ## The middle of the readout's mult, on the page: where what is paid into it travels to.
 func mult_place() -> Vector2:
-	return get_global_transform() * (_mult_at() + Vector2(12.0, -12.0))
+	return get_global_transform() * _mult_middle()
 
 
-## The purse's coin and the last mark of the plays' tally, on the page.
+## The sovereigns' pile, on the page.
 func sov_place() -> Vector2:
-	return get_global_transform() * Vector2(size.x - 40.0, SOV_Y - 4.0)
+	return get_global_transform() * _pile_at()
 
 
+## The last mark of the plays' tally, on the page.
 func plays_place() -> Vector2:
-	return get_global_transform() * Vector2(_tally_left(0) + 4.0 + maxf(_plays - 1.0, 0.0) * 8.0, TALLY_Y + 18.0)
+	return get_global_transform() * Vector2(_tally_left(0) + 4.0 + maxf(_plays - 1.0, 0.0) * 8.0, _tally_top(0) + 12.0)
 
 
-func _numbers_y() -> float:
-	return READOUT_TOP + READOUT_HEIGHT - 22.0
+## Where the round's heading is written, on the page: its middle, and all of it with the
+## target and the score under it.
+func heading_place() -> Vector2:
+	var r := ArenaLayout.heading(size)
+	return get_global_transform() * (r.position + Vector2(90.0, 14.0))
 
 
-func _chips_at() -> Vector2:
-	return Vector2(size.x * 0.5 - 18.0, _numbers_y())
+func heading_rect() -> Rect2:
+	return get_global_transform() * ArenaLayout.heading(size)
 
 
-func _mult_at() -> Vector2:
-	return Vector2(size.x * 0.5 + 18.0, _numbers_y())
+func _baseline() -> float:
+	var r := ArenaLayout.readout(size)
+	return r.position.y + r.size.y * 0.5 + READOUT_SIZE * 0.36
+
+
+## Where each piece of the readout's line begins, from the line's own start: the dash, the
+## chips, the × sign, the mult, the = sign, the total, and the line's end without the total.
+func _line() -> Dictionary:
+	var x := _slanted.get_string_size(_name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE).x
+	var out := {"note": x}
+	if _note != "":
+		x += _slanted.get_string_size(" " + _note, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
+	out.dash = x + 10.0
+	x += 44.0
+	out.chips = x
+	x += _number_width(_thousands(roundi(_chips))) + 9.0
+	out.times = x
+	x += 25.0
+	out.mult = x
+	out.mult_w = _number_width(str(roundi(_mult)))
+	x += out.mult_w
+	out.end = x
+	out.equals = x + 12.0
+	out.total = x + 38.0
+	return out
+
+
+## Where the readout's line begins on the page, as the page is now.
+func _line_left() -> float:
+	return ArenaLayout.readout(size).position.x + _line_inset
+
+
+func _number_width(text: String) -> float:
+	return _heavy.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, READOUT_SIZE).x
+
+
+func _mult_middle() -> Vector2:
+	var line := _line()
+	if not _numbers:
+		return ArenaLayout.readout(size).get_center()
+	return Vector2(_line_left() + line.mult + line.mult_w * 0.5, _baseline() - READOUT_SIZE * 0.35)
 
 
 func _drop_at(i: int) -> Vector2:
-	return Vector2(size.x * 0.5 + 26.0 + i * 19.0, DROPS_Y)
+	var r := ArenaLayout.readout(size)
+	return Vector2(r.end.x - DROPS_ROOM + 10.0 + i * DROP_PITCH, _baseline() - 9.0)
 
 
-func _score_end() -> Vector2:
-	return Vector2(size.x - 6.0, SCORE_Y)
+## Where the target's and the score's numbers begin, and their baseline.
+func _target_at() -> Vector2:
+	var r := ArenaLayout.heading(size)
+	return r.position + Vector2(58.0, 45.0)
+
+
+func _score_at() -> Vector2:
+	var r := ArenaLayout.heading(size)
+	return r.position + Vector2(208.0, 45.0)
+
+
+## The foot of the sovereigns' pile: the coins are heaped up from here.
+func _pile_at() -> Vector2:
+	var r := ArenaLayout.sovereigns(size)
+	return Vector2(r.get_center().x, r.position.y + 40.0)
+
+
+## The tallies lie in the lower part of the controls' zones, under the words written there.
+func _tally_zone(i: int) -> Rect2:
+	return ArenaLayout.controls_play(size) if i == 0 else ArenaLayout.controls_discard(size)
+
+
+func _tally_top(i: int) -> float:
+	return _tally_zone(i).end.y - 28.0
 
 
 func _tally_left(i: int) -> float:
-	return 6.0 if i == 0 else size.x * 0.5 + 6.0
+	var most := _plays_most if i == 0 else _discards_most
+	var groups := floorf((most - 1.0) / 5.0)
+	var last := int(most - 1.0) % 5
+	var width := groups * 44.0 + (30.0 if last == 4 else 4.0 + last * 8.0)
+	return _tally_zone(i).get_center().x - width * 0.5
 
 
 # --- Drawing -----------------------------------------------------------------------------
 
-## The pencil: the heading's rule, the readout's box, the strike and the underline, the
-## tally marks and the sovereign.
+## The pencil and the chalk: the stroke between target and score, the strike and the
+## underline, and the tally marks.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
-	pencil.colour = PENCIL
-	pencil.stroke(PackedVector2Array([Vector2(4.0, 52.0), Vector2(size.x - 6.0, 51.0)]), 1.4, 0.6, 0.3)
-	# The box the readout is written in, a little off true at each corner.
-	var r := _readout_rect()
-	var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
-	for i in 4:
-		var from: Vector2 = corners[i]
-		var to: Vector2 = corners[(i + 1) % 4]
-		var along := (to - from).normalized()
-		pencil.stroke(PackedVector2Array([from - along * 3.0, to + along * 4.0]), 1.6, 0.7, 0.25)
+	pencil.colour = Color(CREAM, 0.85)
+	var target_at := _target_at()
+	var score_at := _score_at()
+	# The stroke that parts the target from the score.
+	var part_x := score_at.x - 62.0
+	pencil.stroke(PackedVector2Array([Vector2(part_x + 1.0, target_at.y - 17.0), Vector2(part_x, target_at.y + 3.0)]),
+			1.3, 0.4, 0.2)
 	# The target struck through, then the score underlined.
 	if _strike > 0.0:
 		var width := _heavy.get_string_size(_thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-		var right := size.x - 6.0
 		var first := clampf(_strike * 2.0, 0.0, 1.0)
-		var from := Vector2(right - width - 6.0, TARGET_Y - 7.0)
-		pencil.stroke(PackedVector2Array([from, from.lerp(Vector2(right + 4.0, TARGET_Y - 11.0), first)]), 2.4, 0.5)
+		var from := target_at + Vector2(-4.0, -6.0)
+		pencil.stroke(PackedVector2Array([from, from.lerp(target_at + Vector2(width + 4.0, -9.0), first)]), 2.2, 0.5)
 		var second := clampf(_strike * 2.0 - 1.0, 0.0, 1.0)
 		if second > 0.0:
 			var score_w := _heavy.get_string_size(_thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-			var under := Vector2(right - score_w - 4.0, SCORE_Y + 6.0)
-			pencil.stroke(PackedVector2Array([under, under.lerp(Vector2(right + 3.0, SCORE_Y + 5.0), second)]), 2.0, 0.5)
+			var under := score_at + Vector2(-3.0, 5.0)
+			pencil.stroke(PackedVector2Array([under, under.lerp(score_at + Vector2(score_w + 3.0, 4.0), second)]), 2.0, 0.5)
 	for i in 2:
-		_tally(pencil, _tally_left(i), _plays if i == 0 else _discards)
+		_tally(pencil, _tally_left(i), _tally_top(i), _plays if i == 0 else _discards)
 	pencil.draw(_marks)
 
 
 ## Tally marks in fives, the fifth across the other four. The last mark is drawn (or rubbed
 ## out) from the top down as the count passes a whole number.
-func _tally(pencil: Pencil, left: float, level: float) -> void:
-	var top := TALLY_Y + 7.0
-	var bottom := TALLY_Y + 31.0
+func _tally(pencil: Pencil, left: float, top: float, level: float) -> void:
+	var bottom := top + 24.0
 	for k in ceili(level):
 		var part := clampf(level - k, 0.0, 1.0)
 		var group := floori(k / 5.0)
@@ -602,36 +676,27 @@ func _tally(pencil: Pencil, left: float, level: float) -> void:
 		pencil.stroke(PackedVector2Array([from, from.lerp(to, part)]), 3.0, 0.5, 0.0, 0.3)
 
 
-## The words and the numbers, and the stored drops.
+## The words and the numbers, the sovereigns and the stored drops.
 func _draw_text() -> void:
-	var w := size.x
 	var c := _text
-	c.draw_string(_heavy, Vector2(6.0, HEAD_Y), _heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 15, PENCIL)
-	c.draw_string(_slanted, Vector2(6.0, TITLE_Y), _title, HORIZONTAL_ALIGNMENT_LEFT, w - 12.0, 16, CREAM)
+	var head := ArenaLayout.heading(size)
+	# The night and the round, and the night's title after them on the same line.
+	var at := head.position + Vector2(0.0, 18.0)
+	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE, CREAM)
+	var head_w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x + 8.0
+	c.draw_string(_slanted, at + Vector2(head_w, 0.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x - head_w, HEAD_SIZE - 1, LABEL)
 
-	c.draw_string(_heavy, Vector2(6.0, TARGET_Y), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, PENCIL)
-	c.draw_string(_heavy, Vector2(0.0, TARGET_Y + 1.0), _thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_RIGHT,
-			w - 6.0, NUMBER_SIZE, CREAM.darkened(0.25 * _strike))
-	c.draw_string(_heavy, Vector2(6.0, SCORE_Y), "SCORE", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, PENCIL)
+	var target_at := _target_at()
+	c.draw_string(_heavy, Vector2(head.position.x, target_at.y - 2.0), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)
+	c.draw_string(_heavy, target_at, _thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE,
+			CREAM.darkened(0.25 * _strike))
+	var score_at := _score_at()
+	c.draw_string(_heavy, Vector2(score_at.x - 50.0, score_at.y - 2.0), "SCORE", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)
 	var score_colour := CREAM.lerp(_man(), 0.6) if _travel >= 1.0 else CREAM
-	c.draw_string(_heavy, Vector2(0.0, SCORE_Y + 1.0), _thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_RIGHT,
-			w - 6.0, NUMBER_SIZE, score_colour)
+	c.draw_string(_heavy, score_at, _thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, score_colour)
 
+	_draw_sovereigns()
 	_draw_readout()
-
-	for i in 2:
-		var label := "PLAYS" if i == 0 else "DISCARDS"
-		c.draw_string(_heavy, Vector2(_tally_left(i), TALLY_Y), label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, PENCIL)
-
-	c.draw_string(_heavy, Vector2(6.0, SOV_Y), "SOVEREIGNS", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, PENCIL)
-	var sov := str(roundi(_sov))
-	var sov_w := _heavy.get_string_size(sov, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22).x
-	c.draw_string(_heavy, Vector2(0.0, SOV_Y + 3.0), sov, HORIZONTAL_ALIGNMENT_RIGHT, w - 6.0, 22, CREAM)
-	# A sovereign: a small coin beside the count.
-	var coin := Vector2(w - 6.0 - sov_w - 14.0, SOV_Y - 4.0)
-	c.draw_circle(coin, 7.0, PENCIL)
-	c.draw_circle(coin, 5.6, Color(0.78, 0.64, 0.33))
-	c.draw_arc(coin, 3.6, 0.0, TAU, 16, Color(0.55, 0.42, 0.18), 1.0)
 
 	for i in ceili(_stored):
 		_drop(_drop_at(i) + (Vector2(-5.0, -9.0) if _lean else Vector2.ZERO), clampf(_stored - i, 0.0, 1.0))
@@ -642,49 +707,90 @@ func _draw_text() -> void:
 				CREAM, 2.0)
 	if _fly >= 0.0:
 		var from := _drop_at(roundi(_stored))
-		var to := _mult_at() + Vector2(12.0, -12.0)
-		var mid := (from + to) * 0.5 + Vector2(18.0, -10.0)
-		var at := from.lerp(mid, _fly).lerp(mid.lerp(to, _fly), _fly)
-		_drop(at, 1.0 - _fly * 0.6)
+		var to := _mult_middle()
+		var mid := (from + to) * 0.5 + Vector2(0.0, -26.0)
+		var drop_at := from.lerp(mid, _fly).lerp(mid.lerp(to, _fly), _fly)
+		_drop(drop_at, 1.0 - _fly * 0.6)
+
+
+## The sovereigns: a heap of coins, one for each up to COINS, and the count under it.
+func _draw_sovereigns() -> void:
+	var c := _text
+	var r := ArenaLayout.sovereigns(size)
+	var foot := _pile_at()
+	var held := roundi(_sov)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = rng_seed
+	# Heaped in rows from the bottom up, each row a coin shorter: 5, 4, 3, 2.
+	var k := 0
+	for row in 4:
+		var in_row := 5 - row
+		for i in in_row:
+			var jitter := Vector2(rng.randf_range(-2.0, 2.0), rng.randf_range(-1.5, 1.5))
+			var tilt := rng.randf_range(-0.5, 0.5)
+			if k < mini(held, COINS):
+				_coin(foot + Vector2((i - (in_row - 1) * 0.5) * 18.0, -row * 9.0) + jitter, tilt)
+			k += 1
+	var count := str(held)
+	var count_w := _heavy.get_string_size(count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
+	var word := "sovereign" if held == 1 else "sovereigns"
+	var word_w := _slanted.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
+	var left := r.get_center().x - (count_w + 6.0 + word_w) * 0.5
+	var base := r.end.y - 22.0
+	c.draw_string(_heavy, Vector2(left, base), count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, CREAM)
+	c.draw_string(_slanted, Vector2(left + count_w + 6.0, base - 1.0), word, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, LABEL)
+
+
+## One coin of the heap, seen a little from above.
+func _coin(at: Vector2, tilt: float) -> void:
+	var c := _text
+	c.draw_set_transform(at, tilt * 0.4, Vector2(1.0, 0.72))
+	c.draw_circle(Vector2(0.0, 3.4), 10.4, COIN_EDGE)
+	c.draw_circle(Vector2(0.0, 2.6), 9.2, GOLD_DARK)
+	c.draw_circle(Vector2.ZERO, 10.4, COIN_EDGE)
+	c.draw_circle(Vector2.ZERO, 9.2, GOLD)
+	c.draw_arc(Vector2.ZERO, 6.0, 0.0, TAU, 20, GOLD_DARK, 1.1)
+	c.draw_set_transform(Vector2.ZERO, 0.0)
 
 
 func _draw_readout() -> void:
 	var c := _text
-	var r := _readout_rect()
+	var r := ArenaLayout.readout(size)
+	var base := _baseline()
 	if _reason != "":
-		c.draw_multiline_string(_heavy, Vector2(r.position.x + 10.0, r.position.y + 24.0), _reason,
-				HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 20.0, REASON_SIZE, 4, CREAM)
+		# A long reason is wrapped: the zone has the height for two lines, about the place of one.
+		var width := r.size.x - DROPS_ROOM
+		var one := _slanted.get_string_size(_reason, HORIZONTAL_ALIGNMENT_LEFT, -1.0, REASON_SIZE).y
+		var all := _slanted.get_multiline_string_size(_reason, HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2).y
+		c.draw_multiline_string(_slanted, Vector2(r.position.x, base - 5.0 - (all - one) * 0.5), _reason,
+				HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2, CREAM)
 		return
 	if not _numbers:
 		return
-	var name_w := _heavy.get_string_size(_name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE).x
-	var note_w := 0.0 if _note == "" else _slanted.get_string_size(" " + _note, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12).x
-	var name_x := r.position.x + (r.size.x - name_w - note_w) * 0.5
-	c.draw_string(_heavy, Vector2(name_x, r.position.y + 26.0), _name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE, CREAM)
+	var line := _line()
+	var left := _line_left()
+	c.draw_string(_slanted, Vector2(left, base - 2.0), _name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE, CREAM)
 	if _note != "":
-		c.draw_string(_slanted, Vector2(name_x + name_w, r.position.y + 26.0), " " + _note,
-				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, MAGENTA)
-	var apart := 1.0 - _merge
-	var centre := Vector2(size.x * 0.5, _numbers_y())
-	if apart > 0.0:
-		var a := clampf(apart * 1.6, 0.0, 1.0)
-		var chips_at := _chips_at().lerp(centre, _merge)
-		var mult_at := _mult_at().lerp(centre, _merge)
-		_number(_thousands(roundi(_chips)), chips_at, HORIZONTAL_ALIGNMENT_RIGHT, 1.0 + _chips_pop,
-				Color(CREAM.lerp(_man(), _chips_glow), a))
-		_number(str(roundi(_mult)), mult_at, HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
-				Color(CREAM.lerp(_man(), _mult_glow), a))
-		c.draw_string(_heavy, centre + Vector2(-8.0, -3.0), "×", HORIZONTAL_ALIGNMENT_CENTER, 16.0, 22,
-				Color(PENCIL, a))
+		c.draw_string(_slanted, Vector2(left + line.note, base - 2.0), " " + _note,
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, MAGENTA)
+	c.draw_string(_heavy, Vector2(left + line.dash, base - 4.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 20, LABEL)
+	_number(_thousands(roundi(_chips)), Vector2(left + line.chips, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _chips_pop,
+			CREAM.lerp(_man(), _chips_glow))
+	c.draw_string(_heavy, Vector2(left + line.times, base - 3.0), "×", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22, LABEL)
+	_number(str(roundi(_mult)), Vector2(left + line.mult, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
+			CREAM.lerp(_man(), _mult_glow))
+	# The total is written after them as it is counted, and travels from there to the score.
 	if _merge > 0.0 and _travel < 1.0:
-		var a := clampf(_merge * 2.0 - 0.6, 0.0, 1.0)
-		var at := centre
-		var grow := 1.0 + 0.15 * sin(_merge * PI)
+		var a := clampf(_merge * 2.0, 0.0, 1.0)
+		var total_at := Vector2(left + line.total, base)
+		var grow := 1.0 + 0.2 * sin(_merge * PI)
 		if _travel >= 0.0:
-			at = centre.lerp(_score_end() - Vector2(0.0, 2.0), _travel)
-			grow = lerpf(1.0, 0.8, _travel)
-		_number(_thousands(_total), at, HORIZONTAL_ALIGNMENT_CENTER if _travel < 0.0 else HORIZONTAL_ALIGNMENT_RIGHT,
-				grow, Color(CREAM.lerp(_man(), 0.85), a))
+			total_at = total_at.lerp(_score_at(), _travel)
+			grow = lerpf(1.0, float(NUMBER_SIZE) / READOUT_SIZE, _travel)
+		else:
+			c.draw_string(_heavy, Vector2(left + line.equals, base - 3.0), "=", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22,
+					Color(LABEL, LABEL.a * a))
+		_number(_thousands(_total), total_at, HORIZONTAL_ALIGNMENT_LEFT, grow, Color(CREAM.lerp(_man(), 0.85), a))
 
 
 ## A readout number with its baseline at `at`, aligned at `at` (right edge, left edge or
@@ -702,18 +808,21 @@ func _number(text: String, at: Vector2, align: HorizontalAlignment, scale_by: fl
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
 
 
-## An ink drop: a rounded blot, narrowing to a point at the top, with a pale shine.
+## An ink drop: a rounded blot, narrowing to a point at the top, with a pale shine and a
+## cream rim, so that it is seen on his ink as on the slate.
 func _drop(at: Vector2, amount: float) -> void:
 	if amount <= 0.0:
 		return
 	var s := amount
 	var points := PackedVector2Array()
+	var rim := PackedVector2Array()
 	for k in 20:
 		var a := TAU * k / 20.0
-		var r := 7.0 * s
-		var p := Vector2(sin(a), -cos(a)) * r
+		var p := Vector2(sin(a), -cos(a)) * 7.0 * s
 		# Pull the top into a point.
 		p.y -= maxf(0.0, -cos(a)) * 6.0 * s * (1.0 - absf(sin(a)))
 		points.append(at + p)
+		rim.append(at + p + p.normalized() * 1.6)
+	_text.draw_colored_polygon(rim, Color(CREAM, 0.9))
 	_text.draw_colored_polygon(points, DROP_INK)
 	_text.draw_circle(at + Vector2(-2.0, -1.5) * s, 1.4 * s, DROP_SHINE)

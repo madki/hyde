@@ -15,7 +15,7 @@ extends Control
 ##   N  a card drawn into the centre, shown, then sent to the hand
 ##   K  a hand card pushed into the middle of the draw pile (the pile riffles)
 ##   R  the discards turned over into a new draw pile    T  the first hand card turns over
-##   G  between rounds: the corner holds the whole deck, or the two piles again
+##   G  between rounds: the draw pile's place holds the whole deck, or the two piles again
 ## Card moments (the three patterns):
 ##   1  four of his Roots join the deck (his first arrival)    2  one card joins (a reward)
 ##   3  Hyde brings two Fog from the draw pile    4  Jekyll brings two from the discards
@@ -32,7 +32,7 @@ extends Control
 
 const CREAM := Color(0.93, 0.88, 0.75)
 const DIM := Color(0.93, 0.88, 0.75, 0.6)
-## The values the bench's left column shows, with their labels.
+## The values the bench lists down its left side, with their labels.
 const SHOWN := [["score", "Score"], ["plays", "Plays"], ["discards", "Discards"],
 		["restraint/meter", "Restraint"], ["chips", "Chips"], ["mult", "Mult"]]
 
@@ -86,7 +86,7 @@ func _ready() -> void:
 	beats.skipped.connect(_show_status)
 	beats.corrected.connect(func(off: Dictionary) -> void:
 		_status.text = "Corrected at the end: %s" % str(off))
-	_build_column()
+	_build_listing()
 	_build_help()
 
 	_is_jekyll = not Shot.has_arg("hyde")
@@ -272,7 +272,8 @@ func _sample() -> Dictionary:
 
 ## The centre of the i-th of n cards in the bench's stand-in hand.
 func _hand_slot(i: int, n: int) -> Vector2:
-	return Vector2(628.0 + (i - (n - 1) * 0.5) * 90.0, 458.0 + absf(i - (n - 1) * 0.5) * 2.0)
+	# Along the foot of the page, under the row laid in the centre.
+	return Vector2(size.x * 0.5 + (i - (n - 1) * 0.5) * 90.0, size.y - 96.0 + absf(i - (n - 1) * 0.5) * 2.0)
 
 
 func _hand_turn(i: int, n: int) -> float:
@@ -485,8 +486,8 @@ func _show_settings() -> void:
 			"on" if ArenaPace.reduce_flashes else "off"]
 
 
-func _build_column() -> void:
-	var y := 230.0
+func _build_listing() -> void:
+	var y := 96.0
 	for pair: Array in SHOWN:
 		var label := _label(Vector2(50.0, y), 18)
 		label.set_meta("name", pair[1])
@@ -504,7 +505,7 @@ func _build_column() -> void:
 
 
 func _build_help() -> void:
-	var help := _label(Vector2(50.0, 448.0), 10)
+	var help := _label(Vector2(50.0, 312.0), 10)
 	help.modulate = DIM
 	help.text = "B a move  E one the engine ends otherwise\nS speed  F reduce flashes" \
 			+ "\nD deal  X discard  P discard to hand\nC to the centre  N draw to the centre" \

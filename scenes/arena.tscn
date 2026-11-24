@@ -7,7 +7,7 @@
 [ext_resource type="Script" path="res://scripts/arena_border.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/arena_ink.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/arena_hand.gd" id="7"]
-[ext_resource type="PackedScene" path="res://scenes/arena_column.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/arena_numbers.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/arena_symbols.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/arena_means.tscn" id="10"]
 [ext_resource type="Script" path="res://scripts/arena_controls.gd" id="11"]
@@ -40,39 +40,20 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("5")
-column_at = 290.0
 
 [node name="Ink" type="Node" parent="." node_paths=PackedStringArray("paper")]
 script = ExtResource("6")
 paper = NodePath("../Paper")
 
-[node name="Column" parent="." instance=ExtResource("8")]
+[node name="Numbers" parent="." instance=ExtResource("8")]
 layout_mode = 1
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_left = 42.0
-offset_top = 44.0
-offset_right = 284.0
-offset_bottom = -40.0
 debug_keys = false
 
 [node name="Symbols" parent="." instance=ExtResource("9")]
-layout_mode = 0
-offset_left = 302.0
-offset_top = 38.0
-offset_right = 942.0
-offset_bottom = 244.0
-scale = Vector2(0.84, 0.84)
+layout_mode = 1
 
 [node name="Means" parent="." instance=ExtResource("10")]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -280.0
-offset_top = 36.0
-offset_right = -36.0
-offset_bottom = 282.0
 
 [node name="Hand" type="Control" parent="."]
 layout_mode = 1
@@ -81,8 +62,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("7")
-table_left = 295.0
-room_under = 100.0
 
 [node name="Controls" type="Control" parent="."]
 layout_mode = 1
@@ -99,4 +78,3 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("12")
-middle_y = 322.0
