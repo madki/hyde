@@ -48,6 +48,11 @@ const TURN_TIME := 0.09
 const FADE_TIME := 0.18
 ## The time the rim light takes to come up on a chosen card, or to go.
 const RIM_TIME := 0.15
+## The wet reflection under a chosen card: how strongly its lines show, the gap between the
+## card's lower edge and the line it is mirrored on, and how far up the card it reaches.
+const REFLECTION := 0.4
+const REFLECTION_GAP := 3.0
+const REFLECTION_REACH := 70.0
 ## The time the ink takes to creep over a Root that has just become Hyde's, at speed 1.
 const STAIN_TIME := 0.6
 
@@ -55,6 +60,7 @@ const PAPER_MATERIAL: ShaderMaterial = preload("res://shaders/card_paper_materia
 const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tres")
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/card_line_material.tres")
 const GLOW_MATERIAL: ShaderMaterial = preload("res://shaders/card_picture_material.tres")
+const COPY_MATERIAL: ShaderMaterial = preload("res://shaders/card_copy_material.tres")
 
 ## The engine's font drawn from distance fields, for `sharp`. Made once, for every card.
 static var _sharp_face: Font
@@ -133,6 +139,8 @@ var stain := 1.0:
 		_set_body("stain", stain if _stained() else 0.0)
 
 var _body := Control.new()
+## The card's lines again, mirrored on the ground under it, while it is chosen.
+var _reflection := Node2D.new()
 var _picture := Control.new()
 var _glow := Control.new()
 var _lines := Control.new()
@@ -189,6 +197,17 @@ func _init() -> void:
 	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
 
 	_body.draw.connect(_draw_body)
+	_reflection.draw.connect(_draw_reflection)
+	_reflection.scale = Vector2(1.0, -1.0)
+	_reflection.position = Vector2(0.0, SIZE.y * 2.0 + REFLECTION_GAP)
+	_reflection.visible = false
+	var mirrored := COPY_MATERIAL.duplicate() as ShaderMaterial
+	mirrored.set_shader_parameter("strength", 0.0)
+	mirrored.set_shader_parameter("soft", 0.4)
+	mirrored.set_shader_parameter("fade_from", SIZE.y)
+	mirrored.set_shader_parameter("fade_reach", REFLECTION_REACH)
+	_reflection.material = mirrored
+	add_child(_reflection)
 	_lines.draw.connect(_draw_lines)
 	_picture.draw.connect(_draw_picture)
 	_glow.draw.connect(_draw_glow)
@@ -376,6 +395,8 @@ func _refresh() -> void:
 		printed.queue_redraw()
 	_glow.queue_redraw()
 	_body.queue_redraw()
+	_set_rim(_rim)
+	_reflection.queue_redraw()
 
 
 ## The title, in its whole box or in as much of it as `strip` leaves showing.
@@ -458,6 +479,8 @@ func _light_rim() -> void:
 func _set_rim(value: float) -> void:
 	_rim = value
 	_set_body("rim_strength", _rim)
+	_reflection.visible = _rim > 0.0 and not face_down
+	(_reflection.material as ShaderMaterial).set_shader_parameter("strength", REFLECTION * _rim)
 
 
 func _set_body(parameter: String, value: float) -> void:
@@ -516,6 +539,12 @@ func _draw_body() -> void:
 func _draw_lines() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = _light()
+	_lay_frame(pencil)
+	pencil.draw(_lines)
+
+
+## Lays the frame out on `pencil`: on a card's back, the back's lines.
+func _lay_frame(pencil: Pencil) -> void:
 	var inset := Vector2(FRAME_INSET, FRAME_INSET)
 	var rect := Rect2(inset, SIZE - inset * 2.0)
 	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
@@ -524,7 +553,6 @@ func _draw_lines() -> void:
 		_rule(pencil, corners[i], corners[(i + 1) % 4], FRAME_WIDTH)
 	if face_down:
 		_draw_back(pencil, rect)
-		pencil.draw(_lines)
 		return
 	_rule(pencil, Vector2(rect.position.x, TITLE_BOTTOM), Vector2(rect.end.x, TITLE_BOTTOM), 1.9)
 	_rule(pencil, Vector2(rect.position.x, FOOT_TOP), Vector2(rect.end.x, FOOT_TOP), 1.7)
@@ -534,7 +562,6 @@ func _draw_lines() -> void:
 		_rule(pencil, Vector2(rect.position.x + CHIPS_WIDTH + 2.0, FOOT_TOP),
 				Vector2(rect.position.x + CHIPS_WIDTH + 2.0, rect.end.y), 1.5)
 		_hatch(pencil, Vector2(rect.position.x + 1.5, TITLE_BOTTOM + 1.0), Vector2(1.0, 1.0), 12.0)
-	pencil.draw(_lines)
 
 
 ## The back of a card: a second frame inside the first, crossed by slanting lines both ways.
@@ -579,9 +606,30 @@ func _draw_glow() -> void:
 	RenderingServer.canvas_item_add_set_transform(item, Transform2D.IDENTITY)
 
 
-## Lays the card's picture out on `pencil`. A Factor's is small, to leave room for its text.
-func _add_picture(pencil: Pencil) -> void:
-	var box := Rect2(Vector2.ZERO, _picture.size)
+## The reflection: the frame and the picture in the owner's light, drawn the right way up in
+## the card's own place (the node mirrors them under the card).
+func _draw_reflection() -> void:
+	_draw_copy(_reflection, _light())
+
+
+## Draws the card's frame and picture again on `item`, in `colour`, in the card's own place.
+func _draw_copy(item: CanvasItem, colour: Color) -> void:
+	var frame := Pencil.new(rng_seed)
+	frame.colour = colour
+	_lay_frame(frame)
+	frame.draw(item)
+	if face_down:
+		return
+	var picture := Pencil.new(rng_seed + 5)
+	picture.colour = colour
+	_add_picture(picture, _picture.position)
+	picture.draw(item)
+
+
+## Lays the card's picture out on `pencil`, its box's corner at `at`. A Factor's is small, to
+## leave room for its text.
+func _add_picture(pencil: Pencil, at: Vector2 = Vector2.ZERO) -> void:
+	var box := Rect2(at, _picture.size)
 	if text != "":
 		box.size.y = FACTOR_PICTURE
 	# A Factor has one picture for both men: its look says whose it is.
