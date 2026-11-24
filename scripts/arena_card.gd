@@ -53,6 +53,11 @@ const RIM_TIME := 0.15
 const REFLECTION := 0.4
 const REFLECTION_GAP := 3.0
 const REFLECTION_REACH := 70.0
+## The shift's split on one card changing face: how long its three coloured copies are apart,
+## and how far apart they go, in pixels, each in its own direction.
+const SPLIT_TIME := 0.3
+const SPLIT_REACH := 4.0
+const SPLIT_WAYS: Array[Vector2] = [Vector2(-1.0, -0.3), Vector2(1.0, 0.3), Vector2(0.2, 1.0)]
 ## The time the ink takes to creep over a Root that has just become Hyde's, at speed 1.
 const STAIN_TIME := 0.6
 
@@ -141,6 +146,11 @@ var stain := 1.0:
 var _body := Control.new()
 ## The card's lines again, mirrored on the ground under it, while it is chosen.
 var _reflection := Node2D.new()
+## The three coloured copies of the card's lines while it splits, and how far apart they are
+## now (0 to 1: 0 when it is whole).
+var _split := Node2D.new()
+var _apart := 0.0
+var _split_tween: Tween
 var _picture := Control.new()
 var _glow := Control.new()
 var _lines := Control.new()
@@ -208,6 +218,12 @@ func _init() -> void:
 	mirrored.set_shader_parameter("fade_reach", REFLECTION_REACH)
 	_reflection.material = mirrored
 	add_child(_reflection)
+	_split.visible = false
+	for colour: Color in [Palette.SPLIT_JEKYLL, Palette.SPLIT_HYDE, Palette.SPLIT_THIRD]:
+		var copy := Node2D.new()
+		copy.material = COPY_MATERIAL
+		copy.draw.connect(_draw_copy.bind(copy, colour))
+		_split.add_child(copy)
 	_lines.draw.connect(_draw_lines)
 	_picture.draw.connect(_draw_picture)
 	_glow.draw.connect(_draw_glow)
@@ -237,6 +253,9 @@ func _init() -> void:
 	for child: Control in [_body, _glow, _picture, _lines, _disc, _title, _chips, _tag, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
+		if child == _lines:
+			# The split lies over the lines (hidden while it shows) and under the writing.
+			add_child(_split)
 	_built = true
 	_refresh()
 
@@ -316,6 +335,8 @@ func change_face(change: Callable, animate: bool = true) -> void:
 	if not animate or not is_inside_tree():
 		change.call()
 		return
+	if not ArenaPace.reduce_flashes:
+		_play_split()
 	_change = create_tween()
 	_change.tween_property(self, "scale:x", 0.0, TURN_TIME).set_ease(Tween.EASE_IN)
 	_change.tween_callback(change)
@@ -354,9 +375,9 @@ func _refresh() -> void:
 	body.set_shader_parameter("stain_shown", _stain_shown)
 	_body.material = body
 
-	for part: Control in [_title, _chips, _tag, _text, _picture]:
+	for part: Control in [_title, _chips, _tag, _text]:
 		part.visible = not face_down
-	_glow.visible = not face_down and not dimmed
+	_show_lines()
 	(_glow.material as ShaderMaterial).set_shader_parameter("glow_colour", _light())
 	_disc.visible = chips_above and not face_down
 	_disc.queue_redraw()
@@ -397,6 +418,8 @@ func _refresh() -> void:
 	_body.queue_redraw()
 	_set_rim(_rim)
 	_reflection.queue_redraw()
+	for copy: Node2D in _split.get_children():
+		copy.queue_redraw()
 
 
 ## The title, in its whole box or in as much of it as `strip` leaves showing.
@@ -604,6 +627,33 @@ func _draw_glow() -> void:
 		RenderingServer.canvas_item_add_set_transform(item, Transform2D(0.0, offset))
 		pencil.draw(_glow)
 	RenderingServer.canvas_item_add_set_transform(item, Transform2D.IDENTITY)
+
+
+## The card comes apart into three copies of its lines, in the split's three colours, which
+## slide away from each other and snap back: the shift, on one card.
+func _play_split() -> void:
+	if _split_tween:
+		_split_tween.kill()
+	_split_tween = create_tween()
+	_split_tween.tween_method(_set_apart, 0.0, 1.0, SPLIT_TIME)
+
+
+## `k` runs 0 to 1 through the split: the copies fly apart quickly and come back more slowly.
+func _set_apart(k: float) -> void:
+	_apart = 0.0 if k >= 1.0 else sin(PI * pow(k, 0.6))
+	var copies := _split.get_children()
+	for i in copies.size():
+		(copies[i] as Node2D).position = SPLIT_WAYS[i] * SPLIT_REACH * _apart
+	_show_lines()
+
+
+## Shows the printed lines, or the split's copies of them while the card is apart.
+func _show_lines() -> void:
+	var whole := _apart <= 0.0
+	_split.visible = not whole
+	_lines.visible = whole
+	_picture.visible = whole and not face_down
+	_glow.visible = whole and not face_down and not dimmed
 
 
 ## The reflection: the frame and the picture in the owner's light, drawn the right way up in
