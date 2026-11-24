@@ -21,6 +21,8 @@ extends Control
 const CREAM := Color(0.95, 0.91, 0.8)
 const PENCIL := Color(0.08, 0.05, 0.04)
 const SMALL := 0.46
+## The Notebook's first card, from the middle of the draw pile's zone.
+const NOTEBOOK_FROM_PILE := Vector2(-20.0, -104.0)
 
 var t: ArenaTable
 
@@ -325,9 +327,8 @@ func _show_notebook() -> void:
 	var next: Variant = _table.notebook
 	if next == null or not _open:
 		return
-	var pile := t.piles.draw_pile.top_centre()
-	# Over the pile, between it and the lower rule.
-	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-18.0, -90.0)
+	# Over the pile's zone, between it and the lower rule, left of the hand's zone.
+	var at := ArenaLayout.pile_draw(size).get_center() + NOTEBOOK_FROM_PILE
 	# The next card lies on top, at the right.
 	for i in range(next.size() - 1, -1, -1):
 		var card := ArenaTravel.make_card(t.card_data(next[i].id))

@@ -26,6 +26,9 @@ const BUTTON := Vector2(168.0, 44.0)
 const BUTTON_GAP := 24.0
 ## How far inside the page's edge the two rules begin and end.
 const RULE_INSET := 40.0
+## A pile's zone, and its distance from the hand's zone.
+const PILE := Vector2(84.0, 120.0)
+const PILE_GAP := 12.0
 ## Height of one row of instruments.
 const INSTRUMENT_ROW := 44.0
 ## Height of the top of the held key's sheet, from the top.
@@ -127,14 +130,19 @@ static func hand(page: Vector2) -> Rect2:
 	return _centred(page, foot_rule(page) + 8.0, Vector2(clampf(frame(page) - 280.0, 872.0, 1086.0), 152.0))
 
 
-## The draw pile.
+## The draw pile: left of the hand's zone, PILE_GAP from it, its foot on the buttons' foot line.
 static func pile_draw(page: Vector2) -> Rect2:
-	return Rect2(44.0, page.y - 140.0, 84.0, 120.0)
+	return Rect2(hand(page).position.x - PILE_GAP - PILE.x, page.y - 144.0, PILE.x, PILE.y)
 
 
-## The discard pile.
+## The discard pile: right of the hand's zone, as far from it.
 static func pile_discard(page: Vector2) -> Rect2:
-	return _from_right(page, 44.0, page.y - 140.0, Vector2(84.0, 120.0))
+	return Rect2(hand(page).end.x + PILE_GAP, page.y - 144.0, PILE.x, PILE.y)
+
+
+## "Take none", at a reward: under the lower rule, in the hand's zone, which is empty then.
+static func reward_none(page: Vector2) -> Rect2:
+	return _centred(page, foot_rule(page) + 16.0, Vector2(150.0, 44.0))
 
 
 ## PLAY, with the plays left as a tally at its right end: the left of the pair of buttons
@@ -213,6 +221,7 @@ static func zones(page: Vector2) -> Dictionary:
 		"caption": caption(page),
 		"stage": stage(page),
 		"hand": hand(page),
+		"reward_none": reward_none(page),
 		"pile_draw": pile_draw(page),
 		"pile_discard": pile_discard(page),
 		"controls_play": controls_play(page),
