@@ -6,7 +6,8 @@ extends Control
 ## a pile of coins with the count; in the centre the restraint gauge and under it the hand
 ## readout, one written line (a name, chips × mult, and the total once it is counted) with
 ## the stored restraint as ink drops at the line's end; at the foot the plays and discards
-## left as tallies.
+## left as tallies, each at the right end of its control (`tallies`, a layer of their own
+## that ArenaControls lays over its buttons).
 ##
 ## It works out no rule. `show_table` puts up what RulesView.table() gives, at once,
 ## and `show_choice` the readout of RulesView.preview() for the chosen cards. Everything else
@@ -47,6 +48,9 @@ const NUMBER_SIZE := 20
 const READOUT_SIZE := 30
 const NAME_SIZE := 22
 const REASON_SIZE := 16
+## A tally's height, and how far in from its control's right edge it ends.
+const TALLY_HIGH := 18.0
+const TALLY_INSET := 14.0
 ## The most coins drawn in the sovereigns' pile.
 const COINS := 14
 ## Room kept for the stored drops at the end of the readout's line, and from one to the next.
@@ -80,6 +84,9 @@ var speed := 1.0
 
 ## The restraint gauge, laid out in its zone.
 var restraint := ArenaRestraint.new()
+## The two tallies, plays and discards, drawn on a layer of their own: the controls lay it
+## over their buttons (ArenaControls.hold_tallies), which would hide it from under them.
+var tallies := Control.new()
 
 var _marks := Control.new()
 var _text := Control.new()
@@ -116,9 +123,13 @@ var _ticks := 0
 ## Where the readout's line begins, from its zone's left: set when a hand is put up, so that
 ## the line is centred then and does not shift as its numbers grow.
 var _line_inset := 0.0
-## The most plays and discards the tallies have shown: they are centred for that many.
+## The most plays and discards the tallies have shown: they are placed for that many.
 var _plays_most := 0.0
 var _discards_most := 0.0
+## How each tally is drawn, plays then discards: its colour, and how far down it is pushed
+## (a pressed button). The controls set them as their buttons change (`set_tally_look`).
+var _tally_colours: Array[Color] = [Color(CREAM, 0.85), Color(CREAM, 0.85)]
+var _tally_drops: Array[float] = [0.0, 0.0]
 ## Before a drink: this many drops outlined, as the restraint would be stored. Before a dose
 ## of salt: the stored drops struck through.
 var _ghost_drops := 0
@@ -138,8 +149,10 @@ func _init() -> void:
 	_marks.material = LINE_MATERIAL
 	_marks.draw.connect(_draw_marks)
 	_text.draw.connect(_draw_text)
+	tallies.material = LINE_MATERIAL
+	tallies.draw.connect(_draw_tallies)
 	restraint.name = "Restraint"
-	for child: Control in [_marks, restraint, _text]:
+	for child: Control in [_marks, restraint, _text, tallies]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -494,10 +507,11 @@ func _stop_readout() -> void:
 func _redraw() -> void:
 	_marks.queue_redraw()
 	_text.queue_redraw()
+	tallies.queue_redraw()
 
 
 func _lay_out() -> void:
-	for child: Control in [_marks, _text]:
+	for child: Control in [_marks, _text, tallies]:
 		child.size = size
 	var gauge := ArenaLayout.restraint(size)
 	restraint.position = gauge.position
@@ -532,7 +546,7 @@ func sov_place() -> Vector2:
 
 ## The last mark of the plays' tally, on the page.
 func plays_place() -> Vector2:
-	return get_global_transform() * Vector2(_tally_left(0) + 4.0 + maxf(_plays - 1.0, 0.0) * 8.0, _tally_top(0) + 12.0)
+	return get_global_transform() * Vector2(_tally_left(0) + 4.0 + maxf(_plays - 1.0, 0.0) * 8.0, _tally_top(0) + TALLY_HIGH * 0.5)
 
 
 ## Where the round's heading is written, on the page: its middle, and all of it with the
@@ -611,27 +625,40 @@ func _pile_at() -> Vector2:
 	return Vector2(r.get_center().x, r.position.y + 40.0)
 
 
-## The tallies lie in the lower part of the controls' zones, under the words written there.
+## The tallies lie inside the controls' zones, at the right end, level with the words written
+## at the left: TALLY_INSET in from the zone's right edge, centred on its height.
 func _tally_zone(i: int) -> Rect2:
 	return ArenaLayout.controls_play(size) if i == 0 else ArenaLayout.controls_discard(size)
 
 
 func _tally_top(i: int) -> float:
-	return _tally_zone(i).end.y - 26.0
+	return _tally_zone(i).get_center().y - TALLY_HIGH * 0.5 + _tally_drops[i]
 
 
+## The tally's right end stays where it is for the most marks it has shown, so that a mark
+## rubbed out leaves the others in place.
 func _tally_left(i: int) -> float:
 	var most := _plays_most if i == 0 else _discards_most
 	var groups := floorf((most - 1.0) / 5.0)
 	var last := int(most - 1.0) % 5
 	var width := groups * 44.0 + (30.0 if last == 4 else 4.0 + last * 8.0)
-	return _tally_zone(i).get_center().x - width * 0.5
+	return _tally_zone(i).end.x - TALLY_INSET - width
+
+
+## How the tally of plays (0) or of discards (1) is drawn: its colour, and how far down it is
+## pushed, in pixels.
+func set_tally_look(i: int, colour: Color, drop: float) -> void:
+	if _tally_colours[i] == colour and _tally_drops[i] == drop:
+		return
+	_tally_colours[i] = colour
+	_tally_drops[i] = drop
+	tallies.queue_redraw()
 
 
 # --- Drawing -----------------------------------------------------------------------------
 
 ## The pencil and the chalk: the stroke between target and score, the strike and the
-## underline, and the tally marks.
+## underline.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = Color(CREAM, 0.85)
@@ -652,15 +679,22 @@ func _draw_marks() -> void:
 			var score_w := _heavy.get_string_size(_thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
 			var under := score_at + Vector2(-3.0, 5.0)
 			pencil.stroke(PackedVector2Array([under, under.lerp(score_at + Vector2(score_w + 3.0, 4.0), second)]), 2.0, 0.5)
-	for i in 2:
-		_tally(pencil, _tally_left(i), _tally_top(i), _plays if i == 0 else _discards)
 	pencil.draw(_marks)
+
+
+## The two tallies, each in the colour its control gives it.
+func _draw_tallies() -> void:
+	var pencil := Pencil.new(rng_seed + 1)
+	for i in 2:
+		pencil.colour = _tally_colours[i]
+		_tally(pencil, _tally_left(i), _tally_top(i), _plays if i == 0 else _discards)
+	pencil.draw(tallies)
 
 
 ## Tally marks in fives, the fifth across the other four. The last mark is drawn (or rubbed
 ## out) from the top down as the count passes a whole number.
 func _tally(pencil: Pencil, left: float, top: float, level: float) -> void:
-	var bottom := top + 24.0
+	var bottom := top + TALLY_HIGH
 	for k in ceili(level):
 		var part := clampf(level - k, 0.0, 1.0)
 		var group := floori(k / 5.0)
