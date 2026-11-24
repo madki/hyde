@@ -225,7 +225,8 @@ func show_table(table: Dictionary) -> void:
 	is_jekyll = table.stance == "jekyll"
 	_target = table.target
 	_score = table.score
-	_strike = 1.0 if table.score >= table.target else 0.0
+	# A target of 0 is one not yet written (a round's start counts it up): nothing to strike.
+	_strike = 1.0 if table.target > 0 and table.score >= table.target else 0.0
 	_plays = table.plays
 	_discards = table.discards
 	_plays_most = maxf(_plays, 1.0)
