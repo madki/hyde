@@ -30,8 +30,8 @@ extends Control
 ## [--hyde] [--run=<key letters>] [--at=<seconds>]` runs those keys' actions one after the
 ## other and takes the shot that many seconds after the last has begun. `--selftest` (headless, under a time limit) checks the queue and quits.
 
-const CREAM := Color(0.93, 0.88, 0.75)
-const DIM := Color(0.93, 0.88, 0.75, 0.6)
+const CREAM := Palette.CHALK
+const DIM := Color(Palette.CHALK, 0.6)
 ## The values the bench lists down its left side, with their labels.
 const SHOWN := [["score", "Score"], ["plays", "Plays"], ["discards", "Discards"],
 		["restraint/meter", "Restraint"], ["chips", "Chips"], ["mult", "Mult"]]
@@ -460,8 +460,8 @@ func _on_shown(key: String, value: Variant) -> void:
 	var label: Label = _labels[key]
 	label.text = "%s  %s" % [label.get_meta("name"), str(value)]
 	# Points at the value: a short flare, or with reduce flashes only the colour.
-	label.add_theme_color_override("font_color", Color(0.55, 0.95, 1.0) if _is_jekyll
-			else Color(1.0, 0.55, 0.9))
+	label.add_theme_color_override("font_color", Palette.JEKYLL if _is_jekyll
+			else Palette.HYDE)
 	var t := beats.tween()
 	if ArenaPace.reduce_flashes:
 		t.tween_interval(ArenaPace.FLARE_FALL)

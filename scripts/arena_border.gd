@@ -13,7 +13,7 @@ extends Control
 @export var wobble := 1.3
 ## How fully a line fades out where the pencil lifts.
 @export_range(0.0, 1.0) var fade := 0.45
-@export var colour := Color(0.015, 0.025, 0.035)
+@export var colour := Palette.OUTLINE
 ## Changes every line a little while keeping the look.
 @export var rng_seed := 7
 

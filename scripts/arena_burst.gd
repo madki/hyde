@@ -6,9 +6,9 @@ extends Control
 ## magenta behind: it rises quickly and falls slowly (ArenaPace.FLARE_RISE, FLARE_FALL). With
 ## "reduce flashes" on there is no flare: the ink alone crosses, a little slower.
 
-const INK := Color(0.2, 0.05, 0.22)
-const FLARE := Color(1.0, 0.45, 0.85)
-const FRONT := Color(0.8, 0.97, 1.0)
+const INK := Palette.INK_BODY
+const FLARE := Palette.HYDE
+const FRONT := Palette.SALT
 const CROSS_TIME := 0.45
 const CROSS_TIME_CALM := 0.8
 const THIN_TIME := 0.6
