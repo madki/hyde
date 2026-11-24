@@ -13,8 +13,10 @@ extends Control
 ## For a screenshot: `tools/shot.sh /abs/out.png res://scenes/arena_means_bench.tscn`, with
 ## `--state=<start|jekyll|hyde|empty>` (start: the first round, both refused; jekyll: the draught
 ## can be drunk, salt shut; hyde: corked, salt open; empty: no doses left), `--hyde` for his
-## ink, `--ink=<percent>` for how much of the page it takes, `--inst=<key,key,...>`,
-## `--hover=<flask|salt|key>`, and `--keys=<letters>` with `--wait=<seconds>` to catch a movement.
+## ink, `--ink=<percent>` for how much of the page it takes, `--inst=<key,key,...>`
+## (as many as given, past the rules' three),
+## `--hover=<flask|salt|key>`, and `--keys=<letters>` with `--wait=<seconds>` to catch a movement
+## (and `--freeze` to hold it there for the still).
 
 ## Sent when the keys of `--keys` have all been pressed.
 signal _pressed
@@ -53,6 +55,8 @@ func _ready() -> void:
 			_table.instruments = ["hcane"]
 	if Shot.has_arg("inst"):
 		_table.instruments = Array(Shot.arg("inst").split(","))
+		# More than the rules hold, to show the grid's rows wrap; a key may come twice.
+		_means.max_held = maxi(RulesConfig.MAX_INSTRUMENTS, _table.instruments.size())
 	_means.show_table(_table, _run.dials)
 	_means.preview_changed.connect(func(kind: String) -> void: _say("preview: %s" % (kind if kind != "" else "none")))
 	_means.drink_pressed.connect(func() -> void: _say("drink pressed"))
@@ -66,6 +70,9 @@ func _ready() -> void:
 		var done := _press(Shot.arg("keys"))
 		if Shot.has_arg("wait"):
 			await get_tree().create_timer(float(Shot.arg("wait"))).timeout
+			# `--freeze` stops time there, so that the still, taken a few frames later, holds it.
+			if Shot.has_arg("freeze"):
+				Engine.time_scale = 0.0
 		else:
 			await done
 	Shot.run_if_requested(self)
@@ -125,7 +132,7 @@ func _run_key(code: Key) -> void:
 		KEY_A:
 			var held: Array = _table.instruments
 			for key: String in ALL_INSTRUMENTS:
-				if not held.has(key) and held.size() < RulesConfig.MAX_INSTRUMENTS:
+				if not held.has(key) and held.size() < _means.max_held:
 					held.append(key)
 					break
 			await _means.set_instruments(held)

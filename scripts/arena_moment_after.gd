@@ -9,12 +9,15 @@ class_name ArenaMomentAfter
 ##   the refill, because it can be drawn at once. The line gains a mark on his side.
 ## - `turn`: a Sublimation turns an Ink Root. The symbol's Craving pips travel into Temper,
 ##   the Root changes side where it lies in the centre, and the line moves a mark across.
-## - `cheque`: the Cheque book glints and a sovereign drops into the purse.
+## - `cheque`: the Cheque book glints and a sovereign flies from it into the purse.
 ##
 ## After a symbol's gauges change, the chips on every card of that symbol on the table count
 ## to their new value (`recount`). The locks of Resolve and Cunning, which landed while the
 ## play scored, open and fall away (`unlock`).
 
+
+## Seconds the Cheque book's sovereign takes to reach the purse.
+const COIN_TIME := 0.3
 
 ## Adds the beats of one of the events above. False for any other event. `order` is the
 ## played cards' ids as they lie in the centre.
@@ -30,8 +33,11 @@ static func add_event(t: ArenaTable, e: Dictionary, order: Array = []) -> bool:
 			_turn(t, e, order)
 		"cheque":
 			t.beats.add(func() -> void:
+				# The light crosses the Cheque book while a sovereign leaves its middle for the purse.
+				t.play(t.means.glint.bind("cheque"))
+				await ArenaPop.coin(t.beats, t.travel, t.means.spot("cheque"), t.numbers.sov_place(), COIN_TIME)
 				t.mark("sov", e.sov)
-				await t.play(t.means.glint.bind("cheque")))
+				await t.beats.wait(ArenaMeans.GLINT_TIME - COIN_TIME))
 		_:
 			return false
 	return true
