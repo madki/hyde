@@ -48,6 +48,8 @@ const TURN_TIME := 0.09
 const FADE_TIME := 0.18
 ## The time the rim light takes to come up on a chosen card, or to go.
 const RIM_TIME := 0.15
+## The time the ink takes to creep over a Root that has just become Hyde's, at speed 1.
+const STAIN_TIME := 0.6
 
 const PAPER_MATERIAL: ShaderMaterial = preload("res://shaders/card_paper_material.tres")
 const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tres")
@@ -123,6 +125,12 @@ var sharp := false:
 			sharp = value
 			_set_faces()
 			_refresh()
+## How far the ink stain of a Root that is Hyde's has crept in from its corner, 0 to 1. It is
+## settled (1) at rest, and creeps from 0 when the card becomes Hyde's where it lies.
+var stain := 1.0:
+	set(value):
+		stain = value
+		_set_body("stain", stain if _stained() else 0.0)
 
 var _body := Control.new()
 var _picture := Control.new()
@@ -147,6 +155,11 @@ var _change: Tween
 var _rim_tween: Tween
 ## How strongly the rim light shows, 0 to 1.
 var _rim := 0.0
+## How strongly the stain shows, 0 to 1: it fades in, instead of creeping, with "reduce flashes".
+var _stain_shown := 1.0
+var _stain_tween: Tween
+## True once the card has been given a face: a later change to Hyde's is a stain.
+var _shown := false
 var _built := false
 
 
@@ -241,12 +254,16 @@ func show_entry(entry: Dictionary, hyde_has_table: bool) -> void:
 ## Sets everything the face shows. `on_ink` is true for a card that looks like Hyde's.
 func show_face(new_key: String, on_ink: bool, new_title: String, new_chips: int,
 		new_text: String = "") -> void:
+	var turned := _shown and on_ink and not ink
 	key = new_key
 	ink = on_ink
 	title = new_title
 	chips = new_chips
 	text = new_text
+	_shown = true
 	_refresh()
+	if turned and _stained() and is_inside_tree():
+		_creep_stain()
 
 
 ## Shows a card from data shaped like one of RulesView.table().hand, {key, ink, name, chips,
@@ -314,6 +331,8 @@ func _refresh() -> void:
 	body.set_shader_parameter("band_height", 0.0 if face_down else TITLE_BOTTOM + 1.0)
 	body.set_shader_parameter("rim_colour", Palette.HYDE if ink else Palette.JEKYLL)
 	body.set_shader_parameter("rim_strength", _rim)
+	body.set_shader_parameter("stain", stain if _stained() else 0.0)
+	body.set_shader_parameter("stain_shown", _stain_shown)
 	_body.material = body
 
 	for part: Control in [_title, _chips, _tag, _text, _picture]:
@@ -438,9 +457,39 @@ func _light_rim() -> void:
 
 func _set_rim(value: float) -> void:
 	_rim = value
+	_set_body("rim_strength", _rim)
+
+
+func _set_body(parameter: String, value: float) -> void:
 	var body := _body.material as ShaderMaterial
 	if body:
-		body.set_shader_parameter("rim_strength", _rim)
+		body.set_shader_parameter(parameter, value)
+
+
+## True for a card that carries the ink stain: a Root that is Hyde's, face up.
+func _stained() -> bool:
+	return ink and text == "" and not face_down
+
+
+## The ink creeps in from its corner over a Root that has just become Hyde's. With "reduce
+## flashes" the settled stain fades in instead.
+func _creep_stain() -> void:
+	if _stain_tween:
+		_stain_tween.kill()
+	_stain_tween = create_tween()
+	var time := STAIN_TIME / ArenaPace.speed
+	if ArenaPace.reduce_flashes:
+		stain = 1.0
+		_stain_tween.tween_method(_set_stain_shown, 0.0, 1.0, time)
+	else:
+		_set_stain_shown(1.0)
+		stain = 0.0
+		_stain_tween.tween_property(self, "stain", 1.0, time).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+
+func _set_stain_shown(value: float) -> void:
+	_stain_shown = value
+	_set_body("stain_shown", _stain_shown)
 
 
 ## The colour the card's lines and chips are drawn in: the light of the man whose stock it is,

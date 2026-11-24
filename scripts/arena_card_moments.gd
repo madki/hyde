@@ -144,6 +144,8 @@ func _crack(card: ArenaCard, after: Dictionary, time: float) -> void:
 	var twin := ArenaTravel.make_card(after)
 	twin.rng_seed = card.rng_seed
 	twin.show_data(after, card.rng_seed)
+	# The twin floods in clean: the ink stain creeps over the card once it has become the twin.
+	twin.stain = 0.0
 	var crack := ArenaCrack.new(twin, card.rng_seed)
 	card.add_child(crack)
 	var t := beats.tween()

@@ -76,6 +76,22 @@ uniform vec3 band_colour : source_color = vec3(0.1, 0.05, 0.1);
 uniform float band_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float band_height : hint_range(0.0, 120.0) = 30.0;
 
+group_uniforms stain;
+/** Ink soaked in from one corner of a Root that is Hyde's: how far it has crept (0 to 1, set
+ * by arena_card.gd: 0 for no stain), how strongly it shows (for a stain that fades in instead
+ * of creeping), and how much of the card's diagonal it reaches once settled. */
+uniform float stain : hint_range(0.0, 1.0) = 0.0;
+uniform float stain_shown : hint_range(0.0, 1.0) = 1.0;
+uniform float stain_reach : hint_range(0.0, 1.5) = 0.5;
+uniform float stain_strength : hint_range(0.0, 1.0) = 0.85;
+/** The ink's ramp, from the corner out to the front (Palette.INK_DEEP, INK_BODY, INK_BLOOM),
+ * and the light on its front (Palette.HYDE): bright while it creeps, `front_rest` once settled. */
+uniform vec3 stain_deep : source_color = vec3(0.1216, 0.0118, 0.0902);
+uniform vec3 stain_body : source_color = vec3(0.2471, 0.0118, 0.1725);
+uniform vec3 stain_bloom : source_color = vec3(0.3686, 0.0627, 0.2510);
+uniform vec3 stain_front : source_color = vec3(1.0, 0.3098, 0.6980);
+uniform float front_rest : hint_range(0.0, 1.0) = 0.3;
+
 group_uniforms hatch;
 /** Pencil hatching on the stock: its colour (Palette.OUTLINE), strength, the distance between
  * strokes and their width in pixels, their slant from level, and the share of the card the
@@ -174,6 +190,25 @@ void fragment() {
 	float band = 1.0 - smoothstep(band_edge - 2.0, band_edge + 1.0, p.y);
 	col = mix(col, band_colour * (0.7 + 0.6 * t), band * band_strength);
 	col = mix(col, band_colour * 0.6, band * smoothstep(band_edge - 3.0, band_edge, p.y) * band_strength * 0.6);
+
+	// The ink stain: it soaks in from the corner the seed picks, deep there and blooming
+	// toward its uneven front, which is lit.
+	if (stain > 0.0) {
+		float pick = floor(hash(vec2(seed * 1.37, 17.0)) * 4.0);
+		vec2 from = vec2(mod(pick, 2.0), floor(pick * 0.5)) * card_size;
+		float diagonal = length(card_size);
+		float out_to = length(p - from) + diagonal * (0.16 * (value_noise(s / 14.0 + 83.0) - 0.5)
+				+ 0.05 * (value_noise(s / 4.0 + 89.0) - 0.5));
+		float front = stain * stain_reach * diagonal;
+		float in_by = front - out_to; // pixels behind the front
+		float soaked = smoothstep(-0.5, 0.5, in_by);
+		float r = clamp(out_to / max(front, 0.001), 0.0, 1.0);
+		r = clamp(r * r + (t - 0.5) * 0.4, 0.0, 1.0);
+		vec3 ink = r < 0.5 ? mix(stain_deep, stain_body, r * 2.0) : mix(stain_body, stain_bloom, r * 2.0 - 1.0);
+		col = mix(col, ink, soaked * stain_strength * stain_shown);
+		float lit = mix(1.0, front_rest, smoothstep(0.8, 1.0, stain));
+		col = mix(col, stain_front, (1.0 - smoothstep(0.4, 1.4, abs(in_by - 0.5))) * lit * stain_shown);
+	}
 
 	// Pencil hatching: slanted strokes, each row broken by a noise, in patches.
 	vec2 hatch_dir = vec2(cos(hatch_angle), sin(hatch_angle));
