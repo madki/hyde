@@ -8,11 +8,13 @@ extends Control
 ## the rules allow it, and says why not when the pointer rests on it. They work out no rule:
 ## `show_table` takes RulesView.table() with the chosen cards.
 ##
-## PLAY on is the one filled shape in the foot: cream, its word and tally in dark pencil.
-## DISCARD on is a cream edge round a dark fill, its word and tally in cream. Off, either is
-## the same shape with its word and tally faint, in place. Under the pointer PLAY's fill and
-## DISCARD's edge light up; pressed, a button is drawn 2 px lower. A play that would make him
-## break out turns PLAY amber and writes "he breaks out" left of it (ArenaLayout.warning).
+## The one control to press first is filled with the light of whoever has the table (Jekyll's
+## or Hyde's), its word and tally in outline dark, and it breathes a glow round its edge: PLAY
+## (or PASS) when it can be pressed, else DISCARD. The other, when it can be pressed too, rests
+## on a raised night fill with a ruled edge and chalk words. Off, either is a dark well with a
+## dashed edge and faint words, in place. Under the pointer the edge turns chalk; pressed, a
+## button is drawn 2 px lower. A play that would make him break out fills PLAY with the warning
+## colour and writes "he breaks out" left of it (ArenaLayout.warning).
 ##
 ## While a move is played back both are off in place and take no clicks (`lower`); they come
 ## on again when input opens (`rise`).
@@ -25,21 +27,20 @@ signal pass_pressed
 const WORD_INSET := 14.0
 ## How far a pressed button is drawn lower.
 const PRESS_DROP := 2.0
-## The buttons' edge and corners, in pixels; the edge of PLAY when it warns.
+## The buttons' edge, in pixels; the edge of PLAY when it warns. Corners are square.
 const EDGE := 2
 const WARNING_EDGE := 3
-const CORNER := 3
 const WORD_SIZE := 20
-
-const CREAM := Color(0.93, 0.88, 0.75)
-const CREAM_LIT := Color(1.0, 0.97, 0.88)
-const PENCIL := Color(0.015, 0.025, 0.035)
-const DARK_FILL := Color(0.05, 0.035, 0.06, 0.55)
-const WARNING := Color(1.0, 0.72, 0.35)
-const WARNING_LIT := Color(1.0, 0.8, 0.5)
-const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
-## How strongly an off button's edge, word and tally are drawn.
-const OFF := 0.4
+## An off button's dashed edge: dash length and width, in pixels.
+const DASH := 6.0
+const DASH_WIDTH := 2.0
+## The ready control's glow: how far it reaches out, in pixels, and the strength it breathes
+## between over PULSE seconds. With ArenaPace.reduce_flashes it holds at STEADY.
+const GLOW_REACH := 10
+const GLOW_LOW := 0.45
+const GLOW_HIGH := 0.7
+const PULSE := 1.6
+const STEADY := 0.6
 
 var _play := Button.new()
 var _discard := Button.new()
@@ -53,6 +54,10 @@ var _discard_why := "Not now."
 var _breaks := false
 ## False while a move is played back.
 var _up := true
+## The light of whoever has the table.
+var _accent := Palette.JEKYLL
+## The control drawn ready (filled and glowing), or null.
+var _ready_button: Button = null
 
 
 func _init() -> void:
@@ -67,14 +72,11 @@ func _init() -> void:
 		button.add_theme_font_override("font", font)
 		button.add_theme_font_size_override("font_size", WORD_SIZE)
 		button.add_theme_constant_override("outline_size", 0)
-		button.add_theme_color_override("font_disabled_color", Color(CREAM, OFF))
-		button.add_theme_stylebox_override("disabled", _box(DARK_FILL, Color(CREAM, OFF), EDGE))
+		button.add_theme_color_override("font_disabled_color", Palette.CHALK_3)
+		button.add_theme_stylebox_override("disabled", _box(Palette.NIGHT_2, Color.TRANSPARENT, EDGE))
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		button.draw.connect(_draw_dashes.bind(button))
 		add_child(button)
-	for state: String in ["font_color", "font_focus_color", "font_hover_color", "font_pressed_color",
-			"font_hover_pressed_color"]:
-		_play.add_theme_color_override(state, PENCIL)
-	dress_dark(_discard)
 	_play.text = "PLAY"
 	_discard.text = "DISCARD"
 	_warning.text = "he breaks out"
@@ -83,8 +85,8 @@ func _init() -> void:
 	_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_warning.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_warning.add_theme_font_size_override("font_size", 13)
-	_warning.add_theme_color_override("font_color", WARNING)
-	_warning.add_theme_color_override("font_outline_color", OUTLINE)
+	_warning.add_theme_color_override("font_color", Palette.WARN)
+	_warning.add_theme_color_override("font_outline_color", Palette.OUTLINE)
 	_warning.add_theme_constant_override("outline_size", 5)
 	add_child(_warning)
 	_play.pressed.connect(func() -> void:
@@ -112,6 +114,7 @@ func hold_tallies(numbers: ArenaNumbers) -> void:
 ## Sets both controls from RulesView.table() and the number of cards chosen in the hand.
 func show_table(table: Dictionary, chosen: int) -> void:
 	var playing: bool = table.phase == "play"
+	_accent = Palette.HYDE if table.get("stance", "jekyll") == "hyde" else Palette.JEKYLL
 	var play: Variant = table.play
 	_breaks = false
 	_passing = playing and table.can_pass.ok
@@ -180,34 +183,41 @@ func _apply() -> void:
 	for button: Button in [_play, _discard]:
 		button.mouse_filter = Control.MOUSE_FILTER_STOP if _up else Control.MOUSE_FILTER_IGNORE
 	var warns := _breaks and not _passing and not _play.disabled
-	_set_play_look(warns)
+	_ready_button = null
+	if not _play.disabled:
+		_ready_button = _play
+	elif not _discard.disabled:
+		_ready_button = _discard
+	for button: Button in [_play, _discard]:
+		if button == _ready_button:
+			var fill := Palette.WARN if warns and button == _play else _accent
+			var edge := WARNING_EDGE if warns and button == _play else EDGE
+			_dress(button, fill, fill, Palette.OUTLINE, Palette.OUTLINE, edge)
+		else:
+			dress_dark(button)
+		button.queue_redraw()
 	_warning.visible = warns
 	_show_tallies()
+	queue_redraw()
 
 
-## PLAY's fill: cream, or amber with a heavier edge while it warns.
-func _set_play_look(warns: bool) -> void:
-	var fill := WARNING if warns else CREAM
-	var lit := WARNING_LIT if warns else CREAM_LIT
-	var edge := WARNING_EDGE if warns else EDGE
-	_play.add_theme_stylebox_override("normal", _box(fill, PENCIL, edge))
-	_play.add_theme_stylebox_override("hover", _box(lit, PENCIL, edge))
-	_play.add_theme_stylebox_override("pressed", _box(lit, PENCIL, edge, true))
-	_play.add_theme_stylebox_override("hover_pressed", _box(lit, PENCIL, edge, true))
-
-
-## Gives a button DISCARD's look while it can be pressed: a cream edge and word on a dark
-## fill, both lit under the pointer, drawn lower while pressed. For any button of the page
-## that is not the one to press first.
+## Gives a button the look of a control at rest: a raised night fill with a ruled edge and
+## chalk word, its edge chalk under the pointer, drawn lower while pressed. For any button of
+## the page that can be pressed but is not the one to press first.
 static func dress_dark(button: Button) -> void:
-	button.add_theme_color_override("font_color", CREAM)
-	button.add_theme_color_override("font_focus_color", CREAM)
-	for state: String in ["font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
-		button.add_theme_color_override(state, CREAM_LIT)
-	button.add_theme_stylebox_override("normal", _box(DARK_FILL, CREAM, EDGE))
-	button.add_theme_stylebox_override("hover", _box(DARK_FILL, CREAM_LIT, EDGE))
-	button.add_theme_stylebox_override("pressed", _box(DARK_FILL, CREAM_LIT, EDGE, true))
-	button.add_theme_stylebox_override("hover_pressed", _box(DARK_FILL, CREAM_LIT, EDGE, true))
+	_dress(button, Palette.NIGHT_3, Palette.RULE, Palette.CHALK, Palette.CHALK, EDGE)
+
+
+## Sets a button's boxes and word colours: `fill` inside an edge `rule` wide `width`, the edge
+## `lit` under the pointer and pressed, the word `word`.
+static func _dress(button: Button, fill: Color, rule: Color, lit: Color, word: Color, width: int) -> void:
+	for state: String in ["font_color", "font_focus_color", "font_hover_color", "font_pressed_color",
+			"font_hover_pressed_color"]:
+		button.add_theme_color_override(state, word)
+	button.add_theme_stylebox_override("normal", _box(fill, rule, width))
+	button.add_theme_stylebox_override("hover", _box(fill, lit, width))
+	button.add_theme_stylebox_override("pressed", _box(fill, lit, width, true))
+	button.add_theme_stylebox_override("hover_pressed", _box(fill, lit, width, true))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
@@ -218,7 +228,6 @@ static func _box(fill: Color, edge: Color, width: int, pressed: bool = false) ->
 	box.bg_color = fill
 	box.border_color = edge
 	box.set_border_width_all(width)
-	box.set_corner_radius_all(CORNER)
 	box.content_margin_left = WORD_INSET
 	box.content_margin_right = WORD_INSET
 	box.content_margin_top = PRESS_DROP * 2.0 if pressed else 0.0
@@ -231,16 +240,49 @@ static func _box(fill: Color, edge: Color, width: int, pressed: bool = false) ->
 
 func _process(_delta: float) -> void:
 	_show_tallies()
+	if _ready_button != null and not ArenaPace.reduce_flashes:
+		queue_redraw()
+
+
+## The ready control's glow: rings of its fill fading outward round its box, under it.
+func _draw() -> void:
+	if _ready_button == null:
+		return
+	var glow := STEADY
+	if not ArenaPace.reduce_flashes:
+		var t := Time.get_ticks_msec() / 1000.0
+		glow = lerpf(GLOW_LOW, GLOW_HIGH, 0.5 - 0.5 * cos(TAU * t / PULSE))
+	var box := _ready_button.get_theme_stylebox("normal") as StyleBoxFlat
+	var rect := Rect2(_ready_button.position, _ready_button.size)
+	rect.position.y += _drop(_ready_button)
+	for i: int in range(1, GLOW_REACH + 1):
+		var fade := 1.0 - float(i - 1) / GLOW_REACH
+		draw_rect(rect.grow(i), Color(box.bg_color, glow * 0.35 * fade * fade), false, 1.0)
+
+
+## Draws an off button's dashed edge over its box.
+func _draw_dashes(button: Button) -> void:
+	if not button.disabled:
+		return
+	var r := Rect2(Vector2.ONE * DASH_WIDTH * 0.5, button.size - Vector2.ONE * DASH_WIDTH)
+	var corners: Array[Vector2] = [r.position, Vector2(r.end.x, r.position.y), r.end,
+			Vector2(r.position.x, r.end.y)]
+	for i: int in 4:
+		button.draw_dashed_line(corners[i], corners[(i + 1) % 4], Palette.CHALK_3, DASH_WIDTH, DASH)
 
 
 ## Tells the tallies how to be drawn: each in its button's word colour, lower while pressed.
 func _show_tallies() -> void:
 	if _numbers == null:
 		return
-	var play_colour := Color(CREAM, OFF) if _play.disabled else PENCIL
-	var discard_colour := Color(CREAM, OFF) if _discard.disabled else CREAM
-	_numbers.set_tally_look(0, play_colour, _drop(_play))
-	_numbers.set_tally_look(1, discard_colour, _drop(_discard))
+	_numbers.set_tally_look(0, _word(_play), _drop(_play))
+	_numbers.set_tally_look(1, _word(_discard), _drop(_discard))
+
+
+func _word(button: Button) -> Color:
+	if button.disabled:
+		return Palette.CHALK_3
+	return button.get_theme_color("font_color")
 
 
 func _drop(button: Button) -> float:
