@@ -122,15 +122,28 @@ static func pile_discard(page: Vector2) -> Rect2:
 	return _from_right(page, 44.0, page.y - 140.0, Vector2(84.0, 120.0))
 
 
-## PLAY, and under the word the plays left: the left of the pair under the hand, which is
-## centred on the page's middle.
+## PLAY, with the plays left as a tally at its right end: the left of the pair of buttons
+## under the hand, which is centred on the page's middle.
 static func controls_play(page: Vector2) -> Rect2:
 	return Rect2(page.x * 0.5 - BUTTON_GAP * 0.5 - BUTTON.x, page.y - 68.0, BUTTON.x, BUTTON.y)
 
 
-## DISCARD, and under the word the discards left: the right of the pair.
+## DISCARD, with the discards left as a tally at its right end: the right of the pair.
 static func controls_discard(page: Vector2) -> Rect2:
 	return Rect2(page.x * 0.5 + BUTTON_GAP * 0.5, page.y - 68.0, BUTTON.x, BUTTON.y)
+
+
+## The words of a play that would make him break out: in the row, left of PLAY, ending
+## 12 px from it, written right-aligned.
+static func warning(page: Vector2) -> Rect2:
+	var play := controls_play(page)
+	return Rect2(play.position.x - 12.0 - 108.0, play.position.y, 108.0, play.size.y)
+
+
+## The word "Hint" (on night 1): in the row, 16 px right of DISCARD, level with it.
+static func hint(page: Vector2) -> Rect2:
+	var discard := controls_discard(page)
+	return Rect2(discard.end.x + 16.0, discard.get_center().y - 12.0, 64.0, 24.0)
 
 
 # --- The rules ----------------------------------------------------------------------------
@@ -177,6 +190,8 @@ static func zones(page: Vector2) -> Dictionary:
 		"pile_discard": pile_discard(page),
 		"controls_play": controls_play(page),
 		"controls_discard": controls_discard(page),
+		"warning": warning(page),
+		"hint": hint(page),
 	}
 
 

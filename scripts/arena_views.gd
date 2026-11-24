@@ -76,7 +76,6 @@ func _init() -> void:
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
 	_hint.text = "Hint"
-	_hint.size = Vector2(64.0, 24.0)
 	_hint.focus_mode = Control.FOCUS_NONE
 	_hint.tooltip_text = "Chooses the cards of a good hand."
 	_hint.add_theme_font_override("font", font)
@@ -118,10 +117,11 @@ func _on_synced(table: Dictionary) -> void:
 	_show_notebook()
 
 
-## The word "Hint" stands right of DISCARD, level with it, wherever the page's size puts it.
+## The word "Hint" stands in its zone, right of DISCARD, wherever the page's size puts it.
 func _place_hint() -> void:
-	var discard := ArenaLayout.controls_discard(size)
-	_hint.position = Vector2(discard.end.x + 16.0, discard.get_center().y - _hint.size.y * 0.5)
+	var zone := ArenaLayout.hint(size)
+	_hint.position = zone.position
+	_hint.size = zone.size
 
 
 func _process(_delta: float) -> void:
