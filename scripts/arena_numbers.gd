@@ -113,9 +113,9 @@ var _total := 0
 var _travel := -1.0 ## -1 while the total is not on its way
 var _fly := -1.0 ## -1 while no drop is flying
 var _ticks := 0
-## Where the readout's line begins, from the page's left: set when a hand is put up, so that
+## Where the readout's line begins, from its zone's left: set when a hand is put up, so that
 ## the line is centred then and does not shift as its numbers grow.
-var _line_left := 0.0
+var _line_inset := 0.0
 ## The most plays and discards the tallies have shown: they are centred for that many.
 var _plays_most := 0.0
 var _discards_most := 0.0
@@ -220,8 +220,7 @@ func show_hand(hand_name: String, chips: int, mult: int, note: String = "") -> v
 	_mult = mult
 	_merge = 0.0
 	_travel = -1.0
-	var r := ArenaLayout.readout(size)
-	_line_left = r.position.x + maxf((r.size.x - _line().end) * 0.5, 0.0)
+	_line_inset = maxf((ArenaLayout.readout(size).size.x - _line().end) * 0.5, 0.0)
 	_redraw()
 
 
@@ -574,6 +573,11 @@ func _line() -> Dictionary:
 	return out
 
 
+## Where the readout's line begins on the page, as the page is now.
+func _line_left() -> float:
+	return ArenaLayout.readout(size).position.x + _line_inset
+
+
 func _number_width(text: String) -> float:
 	return _heavy.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, READOUT_SIZE).x
 
@@ -582,7 +586,7 @@ func _mult_middle() -> Vector2:
 	var line := _line()
 	if not _numbers:
 		return ArenaLayout.readout(size).get_center()
-	return Vector2(_line_left + line.mult + line.mult_w * 0.5, _baseline() - READOUT_SIZE * 0.35)
+	return Vector2(_line_left() + line.mult + line.mult_w * 0.5, _baseline() - READOUT_SIZE * 0.35)
 
 
 func _drop_at(i: int) -> Vector2:
@@ -764,7 +768,7 @@ func _draw_readout() -> void:
 	if not _numbers:
 		return
 	var line := _line()
-	var left := _line_left
+	var left := _line_left()
 	c.draw_string(_slanted, Vector2(left, base - 2.0), _name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE, CREAM)
 	if _note != "":
 		c.draw_string(_slanted, Vector2(left + line.note, base - 2.0), " " + _note,

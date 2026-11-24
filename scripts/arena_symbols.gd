@@ -641,6 +641,13 @@ func _line_home() -> Vector2:
 	return Vector2(zone.get_center().x, zone.position.y + LINE_NAME_H + (zone.size.y - LINE_NAME_H) * 0.5)
 
 
+## The line's banner, in the line's own coordinates: a strip whose two ends are cut to a notch.
+static func _banner() -> PackedVector2Array:
+	return PackedVector2Array([Vector2(-LINE_HALF, -LINE_H), Vector2(LINE_HALF, -LINE_H),
+			Vector2(LINE_HALF - LINE_NOTCH, 0.0), Vector2(LINE_HALF, LINE_H), Vector2(-LINE_HALF, LINE_H),
+			Vector2(-LINE_HALF + LINE_NOTCH, 0.0)])
+
+
 ## From the line's own coordinates to this control's: at home, or grown to the centre.
 func _line_xform() -> Transform2D:
 	var ease_t := _grow
@@ -685,10 +692,7 @@ func _draw_back() -> void:
 		if s.ghost_roll:
 			_slip(_roll_slip(sym), rng, CREAM)
 	_back.draw_set_transform_matrix(_line_xform())
-	# A banner: a strip whose two ends are cut to a notch.
-	var banner := PackedVector2Array([Vector2(-LINE_HALF, -LINE_H), Vector2(LINE_HALF, -LINE_H),
-			Vector2(LINE_HALF - LINE_NOTCH, 0.0), Vector2(LINE_HALF, LINE_H), Vector2(-LINE_HALF, LINE_H),
-			Vector2(-LINE_HALF + LINE_NOTCH, 0.0)])
+	var banner := _banner()
 	var shadow := PackedVector2Array()
 	for p in banner:
 		shadow.append(p + Vector2(2.0, 3.0))
@@ -875,8 +879,12 @@ func _draw_fills() -> void:
 		_fills.draw_circle(at, lerpf(PIP_R - 1.1, 2.4, t), colour)
 	if _flood > 0.01:
 		_fills.draw_set_transform_matrix(_line_xform())
+		# The ink spreads from the middle over the paper side, as much of it as is banner.
 		var w := LINE_HALF * _flood
-		_fills.draw_rect(Rect2(-w, -LINE_H - 2.0, w, LINE_H * 2.0 + 4.0), Color(INK, 0.92))
+		var spread := PackedVector2Array([Vector2(-w, -LINE_H), Vector2(0.0, -LINE_H), Vector2(0.0, LINE_H),
+				Vector2(-w, LINE_H)])
+		for part in Geometry2D.intersect_polygons(spread, _banner()):
+			_fills.draw_colored_polygon(part, Color(INK, 0.92))
 		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 

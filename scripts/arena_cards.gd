@@ -44,6 +44,7 @@ func _ready() -> void:
 	_title.position = Vector2(40.0, 18.0)
 	_title.add_theme_color_override("font_color", WRITING)
 	add_child(_title)
+	resized.connect(_place_hand)
 	_show_page(int(Shot.arg("page")) if Shot.has_arg("page") else 0)
 	for letter in Shot.arg("do"):
 		_change(letter)
@@ -162,7 +163,7 @@ func _show_hand(ids: Array, chosen: Array) -> void:
 	_hand = ArenaHand.new()
 	_hand.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hand.place = Rect2(40.0, 250.0, size.x - 80.0, 210.0)
+	_place_hand()
 	_hand.is_jekyll = _run.stance == "jekyll"
 	_hand.max_chosen = _run.dials.max_play
 	_stage.add_child(_hand)
@@ -177,6 +178,12 @@ func _show_hand(ids: Array, chosen: Array) -> void:
 	_hand.chosen_changed.connect(show)
 	show.call()
 	_hand.snap()
+
+
+# The hand's row lies across the page, whatever the page's width is now.
+func _place_hand() -> void:
+	if is_instance_valid(_hand):
+		_hand.place = Rect2(40.0, 250.0, size.x - 80.0, 210.0)
 
 
 ## What the table says of the chosen play, in a line or two.
