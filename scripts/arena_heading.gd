@@ -72,7 +72,7 @@ func play(words: Dictionary, to: Vector2) -> void:
 		y += label.size.y + (10.0 if label == _target else 4.0)
 	for label: Label in [_head, _target, _title, _twist]:
 		label.position.y -= y * 0.5
-	# About the middle of the band between the restraint and the lower rule.
+	# About the middle of the band between the readout's top and the lower rule.
 	var middle := Vector2(size.x * 0.5, (ArenaLayout.readout(size).position.y + ArenaLayout.foot_rule(size)) * 0.5)
 	_block.position = middle
 	_block.scale = Vector2.ONE

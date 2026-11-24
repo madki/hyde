@@ -389,8 +389,8 @@ func _preview_kind() -> String:
 # --- Words ----------------------------------------------------------------------------------
 
 
-## The next drink's cost, as it is written beside the flask: short, to end before the hand's
-## first card, which rises beside it.
+## The next drink's cost, as it is written beside the flask: short, to end inside the left
+## column.
 func _cost_words() -> String:
 	if _draught.cost == "first":
 		return "He arrives: %d Roots join" % RulesConfig.FIRST_ARRIVAL.size()
@@ -484,7 +484,7 @@ func _salt_zone() -> Rect2:
 
 
 ## What of the draught's zone takes the pointer: the flask and its words, and no more of the
-## zone, whose far end a risen card of the hand lies over.
+## zone.
 func _flask_hit() -> Rect2:
 	var zone := _flask_zone()
 	return Rect2(zone.position, Vector2(minf(WORDS_LEFT + _words_width(), zone.size.x), zone.size.y))

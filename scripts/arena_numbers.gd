@@ -298,7 +298,7 @@ func count_score(to: int) -> Tween:
 	return _count("_score", to, COUNT_TIME)
 
 
-## The target is struck through and the score underlined (or both rubbed out, with false).
+## The target is struck through (or the stroke rubbed out, with false).
 func strike_target(struck: bool = true) -> Tween:
 	var t := _tween()
 	t.tween_property(self, "_strike", 1.0 if struck else 0.0, MARK_TIME)

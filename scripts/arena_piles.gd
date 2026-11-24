@@ -1,8 +1,8 @@
 class_name ArenaPiles
 extends Control
-## The two piles, one in each corner at the foot of the page: the draw pile on the left and
-## the discards on the right (ArenaLayout.pile_draw and pile_discard). Between rounds
-## (`deck_mode`) the draw pile's corner holds the whole deck as one pile.
+## The two piles at the foot of the page, one at each end of the hand: the draw pile on the
+## left and the discards on the right (ArenaLayout.pile_draw and pile_discard). Between rounds
+## (`deck_mode`) the draw pile's place holds the whole deck as one pile.
 ##
 ## The counts are shown values (ArenaShown "draw_count" and "discard_count", and "deck_count"
 ## between rounds), so they move only in beats: a card leaving a pile takes one off as it
@@ -87,8 +87,8 @@ func put(which: String, cards: Array, into_middle: bool = false) -> void:
 func _put_one(which: String, to: ArenaPile, card: ArenaCard, face: int, into_middle: bool,
 		delay: float, left: Array) -> void:
 	if into_middle:
-		# Beside the pile, half over it, then in: on the side of the page's middle, since the
-		# pile lies in a corner and its other side is the page's edge.
+		# Beside the pile, half over it, then in: on the side of the page's middle, where the
+		# hand lies, since its other side is the page's edge or near it.
 		var inward := 1.0 if to.top_centre().x < get_global_rect().get_center().x else -1.0
 		var beside := to.top_centre() + Vector2(inward * ArenaCard.SIZE.x * ArenaPile.SCALE * 0.55, 8.0)
 		await travel.fly(card, beside, inward * 6.0, ArenaPile.SCALE, face, ArenaPace.TRAVEL, delay)

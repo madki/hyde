@@ -19,9 +19,9 @@ extends Control
 ## the hand that holds it. `change_face` changes the card where it lies, and `appear` and
 ## `leave` bring it in and take it away.
 ##
-## In the hand a card is partly covered by the next and its foot may be off the page: `strip`
-## and `foot_strip` write the title and the tag in the part that shows, and `chips_above` writes the chips on
-## a disc under the title instead of in the foot.
+## In the hand a card is partly covered by the next: `strip` and `foot_strip` write the title
+## and the tag in the part that shows, and `chips_above` writes the chips on a disc under the
+## title, where the next card does not cover them, instead of in the foot.
 
 const SIZE := Vector2(96.0, 140.0)
 ## The card is printed coarsely, in square texels this many pixels wide: 0 prints it smooth.
@@ -108,7 +108,7 @@ var foot_strip := 0.0:
 			foot_strip = value
 			_refresh_tag()
 ## The chips are written on a disc under the title, at the left, and the foot is left to the
-## tag: for a card whose foot may be off the page.
+## tag: for a card of the hand, whose foot the next card covers.
 var chips_above := false:
 	set(value):
 		if value != chips_above:
