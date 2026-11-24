@@ -213,7 +213,8 @@ func set_roots(sym: String, paper: int, ink: int, paper_chips: int, ink_chips: i
 	_text.queue_redraw()
 
 
-## While true, every gauge shows its number beside it (a held key).
+## True while a held key shows every number on a sheet of its own (ArenaViews): the gauges
+## then show no ledger and no change's number.
 func show_numbers(on: bool) -> void:
 	_numbers = on
 	_redraw()
@@ -915,8 +916,9 @@ func _draw_text() -> void:
 				_text.draw_string(_heavy, end, "+%d" % (int(s[row]) - TALLY_MAX), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, LABEL)
 		# What changed on a gauge, by name, for a moment after: right of the column and level
 		# with the gauge, on the page's own ground. In the gauge's own order, one line each
-		# about the gauge's middle: side by side, two would reach the line's banner.
-		if not _numbers:
+		# about the gauge's middle: side by side, two would reach the line's banner. Not while
+		# a rollover's slip stands at the gauge's end: on a wide gauge the two would cross.
+		if not _numbers and not s.ghost_roll:
 			var lit: Array[String] = []
 			for row: String in ["habit", "craving", "temper"]:
 				if s.note[row] > 0.01:
