@@ -3,18 +3,20 @@ extends Control
 ## The three symbols and the line, each in its zone of the arena's page (ArenaLayout).
 ##
 ## Lamp, Heart and Mirror are three gauges, one under another at the top of the left column,
-## each between brackets on a slip of cream stock that reads on the slate and on Hyde's ink alike. A gauge reads from
-## left to right: Habit as ink tallies, the symbol's small sketch, Craving as ink pips (two
-## places; a third shows only while Craving rolls over), a bar, and Temper as pencil tallies.
-## A side with nothing on it has a dash. Under the top rule, in the centre, lies the line, as
+## each between brackets on a slip of cream stock that reads on the slate and on Hyde's ink
+## alike, beginning at the column's left edge and as wide as its marks need. A gauge reads
+## from left to right: Habit as ink tallies, the symbol's small sketch, Craving as ink pips
+## (two places; a third shows only while Craving rolls over), a bar, and Temper as pencil
+## tallies. A side with nothing on it has a dash. Under the top rule, in the centre, lies the line, as
 ## a banner: Paper Roots as pencil tallies to the left of a centre mark, Ink Roots as ink
 ## tallies to the right, both at one pitch so the longer side is the side ahead, with the two
 ## counts at the banner's ends.
 ##
 ## Hovering a gauge opens its ledger to the right of the column: that symbol in numbers, its
 ## three gauges, how many Paper and Ink Roots of it the deck holds, and what one of each is
-## worth now. A gauge's number also shows under it whenever it changes, but not while
-## `show_numbers(true)` (a held key, whose own sheet gives every number) is on.
+## worth now. When a gauge changes, what changed is written there too for a moment, by name
+## ("Craving 2"), level with the gauge; not while `show_numbers(true)` (a held key, whose own
+## sheet gives every number) is on.
 ##
 ## Nothing here works out a rule, and nothing moves at rest. Give it RulesView.table() with
 ## `show_table` to set it at once. The beats of a move then drive it, each call a coroutine to
@@ -74,9 +76,12 @@ const LINE_GAP := 8.0
 const LINE_MARK_H := 8.0
 ## How much larger the line is drawn at the centre of the page.
 const GROW_SCALE := 1.6
-## The ledger's size, and its distance from the column's right side.
+## The ledger's size, and how far right of the column it and a change's number stand.
 const LEDGER := Vector2(282.0, 76.0)
 const LEDGER_GAP := 8.0
+## The size a change's number is written at, and from one line of them to the next.
+const NOTE_SIZE := 13
+const NOTE_STEP := 15.0
 
 ## Seconds for each movement.
 const FILL_TIME := 0.3
@@ -248,8 +253,8 @@ func ghost_craving(sym: String, adds: int) -> void:
 	_redraw()
 
 
-## Joins the three pips, outlines the next Habit tally, and hangs a slip under the gauge
-## that names the Ink Root that would join.
+## Joins the three pips, outlines the next Habit tally, and puts a slip at the gauge's right
+## end that names the Ink Root that would join.
 func ghost_rollover(sym: String, on: bool) -> void:
 	_s[sym].ghost_roll = on
 	_redraw()
@@ -384,7 +389,7 @@ func _grow_tallies(sym: String, row: String, n: int) -> void:
 	await _tween(TALLY_TIME * maxf(1.0, absf(n - from)), func(t: float) -> void: s[key] = lerpf(from, float(n), t))
 
 
-## Shows a gauge's number beside it for a moment.
+## Writes a gauge's number right of the column, level with the gauge, for a moment.
 func _note(sym: String, row: String) -> void:
 	var note: Dictionary = _s[sym].note
 	note[row] = 1.0
@@ -588,6 +593,11 @@ func _gauge_rect(sym: String) -> Rect2:
 	return _g[sym].rect
 
 
+## Where what stands beside the column begins: the ledger, and a change's number.
+func _beside_x() -> float:
+	return ArenaLayout.symbols(size).end.x + LEDGER_GAP
+
+
 ## The height of the middle of a symbol's gauge.
 func _y(sym: String) -> float:
 	return _g[sym].y
@@ -714,7 +724,8 @@ func _slip(r: Rect2, rng: RandomNumberGenerator, colour: Color) -> void:
 	_back.draw_colored_polygon(edge, colour)
 
 
-## The words on the slip of a rollover's card, and the slip, hung under the gauge.
+## The words on the slip of a rollover's card, and the slip: at the gauge's right end, level
+## with it, so that it lies on no other gauge.
 func _roll_words(sym: String) -> String:
 	return "+1 %s" % RulesConfig.ROOT[sym].ink
 
@@ -722,7 +733,7 @@ func _roll_words(sym: String) -> String:
 func _roll_slip(sym: String) -> Rect2:
 	var w := _slanted.get_string_size(_roll_words(sym), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11).x + 12.0
 	var r := _gauge_rect(sym)
-	return Rect2(r.position.x + 10.0, r.end.y + 1.0, w, 16.0)
+	return Rect2(r.end.x + 3.0, r.get_center().y - 8.0, w, 16.0)
 
 
 ## A rectangle's outline with its edges a little uneven, as torn card.
@@ -902,16 +913,21 @@ func _draw_text() -> void:
 			if int(s[row]) > TALLY_MAX:
 				var end := _tally_top(sym, row, TALLY_MAX - 1) + Vector2(4.0, TALLY_H_TWO - 1.0)
 				_text.draw_string(_heavy, end, "+%d" % (int(s[row]) - TALLY_MAX), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, LABEL)
-		# A gauge's number under it for a moment after it changes, on the page's own ground.
-		if not _numbers and not s.ghost_roll:
-			for row: String in ["craving", "habit", "temper"]:
-				var note: float = s.note[row]
-				if note <= 0.01:
-					continue
-				var x: float = g.pips_x + PIP_PITCH * 0.5 if row == "craving" else g[row + "_x"] + g[row + "_w"] * 0.5
-				var at := Vector2(x - 20.0, r.end.y + 13.0)
-				_text.draw_string_outline(_heavy, at, str(s[row]), HORIZONTAL_ALIGNMENT_CENTER, 40.0, 12, 4, Color(edge, edge.a * note))
-				_text.draw_string(_heavy, at, str(s[row]), HORIZONTAL_ALIGNMENT_CENTER, 40.0, 12, Color(CREAM_TEXT, note))
+		# What changed on a gauge, by name, for a moment after: right of the column and level
+		# with the gauge, on the page's own ground. In the gauge's own order, one line each
+		# about the gauge's middle: side by side, two would reach the line's banner.
+		if not _numbers:
+			var lit: Array[String] = []
+			for row: String in ["habit", "craving", "temper"]:
+				if s.note[row] > 0.01:
+					lit.append(row)
+			var base := r.get_center().y + _heavy.get_ascent(NOTE_SIZE) * 0.36 - (lit.size() - 1) * NOTE_STEP * 0.5
+			for i in lit.size():
+				var note: float = s.note[lit[i]]
+				var words := "%s %d" % [lit[i].capitalize(), int(s[lit[i]])]
+				var at := Vector2(_beside_x(), base + i * NOTE_STEP)
+				_text.draw_string_outline(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, 4, Color(edge, edge.a * note))
+				_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, Color(CREAM_TEXT, note))
 		if s.ghost_roll:
 			var slip := _roll_slip(sym)
 			_text.draw_string(_slanted, slip.position + Vector2(0.0, 12.0), _roll_words(sym), HORIZONTAL_ALIGNMENT_CENTER,
@@ -934,13 +950,14 @@ func _draw_text() -> void:
 		_draw_ledger(_hover)
 
 
-## A symbol's ledger, to the right of the column and level with its gauge: its gauges in
+## A symbol's ledger, to the right of the column and level with its gauge, but no higher
+## than the readout, so that it lies under the line's banner and not on it: its gauges in
 ## numbers, and its two Roots in the deck with their worth.
 func _draw_ledger(sym: String) -> void:
 	var s: Dictionary = _s[sym]
-	var zone := ArenaLayout.symbols(size)
-	var box := Rect2(Vector2(zone.end.x + LEDGER_GAP, _gauge_rect(sym).position.y), LEDGER)
-	box.position.x = clampf(box.position.x, 0.0, size.x - box.size.x)
+	var top := maxf(_gauge_rect(sym).position.y, ArenaLayout.readout(size).position.y)
+	var box := Rect2(Vector2(_beside_x(), top), LEDGER)
+	box.position = box.position.clamp(Vector2.ZERO, (size - box.size).max(Vector2.ZERO))
 	_text.draw_rect(Rect2(box.position + Vector2(3.0, 4.0), box.size), SHADOW)
 	_text.draw_rect(box, Color(0.95, 0.91, 0.80))
 	_text.draw_rect(box, PENCIL, false, 1.0)
