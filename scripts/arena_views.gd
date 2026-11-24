@@ -3,10 +3,10 @@ extends Control
 ## Views on demand: what the table does not keep on the page, one step away.
 ##
 ## - Hold Shift (or Tab, or rest the pointer on the tab at the right edge, which says so):
-##   every number at once, for as long as it is held. The three symbols write their gauges in
-##   numbers, and a note in the centre gives each symbol's Roots and what one is worth, the
-##   restraint's limit and why, what the next drink costs, the scene's twist, what the dawn
-##   brings, and both men's hands with their base chips and mult.
+##   every number at once, for as long as it is held. A sheet in the centre gives each
+##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and
+##   why, what the next drink costs, the scene's twist, what the dawn brings, and both men's
+##   hands with their base chips and mult.
 ## - Rest the pointer on the tab at the left edge, which names the scene's twist: the twist
 ##   and what the dawn brings. On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
@@ -143,8 +143,8 @@ func _process(_delta: float) -> void:
 	_hover = hover
 	t.symbols.show_numbers(held)
 	if held:
-		# In the middle of the page, under the numbers the symbols write below their gauges.
-		_say(_every_number(), Vector2(0.0, ArenaLayout.restraint(size).position.y + 4.0), true)
+		# In the middle of the page.
+		_say(_every_number(), Vector2(0.0, ArenaLayout.note_top(size)), true)
 	elif hover == "night":
 		var left := _tabs.rect_of("left")
 		_say(_night_words(), Vector2(left.end.x + 12.0, left.position.y))

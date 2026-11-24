@@ -2,18 +2,19 @@ class_name ArenaSymbols
 extends Control
 ## The three symbols and the line, each in its zone of the arena's page (ArenaLayout).
 ##
-## Lamp, Heart and Mirror are three gauges in one row at the top, each between brackets on a
-## slip of cream stock that reads on the slate and on Hyde's ink alike. A gauge reads from
+## Lamp, Heart and Mirror are three gauges, one under another at the top of the left column,
+## each between brackets on a slip of cream stock that reads on the slate and on Hyde's ink alike. A gauge reads from
 ## left to right: Habit as ink tallies, the symbol's small sketch, Craving as ink pips (two
 ## places; a third shows only while Craving rolls over), a bar, and Temper as pencil tallies.
-## A side with nothing on it has a dash. Under the top rule lies the line, as a banner under
-## its name: Paper Roots as pencil tallies to the left of a centre mark, Ink Roots as ink
+## A side with nothing on it has a dash. Under the top rule, in the centre, lies the line, as
+## a banner: Paper Roots as pencil tallies to the left of a centre mark, Ink Roots as ink
 ## tallies to the right, both at one pitch so the longer side is the side ahead, with the two
 ## counts at the banner's ends.
 ##
-## Hovering a gauge opens its ledger: that symbol in numbers, its three gauges, how many Paper
-## and Ink Roots of it the deck holds, and what one of each is worth now. `show_numbers(true)`
-## (a held key) opens all three. A gauge's number also shows under it whenever it changes.
+## Hovering a gauge opens its ledger to the right of the column: that symbol in numbers, its
+## three gauges, how many Paper and Ink Roots of it the deck holds, and what one of each is
+## worth now. A gauge's number also shows under it whenever it changes, but not while
+## `show_numbers(true)` (a held key, whose own sheet gives every number) is on.
 ##
 ## Nothing here works out a rule, and nothing moves at rest. Give it RulesView.table() with
 ## `show_table` to set it at once. The beats of a move then drive it, each call a coroutine to
@@ -40,11 +41,13 @@ const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_materia
 
 const SYMS: Array[String] = ["lamp", "heart", "mirror"]
 
-## A gauge: its height, the gap between two, and the room inside it, from left to right: the
+## A gauge: its height, the gap between two (and so the step from one to the next under it,
+## GAUGE_STEP), and the room inside it, from left to right: the
 ## bracket's, the sketch's, each pip's (three are kept, the third for a rollover and the lock),
 ## and the least room each side's tallies are given.
 const GAUGE_H := 32.0
-const GAUGE_GAP := 8.0
+const GAUGE_GAP := 6.0
+const GAUGE_STEP := GAUGE_H + GAUGE_GAP
 const PAD := 9.0
 const SKETCH_W := 22.0
 const SKETCH_SCALE := 0.4
@@ -61,10 +64,8 @@ const TALLY_ROW := 10
 const TALLY_H := 15.0
 const TALLY_H_TWO := 11.0
 const TALLY_MAX := 20
-## The line's banner: the height of its name above it, half its length and height, the room
-## a count takes at each end, and the gap at the centre.
-const LINE_NAME := "THE BALANCE"
-const LINE_NAME_H := 18.0
+## The line's banner: half its length and height, the room a count takes at each end, and
+## the gap at the centre.
 const LINE_HALF := 180.0
 const LINE_H := 15.0
 const LINE_COUNT := 76.0
@@ -73,8 +74,9 @@ const LINE_GAP := 8.0
 const LINE_MARK_H := 8.0
 ## How much larger the line is drawn at the centre of the page.
 const GROW_SCALE := 1.6
-## The ledger's size.
+## The ledger's size, and its distance from the column's right side.
 const LEDGER := Vector2(282.0, 76.0)
+const LEDGER_GAP := 8.0
 
 ## Seconds for each movement.
 const FILL_TIME := 0.3
@@ -113,12 +115,11 @@ var _flood := 0.0
 var _lock := 0.0
 var _numbers := false
 var _hover := ""
-## The row as it is laid out now (see _measure): each gauge's places by its symbol, the
-## tallies' pitch and group gap, and the height of the row's middle.
+## The column as it is laid out now (see _measure): each gauge's places by its symbol (`y` is
+## the height of its middle), and the tallies' pitch and group gap.
 var _g := {}
 var _pitch := TALLY_PITCH
 var _gap := TALLY_GAP
-var _row_y := 0.0
 ## Things on their way from one mark to another: {from, to, t, from_colour, to_colour, line}.
 var _travel: Array[Dictionary] = []
 
@@ -522,11 +523,11 @@ func _lay_out() -> void:
 	_redraw()
 
 
-## Lays the row out in its zone: each gauge as wide as its marks need, the row centred, and
-## the tallies drawn closer when the row would be wider than the zone.
+## Lays the column out in its zone: the gauges one under another from the zone's top left,
+## each as wide as its marks need, and the tallies drawn closer when the widest gauge would be
+## wider than the zone.
 func _measure() -> void:
 	var zone := ArenaLayout.symbols(size)
-	_row_y = zone.get_center().y
 	var fixed := PAD + 5.0 + SKETCH_W + 6.0 + PIP_PITCH * 3.0 + 3.0 + 6.0 + PAD
 	var widths: Array[float] = []
 	var sides: Array[Vector2] = []
@@ -535,29 +536,26 @@ func _measure() -> void:
 		_gap = TALLY_GAP * squeeze
 		widths.clear()
 		sides.clear()
-		var total := GAUGE_GAP * 2.0
+		var widest := 0.0
 		for sym in SYMS:
 			var side := Vector2(_side_width(sym, "habit"), _side_width(sym, "temper"))
 			sides.append(side)
 			widths.append(fixed + side.x + side.y)
-			total += fixed + side.x + side.y
-		if total <= zone.size.x:
+			widest = maxf(widest, fixed + side.x + side.y)
+		if widest <= zone.size.x:
 			break
-	var row := GAUGE_GAP * 2.0
-	for w in widths:
-		row += w
-	var x := zone.get_center().x - row * 0.5
+	var x := zone.position.x
 	for i in 3:
+		var y := zone.position.y + GAUGE_H * 0.5 + i * GAUGE_STEP
 		var habit_x := x + PAD + 2.0
 		var sketch_x := habit_x + sides[i].x + 3.0 + SKETCH_W * 0.5
 		var pips_x := sketch_x + SKETCH_W * 0.5 + 6.0 + PIP_PITCH * 0.5
 		var bar_x := pips_x + PIP_PITCH * 2.5 + 3.0
 		_g[SYMS[i]] = {
-			"rect": Rect2(x, _row_y - GAUGE_H * 0.5, widths[i], GAUGE_H),
+			"rect": Rect2(x, y - GAUGE_H * 0.5, widths[i], GAUGE_H), "y": y,
 			"habit_x": habit_x, "sketch_x": sketch_x, "pips_x": pips_x, "bar_x": bar_x,
 			"temper_x": bar_x + 6.0, "habit_w": sides[i].x, "temper_w": sides[i].y,
 		}
-		x += widths[i] + GAUGE_GAP
 
 
 ## The room a side's tallies take: those drawn, those a chosen play would add, and the
@@ -590,17 +588,22 @@ func _gauge_rect(sym: String) -> Rect2:
 	return _g[sym].rect
 
 
+## The height of the middle of a symbol's gauge.
+func _y(sym: String) -> float:
+	return _g[sym].y
+
+
 ## The middle of a symbol's sketch, on the page: where what its gauges pay comes from.
 func sketch_place(sym: String) -> Vector2:
 	_measure()
-	return get_global_transform() * Vector2(_g[sym].sketch_x, _row_y)
+	return get_global_transform() * Vector2(_g[sym].sketch_x, _y(sym))
 
 
 ## The middle of a symbol's k-th pip (0 to 2), drawn together as `join` rises.
 func _pip_at(sym: String, k: int) -> Vector2:
 	var join: float = _s[sym].join
 	var x: float = _g[sym].pips_x + k * PIP_PITCH + (1 - k) * join * (PIP_PITCH - PIP_R * 1.6)
-	return Vector2(x, _row_y)
+	return Vector2(x, _y(sym))
 
 
 ## The x of the n-th tally from where a row starts, at a pitch and a group gap.
@@ -612,8 +615,8 @@ static func _tally_x(n: int, pitch: float, gap: float) -> float:
 func _tally_top(sym: String, row: String, n: int) -> Vector2:
 	var x: float = _g[sym][row + "_x"] + _tally_x(n % TALLY_ROW, _pitch, _gap)
 	if _side_count(sym, row) > TALLY_ROW:
-		return Vector2(x, _row_y - TALLY_H_TWO - 1.5 + (n / TALLY_ROW) * (TALLY_H_TWO + 3.0))
-	return Vector2(x, _row_y - TALLY_H * 0.5)
+		return Vector2(x, _y(sym) - TALLY_H_TWO - 1.5 + (n / TALLY_ROW) * (TALLY_H_TWO + 3.0))
+	return Vector2(x, _y(sym) - TALLY_H * 0.5)
 
 
 ## The middle of a side's n-th tally: where something travelling to it lands.
@@ -635,10 +638,9 @@ func _line_mark(n: int, ink: bool) -> Vector2:
 	return Vector2(x if ink else -x, 0.0)
 
 
-## The banner's middle at home, under the line's name.
+## The banner's middle at home: its zone's middle.
 func _line_home() -> Vector2:
-	var zone := ArenaLayout.balance(size)
-	return Vector2(zone.get_center().x, zone.position.y + LINE_NAME_H + (zone.size.y - LINE_NAME_H) * 0.5)
+	return ArenaLayout.balance(size).get_center()
 
 
 ## The line's banner, in the line's own coordinates: a strip whose two ends are cut to a notch.
@@ -756,18 +758,18 @@ func _draw_lines() -> void:
 		frame.stroke(PackedVector2Array([Vector2(r.end.x - 8.5, top), Vector2(r.end.x - 4.0, top),
 				Vector2(r.end.x - 4.0, bottom), Vector2(r.end.x - 8.5, bottom)]), 1.9, 0.3)
 		var bar_x: float = g.bar_x
-		frame.stroke(PackedVector2Array([Vector2(bar_x, _row_y - 9.0), Vector2(bar_x + 0.4, _row_y + 9.0)]), 1.4, 0.3)
+		frame.stroke(PackedVector2Array([Vector2(bar_x, g.y - 9.0), Vector2(bar_x + 0.4, g.y + 9.0)]), 1.4, 0.3)
 		# A side with no mark on it, and none coming, has a dash.
 		frame.colour = _faint(PENCIL, 0.55)
 		for row: String in ["habit", "temper"]:
 			var coming: bool = s.ghost_roll if row == "habit" else int(s.ghost_temper) > 0
 			if s[row + "_shown"] < 0.01 and not coming:
 				var x: float = g[row + "_x"]
-				frame.stroke(PackedVector2Array([Vector2(x + 2.0, _row_y + 0.5), Vector2(x + 9.0, _row_y)]), 1.5, 0.3)
+				frame.stroke(PackedVector2Array([Vector2(x + 2.0, g.y + 0.5), Vector2(x + 9.0, g.y)]), 1.5, 0.3)
 		frame.draw(_lines)
 		var sketch := Pencil.new(seed_base)
 		sketch.colour = PENCIL.lerp(INK, s.flash * 0.6)
-		_sketch(sketch, sym, Vector2(g.sketch_x, _row_y), SKETCH_SCALE)
+		_sketch(sketch, sym, Vector2(g.sketch_x, g.y), SKETCH_SCALE)
 		sketch.draw(_lines)
 		# The pips' rims: two always, the third while it is there.
 		var rims := Pencil.new(seed_base + 1)
@@ -888,8 +890,8 @@ func _draw_fills() -> void:
 		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
-## The numbers when they show, the slip of a rollover's card, the line's name and counts,
-## and the ledgers.
+## The numbers when they show, the slip of a rollover's card, the line's counts, and the
+## ledger.
 func _draw_text() -> void:
 	var edge := Color(0.05, 0.035, 0.06, 0.85)
 	for sym in SYMS:
@@ -914,12 +916,6 @@ func _draw_text() -> void:
 			var slip := _roll_slip(sym)
 			_text.draw_string(_slanted, slip.position + Vector2(0.0, 12.0), _roll_words(sym), HORIZONTAL_ALIGNMENT_CENTER,
 					slip.size.x, 11, _faint(INK, 0.85))
-	# The line's name over its banner, on the page's own ground: it stays at home.
-	if _grow < 1.0:
-		var home := _line_home()
-		var name_at := Vector2(home.x - 100.0, home.y - LINE_H - 7.0)
-		_text.draw_string_outline(_heavy, name_at, LINE_NAME, HORIZONTAL_ALIGNMENT_CENTER, 200.0, 13, 4, Color(edge, edge.a * (1.0 - _grow)))
-		_text.draw_string(_heavy, name_at, LINE_NAME, HORIZONTAL_ALIGNMENT_CENTER, 200.0, 13, Color(CREAM_TEXT, 1.0 - _grow))
 	# The line's counts, at the banner's two ends: each a little larger for a moment when it changes.
 	var xf := _line_xform()
 	var scale := xf.get_scale().x
@@ -934,22 +930,16 @@ func _draw_text() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, paper_px, PENCIL.lerp(INK_WASH, _flood))
 	_text.draw_string(_heavy, xf * Vector2(LINE_HALF - LINE_NOTCH - 5.0, 0.0) + Vector2(-ink_w, drop), ink_text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px, INK)
-	if _numbers:
-		for sym in SYMS:
-			_draw_ledger(sym, true)
-	elif _hover != "":
-		_draw_ledger(_hover, false)
+	if _hover != "" and not _numbers:
+		_draw_ledger(_hover)
 
 
-## A symbol's ledger, under its gauge: its gauges in numbers, and its two Roots in the deck
-## with their worth. With `every`, the three ledgers stand side by side under the row.
-func _draw_ledger(sym: String, every: bool) -> void:
+## A symbol's ledger, to the right of the column and level with its gauge: its gauges in
+## numbers, and its two Roots in the deck with their worth.
+func _draw_ledger(sym: String) -> void:
 	var s: Dictionary = _s[sym]
 	var zone := ArenaLayout.symbols(size)
-	var middle := _gauge_rect(sym).get_center().x
-	if every:
-		middle = zone.get_center().x + (SYMS.find(sym) - 1) * (LEDGER.x + 6.0)
-	var box := Rect2(Vector2(middle - LEDGER.x * 0.5, zone.end.y + 14.0), LEDGER)
+	var box := Rect2(Vector2(zone.end.x + LEDGER_GAP, _gauge_rect(sym).position.y), LEDGER)
 	box.position.x = clampf(box.position.x, 0.0, size.x - box.size.x)
 	_text.draw_rect(Rect2(box.position + Vector2(3.0, 4.0), box.size), SHADOW)
 	_text.draw_rect(box, Color(0.95, 0.91, 0.80))

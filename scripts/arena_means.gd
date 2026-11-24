@@ -5,22 +5,24 @@ extends Control
 ## which lies over the whole page and takes the pointer only on its parts.
 ##
 ## - The laboratory's instruments (`whose` "lab" in the rules' config): round medallions of
-##   cream stock under the top rule at the left, each with its name under it. Room for three.
-## - His instruments (`whose` "his"): seals of dark wax at the right, named the same way.
-## - The draught, just above the lower rule at the left: the flask, open with its draught in
+##   cream stock, each with its name under it.
+## - His instruments (`whose` "his"): seals of dark wax, named the same way. Both kinds lie in
+##   one row at the top of the right column, filled from the column's right side: the
+##   laboratory's first, his after them. Room for three.
+## - The draught, in the left column under the restraint: the flask, open with its draught in
 ##   it when it can be drunk and corked when it cannot, and beside it in words what the next
 ##   drink costs (his first arrival, or a stain).
-## - The salt, just above the lower rule at the right: one paper, open when a dose can be
+## - The salt, in the right column level with the draught: one paper, open when a dose can be
 ##   taken now and folded shut when it cannot, with the doses held written beside it.
 ##
 ## Nothing but the medallions and the seals has stock under it: the flask, the paper and the
 ## words are drawn light, to read on Jekyll's slate and on Hyde's ink alike.
 ##
 ## Hovering the flask or the salt shows what it will do, or why it is refused, in a note
-## over it, and before use marks what will change: hovering salt that can be taken outlines
+## beside it, towards the page's middle, and before use marks what will change: hovering salt that can be taken outlines
 ## the paper as spent. What lies outside this element (the restraint as stored drops, the
 ## stored drops struck through) is for the arena to mark: `preview_changed` says which to
-## show. Hovering an instrument shows its name and what it does in a note under it. Nothing
+## show. Hovering an instrument shows its name and what it does in a note left of the row. Nothing
 ## asks "are you sure".
 ##
 ## Pressing the flask or the salt only sends `drink_pressed` or `salt_pressed`, and only when
@@ -194,11 +196,11 @@ func hover(part: String) -> void:
 
 
 ## The point just over an instrument, on the page: where what it gives rises from. For one
-## that is not held, the middle of his instruments' zone.
+## that is not held, the middle of the instruments' zone.
 func spot(key: String) -> Vector2:
 	var i := _keys.find(key)
 	if i < 0:
-		return get_global_transform() * ArenaLayout.instruments_right(size).get_center()
+		return get_global_transform() * ArenaLayout.instruments(size).get_center()
 	return get_global_transform() * (_centre_of(i) + Vector2(0.0, -ROUND_R - 6.0))
 
 
@@ -409,7 +411,7 @@ func _note_lines() -> Array:
 	return []
 
 
-## True for an instrument of his: a seal at the right. The laboratory's are medallions at the left.
+## True for an instrument of his: a seal. The laboratory's are medallions.
 static func _his(key: String) -> bool:
 	return RulesConfig.INSTRUMENTS[key].whose == "his"
 
@@ -421,20 +423,17 @@ func _slot(key: String, laid: float) -> Dictionary:
 	return {"key": key, "in": laid, "hop": 0.0, "glint": 0.0}
 
 
-## The middle of the i-th held instrument: the laboratory's in a row from the left of their
-## zone, his in a row from the right of theirs.
+## The middle of the i-th held instrument: one row from the right of the zone, the
+## laboratory's first and his after them, each kind in the order it is held.
 func _centre_of(i: int) -> Vector2:
 	var his := _his(_slots[i].key)
 	var nth := 0
-	for j in i:
-		if _his(_slots[j].key) == his:
+	for j in _slots.size():
+		var other := _his(_slots[j].key)
+		if (other == his and j < i) or (his and not other):
 			nth += 1
-	var along := ROUND_INSET.x + ROUND_R + nth * ROUND_PITCH
-	if his:
-		var zone := ArenaLayout.instruments_right(size)
-		return Vector2(zone.end.x - along, zone.position.y + ROUND_INSET.y + ROUND_R)
-	var zone := ArenaLayout.instruments_left(size)
-	return Vector2(zone.position.x + along, zone.position.y + ROUND_INSET.y + ROUND_R)
+	var zone := ArenaLayout.instruments(size)
+	return Vector2(zone.end.x - ROUND_INSET.x - ROUND_R - nth * ROUND_PITCH, zone.position.y + ROUND_INSET.y + ROUND_R)
 
 
 ## Where an instrument is drawn: its place, lifted by a hop, dropped in while laid.
@@ -538,23 +537,20 @@ func _card(item: CanvasItem, edge: PackedVector2Array, colour: Color, shadow: Co
 	item.draw_colored_polygon(edge, colour)
 
 
-## Where the note of what the pointer is over lies: over the flask or the salt, under an
-## instrument's name, and always inside the page.
+## Where the note of what the pointer is over lies: right of the draught's zone, left of the
+## salt's, and left of the instruments' at their top.
 func _note_rect(lines: Array) -> Rect2:
 	var height := 14.0
 	for line: Array in lines:
 		height += _note_line_height(line)
 	var at: Vector2
 	if _hover == "flask":
-		at = _flask_zone().position + Vector2(0.0, -height - NOTE_GAP)
+		at = Vector2(_flask_zone().end.x + NOTE_GAP, _flask_zone().position.y)
 	elif _hover == "salt":
-		at = Vector2(_salt_zone().end.x - NOTE_W, _salt_zone().position.y - height - NOTE_GAP)
-	elif _his(_keys[int(_hover.substr(4))]):
-		var zone := ArenaLayout.instruments_right(size)
-		at = Vector2(zone.end.x - NOTE_W, zone.end.y + 4.0)
+		at = Vector2(_salt_zone().position.x - NOTE_GAP - NOTE_W, _salt_zone().position.y)
 	else:
-		var zone := ArenaLayout.instruments_left(size)
-		at = Vector2(zone.position.x, zone.end.y + 4.0)
+		var zone := ArenaLayout.instruments(size)
+		at = Vector2(zone.position.x - NOTE_GAP - NOTE_W, zone.position.y)
 	return Rect2(at, Vector2(NOTE_W, height))
 
 
