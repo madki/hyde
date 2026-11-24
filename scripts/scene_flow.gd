@@ -17,6 +17,14 @@ const PLACE_SCENES := {
 	"lab": "res://scenes/lab.tscn",
 	"alley": "res://scenes/alley.tscn",
 }
+## The line the passage to a place shows, in that place's light.
+const PLACE_LINES := {
+	"lab": "Dawn. The laboratory.",
+	"alley": "Dawn. The back alley.",
+}
+## The command-line arguments that drive a screen for a still or a check (Shot, ArenaBench):
+## with any of them a change of screen is a plain cut, at once.
+const CUT_ARGS: Array[String] = ["shot", "keys", "quit", "selftest", "fast"]
 ## How many seeds `run_at_dawn` tries, one after another, before it gives up.
 const DAWN_TRIES := 200
 
@@ -24,8 +32,18 @@ const DAWN_TRIES := 200
 ## new run begins; the places read and change it.
 var run: RulesRun
 
-## True between a change of screen being asked for and its being made.
+## True from a change of screen being asked for until its passage is over: a second change
+## asked for meanwhile is dropped.
 var _changing := false
+
+## The cover over a change of screen. A child of this autoload, so it outlives the screens.
+var _passage: Passage
+
+
+func _ready() -> void:
+	_passage = Passage.new()
+	_passage.name = "Passage"
+	add_child(_passage)
 
 ## The screen that shows how a run ended, and the ending it is to show: "hyde", "double" or
 ## "myself" (the rules' names).
@@ -73,7 +91,8 @@ func next() -> void:
 func go_to_place() -> bool:
 	if run == null or not PLACE_SCENES.has(run.phase):
 		return false
-	_change_to(PLACE_SCENES[run.phase])
+	var light: Color = Palette.JEKYLL if run.phase == "lab" else Palette.HYDE
+	_change_to(PLACE_SCENES[run.phase], PLACE_LINES[run.phase], light)
 	return true
 
 
@@ -148,16 +167,30 @@ static func _play_on(made: RulesRun, where: String) -> Dictionary:
 	return Rules.discard(made, dead.slice(0, made.dials.max_play))
 
 
-# Every change of screen between the title, the table and a place is made here. The change
-# waits for the end of the frame: the screen that asks for it, often from inside its handling
-# of a key, is still whole until then. A second change asked for meanwhile is dropped.
-func _change_to(scene: String) -> void:
+# Every change of screen between the title, the table and a place is made here, under the
+# passage: the screen goes to night (with `line` on it, in `light`, when one is given), is
+# changed while covered, and the night lifts off the new one. It starts at the end of the
+# frame: the screen that asks for it, often from inside its handling of a key, is still whole
+# until then. A second change asked for while one is under way is dropped. Driven from the
+# command line (CUT_ARGS), the change is a plain cut.
+func _change_to(scene: String, line: String = "", light: Color = Palette.CHALK) -> void:
 	if _changing or get_tree().current_scene == null:
 		return
 	_changing = true
-	_change_now.call_deferred(scene)
+	_change_now.call_deferred(scene, line, light)
 
 
-func _change_now(scene: String) -> void:
+func _change_now(scene: String, line: String, light: Color) -> void:
+	if _cuts():
+		_changing = false
+		get_tree().change_scene_to_file(scene)
+		return
+	await _passage.run(scene, line, light)
 	_changing = false
-	get_tree().change_scene_to_file(scene)
+
+
+static func _cuts() -> bool:
+	for name in CUT_ARGS:
+		if Shot.has_arg(name):
+			return true
+	return false
