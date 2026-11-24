@@ -246,6 +246,8 @@ func _every_number() -> String:
 		"" if draught.ok else "  (%s)" % draught.why])
 	var salt: Dictionary = _table.salt
 	lines.append("Salt: %d doses.%s" % [salt.doses, "" if salt.ok else "  (%s)" % salt.why])
+	for key: String in _table.instruments:
+		lines.append("%s: %s" % [RulesConfig.INSTRUMENTS[key].name, RulesConfig.instrument_text(key, t.run.dials)])
 	lines.append("")
 	lines.append(_night_words())
 	lines.append("")
