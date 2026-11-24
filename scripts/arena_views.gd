@@ -4,8 +4,9 @@ extends Control
 ##
 ## - Hold Shift (or Tab, or rest the pointer on the tab at the right edge, which says so):
 ##   every number at once, for as long as it is held. A sheet in the centre gives each
-##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and why, what the next drink costs, the scene's twist, what the dawn
-##   brings, and both men's hands with their base chips and mult.
+##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and
+##   why, what the next drink costs, the scene's twist, what the dawn brings, and both men's
+##   hands with their base chips and mult.
 ## - Rest the pointer on the tab at the left edge, which names the scene's twist: the twist
 ##   and what the dawn brings. On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
