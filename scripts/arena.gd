@@ -22,7 +22,8 @@ extends Control
 ## A move has been played back to its end and input is open again.
 signal settled
 
-## How much of the page the ink covers, 0 to 100.
+## How much of the page the ink covers, 0 to 100: the line's share (see `line_share`), or
+## what `--ink` pins it at.
 var ink_percent := 50.0:
 	set(value):
 		ink_percent = clampf(value, 0.0, 100.0)
@@ -64,6 +65,7 @@ func _ready() -> void:
 	_lay_out()
 	if Shot.has_arg("zones"):
 		add_child(ArenaZones.new())
+	_follow_line_from(RulesView.table(_run))
 	_ink.set_ink(ink_percent, ink_volatility, _run.stance == "jekyll")
 	_ink.snap_to_stance()
 	_hand.max_chosen = _run.dials.max_play
@@ -237,6 +239,7 @@ func _build() -> void:
 	t.reward.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(t.reward)
 	t.bind()
+	t.shown.changed.connect(_follow_line)
 
 
 # Gives every part that takes its place from the page's size that place.
@@ -283,6 +286,7 @@ func _go_on() -> void:
 		t.offered = []
 		t.picked = null
 		_symbols.line_reset()
+		_follow_line_from(RulesView.table(_run))
 		_ink.percent = ink_percent
 		_hand.clear()
 		for node in t.travel.get_children():
@@ -294,3 +298,50 @@ func _go_on() -> void:
 # The script at `path`, or null if there is none.
 func _script(path: String) -> GDScript:
 	return load(path) as GDScript if ResourceLoader.exists(path) else null
+
+
+# --- The ink follows the line ---------------------------------------------------------------
+
+## The ink's share of the page with no Ink Roots, how much more it takes as they become all of
+## the Roots, the most it takes before the run's end, and how long it eases to a new share.
+const LINE_SHARE_BASE := 35.0
+const LINE_SHARE_SPAN := 50.0
+const LINE_SHARE_MAX := 75.0
+const LINE_EASE := 1.0
+
+var _ink_tween: Tween
+
+
+## The ink's share for a line of `paper` Paper Roots against `ink` Ink Roots. With no Roots
+## at all there is no balance to read, and the share is `held`.
+static func line_share(paper: int, ink: int, held: float) -> float:
+	if paper + ink <= 0:
+		return held
+	return minf(LINE_SHARE_BASE + LINE_SHARE_SPAN * ink / float(paper + ink), LINE_SHARE_MAX)
+
+
+# A new run: the ink takes the line's share at once, unless `--ink` pins it.
+func _follow_line_from(table: Dictionary) -> void:
+	if _ink_tween:
+		_ink_tween.kill()
+	if not Shot.has_arg("ink"):
+		ink_percent = line_share(int(table.line.paper), int(table.line.ink), ink_percent)
+
+
+# A shown value changed. When it is the line, as the ribbon shows it, the ink eases to its
+# share; at once when the move is being played back at once. Once the ink has flooded the
+# page at the run's end, it stays.
+func _follow_line(key: String, _value: Variant) -> void:
+	if not key.begins_with("line/") or Shot.has_arg("ink") or _ink.percent > LINE_SHARE_MAX + 0.5:
+		return
+	var share := line_share(int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)), ink_percent)
+	if _ink_tween:
+		_ink_tween.kill()
+	if is_equal_approx(share, ink_percent):
+		return
+	if _beats.rate() >= ArenaPace.SKIP:
+		ink_percent = share
+		return
+	_ink_tween = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_ink_tween.tween_property(self, "ink_percent", share, LINE_EASE)
+	t.follow(_ink_tween)
