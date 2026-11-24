@@ -64,8 +64,6 @@ const GOAL_STROKE := 5.0
 const GOAL_TICK := 10.0
 ## How strongly the goal's thin line is drawn, under the heavy stroke of the score's share.
 const TRACK_INK := 0.35
-## The night and round's two lines, and how strongly they are drawn.
-const NIGHT_INK := 0.7
 ## The sovereigns' coin: its radius, and where it stands in its zone.
 const COIN_R := 9.0
 const COIN_INSET := 11.0
@@ -73,21 +71,11 @@ const COIN_INSET := 11.0
 const DROPS_ROOM := 100.0
 const DROP_PITCH := 19.0
 
-## The numbers are cream, the brightest thing on the board; a tick lights them in the colour
-## of the man who scores, and they return to cream.
-const CREAM := Color(0.93, 0.87, 0.74)
-const CYAN := Color(0.36, 0.9, 1.0)
-const MAGENTA := Color(1.0, 0.34, 0.78)
-const DROP_INK := Color(0.42, 0.13, 0.44)
-const DROP_SHINE := Color(0.8, 0.55, 0.8)
-## The small words (TARGET, SCORE): cream too, a little back, to read on slate and on ink.
-const LABEL := Color(0.93, 0.87, 0.74, 0.62)
-const GOLD := Color(0.78, 0.64, 0.33)
-const GOLD_DARK := Color(0.42, 0.31, 0.12)
-const COIN_EDGE := Color(0.07, 0.05, 0.04)
+## The numbers are chalk on the night; a tick lights them in the colour of the man who
+## scores, and they return to chalk.
 ## The dark outline round the goal's words and numbers, as the caption has: the band's centre
-## lies on the ink's pale edge, where cream alone reads weakly.
-const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+## lies on the ink's pale edge, where chalk alone reads weakly.
+const OUTLINE := Color(Palette.OUTLINE, 0.9)
 const OUTLINE_SIZE := 5
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
@@ -155,7 +143,7 @@ var _plays_most := 0.0
 var _discards_most := 0.0
 ## How each tally is drawn, plays then discards: its colour, and how far down it is pushed
 ## (a pressed button). The controls set them as their buttons change (`set_tally_look`).
-var _tally_colours: Array[Color] = [CREAM, CREAM]
+var _tally_colours: Array[Color] = [Palette.CHALK, Palette.CHALK]
 var _tally_drops: Array[float] = [0.0, 0.0]
 ## Before a drink: this many drops outlined, as the restraint would be stored. Before a dose
 ## of salt: the stored drops struck through.
@@ -559,7 +547,7 @@ func _lay_out() -> void:
 
 
 func _man() -> Color:
-	return CYAN if is_jekyll else MAGENTA
+	return Palette.JEKYLL if is_jekyll else Palette.HYDE
 
 
 static func _thousands(n: int) -> String:
@@ -710,12 +698,12 @@ func set_tally_look(i: int, colour: Color, drop: float) -> void:
 
 # --- Drawing -----------------------------------------------------------------------------
 
-## The pencil and the chalk of the goal, in cream: the stroke "/" between score and target,
+## The pencil and the chalk of the goal, in chalk: the stroke "/" between score and target,
 ## the line under them that fills to score / target with its tick, and the target struck
 ## through once it is reached.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
-	pencil.colour = Color(CREAM, 0.85)
+	pencil.colour = Color(Palette.CHALK, 0.85)
 	var goal := ArenaLayout.goal(size)
 	var base := goal.position.y + GOAL_BASE
 	var middle := goal.get_center().x
@@ -724,7 +712,7 @@ func _draw_marks() -> void:
 	# The line: heavy as far as the score has come, with a tick at its end, over the thin
 	# line that runs the whole way (`_draw_track`).
 	var y := goal.end.y - GOAL_LINE
-	pencil.colour = CREAM
+	pencil.colour = Palette.CHALK
 	var end := goal.position.x + goal.size.x * _goal_share()
 	if end > goal.position.x + 1.0:
 		pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(end, y)]), GOAL_STROKE, 0.5)
@@ -738,10 +726,10 @@ func _draw_marks() -> void:
 	pencil.draw(_marks)
 
 
-## The goal's thin line, the zone's whole width: drawn in cream and made faint by its item.
+## The goal's thin line, the zone's whole width: drawn in chalk and made faint by its item.
 func _draw_track() -> void:
 	var pencil := Pencil.new(rng_seed + 7)
-	pencil.colour = CREAM
+	pencil.colour = Palette.CHALK
 	var goal := ArenaLayout.goal(size)
 	var y := goal.end.y - GOAL_LINE
 	pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(goal.end.x, y)]), 1.4, 0.4)
@@ -782,24 +770,24 @@ func _draw_text() -> void:
 	var head := ArenaLayout.night(size)
 	# The night and the round, and the night's title under them.
 	var at := _night_at()
-	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, Color(CREAM, NIGHT_INK))
+	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, Palette.CHALK_2)
 	c.draw_string(_slanted, at + Vector2(0.0, 18.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE,
-			Color(CREAM, NIGHT_INK))
+			Palette.CHALK_2)
 
 	# The goal: SCORE at the zone's top left, the score large ending left of the middle, the
 	# target after the stroke, and TARGET after it.
 	var goal := ArenaLayout.goal(size)
-	_outlined(goal.position + Vector2(0.0, LABEL_SIZE), "SCORE", LABEL_SIZE, LABEL)
+	_outlined(goal.position + Vector2(0.0, LABEL_SIZE), "SCORE", LABEL_SIZE, Palette.CHALK_2)
 	var score := _thousands(roundi(_score))
 	var score_at := _score_at()
 	var score_w := _heavy.get_string_size(score, HORIZONTAL_ALIGNMENT_LEFT, -1.0, SCORE_SIZE).x
-	var score_colour := CREAM.lerp(_man(), 0.6) if _travel >= 1.0 else CREAM
+	var score_colour := Palette.CHALK.lerp(_man(), 0.6) if _travel >= 1.0 else Palette.CHALK
 	_outlined(score_at - Vector2(score_w, 0.0), score, SCORE_SIZE, score_colour)
 	var target := _thousands(roundi(_target))
 	var target_at := _target_at()
-	_outlined(target_at, target, NUMBER_SIZE, CREAM.darkened(0.25 * _strike))
+	_outlined(target_at, target, NUMBER_SIZE, Palette.CHALK.lerp(Palette.CHALK_3, _strike))
 	var target_w := _heavy.get_string_size(target, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-	_outlined(target_at + Vector2(target_w + 8.0, 0.0), "TARGET", LABEL_SIZE, LABEL)
+	_outlined(target_at + Vector2(target_w + 8.0, 0.0), "TARGET", LABEL_SIZE, Palette.CHALK_2)
 
 	_draw_sovereigns()
 	_draw_readout()
@@ -807,10 +795,10 @@ func _draw_text() -> void:
 	for i in ceili(_stored):
 		_drop(_drop_at(i) + (Vector2(-5.0, -9.0) if _lean else Vector2.ZERO), clampf(_stored - i, 0.0, 1.0))
 	for i in _ghost_drops:
-		c.draw_arc(_drop_at(ceili(_stored) + i), 7.0, 0.0, TAU, 16, Color(CREAM, 0.75), 1.4)
+		c.draw_arc(_drop_at(ceili(_stored) + i), 7.0, 0.0, TAU, 16, Color(Palette.CHALK, 0.75), 1.4)
 	if _struck and _stored >= 1.0:
 		c.draw_line(_drop_at(0) + Vector2(-10.0, 4.0), _drop_at(ceili(_stored) - 1) + Vector2(10.0, -4.0),
-				CREAM, 2.0)
+				Palette.WARN, 2.0)
 	if _fly >= 0.0:
 		var from := _drop_at(roundi(_stored))
 		var to := _mult_middle()
@@ -824,11 +812,11 @@ func _draw_sovereigns() -> void:
 	var c := _text
 	var at := _pile_at()
 	# The coin, in gold, with its dark edge and a ring stamped in it.
-	c.draw_circle(at, COIN_R + 1.2, COIN_EDGE)
-	c.draw_circle(at, COIN_R, GOLD)
-	c.draw_arc(at, COIN_R * 0.62, 0.0, TAU, 20, GOLD_DARK, 1.1)
+	c.draw_circle(at, COIN_R + 1.2, Palette.OUTLINE)
+	c.draw_circle(at, COIN_R, Palette.GOLD)
+	c.draw_arc(at, COIN_R * 0.62, 0.0, TAU, 20, Color(Palette.OUTLINE, 0.5), 1.1)
 	c.draw_string(_heavy, Vector2(at.x + COIN_R + 8.0, at.y + NUMBER_SIZE * 0.36), str(roundi(_sov)),
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, CREAM)
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, Palette.GOLD)
 
 
 ## Words or a number of the goal, in the heavy face, with the dark outline under them.
@@ -848,30 +836,30 @@ func _draw_readout() -> void:
 		var one := _slanted.get_string_size(_reason, HORIZONTAL_ALIGNMENT_LEFT, -1.0, REASON_SIZE).y
 		var all := _slanted.get_multiline_string_size(_reason, HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2).y
 		c.draw_multiline_string(_slanted, Vector2(r.position.x, base - 5.0 - (all - one) * 0.5), _reason,
-				HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2, CREAM)
+				HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2, Palette.WARN)
 		return
 	if not _numbers:
 		return
 	var line := _line()
 	var left := _line_left()
-	c.draw_string(_slanted, Vector2(left, base - 2.0), _name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE, CREAM)
+	c.draw_string(_slanted, Vector2(left, base - 2.0), _name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE, Palette.CHALK)
 	if _note != "":
 		c.draw_string(_slanted, Vector2(left + line.note, base - 2.0), " " + _note,
-				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, MAGENTA)
-	c.draw_string(_heavy, Vector2(left + line.dash, base - 4.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 20, LABEL)
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Palette.CHALK_2)
+	c.draw_string(_heavy, Vector2(left + line.dash, base - 4.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 20, Palette.CHALK_2)
 	_number(c, _thousands(roundi(_chips)), Vector2(left + line.chips, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _chips_pop,
-			CREAM.lerp(_man(), _chips_glow))
-	c.draw_string(_heavy, Vector2(left + line.times, base - 3.0), "×", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22, LABEL)
+			Palette.CHALK.lerp(_man(), _chips_glow))
+	c.draw_string(_heavy, Vector2(left + line.times, base - 3.0), "×", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22, Palette.CHALK_2)
 	_number(c, str(roundi(_mult)), Vector2(left + line.mult, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
-			CREAM.lerp(_man(), _mult_glow))
+			Palette.CHALK.lerp(_man(), _mult_glow))
 	# The total is written after them as it is counted; it travels from there to the score
 	# on a layer of its own (`_draw_flight`).
 	if _merge > 0.0 and _travel < 0.0:
 		var a := clampf(_merge * 2.0, 0.0, 1.0)
 		c.draw_string(_heavy, Vector2(left + line.equals, base - 3.0), "=", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22,
-				Color(LABEL, LABEL.a * a))
+				Color(Palette.CHALK_2, a))
 		_number(c, _thousands(_total), Vector2(left + line.total, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + 0.2 * sin(_merge * PI),
-				Color(CREAM.lerp(_man(), 0.85), a))
+				Color(Palette.CHALK.lerp(_man(), 0.85), a))
 
 
 ## The total on its way to the score: it travels, by its middle, to where it would stand as
@@ -885,7 +873,7 @@ func _draw_flight() -> void:
 	var from := Vector2(_line_left() + _line().total + w * 0.5, _baseline())
 	var to := _score_at() - Vector2(w * size_there * 0.5, 0.0)
 	var at := from.lerp(to, _travel) - Vector2(w * 0.5, 0.0)
-	_number(_flight, total, at, HORIZONTAL_ALIGNMENT_LEFT, lerpf(1.0, size_there, _travel), CREAM.lerp(_man(), 0.85))
+	_number(_flight, total, at, HORIZONTAL_ALIGNMENT_LEFT, lerpf(1.0, size_there, _travel), Palette.CHALK.lerp(_man(), 0.85))
 
 
 ## A readout number drawn on `c`, its baseline at `at`, aligned at `at` (right edge, left edge or
@@ -904,7 +892,7 @@ func _number(c: CanvasItem, text: String, at: Vector2, align: HorizontalAlignmen
 
 
 ## An ink drop: a rounded blot, narrowing to a point at the top, with a pale shine and a
-## cream rim, so that it is seen on his ink as on the slate.
+## chalk rim, so that it is seen on his ink as on the night.
 func _drop(at: Vector2, amount: float) -> void:
 	if amount <= 0.0:
 		return
@@ -918,6 +906,6 @@ func _drop(at: Vector2, amount: float) -> void:
 		p.y -= maxf(0.0, -cos(a)) * 6.0 * s * (1.0 - absf(sin(a)))
 		points.append(at + p)
 		rim.append(at + p + p.normalized() * 1.6)
-	_text.draw_colored_polygon(rim, Color(CREAM, 0.9))
-	_text.draw_colored_polygon(points, DROP_INK)
-	_text.draw_circle(at + Vector2(-2.0, -1.5) * s, 1.4 * s, DROP_SHINE)
+	_text.draw_colored_polygon(rim, Color(Palette.CHALK, 0.9))
+	_text.draw_colored_polygon(points, Palette.HYDE_DEEP)
+	_text.draw_circle(at + Vector2(-2.0, -1.5) * s, 1.4 * s, Palette.HYDE)
