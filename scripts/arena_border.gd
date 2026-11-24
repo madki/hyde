@@ -2,14 +2,11 @@ class_name ArenaBorder
 extends Control
 ## The page's ruled border, drawn by hand: an outer heavier line and an inner light one. Each
 ## side is its own stroke, a little off true and running past the corner, fading where the
-## pencil lifted, and gone over again for part of the way. One more ruled line runs down the
-## page and parts a column on the left from the table.
+## pencil lifted, and gone over again for part of the way. More ruled lines can cross the
+## page (`rules`): the arena has one under its top band and one over the hand.
 
 ## Distance of the two rulings from the edge of the page, in pixels.
 @export var insets := PackedFloat32Array([28.0, 36.0])
-## Distance of the line that parts the left column from the page's left edge, in pixels: 0
-## for no line.
-@export var column_at := 0.0
 ## Usual width of each ruling, in pixels.
 @export var widths := PackedFloat32Array([2.6, 1.3])
 ## How far the hand wavers, in pixels.
@@ -19,6 +16,12 @@ extends Control
 @export var colour := Color(0.015, 0.025, 0.035)
 ## Changes every line a little while keeping the look.
 @export var rng_seed := 7
+
+## The ruled lines that cross the page, each as its two ends, one after the other.
+var rules := PackedVector2Array():
+	set(value):
+		rules = value
+		queue_redraw()
 
 
 func _ready() -> void:
@@ -47,11 +50,13 @@ func _draw() -> void:
 				var end := start + pencil.randf_range(0.2, 0.45)
 				pencil.stroke(PackedVector2Array([from.lerp(to, start) + across * 0.9,
 						from.lerp(to, end) + across * 0.5]), width * 0.7, wobble * 0.8, 0.4)
-	if column_at > 0.0 and not insets.is_empty() and not widths.is_empty():
-		var inner := insets[insets.size() - 1]
-		var from := Vector2(column_at + pencil.randf_range(-1.5, 1.5), inner - pencil.randf_range(2.0, 7.0))
-		var to := Vector2(column_at + pencil.randf_range(-1.5, 1.5), size.y - inner + pencil.randf_range(2.0, 7.0))
-		pencil.stroke(PackedVector2Array([from, to]), widths[0], wobble, fade)
-		pencil.stroke(PackedVector2Array([from.lerp(to, 0.08) + Vector2(4.5, 0.0), from.lerp(to, 0.97) + Vector2(5.0, 0.0)]),
-				widths[widths.size() - 1], wobble, fade)
+	if not widths.is_empty():
+		for i in range(0, rules.size() - 1, 2):
+			var along := (rules[i + 1] - rules[i]).normalized()
+			var across := Vector2(-along.y, along.x)
+			var from := rules[i] - along * pencil.randf_range(2.0, 7.0) + across * pencil.randf_range(-1.5, 1.5)
+			var to := rules[i + 1] + along * pencil.randf_range(2.0, 7.0) + across * pencil.randf_range(-1.5, 1.5)
+			pencil.stroke(PackedVector2Array([from, to]), widths[0], wobble, fade)
+			pencil.stroke(PackedVector2Array([from.lerp(to, 0.08) + across * 4.5, from.lerp(to, 0.97) + across * 5.0]),
+					widths[widths.size() - 1], wobble, fade)
 	pencil.draw(self)

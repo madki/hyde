@@ -16,6 +16,7 @@ extends Control
 ## For a screenshot: `--seed=<n>` (the run's seed), `--ink=<0..100>` and
 ## `--volatility=<0..100>` (the page's ink), and `--keys=` to make moves first (see
 ## scripts/arena_bench.gd): `tools/shot.sh /abs/out.png res://scenes/arena.tscn --seed=3 --keys=12D`.
+## `--zones` outlines and names every zone of the page's layout (ArenaLayout).
 
 ## A move has been played back to its end and input is open again.
 signal settled
@@ -36,6 +37,7 @@ var ink_volatility := 50.0:
 ## The table's parts, as the moments' scripts are handed them.
 var t := ArenaTable.new()
 
+@onready var _border: ArenaBorder = $Border
 @onready var _ink: ArenaInk = $Ink
 @onready var _hand: ArenaHand = $Hand
 @onready var _column: ArenaColumn = $Column
@@ -57,6 +59,10 @@ func _ready() -> void:
 	_run = Rules.new_run({}, int(Shot.arg("seed")) if Shot.has_arg("seed") else null)
 	ArenaBench.apply_set(_run)
 	_build()
+	resized.connect(_lay_out)
+	_lay_out()
+	if Shot.has_arg("zones"):
+		add_child(ArenaZones.new())
 	_ink.set_ink(ink_percent, ink_volatility, _run.stance == "jekyll")
 	_ink.snap_to_stance()
 	_hand.max_chosen = _run.dials.max_play
@@ -233,6 +239,11 @@ func _build() -> void:
 	t.reward.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(t.reward)
 	t.bind()
+
+
+# Gives every part that takes its place from the page's size that place.
+func _lay_out() -> void:
+	_border.rules = ArenaLayout.rules(size)
 
 
 # The run's first round: Rules.new_run has begun it, and left its events on the run.
