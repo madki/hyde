@@ -2,7 +2,9 @@ class_name ArenaLayout
 ## Where everything lies on the arena's page: one rectangle for each zone, worked out from the
 ## page's size. The numbers are for the 1152x648 page. In a wider window the zones of the left
 ## keep their distance from the left edge, those of the right from the right edge, and those
-## of the centre stay centred. In a taller one the top band, the two columns and the centre keep
+## of the centre stay centred, up to a frame FRAME_MAX wide: past it the zones lie as in that
+## frame, centred in the window, and only the tabs, the rules, the border, the paper and the
+## ink run on with the window. In a taller one the top band, the two columns and the centre keep
 ## their distance from the top, and the foot (the lower rule and all that hangs from it) from
 ## the bottom; the stage takes the room between.
 ##
@@ -13,6 +15,8 @@ class_name ArenaLayout
 const PAGE := Vector2(1152.0, 648.0)
 ## The left and right margin every zone keeps, inside the border's rulings.
 const MARGIN := 48.0
+## The widest the zones spread: in a wider window they lie as in a page this wide, centred.
+const FRAME_MAX := 1536.0
 ## Height of the rule under the top band, from the top.
 const TOP_RULE := 95.0
 ## Height of the rule over the hand, from the foot.
@@ -31,8 +35,8 @@ const NOTE_TOP := 186.0
 # --- The top band -------------------------------------------------------------------------
 
 ## The night and the round, with the night's title.
-static func night(_page: Vector2) -> Rect2:
-	return Rect2(MARGIN, 44.0, 250.0, 44.0)
+static func night(page: Vector2) -> Rect2:
+	return _from_left(page, MARGIN, 44.0, Vector2(250.0, 44.0))
 
 
 ## The round's goal: the score against the target.
@@ -48,18 +52,18 @@ static func sovereigns(page: Vector2) -> Rect2:
 # --- The left column, from the top down ---------------------------------------------------
 
 ## The three symbols' gauges.
-static func symbols(_page: Vector2) -> Rect2:
-	return Rect2(MARGIN, 108.0, 230.0, 108.0)
+static func symbols(page: Vector2) -> Rect2:
+	return _from_left(page, MARGIN, 108.0, Vector2(230.0, 108.0))
 
 
 ## The restraint: the word over a row of rings that ends in his mark.
-static func restraint(_page: Vector2) -> Rect2:
-	return Rect2(MARGIN, 228.0, 230.0, 72.0)
+static func restraint(page: Vector2) -> Rect2:
+	return _from_left(page, MARGIN, 228.0, Vector2(230.0, 72.0))
 
 
 ## The draught, under the restraint it is spent by.
-static func draught(_page: Vector2) -> Rect2:
-	return Rect2(MARGIN, 306.0, 230.0, 44.0)
+static func draught(page: Vector2) -> Rect2:
+	return _from_left(page, MARGIN, 306.0, Vector2(230.0, 44.0))
 
 
 # --- The right column, from the top down --------------------------------------------------
@@ -76,14 +80,14 @@ static func salt(page: Vector2) -> Rect2:
 
 # --- The edges ----------------------------------------------------------------------------
 
-## The tab on the left edge: the scene's twist.
+## The tab on the left edge: the scene's twist. On the window's own edge, however wide.
 static func tab_left(_page: Vector2) -> Rect2:
 	return Rect2(0.0, 140.0, 34.0, 110.0)
 
 
-## The tab on the right edge: the hint of the held key.
+## The tab on the right edge: the hint of the held key. On the window's own edge.
 static func tab_right(page: Vector2) -> Rect2:
-	return _from_right(page, 0.0, 140.0, Vector2(34.0, 110.0))
+	return Rect2(page.x - 34.0, 140.0, 34.0, 110.0)
 
 
 # --- The centre, from the top down --------------------------------------------------------
@@ -116,11 +120,11 @@ static func note_top(_page: Vector2) -> float:
 
 # --- The foot -----------------------------------------------------------------------------
 
-## The hand, every card whole on the page, the row centred. It takes the page's width less
+## The hand, every card whole on the page, the row centred. It takes the frame's width less
 ## room for the two piles, at least as wide as the 1152 page gives and at most as wide as
 ## twelve cards lie at their full step.
 static func hand(page: Vector2) -> Rect2:
-	return _centred(page, foot_rule(page) + 8.0, Vector2(clampf(page.x - 280.0, 872.0, 1086.0), 152.0))
+	return _centred(page, foot_rule(page) + 8.0, Vector2(clampf(frame(page) - 280.0, 872.0, 1086.0), 152.0))
 
 
 ## The draw pile.
@@ -155,6 +159,18 @@ static func warning(page: Vector2) -> Rect2:
 static func hint(page: Vector2) -> Rect2:
 	var discard := controls_discard(page)
 	return Rect2(discard.end.x + 16.0, discard.get_center().y - 12.0, 64.0, 24.0)
+
+
+# --- The frame ----------------------------------------------------------------------------
+
+## How wide the zones spread: the page's width, FRAME_MAX at most.
+static func frame(page: Vector2) -> float:
+	return minf(page.x, FRAME_MAX)
+
+
+## How far the frame lies from the window's left edge: it is centred in the window.
+static func offset(page: Vector2) -> float:
+	return (page.x - frame(page)) * 0.5
 
 
 # --- The rules ----------------------------------------------------------------------------
@@ -206,11 +222,16 @@ static func zones(page: Vector2) -> Dictionary:
 	}
 
 
-# A rectangle `gap` from the page's right edge.
+# A rectangle `gap` from the frame's left edge.
+static func _from_left(page: Vector2, gap: float, top: float, extent: Vector2) -> Rect2:
+	return Rect2(offset(page) + gap, top, extent.x, extent.y)
+
+
+# A rectangle `gap` from the frame's right edge.
 static func _from_right(page: Vector2, gap: float, top: float, extent: Vector2) -> Rect2:
-	return Rect2(page.x - gap - extent.x, top, extent.x, extent.y)
+	return Rect2(offset(page) + frame(page) - gap - extent.x, top, extent.x, extent.y)
 
 
-# A rectangle about the page's middle.
+# A rectangle about the frame's middle, which is the page's.
 static func _centred(page: Vector2, top: float, extent: Vector2) -> Rect2:
-	return Rect2((page.x - extent.x) * 0.5, top, extent.x, extent.y)
+	return Rect2(offset(page) + (frame(page) - extent.x) * 0.5, top, extent.x, extent.y)
