@@ -18,6 +18,15 @@ const TIME := 0.55
 ## How far a card hops, in pixels, and how long the hop takes.
 const HOP := 14.0
 const HOP_TIME := 0.2
+## A score's bloom: at its brightest this long after the score lands, chalk again by BLOOM_TIME.
+const BLOOM_PEAK := 0.1
+const BLOOM_TIME := 0.5
+## The bloom's halo: how far each of its rings reaches past the dark outline, and how strong
+## each is at the peak, widest and faintest first.
+const HALO_REACH: Array[int] = [28, 16, 7]
+const HALO_STRENGTH: Array[float] = [0.18, 0.35, 0.7]
+## With "reduce flashes" on, how far a blooming number leans to the scorer's light.
+const CALM_TINT := 0.6
 
 static var _font: FontVariation
 
@@ -86,6 +95,35 @@ static func hop(beats: ArenaBeats, card: Control) -> void:
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	t.tween_property(card, "position:y", rest, HOP_TIME * 0.6) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+
+## A score blooms: `property` of `target` (0 to 1, the bloom's strength) rises to 1 by
+## BLOOM_PEAK and falls back to 0 by BLOOM_TIME, on `t`. With "reduce flashes" on it starts at
+## 1 and only fades.
+static func bloom(t: Tween, target: Object, property: String) -> void:
+	if ArenaPace.reduce_flashes:
+		t.tween_property(target, property, 0.0, BLOOM_TIME).from(1.0) \
+				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		return
+	t.tween_property(target, property, 1.0, BLOOM_PEAK).from(0.0) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	t.tween_property(target, property, 0.0, BLOOM_TIME - BLOOM_PEAK) \
+			.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+
+## `words` drawn on `c` at `at` (the baseline's left end) in chalk with a dark outline of
+## `outline_size`, blooming by `amount` (0 to 1): a hot core, haloed in `light`, the scorer's
+## colour. With "reduce flashes" on there is no core and no halo: the chalk leans to `light`.
+static func draw_bloom(c: CanvasItem, font: Font, at: Vector2, words: String, font_size: int,
+		outline_size: int, light: Color, amount: float) -> void:
+	var calm := ArenaPace.reduce_flashes
+	if amount > 0.0 and not calm:
+		for i in HALO_REACH.size():
+			c.draw_string_outline(font, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size,
+					outline_size + HALO_REACH[i], Color(light, HALO_STRENGTH[i] * amount))
+	c.draw_string_outline(font, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, outline_size, OUTLINE)
+	var core := CREAM.lerp(light, CALM_TINT * amount) if calm else CREAM.lerp(Palette.HOT, amount)
+	c.draw_string(font, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, core)
 
 
 ## A sovereign travels from `from` to `to` (points on the page) and is gone. Await it.

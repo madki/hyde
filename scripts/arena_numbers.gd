@@ -114,6 +114,8 @@ var _heading := ""
 var _title := ""
 var _target := 0.0
 var _score := 0.0
+## How strongly the score blooms as a total lands in it, 0 to 1 (ArenaPop.bloom).
+var _bloom := 0.0
 var _strike := 0.0
 var _plays := 0.0
 var _discards := 0.0
@@ -402,6 +404,7 @@ func send_total(score_to: int) -> Tween:
 	var t := _tween()
 	t.tween_property(self, "_travel", 1.0, TRAVEL_TIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	t.tween_callback(clear_readout)
+	t.tween_callback(func() -> void: ArenaPop.bloom(_tween(), self, "_bloom"))
 	t.tween_property(self, "_score", float(score_to), COUNT_IN_TIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	return t
 
@@ -519,6 +522,7 @@ func _stop() -> void:
 	_chips_pop = 0.0
 	_mult_pop = 0.0
 	_fly = -1.0
+	_bloom = 0.0
 
 
 func _stop_readout() -> void:
@@ -781,8 +785,7 @@ func _draw_text() -> void:
 	var score := _thousands(roundi(_score))
 	var score_at := _score_at()
 	var score_w := _heavy.get_string_size(score, HORIZONTAL_ALIGNMENT_LEFT, -1.0, SCORE_SIZE).x
-	var score_colour := Palette.CHALK.lerp(_man(), 0.6) if _travel >= 1.0 else Palette.CHALK
-	_outlined(score_at - Vector2(score_w, 0.0), score, SCORE_SIZE, score_colour)
+	ArenaPop.draw_bloom(_text, _heavy, score_at - Vector2(score_w, 0.0), score, SCORE_SIZE, OUTLINE_SIZE, _man(), _bloom)
 	var target := _thousands(roundi(_target))
 	var target_at := _target_at()
 	_outlined(target_at, target, NUMBER_SIZE, Palette.CHALK.lerp(Palette.CHALK_3, _strike))
