@@ -10,7 +10,7 @@ extends RefCounted
 ## does not show is reported with `unhandled = true`: the table then snaps to the engine at
 ## the end of the move, so nothing is ever left wrong.
 ##
-## A script named `scripts/arena_extra_<name>.gd` ("ghosts", "previews", "views") with
+## A script named `scripts/arena_extra_<name>.gd` ("ghosts", "previews", "views", "sound") with
 ## `static func setup(t: ArenaTable) -> void` is called once when the arena is ready, and may
 ## listen to `choice_changed`, `synced` and `move_begun` here, and to the parts' own signals.
 
@@ -22,6 +22,8 @@ signal synced(table: Dictionary)
 signal pressed
 ## A move is about to be played back: the marks of a choice are to go.
 signal move_begun(move: String)
+## A play's total has reached the round's score, which blooms.
+signal landed
 
 ## Every shown value the table keeps (see ArenaShown): the paths in RulesView.table().
 const KEYS: Array[String] = [
