@@ -617,7 +617,7 @@ func _tally_zone(i: int) -> Rect2:
 
 
 func _tally_top(i: int) -> float:
-	return _tally_zone(i).end.y - 28.0
+	return _tally_zone(i).end.y - 26.0
 
 
 func _tally_left(i: int) -> float:

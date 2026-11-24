@@ -1,7 +1,7 @@
 class_name ArenaControls
 extends Control
-## The two controls at the foot of the page, each a written word: PLAY beside the draw pile
-## and DISCARD beside the discards (ArenaLayout.controls_play and controls_discard). A word
+## The two controls at the foot of the page, each a written word: PLAY and DISCARD side by
+## side under the hand (ArenaLayout.controls_play and controls_discard). A word
 ## takes clicks over its whole zone, the tally under it included; the tallies themselves are
 ## ArenaNumbers's. PASS takes PLAY's place when the play can be passed. Each is on when the
 ## rules allow it, and says why not when the pointer rests on it. They work out no rule:
@@ -14,7 +14,10 @@ signal discard_pressed
 signal pass_pressed
 
 ## The room kept under a word for its tally, in pixels.
-const TALLY_ROOM := 30.0
+const TALLY_ROOM := 24.0
+## The width of the warning's line, left of PLAY, and the room between it and PLAY.
+const WARNING_WIDTH := 108.0
+const WARNING_GAP := 12.0
 ## How far the controls drop while they lie low, and the time they take to rise.
 const DROP := 14.0
 const RISE_TIME := 0.2
@@ -62,7 +65,8 @@ func _init() -> void:
 	_warning.text = "he breaks out"
 	_warning.visible = false
 	_warning.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_warning.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_warning.add_theme_font_size_override("font_size", 13)
 	_warning.add_theme_color_override("font_color", WARNING)
 	_warning.add_theme_color_override("font_outline_color", OUTLINE)
@@ -115,7 +119,7 @@ func show_table(table: Dictionary, chosen: int) -> void:
 	_discard.tooltip_text = why_not
 
 
-## Writes the warning of a play that would make him break out over the word PLAY, or takes
+## Writes the warning of a play that would make him break out left of the word PLAY, or takes
 ## it off. `show_table` takes it off too.
 func warn_breakout(on: bool) -> void:
 	_warning.visible = on and not _passing
@@ -171,5 +175,5 @@ func _lay_out() -> void:
 	_play.size = play.size
 	_discard.position = discard.position
 	_discard.size = discard.size
-	_warning.position = play.position + Vector2(-20.0, -20.0)
-	_warning.size = Vector2(play.size.x + 40.0, 18.0)
+	_warning.position = Vector2(play.position.x - WARNING_GAP - WARNING_WIDTH, play.position.y)
+	_warning.size = Vector2(WARNING_WIDTH, play.size.y)
