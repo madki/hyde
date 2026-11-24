@@ -183,7 +183,7 @@ func _show_hand(ids: Array, chosen: Array) -> void:
 # The hand's row lies across the page, whatever the page's width is now.
 func _place_hand() -> void:
 	if is_instance_valid(_hand):
-		_hand.place = Rect2(40.0, 250.0, size.x - 80.0, 210.0)
+		_hand.place = Rect2(40.0, 250.0, size.x - 80.0, ArenaLayout.hand(size).size.y)
 
 
 ## What the table says of the chosen play, in a line or two.

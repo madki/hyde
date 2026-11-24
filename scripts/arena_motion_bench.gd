@@ -272,8 +272,10 @@ func _sample() -> Dictionary:
 
 ## The centre of the i-th of n cards in the bench's stand-in hand.
 func _hand_slot(i: int, n: int) -> Vector2:
-	# Along the foot of the page, under the row laid in the centre.
-	return Vector2(size.x * 0.5 + (i - (n - 1) * 0.5) * 90.0, size.y - 96.0 + absf(i - (n - 1) * 0.5) * 2.0)
+	# In the arena's hand zone, the cards' tops along its top, as the arena's hand lies.
+	var zone := ArenaLayout.hand(size)
+	return Vector2(zone.get_center().x + (i - (n - 1) * 0.5) * ArenaHand.PITCH,
+			zone.position.y + ArenaCard.SIZE.y * 0.5 + absf(i - (n - 1) * 0.5) * 2.0)
 
 
 func _hand_turn(i: int, n: int) -> float:
