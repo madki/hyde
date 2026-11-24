@@ -46,6 +46,9 @@ const ENDINGS := {"hyde": "Mr Hyde", "double": "The Double Life", "myself": "Thi
 # The round is covered by him: the target is struck in his ink, he has the table, the track
 # is wiped with nothing stored, and on his first arrival his four Roots join the deck.
 static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
+	if e.was == "jekyll":
+		# The page shifts after the caption's time, at the least.
+		ArenaMomentShift.cue_to_hyde(t, ArenaPace.CAPTION_MIN + ArenaPace.CAPTION_FADE)
 	t.beats.add(func() -> void:
 		t.stage.show_caption("Rescued. No pay, no card.")
 		t.hand.lift(false)
@@ -67,6 +70,9 @@ static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
 static func _ending(t: ArenaTable, e: Dictionary) -> void:
 	var ending: String = e.ending
 	t.beats.add(func() -> void:
+		if ending == "hyde":
+			# He has the page for good: the run is lost.
+			t.beats.sound("run_lost")
 		t.hand.lift(false)
 		t.numbers.clear_readout()
 		if ending == "hyde":
@@ -129,7 +135,9 @@ static func _pay(t: ArenaTable, e: Dictionary) -> void:
 	var dials := t.run.dials
 	var unused: int = e.plays_left
 	var for_round: int = int(e.pay) - unused * dials.unused_play_pay
-	t.beats.add_call(func() -> void: t.stage.show_caption("Round won."))
+	t.beats.add_call(func() -> void:
+		t.stage.show_caption("Round won.")
+		t.beats.sound("round_won"))
 	for i in for_round:
 		t.beats.add(func() -> void:
 			await ArenaPop.coin(t.beats, t.travel, t.stage.slot(0, 1), t.numbers.sov_place())

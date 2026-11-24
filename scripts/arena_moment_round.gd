@@ -33,6 +33,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 				ArenaMomentShift.add_event(t, e)
 			"shift":
 				# Night 4's scene: the drink's shift without the flask.
+				ArenaMomentShift.cue_to_hyde(t, ArenaPace.CAPTION_MIN + int(e.ev.stored) * ArenaMomentShift.STORE_STEP)
 				t.beats.add_call(func() -> void: t.stage.show_caption("The window. He comes unasked."))
 				t.beats.add_wait(ArenaPace.CAPTION_MIN)
 				ArenaMomentShift.store(t, e.ev.stored)
@@ -84,6 +85,7 @@ static func _dawn(t: ArenaTable, e: Dictionary) -> void:
 	for c: Dictionary in e.cards:
 		cards.append(t.card_data(c.id))
 		names.append(cards[-1].name)
+	ArenaMomentShift.hyde_joins(t)
 	t.moments.join_deck(cards, ArenaCaptions.joins("dawn", names),
 			Vector2(t.arena.size.x - 80.0, t.arena.size.y * 0.45), false)
 

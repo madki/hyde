@@ -80,6 +80,13 @@ func bind() -> void:
 	beats.hurried.connect(_set_rate)
 	beats.skipped.connect(_set_rate)
 	beats.started.connect(_set_rate)
+	# Who has the table, for the sounds: Hyde while the table shows his stance.
+	Sfx.hyde = run.stance == "hyde"
+	shown.changed.connect(_follow_stance)
+	# Leaving the page leaves no sound behind, and the next screen is no one's.
+	arena.tree_exiting.connect(func() -> void:
+		Sfx.stop_all()
+		Sfx.hyde = false)
 
 
 ## True while the table shows Hyde at it: during a move, until the page's shift is played.
@@ -206,6 +213,7 @@ func sync() -> void:
 	after = table
 	ink.is_jekyll = table.stance == "jekyll"
 	hand.is_jekyll = table.stance == "jekyll"
+	Sfx.hyde = table.stance == "hyde"
 	numbers.show_table(table)
 	symbols.show_table(table)
 	_stale = false
@@ -229,6 +237,12 @@ func settle_means() -> void:
 func catch_up() -> void:
 	snap_shown()
 	sync()
+
+
+# The shown stance changed: the sounds follow who has the table.
+func _follow_stance(key: String, value: Variant) -> void:
+	if key == "stance":
+		Sfx.hyde = value == "hyde"
 
 
 func _set_rate() -> void:

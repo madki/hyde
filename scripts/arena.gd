@@ -303,6 +303,7 @@ func _go_on() -> void:
 		# The table has shown the run's end: a new run begins on a clean page.
 		_run = Rules.new_run()
 		t.run = _run
+		Sfx.hyde = _run.stance == "hyde"
 		t.offered = []
 		t.picked = null
 		_symbols.line_reset()

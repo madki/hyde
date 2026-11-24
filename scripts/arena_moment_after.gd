@@ -94,6 +94,7 @@ static func _breed(t: ArenaTable, e: Dictionary) -> void:
 		t.shown.set_value("symbols/%s/habit" % sym, e.habit)
 		await t.play(t.symbols.rollover.bind(sym, e.habit)))
 	var copy := t.card_data(e.id)
+	ArenaMomentShift.hyde_joins(t)
 	t.moments.join_deck([copy], ArenaCaptions.joins("rollover", [copy.name]), t.symbols.sketch_place(sym))
 	t.beats.add(func() -> void:
 		t.shown.add("line/ink", 1)
