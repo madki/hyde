@@ -62,6 +62,8 @@ const GOAL_BASE := 32.0
 const GOAL_LINE := 5.0
 const GOAL_STROKE := 5.0
 const GOAL_TICK := 10.0
+## How strongly the goal's thin line is drawn, under the heavy stroke of the score's share.
+const TRACK_INK := 0.35
 ## The night and round's two lines, and how strongly they are drawn.
 const NIGHT_INK := 0.7
 ## The sovereigns' coin: its radius, and where it stands in its zone.
@@ -110,6 +112,9 @@ var tallies := Control.new()
 ## as a whole (a pencil stroke's own alpha is its pressure, not its strength).
 var _tally_items: Array[Control] = [Control.new(), Control.new()]
 var _marks := Control.new()
+## The goal's thin line, on an item of its own: it is faint as a whole (TRACK_INK), which a
+## pencil stroke cannot be by its colour.
+var _track := Control.new()
 var _text := Control.new()
 ## The total on its way to the score, drawn over the rest of the page: it crosses the ribbon.
 var _flight := Control.new()
@@ -171,6 +176,9 @@ func _init() -> void:
 	_slanted.variation_transform = Transform2D(Vector2(1.0, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
 	_marks.material = LINE_MATERIAL
 	_marks.draw.connect(_draw_marks)
+	_track.material = LINE_MATERIAL
+	_track.modulate.a = TRACK_INK
+	_track.draw.connect(_draw_track)
 	_text.draw.connect(_draw_text)
 	_flight.draw.connect(_draw_flight)
 	_flight.z_index = 1
@@ -180,7 +188,7 @@ func _init() -> void:
 		_tally_items[i].draw.connect(_draw_tally.bind(i))
 		tallies.add_child(_tally_items[i])
 	restraint.name = "Restraint"
-	for child: Control in [_marks, restraint, _text, tallies, _flight]:
+	for child: Control in [_track, _marks, restraint, _text, tallies, _flight]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -534,6 +542,7 @@ func _stop_readout() -> void:
 
 func _redraw() -> void:
 	_marks.queue_redraw()
+	_track.queue_redraw()
 	_text.queue_redraw()
 	for item in _tally_items:
 		item.queue_redraw()
@@ -541,7 +550,7 @@ func _redraw() -> void:
 
 
 func _lay_out() -> void:
-	for child: Control in [_marks, _text, tallies, _flight] + _tally_items:
+	for child: Control in [_marks, _track, _text, tallies, _flight] + _tally_items:
 		child.size = size
 	var gauge := ArenaLayout.restraint(size)
 	restraint.position = gauge.position
@@ -712,11 +721,10 @@ func _draw_marks() -> void:
 	var middle := goal.get_center().x
 	# The stroke that parts the score from the target.
 	pencil.stroke(PackedVector2Array([Vector2(middle + 5.0, base - 24.0), Vector2(middle - 4.0, base + 2.0)]), 1.6, 0.4, 0.2)
-	# The line: thin the whole way, heavy as far as the score has come, and a tick at its end.
+	# The line: heavy as far as the score has come, with a tick at its end, over the thin
+	# line that runs the whole way (`_draw_track`).
 	var y := goal.end.y - GOAL_LINE
-	pencil.colour = Color(CREAM, 0.35)
-	pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(goal.end.x, y)]), 1.4, 0.4)
-	pencil.colour = Color(CREAM, 0.9)
+	pencil.colour = CREAM
 	var end := goal.position.x + goal.size.x * _goal_share()
 	if end > goal.position.x + 1.0:
 		pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(end, y)]), GOAL_STROKE, 0.5)
@@ -728,6 +736,16 @@ func _draw_marks() -> void:
 		var from := target_at + Vector2(-4.0, -6.0)
 		pencil.stroke(PackedVector2Array([from, from.lerp(target_at + Vector2(width + 4.0, -9.0), _strike)]), 2.2, 0.5)
 	pencil.draw(_marks)
+
+
+## The goal's thin line, the zone's whole width: drawn in cream and made faint by its item.
+func _draw_track() -> void:
+	var pencil := Pencil.new(rng_seed + 7)
+	pencil.colour = CREAM
+	var goal := ArenaLayout.goal(size)
+	var y := goal.end.y - GOAL_LINE
+	pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(goal.end.x, y)]), 1.4, 0.4)
+	pencil.draw(_track)
 
 
 ## The tally of plays (0) or of discards (1), in the colour its control gives it.
