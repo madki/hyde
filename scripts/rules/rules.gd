@@ -1054,35 +1054,68 @@ static func _next_night(run: RulesRun) -> Array:
 
 # ---------- the back alley ----------
 
+## Whether the alley's Habit can be taken on this symbol now: {ok, why}.
+static func can_alley_habit(run: RulesRun, sym: String) -> Dictionary:
+	if run.phase != "alley":
+		return {"ok": false, "why": "Not now."}
+	if run.alley.habit != null:
+		return {"ok": false, "why": "Already taken."}
+	if not RulesConfig.ROOT.has(sym):
+		return {"ok": false, "why": "Not on offer."}
+	if count_roots(run, true, sym) == 0:
+		return {"ok": false, "why": "No Root of his with that symbol."}
+	return {"ok": true, "why": ""}
+
+
 ## One Habit, free, once: on a symbol with an Ink Root in the deck. It breeds no copy and
 ## leaves the Craving where it was.
 static func alley_habit(run: RulesRun, sym: String) -> Dictionary:
-	if run.phase != "alley" or run.alley.habit != null or not RulesConfig.ROOT.has(sym) or count_roots(run, true, sym) == 0:
-		return {"ok": false, "reason": "Not on offer."}
+	var can := can_alley_habit(run, sym)
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
 	run.habit[sym] += run.dials.alley_habit
 	run.alley.habit = sym
 	return {"ok": true}
 
 
+## Whether this instrument of his can be taken in the alley now: {ok, why}.
+static func can_alley_instrument(run: RulesRun, key: String) -> Dictionary:
+	if run.phase != "alley":
+		return {"ok": false, "why": "Not now."}
+	if run.alley.inst != null:
+		return {"ok": false, "why": "Already taken."}
+	if not run.alley.options.has(key):
+		return {"ok": false, "why": "Not on offer."}
+	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
+		return {"ok": false, "why": "%d instruments held. Drop one first." % RulesConfig.MAX_INSTRUMENTS}
+	return {"ok": true, "why": ""}
+
+
 ## One of his instruments, free, once, if a slot is free.
 static func alley_instrument(run: RulesRun, key: String) -> Dictionary:
-	if run.phase != "alley" or run.alley.inst != null or not run.alley.options.has(key):
-		return {"ok": false, "reason": "Not on offer."}
-	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
-		return {"ok": false, "reason": "%d instruments held. Drop one first." % RulesConfig.MAX_INSTRUMENTS}
+	var can := can_alley_instrument(run, key)
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
 	run.instruments.append(key)
 	run.alley.inst = key
 	return {"ok": true}
 
 
+## Whether a dose of salt can be bought now in this place ("lab" or "alley"): {ok, why}.
+static func can_buy_salt(run: RulesRun, where: String) -> Dictionary:
+	if run.phase != where or (where != "lab" and where != "alley"):
+		return {"ok": false, "why": "Not now."}
+	if run.sov < salt_cost(run, where):
+		return {"ok": false, "why": "Not enough sovereigns."}
+	return {"ok": true, "why": ""}
+
+
 ## A dose of salt from the street chemist.
 static func alley_salt(run: RulesRun) -> Dictionary:
-	if run.phase != "alley":
-		return {"ok": false, "reason": "Not now."}
-	var price := salt_cost(run, "alley")
-	if run.sov < price:
-		return {"ok": false, "reason": "Not enough sovereigns."}
-	run.sov -= price
+	var can := can_buy_salt(run, "alley")
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
+	run.sov -= salt_cost(run, "alley")
 	run.salt += 1
 	run.doses_bought += 1
 	run.alley.bought += 1
@@ -1098,34 +1131,50 @@ static func alley_leave(run: RulesRun) -> Dictionary:
 
 # ---------- the laboratory ----------
 
-## Buys the card at this place of the shelf: one copy joins the deck.
-static func buy_card(run: RulesRun, index: int) -> Dictionary:
+## Whether the card at this place of the shelf can be bought now: {ok, why}.
+static func can_buy_card(run: RulesRun, index: int) -> Dictionary:
 	if run.phase != "lab":
-		return {"ok": false, "reason": "Not now."}
+		return {"ok": false, "why": "Not now."}
 	var shelf: Array = run.shop.cards
 	if index < 0 or index >= shelf.size() or shelf[index].sold:
-		return {"ok": false, "reason": "Sold."}
-	var o: Dictionary = shelf[index]
-	if run.sov < int(o.price):
-		return {"ok": false, "reason": "Not enough sovereigns."}
+		return {"ok": false, "why": "Sold."}
+	if run.sov < int(shelf[index].price):
+		return {"ok": false, "why": "Not enough sovereigns."}
+	return {"ok": true, "why": ""}
+
+
+## Buys the card at this place of the shelf: one copy joins the deck.
+static func buy_card(run: RulesRun, index: int) -> Dictionary:
+	var can := can_buy_card(run, index)
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
+	var o: Dictionary = run.shop.cards[index]
 	run.sov -= int(o.price)
 	o.sold = true
 	run.cards.append(make_card(run, o.key, false))
 	return {"ok": true}
 
 
-## Buys the instrument at this place of the shelf.
-static func buy_instrument(run: RulesRun, index: int) -> Dictionary:
+## Whether the instrument at this place of the shelf can be bought now: {ok, why}.
+static func can_buy_instrument(run: RulesRun, index: int) -> Dictionary:
 	if run.phase != "lab":
-		return {"ok": false, "reason": "Not now."}
+		return {"ok": false, "why": "Not now."}
 	var shelf: Array = run.shop.instruments
 	if index < 0 or index >= shelf.size() or shelf[index].sold:
-		return {"ok": false, "reason": "Sold."}
-	var o: Dictionary = shelf[index]
+		return {"ok": false, "why": "Sold."}
 	if run.instruments.size() >= RulesConfig.MAX_INSTRUMENTS:
-		return {"ok": false, "reason": "%d instruments held. Drop one first." % RulesConfig.MAX_INSTRUMENTS}
-	if run.sov < int(o.price):
-		return {"ok": false, "reason": "Not enough sovereigns."}
+		return {"ok": false, "why": "%d instruments held. Drop one first." % RulesConfig.MAX_INSTRUMENTS}
+	if run.sov < int(shelf[index].price):
+		return {"ok": false, "why": "Not enough sovereigns."}
+	return {"ok": true, "why": ""}
+
+
+## Buys the instrument at this place of the shelf.
+static func buy_instrument(run: RulesRun, index: int) -> Dictionary:
+	var can := can_buy_instrument(run, index)
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
+	var o: Dictionary = run.shop.instruments[index]
 	run.sov -= int(o.price)
 	o.sold = true
 	run.instruments.append(o.key)
@@ -1144,12 +1193,10 @@ static func drop_instrument(run: RulesRun, key: String) -> Dictionary:
 
 ## A dose of salt from the laboratory.
 static func buy_salt(run: RulesRun) -> Dictionary:
-	if run.phase != "lab":
-		return {"ok": false, "reason": "Not now."}
-	var price := salt_cost(run, "lab")
-	if run.sov < price:
-		return {"ok": false, "reason": "Not enough sovereigns."}
-	run.sov -= price
+	var can := can_buy_salt(run, "lab")
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
+	run.sov -= salt_cost(run, "lab")
 	run.salt += 1
 	run.doses_bought += 1
 	return {"ok": true}
@@ -1160,17 +1207,25 @@ static func strike_price(c: RulesCard) -> int:
 	return RulesConfig.STRIKE_INK if c.is_ink() else RulesConfig.STRIKE_PAPER
 
 
-## Removes a card from the deck for good, in the laboratory.
-static func strike(run: RulesRun, id: int) -> Dictionary:
+## Whether this card can be struck from the deck now: {ok, why}.
+static func can_strike(run: RulesRun, id: int) -> Dictionary:
 	if run.phase != "lab":
-		return {"ok": false, "reason": "Not now."}
+		return {"ok": false, "why": "Not now."}
 	var c := card(run, id)
 	if c == null:
-		return {"ok": false, "reason": "No such card."}
-	var price := strike_price(c)
-	if run.sov < price:
-		return {"ok": false, "reason": "Not enough sovereigns."}
-	run.sov -= price
+		return {"ok": false, "why": "No such card."}
+	if run.sov < strike_price(c):
+		return {"ok": false, "why": "Not enough sovereigns."}
+	return {"ok": true, "why": ""}
+
+
+## Removes a card from the deck for good, in the laboratory.
+static func strike(run: RulesRun, id: int) -> Dictionary:
+	var can := can_strike(run, id)
+	if not can.ok:
+		return {"ok": false, "reason": can.why}
+	var c := card(run, id)
+	run.sov -= strike_price(c)
 	run.cards.erase(c)
 	run.stats.struck += 1
 	return {"ok": true}
