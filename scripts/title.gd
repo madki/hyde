@@ -6,7 +6,8 @@ extends Control
 ## Hyde turns back into Jekyll's magenta ghost and the two ghosts close into Jekyll. Tab goes
 ## over to the older change, in which Shift turns one man into the other through the dark,
 ## and back. A visit starts from Jekyll: while Hyde stands there, Shift turns him back through
-## the dark whichever change is chosen.
+## the dark whichever change is chosen. The panel on the dark side of the street holds the
+## same two things as rows: Begin (as Enter) and Let Hyde out (as Shift).
 ## For screenshots: `--apart=0.5` shows a moment of Jekyll coming apart, `--hyde=1` (with
 ## `--apart=1`) the magenta ghost turned into Hyde, `--glitch=0.3` a moment of the split of
 ## the screen, `--shift=1` starts on Hyde, and `--lamps=0.3` and `--dark=0.5` show a moment
@@ -29,13 +30,22 @@ const SHAKE := 0.006
 ## into the other through the dark.
 @export var change := Change.VISIT
 
+## The panel's rows, in order: what Enter and Shift do.
+enum Row { BEGIN, HYDE }
+
 var _visit: Tween
 
 @onready var _bg: TitleBackground = $Background
 @onready var _split: SplitTransition = $SplitTransition
+@onready var _panel: PlacePanel = $Panel
 
 
 func _ready() -> void:
+	_panel.accent = Palette.JEKYLL
+	_panel.set_heading("Hyde")
+	_panel.set_rows([{text = "Begin"}, {text = "Let Hyde out"}])
+	_panel.note = "Enter begins, Shift for Hyde"
+	_panel.row_chosen.connect(_on_row_chosen)
 	if Shot.has_arg("shift"):
 		_bg.shift = float(Shot.arg("shift"))
 	if Shot.has_arg("lamps"):
@@ -56,18 +66,35 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if not key or key.echo or not key.pressed:
 		return
-	if _bg.is_changing() or (_visit and _visit.is_running()):
+	if _is_busy():
 		return
 	if key.keycode == KEY_TAB:
 		change = Change.DARK if change == Change.VISIT else Change.VISIT
 		print("Change: ", Change.find_key(change))
 	elif key.keycode == KEY_SHIFT:
-		if change == Change.VISIT and _bg.shift <= 0.0:
-			_visit_hyde()
-		else:
-			# Also the way back for a Hyde left standing by the other change: a visit starts
-			# from Jekyll.
-			_bg.change_to(0.0 if _bg.shift > 0.5 else 1.0)
+		_shift()
+
+
+func _on_row_chosen(index: int) -> void:
+	match index:
+		Row.BEGIN:
+			SceneFlow.next() # as Enter does anywhere
+		Row.HYDE:
+			if not _is_busy():
+				_shift()
+
+
+func _is_busy() -> bool:
+	return _bg.is_changing() or (_visit and _visit.is_running())
+
+
+func _shift() -> void:
+	if change == Change.VISIT and _bg.shift <= 0.0:
+		_visit_hyde()
+	else:
+		# Also the way back for a Hyde left standing by the other change: a visit starts
+		# from Jekyll.
+		_bg.change_to(0.0 if _bg.shift > 0.5 else 1.0)
 
 
 ## Jekyll comes apart, his magenta ghost turns into Hyde as the screen shakes and splits,
