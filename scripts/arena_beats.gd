@@ -170,6 +170,18 @@ func wait(seconds: float) -> Signal:
 	return t.finished
 
 
+## Plays a sound (Sfx.play), unless the move is being skipped: a skipped move is silent.
+func sound(sound_name: String, pitch: float = 1.0, volume: float = 1.0) -> void:
+	if not _skipping:
+		Sfx.play(sound_name, pitch, volume)
+
+
+## Plays Jekyll's or Hyde's version of a sound (Sfx.play_sided), unless the move is skipped.
+func sound_sided(sound_name: String, pitch: float = 1.0, volume: float = 1.0) -> void:
+	if not _skipping:
+		Sfx.play_sided(sound_name, pitch, volume)
+
+
 ## Plays the rest of the queue faster, as a click does.
 func hurry() -> void:
 	if not is_locked() or _hurrying:
