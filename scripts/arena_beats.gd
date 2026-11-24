@@ -32,6 +32,10 @@ signal corrected(differences: Dictionary)
 signal hurried
 signal skipped
 
+## The keys held down to read every number (ArenaViews). Holding one is looking, not
+## hurrying: it neither hurries nor skips a move, and is no press where the table waits for one.
+const LOOK_KEYS: Array[Key] = [KEY_SHIFT, KEY_TAB]
+
 ## The numbers the table shows, moved only by beats.
 var shown := ArenaShown.new()
 ## Returns what RulesView.table() holds now, for the check at the end. Unset, there is no check.
@@ -204,7 +208,7 @@ func _input(event: InputEvent) -> void:
 		pressed = button.pressed
 		released = not button.pressed
 	elif key:
-		if key.echo:
+		if key.echo or key.keycode in LOOK_KEYS:
 			get_viewport().set_input_as_handled()
 			return
 		pressed = key.pressed

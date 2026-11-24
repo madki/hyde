@@ -335,9 +335,9 @@ func _notification(what: int) -> void:
 
 
 func _part_at(point: Vector2) -> String:
-	if _flask_zone().has_point(point):
+	if _flask_hit().has_point(point):
 		return "flask"
-	if _salt_zone().has_point(point):
+	if _salt_hit().has_point(point):
 		return "salt"
 	for i in _slots.size():
 		# The medallion or the seal, and its name under it.
@@ -453,6 +453,20 @@ func _flask_zone() -> Rect2:
 
 func _salt_zone() -> Rect2:
 	return ArenaLayout.salt(size)
+
+
+## What of the draught's zone takes the pointer: the flask and its words, and no more of the
+## zone, whose far end a risen card of the hand lies over.
+func _flask_hit() -> Rect2:
+	var zone := _flask_zone()
+	return Rect2(zone.position, Vector2(minf(WORDS_LEFT + _words_width(), zone.size.x), zone.size.y))
+
+
+## What of the salt's zone takes the pointer: the paper and the words beside it.
+func _salt_hit() -> Rect2:
+	var zone := _salt_zone()
+	var left := _paper_at().x - PAPER_SIZE * 0.5 - 4.0
+	return Rect2(left, zone.position.y, zone.end.x - left, zone.size.y)
 
 
 ## The middle of the flask's round body: the flask stands on the foot of its zone.
@@ -674,11 +688,9 @@ func _draw_lines() -> void:
 		# A line under the part the pointer is on: bright when it can be used.
 		var ring := Pencil.new(base + 510)
 		var usable: bool = _draught.ok if _hover == "flask" else _salt.ok
-		var zone := _flask_zone() if _hover == "flask" else _salt_zone()
-		var from := zone.position.x if _hover == "flask" else _paper_at().x - PAPER_SIZE * 0.5 - 4.0
-		var to := from + _words_width() + WORDS_LEFT if _hover == "flask" else zone.end.x
+		var hit := _flask_hit() if _hover == "flask" else _salt_hit()
 		ring.colour = CHALK if usable else CHALK_DIM
-		ring.stroke(PackedVector2Array([Vector2(from, zone.end.y + 1.0), Vector2(to, zone.end.y)]), 1.6, 0.3)
+		ring.stroke(PackedVector2Array([Vector2(hit.position.x, hit.end.y + 1.0), hit.end]), 1.6, 0.3)
 		ring.draw(_lines)
 
 

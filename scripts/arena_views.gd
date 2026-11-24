@@ -156,7 +156,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			_close_deck()
 		return
-	if key and key.keycode == KEY_TAB:
+	# A key held to look is no press: it must not reach the table, which may wait for one.
+	if key and key.keycode in ArenaBeats.LOOK_KEYS:
 		get_viewport().set_input_as_handled()
 	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
 		for which: String in ["draw", "discards"]:

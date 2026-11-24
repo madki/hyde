@@ -87,9 +87,11 @@ func put(which: String, cards: Array, into_middle: bool = false) -> void:
 func _put_one(which: String, to: ArenaPile, card: ArenaCard, face: int, into_middle: bool,
 		delay: float, left: Array) -> void:
 	if into_middle:
-		# Beside the pile, half over it, then in.
-		var beside := to.top_centre() + Vector2(-ArenaCard.SIZE.x * ArenaPile.SCALE * 0.55, 8.0)
-		await travel.fly(card, beside, -6.0, ArenaPile.SCALE, face, ArenaPace.TRAVEL, delay)
+		# Beside the pile, half over it, then in: on the side of the page's middle, since the
+		# pile lies in a corner and its other side is the page's edge.
+		var inward := 1.0 if to.top_centre().x < get_global_rect().get_center().x else -1.0
+		var beside := to.top_centre() + Vector2(inward * ArenaCard.SIZE.x * ArenaPile.SCALE * 0.55, 8.0)
+		await travel.fly(card, beside, inward * 6.0, ArenaPile.SCALE, face, ArenaPace.TRAVEL, delay)
 		to.riffle(beats)
 		await travel.fly(card, to.top_centre() + Vector2(0.0, 4.0), 0.0, ArenaPile.SCALE, face,
 				ArenaPace.SLIDE_IN)

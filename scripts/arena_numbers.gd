@@ -754,8 +754,12 @@ func _draw_readout() -> void:
 	var r := ArenaLayout.readout(size)
 	var base := _baseline()
 	if _reason != "":
-		c.draw_string(_slanted, Vector2(r.position.x, base - 5.0), _reason, HORIZONTAL_ALIGNMENT_CENTER,
-				r.size.x - DROPS_ROOM, REASON_SIZE, CREAM)
+		# A long reason is wrapped: the zone has the height for two lines, about the place of one.
+		var width := r.size.x - DROPS_ROOM
+		var one := _slanted.get_string_size(_reason, HORIZONTAL_ALIGNMENT_LEFT, -1.0, REASON_SIZE).y
+		var all := _slanted.get_multiline_string_size(_reason, HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2).y
+		c.draw_multiline_string(_slanted, Vector2(r.position.x, base - 5.0 - (all - one) * 0.5), _reason,
+				HORIZONTAL_ALIGNMENT_CENTER, width, REASON_SIZE, 2, CREAM)
 		return
 	if not _numbers:
 		return
