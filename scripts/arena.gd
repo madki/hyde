@@ -10,8 +10,9 @@ extends Control
 ## still made: the table then shows its outcome at once.
 ##
 ## Keys: 1 to 9 and 0 choose cards, Enter plays (or passes), D discards, Q drinks, S takes
-## salt, Esc lets the chosen cards go. At a reward 1 to 3 take a card and 0 or Esc none. During a move a click or a key hurries it, and held
-## down skips to its end.
+## salt, Esc lets the chosen cards go, and Shift (or Tab) held down shows every number. At a
+## reward 1 to 3 take a card and 0 or Esc none. During a move a click or a key hurries it,
+## and held down skips to its end.
 ##
 ## For a screenshot: `--seed=<n>` (the run's seed), `--ink=<0..100>` and
 ## `--volatility=<0..100>` (the page's ink), and `--keys=` to make moves first (see
@@ -207,10 +208,6 @@ func _build() -> void:
 	var stage := ArenaStage.new()
 	var piles := ArenaPiles.new()
 	var travel := ArenaTravel.new()
-	# The laid row is centred on the page, under the readout's line.
-	stage.row_y = 372.0
-	stage.table_left = 0.0
-	stage.room_right = 0.0
 	add_child(stage)
 	move_child(stage, _hand.get_index())
 	add_child(piles)

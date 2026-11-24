@@ -2,12 +2,13 @@ class_name ArenaViews
 extends Control
 ## Views on demand: what the table does not keep on the page, one step away.
 ##
-## - Hold Tab: every number at once, for as long as it is held. The three symbols write
-##   their gauges in numbers, and a note in the centre gives each symbol's Roots and what
-##   one is worth, the restraint's limit and why, what the next drink costs, the scene's
-##   twist, what the dawn brings, and both men's hands with their base chips and mult.
-## - Rest the pointer on the night's heading: the scene's twist and what the dawn brings.
-##   On the restraint track: its limit and why.
+## - Hold Shift (or Tab, or rest the pointer on the tab at the right edge, which says so):
+##   every number at once, for as long as it is held. The three symbols write their gauges in
+##   numbers, and a note in the centre gives each symbol's Roots and what one is worth, the
+##   restraint's limit and why, what the next drink costs, the scene's twist, what the dawn
+##   brings, and both men's hands with their base chips and mult.
+## - Rest the pointer on the tab at the left edge, which names the scene's twist: the twist
+##   and what the dawn brings. On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
 ##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
@@ -29,10 +30,13 @@ var _deck := Control.new()
 var _deck_title := Label.new()
 var _notebook := Control.new()
 var _hint := Button.new()
+var _tabs := ArenaTabs.new()
 var _table: Dictionary = {}
 var _open := true
 var _held := false
 var _hover := ""
+## False while the pointer is outside the window.
+var _pointer_here := true
 
 
 func _init() -> void:
@@ -87,7 +91,8 @@ func _init() -> void:
 		_hint.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_hint.visible = false
 	_hint.pressed.connect(_show_a_hand)
-	for child: Control in [_notebook, _hint, _note, _deck]:
+	_tabs.right = "Hold Shift"
+	for child: Control in [_tabs, _notebook, _hint, _note, _deck]:
 		add_child(child)
 
 
@@ -96,6 +101,7 @@ func bind(table: ArenaTable) -> void:
 	t = table
 	t.synced.connect(_on_synced)
 	t.move_begun.connect(func(_move: String) -> void:
+		_name_twist(RulesView.table(t.run).night)
 		_open = false
 		_hint.visible = false
 		_clear(_notebook)
@@ -108,17 +114,20 @@ func _on_synced(table: Dictionary) -> void:
 	_hint.visible = _open and int(table.night.no) == 1
 	var play := ArenaLayout.controls_play(size)
 	_hint.position = Vector2(play.get_center().x - _hint.size.x * 0.5, play.position.y - 46.0)
+	_name_twist(table.night)
 	_show_notebook()
 
 
 func _process(_delta: float) -> void:
 	if t == null or _table.is_empty():
 		return
-	var held := Input.is_key_pressed(KEY_TAB) and not _deck.visible
+	var point := get_global_mouse_position()
+	var tab := "" if _deck.visible or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
+	_tabs.lit = tab
+	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible
 	var hover := ""
-	if not held and not _deck.visible:
-		var point := get_global_mouse_position()
-		if t.column.heading_rect().has_point(point):
+	if not held and not _deck.visible and _pointer_here:
+		if tab == "left":
 			hover = "night"
 		elif t.column.restraint.get_global_rect().has_point(point):
 			hover = "restraint"
@@ -128,9 +137,11 @@ func _process(_delta: float) -> void:
 	_hover = hover
 	t.symbols.show_numbers(held)
 	if held:
-		_say(_every_number(), Vector2(310.0, 210.0))
+		# In the middle of the page, under the numbers the symbols write below their gauges.
+		_say(_every_number(), Vector2(0.0, ArenaLayout.restraint(size).position.y + 4.0), true)
 	elif hover == "night":
-		_say(_night_words(), t.column.heading_rect().position + Vector2(0.0, 66.0))
+		var left := _tabs.rect_of("left")
+		_say(_night_words(), Vector2(left.end.x + 12.0, left.position.y))
 	elif hover == "restraint":
 		_say(_restraint_words(), ArenaLayout.stage(size).position + Vector2(0.0, 6.0))
 	else:
@@ -155,13 +166,30 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 
 
-func _say(words: String, at: Vector2) -> void:
+# Writes the scene's twist on the left tab: `night` is RulesView.table().night.
+func _name_twist(night: Dictionary) -> void:
+	var twist: String = night.twist
+	_tabs.left = "Twist: %s" % (twist.capitalize() if twist != "" else "none")
+
+
+# Shows the note with these words, its top left corner at `at`, or `centred` across the page
+# at that height.
+func _say(words: String, at: Vector2, centred: bool = false) -> void:
 	_words.text = words
 	_note.size = Vector2.ZERO
 	_note.reset_size()
+	if centred:
+		at.x = (size.x - _note.size.x) * 0.5
 	# Kept on the page, whatever its words' length.
-	_note.position = Vector2(minf(at.x, size.x - _note.size.x - 44.0), minf(at.y, size.y - _note.size.y - 44.0))
+	_note.position = Vector2(clampf(at.x, 8.0, maxf(8.0, size.x - _note.size.x - 44.0)), minf(at.y, size.y - _note.size.y - 44.0))
 	_note.visible = true
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_MOUSE_ENTER:
+		_pointer_here = true
+	elif what == NOTIFICATION_WM_MOUSE_EXIT:
+		_pointer_here = false
 
 
 # ---------- the words ----------

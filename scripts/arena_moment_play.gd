@@ -224,4 +224,4 @@ static func _draw_with_eyes(t: ArenaTable, ids: Array, eyes: Array) -> void:
 
 # The point just above a card's middle, on the page: where what it gives rises from.
 static func _above(card: ArenaCard) -> Vector2:
-	return ArenaTravel.centre_of(card) + Vector2(0.0, -ArenaCard.SIZE.y * 0.5 + 6.0)
+	return ArenaTravel.centre_of(card) + Vector2(0.0, -ArenaCard.SIZE.y * card.scale.y * 0.5 + 6.0)

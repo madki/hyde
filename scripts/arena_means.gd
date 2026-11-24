@@ -374,10 +374,11 @@ func _preview_kind() -> String:
 # --- Words ----------------------------------------------------------------------------------
 
 
-## The next drink's cost, as it is written beside the flask.
+## The next drink's cost, as it is written beside the flask: short, to end before the hand's
+## first card, which rises beside it.
 func _cost_words() -> String:
 	if _draught.cost == "first":
-		return "He arrives: %d of his Roots join" % RulesConfig.FIRST_ARRIVAL.size()
+		return "He arrives: %d Roots join" % RulesConfig.FIRST_ARRIVAL.size()
 	return "Stains a Paper Root"
 
 

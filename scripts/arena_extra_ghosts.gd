@@ -69,4 +69,4 @@ static func _show(t: ArenaTable, marks: ArenaGhostMarks, play: Variant) -> void:
 		if card:
 			card.set_tag("%d · line" % (i + 1) if i == int(p.line_breaks_at) else "at risk %d" % (i + 1), true)
 	marks.say("Last play. If it falls short, he takes these." if not at_risk.is_empty() else "Last play.",
-			t.stage.slot(0, 1) + Vector2(0.0, 14.0))
+			t.arena.get_global_transform() * ArenaLayout.caption(t.arena.size).get_center())

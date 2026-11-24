@@ -164,7 +164,7 @@ static func _reward(t: ArenaTable) -> void:
 		await t.stage.lay(t.travel, nodes))
 	t.beats.add_choice(func() -> void:
 		t.freshen()
-		t.reward.offer(nodes, t.stage.slot(0, 1) + Vector2(0.0, ArenaCard.SIZE.y * 0.5 + 14.0))
+		t.reward.offer(nodes, t.stage.slot(0, 1) + Vector2(0.0, ArenaCard.SIZE.y * ArenaStage.LAID_SCALE * 0.5 + 22.0))
 		t.picked = await t.reward.chosen
 		t.offered = nodes)
 	t.beats.add(func() -> void: await t.stage.clear_caption())

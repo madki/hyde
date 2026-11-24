@@ -115,13 +115,16 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 				place[0] = now.centre
 				place[1] = now.turn
 				place[2] = now.get("size", place[2])
-			lifted = place[0] + Vector2(0.0, -34.0)
+			# A card of the hand lifts well clear of the row; a small one, laid in the centre,
+			# only a little, to stay under the caption.
+			lifted = place[0] + Vector2(0.0, -34.0 if place[2] >= 1.0 else -12.0)
 		else:
 			# Drawn out of the pile, face up, to the centre of the table.
 			held[0] = piles.take(where, before)
 			lifted = stage.slot(0, 1)
 		# It lifts: a fifth of the change. Drawn out of a pile, it travels at a card's pace.
-		await travel.fly(held[0], lifted, 0.0, 1.12 * float(place[2]), ArenaTravel.UP,
+		await travel.fly(held[0], lifted, 0.0, 1.12 * (float(place[2]) if where == "hand" else ArenaStage.LAID_SCALE),
+				ArenaTravel.UP,
 				time * 0.19 if where == "hand" else ArenaPace.TRAVEL))
 	beats.add(func() -> void:
 		await _crack(held[0], after, time * 0.62))

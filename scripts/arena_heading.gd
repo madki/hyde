@@ -1,6 +1,6 @@
 class_name ArenaHeading
 extends Control
-## A round's heading, written in the centre of the table as a journal heading when the round
+## A round's heading, written in the centre band of the page as a journal heading when the round
 ## begins: the night and the round, the target, and on a night's first round the night's
 ## title and its scene's twist. In a scene the twist is written large. It is held for a
 ## moment, then shrinks away towards its place at the top left of the page.
@@ -9,12 +9,9 @@ extends Control
 
 const TEXT := Color(0.95, 0.9, 0.78)
 const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
-const WIDTH := 600.0
+const WIDTH := 560.0
 const FADE := 0.25
 const SHRINK := 0.35
-
-## The height of the heading's middle from the top: it is written about the page's middle.
-@export var middle_y := 300.0
 
 var beats: ArenaBeats
 
@@ -75,7 +72,8 @@ func play(words: Dictionary, to: Vector2) -> void:
 		y += label.size.y + (10.0 if label == _target else 4.0)
 	for label: Label in [_head, _target, _title, _twist]:
 		label.position.y -= y * 0.5
-	var middle := Vector2(size.x * 0.5, middle_y)
+	# About the middle of the band between the restraint and the lower rule.
+	var middle := Vector2(size.x * 0.5, (ArenaLayout.readout(size).position.y + ArenaLayout.foot_rule(size)) * 0.5)
 	_block.position = middle
 	_block.scale = Vector2.ONE
 	_block.modulate.a = 0.0
