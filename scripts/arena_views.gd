@@ -82,10 +82,10 @@ func _init() -> void:
 	_hint.tooltip_text = "Chooses the cards of a good hand."
 	_hint.add_theme_font_override("font", font)
 	_hint.add_theme_font_size_override("font_size", 14)
-	_hint.add_theme_color_override("font_color", Color(CREAM, 0.8))
-	_hint.add_theme_color_override("font_focus_color", Color(CREAM, 0.8))
-	_hint.add_theme_color_override("font_hover_color", Color.WHITE)
-	_hint.add_theme_color_override("font_pressed_color", Color.WHITE)
+	_hint.add_theme_color_override("font_color", Palette.CHALK_2)
+	_hint.add_theme_color_override("font_focus_color", Palette.CHALK_2)
+	_hint.add_theme_color_override("font_hover_color", Palette.CHALK)
+	_hint.add_theme_color_override("font_pressed_color", Palette.CHALK)
 	_hint.add_theme_color_override("font_outline_color", Color(Palette.OUTLINE, 0.9))
 	_hint.add_theme_constant_override("outline_size", 5)
 	for state: String in ["normal", "hover", "pressed", "focus"]:

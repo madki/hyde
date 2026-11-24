@@ -37,3 +37,8 @@ const GOLD := Color("d4af5d")
 const GOLD_HOT := Color("ffe9a8")
 const WARN := Color("fba952")
 const SALT := Color("eaf9ff")
+
+# The split between screens: brighter than the lights, on screen for a moment only.
+const SPLIT_JEKYLL := Color(0.03, 0.95, 0.92)
+const SPLIT_HYDE := Color(0.88, 0.06, 0.46)
+const SPLIT_THIRD := Color(0.9, 1.0, 0.1)

@@ -47,15 +47,15 @@ const LINGER_TEAR_RATE := 7.0
 
 ## The three colours the screen splits into. Any three will do as long as no one of them can
 ## be mixed from the other two.
-@export var colour_jekyll := Color(0.03, 0.95, 0.92):
+@export var colour_jekyll := Palette.SPLIT_JEKYLL:
 	set(value):
 		colour_jekyll = value
 		_set_colours()
-@export var colour_hyde := Color(0.88, 0.06, 0.46):
+@export var colour_hyde := Palette.SPLIT_HYDE:
 	set(value):
 		colour_hyde = value
 		_set_colours()
-@export var colour_third := Color(0.9, 1.0, 0.1):
+@export var colour_third := Palette.SPLIT_THIRD:
 	set(value):
 		colour_third = value
 		_set_colours()
