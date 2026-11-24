@@ -49,6 +49,8 @@ var t := ArenaTable.new()
 @onready var _heading: ArenaHeading = $Heading
 
 var _run: RulesRun
+## The events of the round this table opens with.
+var _opening: Array = []
 var _beats := ArenaBeats.new()
 var _busy := true
 
@@ -58,8 +60,7 @@ func _ready() -> void:
 		ink_percent = float(Shot.arg("ink"))
 	if Shot.has_arg("volatility"):
 		ink_volatility = float(Shot.arg("volatility"))
-	_run = Rules.new_run({}, int(Shot.arg("seed")) if Shot.has_arg("seed") else null)
-	ArenaBench.apply_set(_run)
+	_take_run()
 	_build()
 	resized.connect(_lay_out)
 	_lay_out()
@@ -175,9 +176,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not key or not key.pressed or key.echo:
 		return
 	if _busy:
-		# Enter is the table's own key: it must not reach the game's "next screen".
-		if key.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-			get_viewport().set_input_as_handled()
 		return
 	match key.keycode:
 		KEY_ENTER, KEY_KP_ENTER:
@@ -248,9 +246,30 @@ func _lay_out() -> void:
 	_border.rules = ArenaLayout.rules(size)
 
 
-# The run's first round: Rules.new_run has begun it, and left its events on the run.
+# The run this table plays, and the round it opens with. A run that comes back from a dawn's
+# place (SceneFlow holds it, still at the place) leaves the place here, which begins the next
+# night; otherwise a new run begins, and SceneFlow holds it from now on.
+func _take_run() -> void:
+	var held: RulesRun = SceneFlow.run
+	if held != null and SceneFlow.PLACE_SCENES.has(held.phase):
+		_run = held
+		_opening = _leave_place().events
+		return
+	_run = Rules.new_run({}, int(Shot.arg("seed")) if Shot.has_arg("seed") else null)
+	ArenaBench.apply_set(_run)
+	SceneFlow.run = _run
+	_opening = _run.events
+
+
+# Leaves the dawn's place the run is at: the next night's first round begins. Returns what
+# the rules answer.
+func _leave_place() -> Dictionary:
+	return Rules.leave_lab(_run) if _run.phase == "lab" else Rules.alley_leave(_run)
+
+
+# The table's first round: the rules have begun it, and `_opening` holds its events.
 func _start() -> void:
-	do_move("round", {"ok": true, "events": _run.events})
+	do_move("round", {"ok": true, "events": _opening})
 
 
 # The chosen cards changed: the readout, the marks on the cards and the controls follow.
@@ -265,24 +284,26 @@ func _on_choice(ids: Array) -> void:
 	t.choice_changed.emit(table.play)
 
 
-# The round is over: the reward's choice is made in the rules and the next round begins.
-# Until the dawn's places have pages of their own, the laboratory and the back alley are left
-# at once. After the run's end, which the round's last move has shown, a new run begins.
+# The round is over: the reward's choice is made in the rules and the next round begins. At
+# dawn the table stops and the run goes to the laboratory or the back alley: this table is
+# then done, and the one made when the place is left plays the next night (see `_take_run`).
+# After the run's end, which the round's last move has shown, a new run begins.
 func _go_on() -> void:
 	var events: Array = []
 	while _run.phase != "play" and _run.phase != "end":
 		var result: Dictionary
-		match _run.phase:
-			"result":
-				result = Rules.continue_result(_run, t.picked)
-			"lab":
-				result = Rules.leave_lab(_run)
-			_:
-				result = Rules.alley_leave(_run)
+		if _run.phase == "result":
+			result = Rules.continue_result(_run, t.picked)
+		elif _bench_drives():
+			result = _leave_place()
+		else:
+			await _go_to_place(events)
+			return
 		events.append_array(result.events)
 	if _run.phase == "end":
 		# The table has shown the run's end: a new run begins on a clean page.
 		_run = Rules.new_run()
+		SceneFlow.run = _run
 		t.run = _run
 		t.offered = []
 		t.picked = null
@@ -294,6 +315,29 @@ func _go_on() -> void:
 			node.queue_free()
 		events = _run.events
 	await do_move("round", {"ok": true, "events": events})
+
+
+# Dawn: what it brought (`events`, from the rules' leaving of the scene's result) is shown on
+# the table, which then hands the run over to the dawn's place. Input stays closed.
+func _go_to_place(events: Array) -> void:
+	var script := _script("res://scripts/arena_moment_round.gd")
+	if script and not events.is_empty():
+		t.after = RulesView.table(_run)
+		script.add(t, {"ok": true, "events": events})
+		# His Roots that joined count on the line from here on.
+		_beats.add_call(t.snap_shown)
+		await _beats.run()
+	SceneFlow.go_to_place()
+
+
+# True when the bench drives this table from the command line (ArenaBench: a still, keys, the
+# self-test). It cannot follow the run to another screen, so the dawn's places are then left
+# at once and the table plays on.
+func _bench_drives() -> bool:
+	for name: String in ["shot", "keys", "quit", "selftest"]:
+		if Shot.has_arg(name):
+			return true
+	return false
 
 
 # The script at `path`, or null if there is none.
