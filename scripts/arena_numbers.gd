@@ -1,12 +1,12 @@
 class_name ArenaNumbers
 extends Control
 ## The round's numbers, drawn across the arena's page, each in its zone of ArenaLayout:
-## everything a play changes about the round. Top left the night and the round with the
-## night's title, and under them the target and the round's score; top right the sovereigns,
-## a pile of coins with the count; in the centre the restraint gauge and under it the hand
-## readout, one written line (a name, chips × mult, and the total once it is counted) with
-## the stored restraint as ink drops at the line's end; at the foot the plays and discards
-## left as tallies.
+## everything a play changes about the round. Top left the night and the round, with the
+## night's title under them; top centre the target and the round's score; top right the
+## sovereigns, a small heap of coins and the count; in the left column the restraint gauge; in
+## the centre the hand readout, one written line (a name, chips × mult, and the total once it
+## is counted) with the stored restraint as ink drops at the line's end; at the foot the plays
+## and discards left as tallies.
 ##
 ## It works out no rule. `show_table` puts up what RulesView.table() gives, at once,
 ## and `show_choice` the readout of RulesView.preview() for the chosen cards. Everything else
@@ -47,8 +47,15 @@ const NUMBER_SIZE := 20
 const READOUT_SIZE := 30
 const NAME_SIZE := 22
 const REASON_SIZE := 16
-## The most coins drawn in the sovereigns' pile.
+## The most coins drawn in the sovereigns' pile, and how much smaller than a coin's own
+## size the heap is drawn.
 const COINS := 14
+const HEAP_SCALE := 0.5
+## The goal: how far left of its zone's middle the target's number begins and how far right
+## the score's, and their baseline under the zone's top.
+const GOAL_TARGET := 88.0
+const GOAL_SCORE := 62.0
+const GOAL_BASE := 34.0
 ## Room kept for the stored drops at the end of the readout's line, and from one to the next.
 const DROPS_ROOM := 100.0
 const DROP_PITCH := 19.0
@@ -535,15 +542,15 @@ func plays_place() -> Vector2:
 	return get_global_transform() * Vector2(_tally_left(0) + 4.0 + maxf(_plays - 1.0, 0.0) * 8.0, _tally_top(0) + 12.0)
 
 
-## Where the round's heading is written, on the page: its middle, and all of it with the
-## target and the score under it.
+## Where the night and the round are written, on the page: the first line's middle, and the
+## whole zone.
 func heading_place() -> Vector2:
-	var r := ArenaLayout.heading(size)
-	return get_global_transform() * (r.position + Vector2(90.0, 14.0))
+	var r := ArenaLayout.night(size)
+	return get_global_transform() * (r.position + Vector2(90.0, 12.0))
 
 
 func heading_rect() -> Rect2:
-	return get_global_transform() * ArenaLayout.heading(size)
+	return get_global_transform() * ArenaLayout.night(size)
 
 
 func _baseline() -> float:
@@ -594,21 +601,22 @@ func _drop_at(i: int) -> Vector2:
 	return Vector2(r.end.x - DROPS_ROOM + 10.0 + i * DROP_PITCH, _baseline() - 9.0)
 
 
-## Where the target's and the score's numbers begin, and their baseline.
+## Where the target's and the score's numbers begin, and their baseline: the target left of
+## the goal's middle, the score right of it.
 func _target_at() -> Vector2:
-	var r := ArenaLayout.heading(size)
-	return r.position + Vector2(58.0, 45.0)
+	var r := ArenaLayout.goal(size)
+	return Vector2(r.get_center().x - GOAL_TARGET, r.position.y + GOAL_BASE)
 
 
 func _score_at() -> Vector2:
-	var r := ArenaLayout.heading(size)
-	return r.position + Vector2(208.0, 45.0)
+	var r := ArenaLayout.goal(size)
+	return Vector2(r.get_center().x + GOAL_SCORE, r.position.y + GOAL_BASE)
 
 
-## The foot of the sovereigns' pile: the coins are heaped up from here.
+## The foot of the sovereigns' heap, at the left of their zone: the coins are heaped up from here.
 func _pile_at() -> Vector2:
 	var r := ArenaLayout.sovereigns(size)
-	return Vector2(r.get_center().x, r.position.y + 40.0)
+	return Vector2(r.position.x + 26.0, r.get_center().y + 9.0)
 
 
 ## The tallies lie in the lower part of the controls' zones, under the words written there.
@@ -679,15 +687,14 @@ func _tally(pencil: Pencil, left: float, top: float, level: float) -> void:
 ## The words and the numbers, the sovereigns and the stored drops.
 func _draw_text() -> void:
 	var c := _text
-	var head := ArenaLayout.heading(size)
-	# The night and the round, and the night's title after them on the same line.
-	var at := head.position + Vector2(0.0, 18.0)
-	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE, CREAM)
-	var head_w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x + 8.0
-	c.draw_string(_slanted, at + Vector2(head_w, 0.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x - head_w, HEAD_SIZE - 1, LABEL)
+	var head := ArenaLayout.night(size)
+	# The night and the round, and the night's title under them.
+	var at := head.position + Vector2(0.0, 16.0)
+	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, CREAM)
+	c.draw_string(_slanted, at + Vector2(0.0, 19.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE - 1, LABEL)
 
 	var target_at := _target_at()
-	c.draw_string(_heavy, Vector2(head.position.x, target_at.y - 2.0), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)
+	c.draw_string(_heavy, Vector2(target_at.x - 58.0, target_at.y - 2.0), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)
 	c.draw_string(_heavy, target_at, _thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE,
 			CREAM.darkened(0.25 * _strike))
 	var score_at := _score_at()
@@ -713,7 +720,7 @@ func _draw_text() -> void:
 		_drop(drop_at, 1.0 - _fly * 0.6)
 
 
-## The sovereigns: a heap of coins, one for each up to COINS, and the count under it.
+## The sovereigns: a small heap of coins, one for each up to COINS, and the count beside it.
 func _draw_sovereigns() -> void:
 	var c := _text
 	var r := ArenaLayout.sovereigns(size)
@@ -728,23 +735,18 @@ func _draw_sovereigns() -> void:
 		for i in in_row:
 			var jitter := Vector2(rng.randf_range(-2.0, 2.0), rng.randf_range(-1.5, 1.5))
 			var tilt := rng.randf_range(-0.5, 0.5)
-			if k < mini(held, COINS):
-				_coin(foot + Vector2((i - (in_row - 1) * 0.5) * 18.0, -row * 9.0) + jitter, tilt)
+			# One coin lies there with none held, so that the count is known for what it is.
+			if k < clampi(held, 1, COINS):
+				_coin(foot + (Vector2((i - (in_row - 1) * 0.5) * 18.0, -row * 9.0) + jitter) * HEAP_SCALE, tilt)
 			k += 1
-	var count := str(held)
-	var count_w := _heavy.get_string_size(count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-	var word := "sovereign" if held == 1 else "sovereigns"
-	var word_w := _slanted.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
-	var left := r.get_center().x - (count_w + 6.0 + word_w) * 0.5
-	var base := r.end.y - 22.0
-	c.draw_string(_heavy, Vector2(left, base), count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, CREAM)
-	c.draw_string(_slanted, Vector2(left + count_w + 6.0, base - 1.0), word, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, LABEL)
+	c.draw_string(_heavy, Vector2(r.position.x + 54.0, r.get_center().y + 7.0), str(held), HORIZONTAL_ALIGNMENT_LEFT, -1.0,
+			NUMBER_SIZE, CREAM)
 
 
 ## One coin of the heap, seen a little from above.
 func _coin(at: Vector2, tilt: float) -> void:
 	var c := _text
-	c.draw_set_transform(at, tilt * 0.4, Vector2(1.0, 0.72))
+	c.draw_set_transform(at, tilt * 0.4, Vector2(1.0, 0.72) * HEAP_SCALE)
 	c.draw_circle(Vector2(0.0, 3.4), 10.4, COIN_EDGE)
 	c.draw_circle(Vector2(0.0, 2.6), 9.2, GOLD_DARK)
 	c.draw_circle(Vector2.ZERO, 10.4, COIN_EDGE)
