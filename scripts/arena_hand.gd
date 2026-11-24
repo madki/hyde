@@ -1,13 +1,12 @@
 class_name ArenaHand
 extends Control
 ## The hand of cards on the arena's table: a row in a shallow arc along the foot of the page
-## (ArenaLayout.hand), the cards larger than anywhere else on the table (CARD_SCALE), each
-## lying over the one before it, and all of them cut by the page's foot. A card that is partly
-## covered has its title written in the part that shows, and every card its chips under the
-## title, where the page's foot does not cut them off. The card under the pointer
-## rises whole onto the page, straightens and lies on top of the others; a chosen card rises
-## further. While Hyde has the table the row is a little out of true: each card is pushed and
-## turned a little its own way.
+## (ArenaLayout.hand), centred, every card whole on the page at its own size (CARD_SCALE),
+## each lying over the one before it. A card that is partly covered has its title written in
+## the part that shows, and every card its chips on a disc at its top left, where the next
+## card does not cover them. The card under the pointer rises, straightens and lies on top
+## of the others; a chosen card rises further. While Hyde has the table the row is a little
+## out of true: each card is pushed and turned a little its own way.
 ##
 ## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, when
 ## nothing is moving and after every change of the chosen cards. It keeps one card for each
@@ -33,20 +32,20 @@ extends Control
 ## The chosen cards changed: their ids, in the hand's order.
 signal chosen_changed(ids: Array)
 
-## A card in the hand is this much larger than its own size.
-const CARD_SCALE := 1.5
+## A card in the hand is drawn at this scale of its own size.
+const CARD_SCALE := 1.0
 ## Distance between one card's centre and the next, in pixels, while the row has the room.
-const PITCH := 120.0
+const PITCH := 90.0
 ## How far the row's ends turn, in degrees, and how far they drop, in pixels.
-const FAN_TURN := 4.0
+const FAN_TURN := 3.0
 const FAN_DROP := 8.0
 ## How far out of true a card may be while Hyde has the table: across, up or down (in pixels)
 ## and turned (in degrees). And the time the row takes to go out of true or back.
 const UNRULY := Vector3(3.0, 6.0, 3.0)
 const UNRULY_TIME := 0.25
 ## How far a card rises under the pointer and when chosen, in pixels, and the time it takes.
-const RISE := 22.0
-const CHOSEN_RISE := 42.0
+const RISE := 16.0
+const CHOSEN_RISE := 30.0
 const RISE_TIME := 0.12
 ## How far a refused card turns each way, in degrees.
 const SHAKE := 4.0

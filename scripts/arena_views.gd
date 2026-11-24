@@ -12,7 +12,7 @@ extends Control
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
 ##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
-## - On night 1 the small word "Hint", over PLAY, chooses the cards of the best hand the rules find.
+## - On night 1 the small word "Hint", right of DISCARD, chooses the cards of the best hand the rules find.
 ##   It shows no score.
 ##
 ## None of it shows the score of the chosen cards. It reads RulesView.table() and the run's
@@ -100,6 +100,7 @@ func _init() -> void:
 func bind(table: ArenaTable) -> void:
 	t = table
 	t.synced.connect(_on_synced)
+	resized.connect(_place_hint)
 	t.move_begun.connect(func(_move: String) -> void:
 		_name_twist(RulesView.table(t.run).night)
 		_open = false
@@ -112,10 +113,15 @@ func _on_synced(table: Dictionary) -> void:
 	_table = table
 	_open = table.phase == "play"
 	_hint.visible = _open and int(table.night.no) == 1
-	var play := ArenaLayout.controls_play(size)
-	_hint.position = Vector2(play.get_center().x - _hint.size.x * 0.5, play.position.y - 46.0)
+	_place_hint()
 	_name_twist(table.night)
 	_show_notebook()
+
+
+## The word "Hint" stands right of DISCARD, level with it, wherever the page's size puts it.
+func _place_hint() -> void:
+	var discard := ArenaLayout.controls_discard(size)
+	_hint.position = Vector2(discard.end.x + 16.0, discard.get_center().y - _hint.size.y * 0.5)
 
 
 func _process(_delta: float) -> void:

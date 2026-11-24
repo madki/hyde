@@ -15,7 +15,10 @@ const MARGIN := 48.0
 ## Height of the rule under the top band, from the top.
 const TOP_RULE := 95.0
 ## Height of the rule over the hand, from the foot.
-const FOOT_RULE := 206.0
+const FOOT_RULE := 236.0
+## The size of each of the two controls under the hand, and the room between them.
+const BUTTON := Vector2(168.0, 44.0)
+const BUTTON_GAP := 24.0
 ## How far inside the page's edge the two rules begin and end.
 const RULE_INSET := 40.0
 
@@ -102,11 +105,11 @@ static func salt(page: Vector2) -> Rect2:
 
 # --- The foot -----------------------------------------------------------------------------
 
-## The hand, cut by the page's foot. It takes the room between the two words, up to the width
-## at which ten cards lie as far apart as they ever do.
+## The hand, every card whole on the page, the row centred. It takes the page's width less
+## room for the two piles, at least as wide as the 1152 page gives and at most as wide as
+## twelve cards lie at their full step.
 static func hand(page: Vector2) -> Rect2:
-	var top := foot_rule(page) + 8.0
-	return _centred(page, top, Vector2(clampf(page.x - 492.0, 660.0, 1224.0), page.y - top))
+	return _centred(page, foot_rule(page) + 8.0, Vector2(clampf(page.x - 280.0, 872.0, 1086.0), 152.0))
 
 
 ## The draw pile.
@@ -119,14 +122,15 @@ static func pile_discard(page: Vector2) -> Rect2:
 	return _from_right(page, 44.0, page.y - 140.0, Vector2(84.0, 120.0))
 
 
-## PLAY, and under the word the plays left.
+## PLAY, and under the word the plays left: the left of the pair under the hand, which is
+## centred on the page's middle.
 static func controls_play(page: Vector2) -> Rect2:
-	return Rect2(134.0, page.y - 88.0, 108.0, 68.0)
+	return Rect2(page.x * 0.5 - BUTTON_GAP * 0.5 - BUTTON.x, page.y - 68.0, BUTTON.x, BUTTON.y)
 
 
-## DISCARD, and under the word the discards left.
+## DISCARD, and under the word the discards left: the right of the pair.
 static func controls_discard(page: Vector2) -> Rect2:
-	return _from_right(page, 134.0, page.y - 88.0, Vector2(108.0, 68.0))
+	return Rect2(page.x * 0.5 + BUTTON_GAP * 0.5, page.y - 68.0, BUTTON.x, BUTTON.y)
 
 
 # --- The rules ----------------------------------------------------------------------------
