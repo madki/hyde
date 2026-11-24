@@ -1,8 +1,8 @@
 class_name ArenaRestraint
 extends Control
-## The restraint gauge on the arena's page: a track of numbered steps lying across the page,
-## from 1 at the left to the limit at the right, headed RESTRAINT, with tick marks along both
-## its sides. Under each number the page's slate has come off in a round patch like old paint,
+## The restraint gauge on the arena's page: one row, the word RESTRAINT and after it a track of
+## numbered steps, from 1 at the left to the limit at the right, with tick marks along both
+## its sides. The row is centred in the gauge's width and height. Under each number the page's slate has come off in a round patch like old paint,
 ## each patch touching the next, and the cream of the paper shows
 ## (shaders/arena_restraint_strip.gdshader). Hyde's ink lies over every step that has been
 ## reached, so the amount of ink is the reading, and a clean track reads nothing. The last
@@ -18,9 +18,11 @@ const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_materia
 
 ## Distance from one step to the next, in pixels, where the gauge is wide enough for it.
 const PITCH := 34.0
-## Where the track's middle lies, from the gauge's top, and half its height.
-const TRACK_Y := 58.0
+## Half the track's height, and the size of the word before it with the room after the word.
 const TRACK_HALF := 19.0
+const WORD := "RESTRAINT"
+const WORD_SIZE := 14
+const WORD_GAP := 12.0
 ## Tick marks to a step, and the lengths of a short one and of the one at a step's middle.
 const TICKS := 4
 const TICK_SHORT := 4.5
@@ -38,6 +40,7 @@ const THREAT_TIME := 1.2
 const MAX_FRAME := 0.1
 
 const PENCIL := Color(0.015, 0.025, 0.035)
+const WORD_COLOUR := Color(0.93, 0.87, 0.74)
 const PAPER_TEXT := Color(0.16, 0.13, 0.15)
 ## A number under the ink: the ink's own pale wash, a little lighter, to be read without standing out.
 const INKED_TEXT := Color(0.56, 0.46, 0.58)
@@ -181,14 +184,28 @@ func _threat_of() -> float:
 	return 1.0 if meter > 0 and meter == limit - 1 else 0.0
 
 
+## The room the word takes before the track.
+func _word_room() -> float:
+	return _heavy.get_string_size(WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE).x + WORD_GAP
+
+
 func _pitch() -> float:
-	return minf(PITCH, size.x / limit)
+	return minf(PITCH, (size.x - _word_room()) / limit)
+
+
+## Where the row begins: the word's left end.
+func _row_left() -> float:
+	return (size.x - _word_room() - _pitch() * limit) * 0.5
+
+
+## The height of the track's middle.
+func _track_y() -> float:
+	return size.y * 0.5
 
 
 ## The middle of the i-th step, 1 to `limit`.
 func _step(i: int) -> Vector2:
-	var left := (size.x - _pitch() * limit) * 0.5
-	return Vector2(left + (i - 0.5) * _pitch(), TRACK_Y)
+	return Vector2(_row_left() + _word_room() + (i - 0.5) * _pitch(), _track_y())
 
 
 func _lay_out() -> void:
@@ -210,13 +227,11 @@ func _lay_out() -> void:
 		child.queue_redraw()
 
 
-## The heading's underline and the tick marks along both sides of the track.
+## The tick marks along both sides of the track.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = PENCIL
-	var heading := _heavy.get_string_size("RESTRAINT", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14).x
 	var left := _step(1).x - _pitch() * 0.5
-	pencil.stroke(PackedVector2Array([Vector2(left + 1.0, 21.0), Vector2(left + heading + 9.0, 20.0)]), 1.5, 0.6, 0.2)
 	var count := limit * TICKS
 	for side: float in [-1.0, 1.0]:
 		for k in count:
@@ -224,7 +239,7 @@ func _draw_marks() -> void:
 			# The mark at a step's middle is the long one.
 			var long := k % TICKS == TICKS / 2
 			var length := (TICK_LONG if long else TICK_SHORT) + pencil.randf_range(-0.8, 0.8)
-			var from := Vector2(x, TRACK_Y + side * TRACK_HALF)
+			var from := Vector2(x, _track_y() + side * TRACK_HALF)
 			var to := from + Vector2(pencil.randf_range(-0.6, 0.6), side * length)
 			pencil.stroke(PackedVector2Array([from, to]), 2.3 if long else 1.7, 0.3, 0.0)
 	pencil.draw(_marks)
@@ -235,10 +250,13 @@ func _draw_strip() -> void:
 	_strip.draw_rect(Rect2(Vector2.ZERO, size), Color.WHITE)
 
 
-## The heading, the numbers, and whose the end of the track is.
+## The word, the numbers, and whose the end of the track is.
 func _draw_text() -> void:
-	var left := _step(1).x - _pitch() * 0.5
-	_text.draw_string(_heavy, Vector2(left + 3.0, 16.0), "RESTRAINT", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PENCIL)
+	var word_drop := (_heavy.get_ascent(WORD_SIZE) - _heavy.get_descent(WORD_SIZE)) * 0.5
+	var word_at := Vector2(_row_left(), _track_y() + word_drop)
+	# Cream with a dark edge: the word lies on the page itself, slate or ink.
+	_text.draw_string_outline(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, 4, Color(PENCIL, 0.7))
+	_text.draw_string(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, WORD_COLOUR)
 	var number_size := 17
 	var drop := (_heavy.get_ascent(number_size) - _heavy.get_descent(number_size)) * 0.5
 	# A number is dark on the bared paper, and a dull mauve once the ink has its step.
@@ -249,11 +267,9 @@ func _draw_text() -> void:
 	# Written by hand above the last step, slanting up and away from it.
 	var whose := "HYDE!"
 	var width := _slanted.get_string_size(whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12).x
-	# On a short track it keeps clear of the heading, and stands a little past the last step.
-	var heading_end := left + 3.0 + _heavy.get_string_size("RESTRAINT", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14).x
-	var whose_x := maxf(_step(limit).x - width * 0.5 - 2.0, heading_end + 8.0)
-	_text.draw_set_transform(Vector2(whose_x, TRACK_Y - TRACK_HALF - TICK_LONG - 4.0), deg_to_rad(-9.0))
-	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, PENCIL)
+	_text.draw_set_transform(Vector2(_step(limit).x - width * 0.5 + 6.0, _track_y() - TRACK_HALF - TICK_LONG + 2.0), deg_to_rad(-9.0))
+	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(PENCIL, 0.7))
+	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, WORD_COLOUR)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
 	if _lock > 0.0:
 		_draw_lock(_lock, _lock_fall)

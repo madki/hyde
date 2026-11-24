@@ -3,7 +3,7 @@ extends Control
 ## A round's heading, written in the centre of the table as a journal heading when the round
 ## begins: the night and the round, the target, and on a night's first round the night's
 ## title and its scene's twist. In a scene the twist is written large. It is held for a
-## moment, then shrinks away towards its place at the top of the left column.
+## moment, then shrinks away towards its place at the top left of the page.
 ##
 ## It is given its words; it works out nothing. It plays through the beat queue (`beats`).
 
@@ -13,9 +13,7 @@ const WIDTH := 600.0
 const FADE := 0.25
 const SHRINK := 0.35
 
-## The table's span, as in ArenaHand, and the height of the heading's middle from the top.
-@export var table_left := 295.0
-@export var room_right := 190.0
+## The height of the heading's middle from the top: it is written about the page's middle.
 @export var middle_y := 300.0
 
 var beats: ArenaBeats
@@ -57,7 +55,7 @@ func _init() -> void:
 
 
 ## Writes the heading and holds it, then sends it off towards `to` (a point on the page: the
-## top of the left column). `words` is {head, target, title, twist, large}: `title` and
+## place of the round's heading at the top left). `words` is {head, target, title, twist, large}: `title` and
 ## `twist` may be "", and `large` writes the twist large. Await it.
 func play(words: Dictionary, to: Vector2) -> void:
 	_head.text = words.head
@@ -77,7 +75,7 @@ func play(words: Dictionary, to: Vector2) -> void:
 		y += label.size.y + (10.0 if label == _target else 4.0)
 	for label: Label in [_head, _target, _title, _twist]:
 		label.position.y -= y * 0.5
-	var middle := Vector2((table_left + size.x - room_right) * 0.5, middle_y)
+	var middle := Vector2(size.x * 0.5, middle_y)
 	_block.position = middle
 	_block.scale = Vector2.ONE
 	_block.modulate.a = 0.0

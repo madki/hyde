@@ -1,5 +1,5 @@
 extends Control
-## The arena's left column alone on the page, to look at it and its calls without the rest of
+## The round's numbers alone on the page, to look at them and their calls without the rest of
 ## the arena (scripts/arena_column.gd). C runs every call once in a debug build.
 ##
 ## For a screenshot, `--column=<moment>` stops the demo at one moment: rest, reason, choice,

@@ -131,7 +131,7 @@ static func _begin(t: ArenaTable, deck: int, before: Dictionary) -> void:
 		words.title = night.title
 		words.twist = "Its scene: %s" % night.twist_text
 	t.beats.add(func() -> void:
-		await t.heading.play(words, t.column.get_global_transform() * Vector2(70.0, 24.0)))
+		await t.heading.play(words, t.column.heading_place()))
 	# The numbers settle.
 	t.add_mark("target", table.target, ArenaColumn.COUNT_TIME)
 	t.add_mark("plays", table.plays)

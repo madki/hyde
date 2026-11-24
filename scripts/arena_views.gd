@@ -117,8 +117,7 @@ func _process(_delta: float) -> void:
 	var hover := ""
 	if not held and not _deck.visible:
 		var point := get_global_mouse_position()
-		var column := t.column.get_global_rect()
-		if Rect2(column.position, Vector2(column.size.x, 52.0)).has_point(point):
+		if t.column.heading_rect().has_point(point):
 			hover = "night"
 		elif t.column.restraint.get_global_rect().has_point(point):
 			hover = "restraint"
@@ -130,9 +129,9 @@ func _process(_delta: float) -> void:
 	if held:
 		_say(_every_number(), Vector2(310.0, 210.0))
 	elif hover == "night":
-		_say(_night_words(), Vector2(300.0, 60.0))
+		_say(_night_words(), t.column.heading_rect().position + Vector2(0.0, 66.0))
 	elif hover == "restraint":
-		_say(_restraint_words(), Vector2(300.0, 372.0))
+		_say(_restraint_words(), ArenaLayout.stage(size).position + Vector2(0.0, 6.0))
 	else:
 		_note.visible = false
 

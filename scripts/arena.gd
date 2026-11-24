@@ -207,9 +207,10 @@ func _build() -> void:
 	var stage := ArenaStage.new()
 	var piles := ArenaPiles.new()
 	var travel := ArenaTravel.new()
-	stage.row_y = 322.0
-	# Five laid cards must stay clear of the flask's tag at the right.
-	stage.room_right = 236.0
+	# The laid row is centred on the page, under the readout's line.
+	stage.row_y = 372.0
+	stage.table_left = 0.0
+	stage.room_right = 0.0
 	add_child(stage)
 	move_child(stage, _hand.get_index())
 	add_child(piles)

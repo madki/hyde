@@ -24,7 +24,7 @@ const RULE_INSET := 40.0
 
 ## The night, the round and its title, and under them the target and the score.
 static func heading(_page: Vector2) -> Rect2:
-	return Rect2(MARGIN, 40.0, 300.0, 50.0)
+	return Rect2(MARGIN, 38.0, 320.0, 52.0)
 
 
 ## The three symbols, as one row of gauges.
@@ -69,17 +69,17 @@ static func balance(page: Vector2) -> Rect2:
 
 ## The restraint: a row of rings that ends in his mark.
 static func restraint(page: Vector2) -> Rect2:
-	return _centred(page, 184.0, Vector2(360.0, 44.0))
+	return _centred(page, 180.0, Vector2(360.0, 56.0))
 
 
 ## The hand's readout, one written line.
 static func readout(page: Vector2) -> Rect2:
-	return _centred(page, 240.0, Vector2(440.0, 48.0))
+	return _centred(page, 244.0, Vector2(560.0, 48.0))
 
 
 ## The caption, one line.
 static func caption(page: Vector2) -> Rect2:
-	return _centred(page, 296.0, Vector2(440.0, 28.0))
+	return _centred(page, 298.0, Vector2(440.0, 28.0))
 
 
 ## The stage: the row a play is laid in, and the ground of every moment that shows cards.
