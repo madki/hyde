@@ -612,7 +612,10 @@ func _move(card: ArenaCard, time: float) -> void:
 	var move := create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	move.tween_property(card, "position", _place(card), time)
 	move.tween_property(card, "rotation_degrees", _turn(card), time)
-	move.tween_property(card, "scale", scaled, time)
+	# Its size is moved only when it is to change: a card that changes face closes and opens
+	# meanwhile (ArenaCard.change_face), and its width is then that change's to move.
+	if not card.scale.is_equal_approx(scaled):
+		move.tween_property(card, "scale", scaled, time)
 	card.set_meta("move", move)
 
 
