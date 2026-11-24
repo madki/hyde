@@ -74,14 +74,7 @@ func _init() -> void:
 	for state: String in ["font_color", "font_focus_color", "font_hover_color", "font_pressed_color",
 			"font_hover_pressed_color"]:
 		_play.add_theme_color_override(state, PENCIL)
-	_discard.add_theme_color_override("font_color", CREAM)
-	_discard.add_theme_color_override("font_focus_color", CREAM)
-	for state: String in ["font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
-		_discard.add_theme_color_override(state, CREAM_LIT)
-	_discard.add_theme_stylebox_override("normal", _box(DARK_FILL, CREAM, EDGE))
-	_discard.add_theme_stylebox_override("hover", _box(DARK_FILL, CREAM_LIT, EDGE))
-	_discard.add_theme_stylebox_override("pressed", _box(DARK_FILL, CREAM_LIT, EDGE, true))
-	_discard.add_theme_stylebox_override("hover_pressed", _box(DARK_FILL, CREAM_LIT, EDGE, true))
+	dress_dark(_discard)
 	_play.text = "PLAY"
 	_discard.text = "DISCARD"
 	_warning.text = "he breaks out"
@@ -201,6 +194,21 @@ func _set_play_look(warns: bool) -> void:
 	_play.add_theme_stylebox_override("hover", _box(lit, PENCIL, edge))
 	_play.add_theme_stylebox_override("pressed", _box(lit, PENCIL, edge, true))
 	_play.add_theme_stylebox_override("hover_pressed", _box(lit, PENCIL, edge, true))
+
+
+## Gives a button DISCARD's look while it can be pressed: a cream edge and word on a dark
+## fill, both lit under the pointer, drawn lower while pressed. For any button of the page
+## that is not the one to press first.
+static func dress_dark(button: Button) -> void:
+	button.add_theme_color_override("font_color", CREAM)
+	button.add_theme_color_override("font_focus_color", CREAM)
+	for state: String in ["font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+		button.add_theme_color_override(state, CREAM_LIT)
+	button.add_theme_stylebox_override("normal", _box(DARK_FILL, CREAM, EDGE))
+	button.add_theme_stylebox_override("hover", _box(DARK_FILL, CREAM_LIT, EDGE))
+	button.add_theme_stylebox_override("pressed", _box(DARK_FILL, CREAM_LIT, EDGE, true))
+	button.add_theme_stylebox_override("hover_pressed", _box(DARK_FILL, CREAM_LIT, EDGE, true))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
 ## A button's box: `fill` inside an edge `width` wide, drawn PRESS_DROP lower when `pressed`,
