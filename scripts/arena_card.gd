@@ -46,6 +46,8 @@ const FACTOR_PICTURE := 38.0
 ## card takes to appear or to leave.
 const TURN_TIME := 0.09
 const FADE_TIME := 0.18
+## The time the rim light takes to come up on a chosen card, or to go.
+const RIM_TIME := 0.15
 
 const PAPER_MATERIAL: ShaderMaterial = preload("res://shaders/card_paper_material.tres")
 const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tres")
@@ -86,7 +88,11 @@ var dimmed := false:
 			dimmed = value
 			_refresh()
 ## Picked for the next play or discard. The hand that holds the card lifts it.
-var chosen := false
+var chosen := false:
+	set(value):
+		if value != chosen:
+			chosen = value
+			_light_rim()
 ## How much of the card's width shows, from its left edge, while another card lies over the
 ## rest: the title is then written in that much. 0 for a card that shows whole.
 var strip := 0.0:
@@ -138,6 +144,9 @@ var _slanted_narrow := FontVariation.new()
 var _upright_tight := FontVariation.new()
 var _slanted_tight := FontVariation.new()
 var _change: Tween
+var _rim_tween: Tween
+## How strongly the rim light shows, 0 to 1.
+var _rim := 0.0
 var _built := false
 
 
@@ -303,6 +312,8 @@ func _refresh() -> void:
 	body.set_shader_parameter("seed", float(rng_seed))
 	body.set_shader_parameter("texel", TEXEL)
 	body.set_shader_parameter("band_height", 0.0 if face_down else TITLE_BOTTOM + 1.0)
+	body.set_shader_parameter("rim_colour", Palette.HYDE if ink else Palette.JEKYLL)
+	body.set_shader_parameter("rim_strength", _rim)
 	_body.material = body
 
 	for part: Control in [_title, _chips, _tag, _text, _picture]:
@@ -411,6 +422,25 @@ func _fit(label: Label, font: Font, largest: int, room: float, smallest: int = 7
 
 static func _width(words: String, font: Font, font_size: int) -> float:
 	return font.get_string_size(words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
+
+
+## Eases the rim light up on a chosen card, in its owner's light, and down again.
+func _light_rim() -> void:
+	if _rim_tween:
+		_rim_tween.kill()
+	var target := 1.0 if chosen else 0.0
+	if not is_inside_tree():
+		_set_rim(target)
+		return
+	_rim_tween = create_tween()
+	_rim_tween.tween_method(_set_rim, _rim, target, RIM_TIME).set_ease(Tween.EASE_OUT)
+
+
+func _set_rim(value: float) -> void:
+	_rim = value
+	var body := _body.material as ShaderMaterial
+	if body:
+		body.set_shader_parameter("rim_strength", _rim)
 
 
 ## The colour the card's lines and chips are drawn in: the light of the man whose stock it is,
