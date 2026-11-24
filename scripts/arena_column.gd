@@ -41,7 +41,7 @@ const PULSE_TIME := 0.3
 const DROP_TIME := 0.45 ## a drop flies into the mult
 
 ## Text sizes.
-const HEAD_SIZE := 15
+const HEAD_SIZE := 13
 const LABEL_SIZE := 11
 const NUMBER_SIZE := 20
 const READOUT_SIZE := 30
@@ -593,12 +593,12 @@ func _drop_at(i: int) -> Vector2:
 ## Where the target's and the score's numbers begin, and their baseline.
 func _target_at() -> Vector2:
 	var r := ArenaLayout.heading(size)
-	return r.position + Vector2(58.0, 44.0)
+	return r.position + Vector2(58.0, 45.0)
 
 
 func _score_at() -> Vector2:
 	var r := ArenaLayout.heading(size)
-	return r.position + Vector2(214.0, 44.0)
+	return r.position + Vector2(208.0, 45.0)
 
 
 ## The foot of the sovereigns' pile: the coins are heaped up from here.
@@ -679,8 +679,8 @@ func _draw_text() -> void:
 	# The night and the round, and the night's title after them on the same line.
 	var at := head.position + Vector2(0.0, 18.0)
 	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE, CREAM)
-	var head_w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x + 10.0
-	c.draw_string(_slanted, at + Vector2(head_w, 0.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x - head_w, HEAD_SIZE, LABEL)
+	var head_w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x + 8.0
+	c.draw_string(_slanted, at + Vector2(head_w, 0.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x - head_w, HEAD_SIZE - 1, LABEL)
 
 	var target_at := _target_at()
 	c.draw_string(_heavy, Vector2(head.position.x, target_at.y - 2.0), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)

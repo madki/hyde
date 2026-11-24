@@ -50,12 +50,7 @@ layout_mode = 1
 debug_keys = false
 
 [node name="Symbols" parent="." instance=ExtResource("9")]
-layout_mode = 0
-offset_left = 302.0
-offset_top = 38.0
-offset_right = 942.0
-offset_bottom = 244.0
-scale = Vector2(0.84, 0.84)
+layout_mode = 1
 
 [node name="Means" parent="." instance=ExtResource("10")]
 layout_mode = 1

@@ -1,17 +1,19 @@
 class_name ArenaSymbols
 extends Control
-## The three symbols and the line, for the top band of the arena's page.
+## The three symbols and the line, each in its zone of the arena's page (ArenaLayout).
 ##
-## Lamp, Heart and Mirror are three sketches, each on a cream tag that reads on the slate and
-## on Hyde's ink alike. Each tag carries its gauges as marks: Craving as ink pips (two places;
-## a third shows only while Craving rolls over), Habit as ink tallies, Temper as pencil
-## tallies. Under the tags lies the line: Paper Roots as pencil tallies to the left of a
-## centre mark, Ink Roots as ink tallies to the right, both at one pitch so the longer side is
-## the side ahead, with the two counts at its ends.
+## Lamp, Heart and Mirror are three gauges in one row at the top, each between brackets on a
+## slip of cream stock that reads on the slate and on Hyde's ink alike. A gauge reads from
+## left to right: Habit as ink tallies, the symbol's small sketch, Craving as ink pips (two
+## places; a third shows only while Craving rolls over), a bar, and Temper as pencil tallies.
+## A side with nothing on it has a dash. Under the top rule lies the line, as a banner under
+## its name: Paper Roots as pencil tallies to the left of a centre mark, Ink Roots as ink
+## tallies to the right, both at one pitch so the longer side is the side ahead, with the two
+## counts at the banner's ends.
 ##
-## Hovering a tag shows that symbol in numbers: its three gauges, how many Paper and Ink Roots
-## of it the deck holds, and what one of each is worth now. `show_numbers(true)` (a held key)
-## shows every gauge's number at once. A gauge's number also shows beside it whenever it changes.
+## Hovering a gauge opens its ledger: that symbol in numbers, its three gauges, how many Paper
+## and Ink Roots of it the deck holds, and what one of each is worth now. `show_numbers(true)`
+## (a held key) opens all three. A gauge's number also shows under it whenever it changes.
 ##
 ## Nothing here works out a rule, and nothing moves at rest. Give it RulesView.table() with
 ## `show_table` to set it at once. The beats of a move then drive it, each call a coroutine to
@@ -37,35 +39,42 @@ extends Control
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
 const SYMS: Array[String] = ["lamp", "heart", "mirror"]
-const LABELS := {"lamp": "LAMP", "heart": "HEART", "mirror": "MIRROR"}
 
-## The tags: size, the gap between two, and where the first one's top lies.
-const TAG_SIZE := Vector2(192.0, 140.0)
-const TAG_GAP := 22.0
-const TAG_TOP := 4.0
-## Inside a tag: the sketch's middle, where the marks begin, and each row's label and marks.
-const SKETCH_AT := Vector2(46.0, 84.0)
-const MARKS_X := 92.0
-const CRAVING_Y := 30.0
-const HABIT_Y := 68.0
-const TEMPER_Y := 108.0
-const PIP_Y := 46.0
-const PIP_R := 6.5
-const PIP_PITCH := 20.0
-## Tallies on a tag: the distance between two marks, the gap between groups of five, their
-## height, and the most drawn (a number is written after them beyond that).
-const TALLY_PITCH := 5.5
-const TALLY_GAP := 8.0
-const TALLY_H := 17.0
-const TALLY_MAX := 15
-## The line, at home: its middle, half its length and height, and the gap at the centre.
-const LINE_Y := 178.0
-const LINE_HALF := 210.0
-const LINE_H := 13.0
+## A gauge: its height, the gap between two, and the room inside it, from left to right: the
+## bracket's, the sketch's, each pip's (three are kept, the third for a rollover and the lock),
+## and the least room each side's tallies are given.
+const GAUGE_H := 32.0
+const GAUGE_GAP := 8.0
+const PAD := 9.0
+const SKETCH_W := 22.0
+const SKETCH_SCALE := 0.4
+const PIP_R := 5.0
+const PIP_PITCH := 13.0
+const SIDE_MIN := 14.0
+## Tallies on a gauge: the distance between two marks and the gap between groups of five (both
+## made smaller when the row would not fit its zone), how many stand in one row (a side with
+## more has two rows), their height in one row and in two, and the most drawn (a number is
+## written after them beyond that).
+const TALLY_PITCH := 3.4
+const TALLY_GAP := 3.6
+const TALLY_ROW := 10
+const TALLY_H := 15.0
+const TALLY_H_TWO := 11.0
+const TALLY_MAX := 20
+## The line's banner: the height of its name above it, half its length and height, the room
+## a count takes at each end, and the gap at the centre.
+const LINE_NAME := "THE BALANCE"
+const LINE_NAME_H := 18.0
+const LINE_HALF := 180.0
+const LINE_H := 15.0
+const LINE_COUNT := 76.0
+const LINE_NOTCH := 11.0
 const LINE_GAP := 8.0
 const LINE_MARK_H := 8.0
 ## How much larger the line is drawn at the centre of the page.
 const GROW_SCALE := 1.6
+## The ledger's size.
+const LEDGER := Vector2(282.0, 76.0)
 
 ## Seconds for each movement.
 const FILL_TIME := 0.3
@@ -104,6 +113,12 @@ var _flood := 0.0
 var _lock := 0.0
 var _numbers := false
 var _hover := ""
+## The row as it is laid out now (see _measure): each gauge's places by its symbol, the
+## tallies' pitch and group gap, and the height of the row's middle.
+var _g := {}
+var _pitch := TALLY_PITCH
+var _gap := TALLY_GAP
+var _row_y := 0.0
 ## Things on their way from one mark to another: {from, to, t, from_colour, to_colour, line}.
 var _travel: Array[Dictionary] = []
 
@@ -132,7 +147,7 @@ func _init() -> void:
 	for child: Control in [_back, _lines, _fills, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
-	custom_minimum_size = Vector2(TAG_SIZE.x * 3.0 + TAG_GAP * 2.0 + 20.0, 206.0)
+	_measure()
 
 
 func _ready() -> void:
@@ -232,8 +247,8 @@ func ghost_craving(sym: String, adds: int) -> void:
 	_redraw()
 
 
-## Joins the three pips, outlines the next Habit tally, and puts a card outline marked with
-## the Ink Root that would join by the sketch.
+## Joins the three pips, outlines the next Habit tally, and hangs a slip under the gauge
+## that names the Ink Root that would join.
 func ghost_rollover(sym: String, on: bool) -> void:
 	_s[sym].ghost_roll = on
 	_redraw()
@@ -245,7 +260,7 @@ func ghost_temper(sym: String, gain: int) -> void:
 	_redraw()
 
 
-## A small lock on the sketches: the play adds no Craving. It comes and goes in a moment.
+## A small lock after the pips: the play adds no Craving. It comes and goes in a moment.
 func set_lock(on: bool) -> void:
 	_tween(0.2, _set_lock.bind(_lock, 1.0 if on else 0.0))
 
@@ -493,6 +508,7 @@ func _traveller(from: Vector2, to: Vector2, from_colour: Color, to_colour: Color
 
 
 func _redraw() -> void:
+	_measure()
 	for child: Control in [_back, _lines, _fills, _text]:
 		child.queue_redraw()
 
@@ -506,25 +522,85 @@ func _lay_out() -> void:
 	_redraw()
 
 
-func _tag_rect(i: int) -> Rect2:
-	var left := (size.x - (TAG_SIZE.x * 3.0 + TAG_GAP * 2.0)) * 0.5
-	return Rect2(Vector2(left + i * (TAG_SIZE.x + TAG_GAP), TAG_TOP), TAG_SIZE)
+## Lays the row out in its zone: each gauge as wide as its marks need, the row centred, and
+## the tallies drawn closer when the row would be wider than the zone.
+func _measure() -> void:
+	var zone := ArenaLayout.symbols(size)
+	_row_y = zone.get_center().y
+	var fixed := PAD + 5.0 + SKETCH_W + 6.0 + PIP_PITCH * 3.0 + 3.0 + 6.0 + PAD
+	var widths: Array[float] = []
+	var sides: Array[Vector2] = []
+	for squeeze: float in [1.0, 0.85, 0.7, 0.58, 0.48]:
+		_pitch = TALLY_PITCH * squeeze
+		_gap = TALLY_GAP * squeeze
+		widths.clear()
+		sides.clear()
+		var total := GAUGE_GAP * 2.0
+		for sym in SYMS:
+			var side := Vector2(_side_width(sym, "habit"), _side_width(sym, "temper"))
+			sides.append(side)
+			widths.append(fixed + side.x + side.y)
+			total += fixed + side.x + side.y
+		if total <= zone.size.x:
+			break
+	var row := GAUGE_GAP * 2.0
+	for w in widths:
+		row += w
+	var x := zone.get_center().x - row * 0.5
+	for i in 3:
+		var habit_x := x + PAD + 2.0
+		var sketch_x := habit_x + sides[i].x + 3.0 + SKETCH_W * 0.5
+		var pips_x := sketch_x + SKETCH_W * 0.5 + 6.0 + PIP_PITCH * 0.5
+		var bar_x := pips_x + PIP_PITCH * 2.5 + 3.0
+		_g[SYMS[i]] = {
+			"rect": Rect2(x, _row_y - GAUGE_H * 0.5, widths[i], GAUGE_H),
+			"habit_x": habit_x, "sketch_x": sketch_x, "pips_x": pips_x, "bar_x": bar_x,
+			"temper_x": bar_x + 6.0, "habit_w": sides[i].x, "temper_w": sides[i].y,
+		}
+		x += widths[i] + GAUGE_GAP
+
+
+## The room a side's tallies take: those drawn, those a chosen play would add, and the
+## number written after the most that are drawn.
+func _side_width(sym: String, row: String) -> float:
+	var s: Dictionary = _s[sym]
+	var w := _tally_x(clampi(_side_count(sym, row), 1, TALLY_ROW) - 1, _pitch, _gap) + 3.0
+	if int(s[row]) > TALLY_MAX:
+		w += 18.0
+	return maxf(w, SIDE_MIN)
+
+
+## The marks a side has room for: those drawn, and those a chosen play would add.
+func _side_count(sym: String, row: String) -> int:
+	var s: Dictionary = _s[sym]
+	var n := maxi(int(s[row]), ceili(s[row + "_shown"]))
+	if row == "habit" and s.ghost_roll:
+		n += 1
+	if row == "temper":
+		n += int(s.ghost_temper)
+	return n
+
+
+## The height of a side's tallies: shorter when they stand in two rows.
+func _tally_h(sym: String, row: String) -> float:
+	return TALLY_H_TWO if _side_count(sym, row) > TALLY_ROW else TALLY_H
+
+
+func _gauge_rect(sym: String) -> Rect2:
+	return _g[sym].rect
 
 
 ## The middle of a symbol's sketch, on the page: where what its gauges pay comes from.
 func sketch_place(sym: String) -> Vector2:
-	return get_global_transform() * (_tag(sym) + SKETCH_AT)
-
-
-func _tag(sym: String) -> Vector2:
-	return _tag_rect(SYMS.find(sym)).position
+	_measure()
+	return get_global_transform() * Vector2(_g[sym].sketch_x, _row_y)
 
 
 ## The middle of a symbol's k-th pip (0 to 2), drawn together as `join` rises.
 func _pip_at(sym: String, k: int) -> Vector2:
 	var join: float = _s[sym].join
-	var x := MARKS_X + 8.0 + k * PIP_PITCH + (1 - k) * join * (PIP_PITCH - PIP_R * 1.6)
-	return _tag(sym) + Vector2(x, PIP_Y)
+	var x: float = _g[sym].pips_x + k * PIP_PITCH + (1 - k) * join * (PIP_PITCH - PIP_R * 1.6)
+	return Vector2(x, _row_y)
 
 
 ## The x of the n-th tally from where a row starts, at a pitch and a group gap.
@@ -532,21 +608,23 @@ static func _tally_x(n: int, pitch: float, gap: float) -> float:
 	return (n / 5) * (pitch * 4.0 + gap) + (n % 5) * pitch
 
 
-## The top end of a row's n-th tally on a tag.
+## The top end of a side's n-th tally on a gauge.
 func _tally_top(sym: String, row: String, n: int) -> Vector2:
-	var y := (HABIT_Y if row == "habit" else TEMPER_Y) + 6.0
-	return _tag(sym) + Vector2(MARKS_X + 4.0 + _tally_x(n, TALLY_PITCH, TALLY_GAP), y)
+	var x: float = _g[sym][row + "_x"] + _tally_x(n % TALLY_ROW, _pitch, _gap)
+	if _side_count(sym, row) > TALLY_ROW:
+		return Vector2(x, _row_y - TALLY_H_TWO - 1.5 + (n / TALLY_ROW) * (TALLY_H_TWO + 3.0))
+	return Vector2(x, _row_y - TALLY_H * 0.5)
 
 
-## The middle of a row's n-th tally: where something travelling to it lands.
+## The middle of a side's n-th tally: where something travelling to it lands.
 func _tally_at(sym: String, row: String, n: int) -> Vector2:
-	return _tally_top(sym, row, mini(n, TALLY_MAX - 1)) + Vector2(0.0, TALLY_H * 0.5)
+	return _tally_top(sym, row, mini(n, TALLY_MAX - 1)) + Vector2(0.0, _tally_h(sym, row) * 0.5)
 
 
 ## The line's pitch: one for both sides, so that the longer side is the side ahead.
 func _line_pitch() -> float:
 	var most := maxi(maxi(_paper, _ink), 1)
-	var room := LINE_HALF - LINE_GAP - 8.0
+	var room := LINE_HALF - LINE_COUNT - LINE_GAP - 4.0
 	return minf(8.0, room / (ceili(most / 5.0) * 5.6))
 
 
@@ -557,17 +635,22 @@ func _line_mark(n: int, ink: bool) -> Vector2:
 	return Vector2(x if ink else -x, 0.0)
 
 
+## The banner's middle at home, under the line's name.
+func _line_home() -> Vector2:
+	var zone := ArenaLayout.balance(size)
+	return Vector2(zone.get_center().x, zone.position.y + LINE_NAME_H + (zone.size.y - LINE_NAME_H) * 0.5)
+
+
 ## From the line's own coordinates to this control's: at home, or grown to the centre.
 func _line_xform() -> Transform2D:
-	var home := Vector2(size.x * 0.5, LINE_Y)
 	var ease_t := _grow
 	var s := lerpf(1.0, GROW_SCALE, ease_t)
-	return Transform2D(0.0, Vector2(s, s), 0.0, home.lerp(_centre, ease_t))
+	return Transform2D(0.0, Vector2(s, s), 0.0, _line_home().lerp(_centre, ease_t))
 
 
 func _has_point(point: Vector2) -> bool:
-	for i in 3:
-		if _tag_rect(i).has_point(point):
+	for sym in SYMS:
+		if _gauge_rect(sym).has_point(point):
 			return true
 	return false
 
@@ -575,9 +658,9 @@ func _has_point(point: Vector2) -> bool:
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var over := ""
-		for i in 3:
-			if _tag_rect(i).has_point(event.position):
-				over = SYMS[i]
+		for sym in SYMS:
+			if _gauge_rect(sym).has_point(event.position):
+				over = sym
 		if over != _hover:
 			hover_symbol(over)
 
@@ -590,29 +673,50 @@ func _notification(what: int) -> void:
 # --- Drawing --------------------------------------------------------------------------------
 
 
-## The tags with their shadows, the line's strip, and a tag's pulse.
+## The gauges' slips with their shadows and their pulse, the slip of a rollover's card, and
+## the line's banner.
 func _draw_back() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = rng_seed
-	for i in 3:
-		var r := _tag_rect(i)
-		var edge := _ragged(r, rng)
-		var shadow := PackedVector2Array()
-		for p in edge:
-			shadow.append(p + Vector2(3.0, 4.0))
-		_back.draw_colored_polygon(shadow, SHADOW)
-		var flash: float = _s[SYMS[i]].flash
-		_back.draw_colored_polygon(edge, CREAM.lerp(Color(1.0, 0.96, 0.84), flash * 0.8))
+	for sym in SYMS:
+		var s: Dictionary = _s[sym]
+		var flash: float = s.flash
+		_slip(_gauge_rect(sym), rng, CREAM.lerp(Color(1.0, 0.96, 0.84), flash * 0.8))
+		if s.ghost_roll:
+			_slip(_roll_slip(sym), rng, CREAM)
 	_back.draw_set_transform_matrix(_line_xform())
-	var strip := Rect2(-LINE_HALF, -LINE_H, LINE_HALF * 2.0, LINE_H * 2.0)
-	var edge := _ragged(strip, rng)
+	# A banner: a strip whose two ends are cut to a notch.
+	var banner := PackedVector2Array([Vector2(-LINE_HALF, -LINE_H), Vector2(LINE_HALF, -LINE_H),
+			Vector2(LINE_HALF - LINE_NOTCH, 0.0), Vector2(LINE_HALF, LINE_H), Vector2(-LINE_HALF, LINE_H),
+			Vector2(-LINE_HALF + LINE_NOTCH, 0.0)])
+	var shadow := PackedVector2Array()
+	for p in banner:
+		shadow.append(p + Vector2(2.0, 3.0))
+	_back.draw_colored_polygon(shadow, SHADOW)
+	_back.draw_colored_polygon(banner, CREAM)
+	_back.draw_rect(Rect2(0.0, -LINE_H + 2.0, LINE_HALF - LINE_COUNT, LINE_H * 2.0 - 4.0), INK_WASH)
+	_back.draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
+## A slip of cream stock with its shadow.
+func _slip(r: Rect2, rng: RandomNumberGenerator, colour: Color) -> void:
+	var edge := _ragged(r, rng)
 	var shadow := PackedVector2Array()
 	for p in edge:
 		shadow.append(p + Vector2(2.0, 3.0))
 	_back.draw_colored_polygon(shadow, SHADOW)
-	_back.draw_colored_polygon(edge, CREAM)
-	_back.draw_rect(Rect2(0.0, -LINE_H + 1.5, LINE_HALF - 1.5, LINE_H * 2.0 - 3.0), INK_WASH)
-	_back.draw_set_transform_matrix(Transform2D.IDENTITY)
+	_back.draw_colored_polygon(edge, colour)
+
+
+## The words on the slip of a rollover's card, and the slip, hung under the gauge.
+func _roll_words(sym: String) -> String:
+	return "+1 %s" % RulesConfig.ROOT[sym].ink
+
+
+func _roll_slip(sym: String) -> Rect2:
+	var w := _slanted.get_string_size(_roll_words(sym), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11).x + 12.0
+	var r := _gauge_rect(sym)
+	return Rect2(r.position.x + 10.0, r.end.y + 1.0, w, 16.0)
 
 
 ## A rectangle's outline with its edges a little uneven, as torn card.
@@ -629,16 +733,37 @@ static func _ragged(r: Rect2, rng: RandomNumberGenerator) -> PackedVector2Array:
 	return out
 
 
-## Every pencil line: the sketches, the pips' rims, the tallies, the ghosts, the lock and the line.
+## Every pencil line: the brackets, the sketches, the pips' rims, the tallies, the ghosts, the
+## lock and the line.
 func _draw_lines() -> void:
 	for i in 3:
 		var sym := SYMS[i]
 		var s: Dictionary = _s[sym]
-		var at := _tag(sym)
+		var g: Dictionary = _g[sym]
+		var r: Rect2 = g.rect
 		var seed_base := rng_seed * 1000 + i * 200
+		# The two brackets, and the bar between the pips and Temper.
+		var frame := Pencil.new(seed_base + 2)
+		frame.colour = PENCIL
+		var top := r.position.y + 5.0
+		var bottom := r.end.y - 5.0
+		frame.stroke(PackedVector2Array([Vector2(r.position.x + 8.5, top), Vector2(r.position.x + 4.0, top),
+				Vector2(r.position.x + 4.0, bottom), Vector2(r.position.x + 8.5, bottom)]), 1.9, 0.3)
+		frame.stroke(PackedVector2Array([Vector2(r.end.x - 8.5, top), Vector2(r.end.x - 4.0, top),
+				Vector2(r.end.x - 4.0, bottom), Vector2(r.end.x - 8.5, bottom)]), 1.9, 0.3)
+		var bar_x: float = g.bar_x
+		frame.stroke(PackedVector2Array([Vector2(bar_x, _row_y - 9.0), Vector2(bar_x + 0.4, _row_y + 9.0)]), 1.4, 0.3)
+		# A side with no mark on it, and none coming, has a dash.
+		frame.colour = _faint(PENCIL, 0.55)
+		for row: String in ["habit", "temper"]:
+			var coming: bool = s.ghost_roll if row == "habit" else int(s.ghost_temper) > 0
+			if s[row + "_shown"] < 0.01 and not coming:
+				var x: float = g[row + "_x"]
+				frame.stroke(PackedVector2Array([Vector2(x + 2.0, _row_y + 0.5), Vector2(x + 9.0, _row_y)]), 1.5, 0.3)
+		frame.draw(_lines)
 		var sketch := Pencil.new(seed_base)
 		sketch.colour = PENCIL.lerp(INK, s.flash * 0.6)
-		_sketch(sketch, sym, at + SKETCH_AT)
+		_sketch(sketch, sym, Vector2(g.sketch_x, _row_y), SKETCH_SCALE)
 		sketch.draw(_lines)
 		# The pips' rims: two always, the third while it is there.
 		var rims := Pencil.new(seed_base + 1)
@@ -651,29 +776,26 @@ func _draw_lines() -> void:
 			if present <= 0.01:
 				continue
 			rims.colour = _faint(INK if ghost else PENCIL, present * (1.0 if ghost else 0.8))
-			rims.stroke(_circle(_pip_at(sym, k), PIP_R, 14), 2.2 if ghost else 1.5, 0.3)
+			rims.stroke(_circle(_pip_at(sym, k), PIP_R, 12), 2.0 if ghost else 1.4, 0.25)
 		if s.ghost_roll:
 			# The three pips joined by a loop round them.
 			rims.colour = _faint(INK, 0.8)
 			var mid := _pip_at(sym, 1)
-			rims.stroke(_ellipse(mid, Vector2(PIP_PITCH + PIP_R + 5.0, PIP_R + 4.0), 24), 1.6, 0.5)
+			rims.stroke(_ellipse(mid, Vector2(PIP_PITCH + PIP_R + 2.5, PIP_R + 3.5), 24), 1.4, 0.4)
 		rims.draw(_lines)
 		_draw_tallies(sym, "habit", seed_base + 10, INK)
 		_draw_tallies(sym, "temper", seed_base + 60, PENCIL)
 		var ghosts := Pencil.new(seed_base + 120)
 		ghosts.colour = _faint(INK, 0.4)
-		if s.ghost_roll:
-			ghosts.stroke(_tally_path(_tally_top(sym, "habit", int(s.habit)), int(s.habit), 1.0), 1.6, 0.3)
-			# The card that would join, by the sketch.
-			var card := Rect2(at + Vector2(TAG_SIZE.x - 30.0, 10.0), Vector2(20.0, 28.0))
-			ghosts.stroke(_rect_path(card), 1.4, 0.3)
-		for g in int(s.ghost_temper):
-			var n: int = int(s.temper) + g
+		if s.ghost_roll and int(s.habit) < TALLY_MAX:
+			ghosts.stroke(_tally_path(sym, "habit", int(s.habit), 1.0), 1.5, 0.3)
+		for n_ghost in int(s.ghost_temper):
+			var n: int = int(s.temper) + n_ghost
 			if n < TALLY_MAX:
 				ghosts.colour = _faint(PENCIL, 0.45)
-				ghosts.stroke(_tally_path(_tally_top(sym, "temper", n), n, 1.0), 1.6, 0.3)
+				ghosts.stroke(_tally_path(sym, "temper", n, 1.0), 1.5, 0.3)
 		if _lock > 0.01:
-			_lock_path(ghosts, at + Vector2(MARKS_X - 18.0, 36.0), _lock)
+			_lock_path(ghosts, _pip_at(sym, 2) + Vector2(0.0, -3.0), _lock)
 		ghosts.draw(_lines)
 	_lines.draw_set_transform_matrix(_line_xform())
 	var line := Pencil.new(rng_seed * 1000 + 900)
@@ -697,7 +819,7 @@ func _draw_lines() -> void:
 	_lines.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
-## A row's tallies on a tag, the newest partly drawn while it comes.
+## A side's tallies on a gauge, the newest partly drawn while it comes.
 func _draw_tallies(sym: String, row: String, pencil_seed: int, colour: Color) -> void:
 	var shown: float = _s[sym][row + "_shown"]
 	var whole := floori(shown)
@@ -706,7 +828,7 @@ func _draw_tallies(sym: String, row: String, pencil_seed: int, colour: Color) ->
 		var pencil := Pencil.new(pencil_seed + n)
 		pencil.colour = colour
 		var part := 1.0 if n < whole else shown - whole
-		pencil.stroke(_tally_path(_tally_top(sym, row, n), n, part), 1.9, 0.3)
+		pencil.stroke(_tally_path(sym, row, n, part), 1.7, 0.25)
 		pencil.draw(_lines)
 
 
@@ -734,23 +856,23 @@ func _draw_fills() -> void:
 			if k == 2:
 				fill = minf(fill, s.third)
 			if fill > 0.01:
-				_fills.draw_circle(_pip_at(sym, k), (PIP_R - 1.3) * fill, INK)
+				_fills.draw_circle(_pip_at(sym, k), (PIP_R - 1.1) * fill, INK)
 			var ghost: bool = (k >= int(s.craving) and k < int(s.craving) + int(s.ghost_pips)) \
 					or (s.ghost_roll and k >= int(s.craving))
 			if ghost and fill < 0.5:
-				_fills.draw_circle(_pip_at(sym, k), PIP_R - 1.3, Color(INK, 0.16))
+				_fills.draw_circle(_pip_at(sym, k), PIP_R - 1.1, Color(INK, 0.16))
 	for mover in _travel:
 		var t: float = mover.t
 		var from: Vector2 = mover.from
 		var to: Vector2 = mover.to
-		var lift := Vector2(0.0, -26.0 if not mover.line else -18.0)
+		var lift := Vector2(0.0, -16.0 if not mover.line else -18.0)
 		# Along a curve that lifts off the page between the two places.
 		var bend := from.lerp(to, 0.5) + lift
 		var at := from.lerp(bend, t).lerp(bend.lerp(to, t), t)
 		if mover.line:
 			at = _line_xform() * at
 		var colour: Color = (mover.from_colour as Color).lerp(mover.to_colour, t)
-		_fills.draw_circle(at, lerpf(PIP_R - 1.3, 2.6, t), colour)
+		_fills.draw_circle(at, lerpf(PIP_R - 1.1, 2.4, t), colour)
 	if _flood > 0.01:
 		_fills.draw_set_transform_matrix(_line_xform())
 		var w := LINE_HALF * _flood
@@ -758,55 +880,68 @@ func _draw_fills() -> void:
 		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
-## The tags' names and row labels, the numbers when they show, the line's counts, the card
-## a rollover would bring, and the hovered symbol's detail.
+## The numbers when they show, the slip of a rollover's card, the line's name and counts,
+## and the ledgers.
 func _draw_text() -> void:
+	var edge := Color(0.05, 0.035, 0.06, 0.85)
 	for sym in SYMS:
 		var s: Dictionary = _s[sym]
-		var at := _tag(sym)
-		_text.draw_string(_heavy, at + Vector2(12.0, 20.0), LABELS[sym], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, PENCIL)
-		for row: String in ["craving", "habit", "temper"]:
-			var y: float = {"craving": CRAVING_Y, "habit": HABIT_Y, "temper": TEMPER_Y}[row]
-			var note: float = 1.0 if _numbers else s.note[row]
-			var pos := at + Vector2(MARKS_X, y)
-			_text.draw_string(_slanted, pos, row, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, LABEL)
-			if note > 0.01:
-				var width := _slanted.get_string_size(row, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11).x
-				var colour := INK if row != "temper" else PENCIL
-				_text.draw_string(_heavy, pos + Vector2(width + 5.0, 0.0), str(s[row]), HORIZONTAL_ALIGNMENT_LEFT,
-						-1.0, 13, _faint(colour, note))
+		var g: Dictionary = _g[sym]
+		var r: Rect2 = g.rect
 		for row: String in ["habit", "temper"]:
 			if int(s[row]) > TALLY_MAX:
-				var end := _tally_top(sym, row, TALLY_MAX - 1) + Vector2(8.0, TALLY_H - 2.0)
-				_text.draw_string(_heavy, end, "+%d" % (int(s[row]) - TALLY_MAX), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, LABEL)
+				var end := _tally_top(sym, row, TALLY_MAX - 1) + Vector2(4.0, TALLY_H_TWO - 1.0)
+				_text.draw_string(_heavy, end, "+%d" % (int(s[row]) - TALLY_MAX), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, LABEL)
+		# A gauge's number under it for a moment after it changes, on the page's own ground.
+		if not _numbers and not s.ghost_roll:
+			for row: String in ["craving", "habit", "temper"]:
+				var note: float = s.note[row]
+				if note <= 0.01:
+					continue
+				var x: float = g.pips_x + PIP_PITCH * 0.5 if row == "craving" else g[row + "_x"] + g[row + "_w"] * 0.5
+				var at := Vector2(x - 20.0, r.end.y + 13.0)
+				_text.draw_string_outline(_heavy, at, str(s[row]), HORIZONTAL_ALIGNMENT_CENTER, 40.0, 12, 4, Color(edge, edge.a * note))
+				_text.draw_string(_heavy, at, str(s[row]), HORIZONTAL_ALIGNMENT_CENTER, 40.0, 12, Color(CREAM_TEXT, note))
 		if s.ghost_roll:
-			var card := at + Vector2(TAG_SIZE.x - 30.0, 10.0)
-			_text.draw_string(_heavy, card + Vector2(0.0, 19.0), "+1", HORIZONTAL_ALIGNMENT_CENTER, 20.0, 10, _faint(INK, 0.7))
-			_text.draw_string(_slanted, card + Vector2(-14.0, 40.0), RulesConfig.ROOT[sym].ink, HORIZONTAL_ALIGNMENT_CENTER,
-					48.0, 10, _faint(INK, 0.7))
-	# The line's counts, at its two ends, on the page's own ground.
+			var slip := _roll_slip(sym)
+			_text.draw_string(_slanted, slip.position + Vector2(0.0, 12.0), _roll_words(sym), HORIZONTAL_ALIGNMENT_CENTER,
+					slip.size.x, 11, _faint(INK, 0.85))
+	# The line's name over its banner, on the page's own ground: it stays at home.
+	if _grow < 1.0:
+		var home := _line_home()
+		var name_at := Vector2(home.x - 100.0, home.y - LINE_H - 7.0)
+		_text.draw_string_outline(_heavy, name_at, LINE_NAME, HORIZONTAL_ALIGNMENT_CENTER, 200.0, 13, 4, Color(edge, edge.a * (1.0 - _grow)))
+		_text.draw_string(_heavy, name_at, LINE_NAME, HORIZONTAL_ALIGNMENT_CENTER, 200.0, 13, Color(CREAM_TEXT, 1.0 - _grow))
+	# The line's counts, at the banner's two ends: each a little larger for a moment when it changes.
 	var xf := _line_xform()
 	var scale := xf.get_scale().x
-	var size_px := int(round(14.0 * scale))
-	var drop := _heavy.get_ascent(size_px) * 0.35
-	var lit := Color(1.0, 0.98, 0.9)
+	var drop := _heavy.get_ascent(int(round(13.0 * scale))) * 0.36
 	var paper_text := "PAPER %d" % _paper
 	var ink_text := "%d INK" % _ink
-	var paper_w := _heavy.get_string_size(paper_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size_px).x
-	_text.draw_string(_heavy, xf * Vector2(-LINE_HALF - 10.0, 0.0) + Vector2(-paper_w, drop), paper_text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, size_px, CREAM_TEXT.lerp(lit, _line_note.paper))
-	_text.draw_string(_heavy, xf * Vector2(LINE_HALF + 10.0, 0.0) + Vector2(0.0, drop), ink_text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, size_px, CREAM_TEXT.lerp(lit, _line_note.ink))
-	if _hover != "":
-		_draw_detail(_hover)
+	var paper_px := int(round((13.0 + 2.0 * _line_note.paper) * scale))
+	var ink_px := int(round((13.0 + 2.0 * _line_note.ink) * scale))
+	var ink_w := _heavy.get_string_size(ink_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px).x
+	# Once the ink has flooded the paper's side, the paper's count is read through it.
+	_text.draw_string(_heavy, xf * Vector2(-LINE_HALF + LINE_NOTCH + 5.0, 0.0) + Vector2(0.0, drop), paper_text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, paper_px, PENCIL.lerp(INK_WASH, _flood))
+	_text.draw_string(_heavy, xf * Vector2(LINE_HALF - LINE_NOTCH - 5.0, 0.0) + Vector2(-ink_w, drop), ink_text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px, INK)
+	if _numbers:
+		for sym in SYMS:
+			_draw_ledger(sym, true)
+	elif _hover != "":
+		_draw_ledger(_hover, false)
 
 
-## The hovered symbol in numbers: its gauges, and its two Roots in the deck with their worth.
-func _draw_detail(sym: String) -> void:
+## A symbol's ledger, under its gauge: its gauges in numbers, and its two Roots in the deck
+## with their worth. With `every`, the three ledgers stand side by side under the row.
+func _draw_ledger(sym: String, every: bool) -> void:
 	var s: Dictionary = _s[sym]
-	var tag := _tag_rect(SYMS.find(sym))
-	# Under the line, so that the line stays in sight while a symbol is read.
-	var box := Rect2(Vector2(tag.get_center().x - 135.0, LINE_Y + LINE_H + 14.0), Vector2(270.0, 76.0))
+	var zone := ArenaLayout.symbols(size)
+	var middle := _gauge_rect(sym).get_center().x
+	if every:
+		middle = zone.get_center().x + (SYMS.find(sym) - 1) * (LEDGER.x + 6.0)
+	var box := Rect2(Vector2(middle - LEDGER.x * 0.5, zone.end.y + 14.0), LEDGER)
 	box.position.x = clampf(box.position.x, 0.0, size.x - box.size.x)
 	_text.draw_rect(Rect2(box.position + Vector2(3.0, 4.0), box.size), SHADOW)
 	_text.draw_rect(box, Color(0.95, 0.91, 0.80))
@@ -814,12 +949,12 @@ func _draw_detail(sym: String) -> void:
 	var x := box.position.x + 10.0
 	var y := box.position.y + 19.0
 	var names: Array = [RulesConfig.ROOT[sym].paper, RulesConfig.ROOT[sym].ink]
-	_text.draw_string(_heavy, Vector2(x, y), "Craving %d   Habit %d   Temper %d" % [s.craving, s.habit, s.temper],
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, PENCIL)
+	_text.draw_string(_heavy, Vector2(x, y), "Habit %d   Craving %d   Temper %d" % [s.habit, s.craving, s.temper],
+			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 13, PENCIL)
 	_text.draw_string(_slanted, Vector2(x, y + 24.0), "%d %s in the deck, %d chips each" % [s.paper, names[0], s.paper_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, PENCIL)
+			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, PENCIL)
 	_text.draw_string(_slanted, Vector2(x, y + 46.0), "%d %s in the deck, %d chips each" % [s.ink, names[1], s.ink_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, INK)
+			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, INK)
 
 
 # --- Shapes ---------------------------------------------------------------------------------
@@ -830,13 +965,14 @@ static func _faint(colour: Color, a: float) -> Color:
 	return CREAM.lerp(colour, clampf(a, 0.0, 1.0))
 
 
-## The path of a tag's n-th tally, `part` of it drawn.
-static func _tally_path(top: Vector2, n: int, part: float) -> PackedVector2Array:
-	# `top` is already at this mark's place: draw the mark from there.
-	var path := _tally_path_at(Vector2.ZERO, n, TALLY_PITCH, TALLY_GAP, TALLY_H, 1.0, part)
-	var group_x := _tally_x(n, TALLY_PITCH, TALLY_GAP)
+## The path of the n-th tally of a gauge's side, `part` of it drawn.
+func _tally_path(sym: String, row: String, n: int, part: float) -> PackedVector2Array:
+	var col := n % TALLY_ROW
+	var path := _tally_path_at(Vector2.ZERO, col, _pitch, _gap, _tally_h(sym, row), 1.0, part)
+	# The mark's own place already holds its distance along the row: draw the mark from there.
+	var from := _tally_top(sym, row, n) - Vector2(_tally_x(col, _pitch, _gap), 0.0)
 	for i in path.size():
-		path[i] += top - Vector2(group_x, 0.0)
+		path[i] += from
 	return path
 
 
@@ -881,40 +1017,42 @@ static func _rect_path(r: Rect2) -> PackedVector2Array:
 ## A small padlock at `at`, faint by `a`.
 func _lock_path(pencil: Pencil, at: Vector2, a: float) -> void:
 	pencil.colour = _faint(PENCIL, a)
-	pencil.stroke(_rect_path(Rect2(at + Vector2(-6.0, 0.0), Vector2(12.0, 10.0))), 1.6, 0.2)
-	pencil.stroke(_arc(at, Vector2(4.0, 5.0), PI, TAU, 8), 1.6, 0.2)
+	pencil.stroke(_rect_path(Rect2(at + Vector2(-4.5, 0.0), Vector2(9.0, 8.0))), 1.4, 0.15)
+	pencil.stroke(_arc(at, Vector2(3.0, 4.0), PI, TAU, 8), 1.4, 0.15)
 
 
-## The placeholder sketch of a symbol around `c`, as the page's own pencil drawings.
-func _sketch(pencil: Pencil, sym: String, c: Vector2) -> void:
+## The placeholder sketch of a symbol around `c`, as the page's own pencil drawings, `k` times
+## the size it is written at below (its lines a little heavier than that would make them).
+func _sketch(pencil: Pencil, sym: String, c: Vector2, k: float = 1.0) -> void:
+	var w := lerpf(k, 1.0, 0.45)
 	match sym:
 		"lamp":
 			# An oil lamp: a foot, a round fount, a collar, and a tall chimney with its flame.
-			pencil.stroke(PackedVector2Array([c + Vector2(-18, 34), c + Vector2(18, 34)]), 2.0, 0.6)
-			pencil.stroke(PackedVector2Array([c + Vector2(-8, 33), c + Vector2(-5, 22), c + Vector2(5, 22), c + Vector2(8, 33)]), 1.7, 0.5)
-			pencil.stroke(_ellipse(c + Vector2(0, 11), Vector2(16, 11), 22), 1.9, 0.6)
-			pencil.stroke(PackedVector2Array([c + Vector2(-8, 0), c + Vector2(8, 0)]), 1.7, 0.4)
-			pencil.stroke(PackedVector2Array([c + Vector2(-5, -1), c + Vector2(-9, -14), c + Vector2(-6, -34)]), 1.6, 0.5)
-			pencil.stroke(PackedVector2Array([c + Vector2(5, -1), c + Vector2(9, -14), c + Vector2(6, -34)]), 1.6, 0.5)
-			pencil.stroke(_arc(c + Vector2(0, -12), Vector2(3, 7), PI * 0.1, PI * 1.9, 14), 1.4, 0.3)
-			pencil.stroke(PackedVector2Array([c + Vector2(-12, 9), c + Vector2(-9, 15)]), 1.0, 0.3)
+			pencil.stroke(PackedVector2Array([c + Vector2(-18, 34) * k, c + Vector2(18, 34) * k]), 2.0 * w, 0.6 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-8, 33) * k, c + Vector2(-5, 22) * k, c + Vector2(5, 22) * k, c + Vector2(8, 33) * k]), 1.7 * w, 0.5 * k)
+			pencil.stroke(_ellipse(c + Vector2(0, 11) * k, Vector2(16, 11) * k, 22), 1.9 * w, 0.6 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-8, 0) * k, c + Vector2(8, 0) * k]), 1.7 * w, 0.4 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-5, -1) * k, c + Vector2(-9, -14) * k, c + Vector2(-6, -34) * k]), 1.6 * w, 0.5 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(5, -1) * k, c + Vector2(9, -14) * k, c + Vector2(6, -34) * k]), 1.6 * w, 0.5 * k)
+			pencil.stroke(_arc(c + Vector2(0, -12) * k, Vector2(3, 7) * k, PI * 0.1, PI * 1.9, 14), 1.4 * w, 0.3 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-12, 9) * k, c + Vector2(-9, 15) * k]), 1.0 * w, 0.3 * k)
 		"heart":
 			# A heart as in an anatomy plate: the lobed body leaning left, the great vessels above.
 			var body := PackedVector2Array()
-			for k in 31:
-				var t := TAU * k / 30.0
+			for step in 31:
+				var t := TAU * step / 30.0
 				var x := 16.0 * pow(sin(t), 3.0)
 				var y := -(13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t))
-				body.append(c + Vector2(x * 1.2, y * 1.2 + 8.0).rotated(-0.25))
-			pencil.stroke(body, 2.0, 0.6)
-			pencil.stroke(_arc(c + Vector2(4, -16), Vector2(9, 10), PI, PI * 2.0, 12), 2.0, 0.5)
-			pencil.stroke(PackedVector2Array([c + Vector2(-5, -15), c + Vector2(-5, -30)]), 1.7, 0.5)
-			pencil.stroke(PackedVector2Array([c + Vector2(12, -15), c + Vector2(14, -28)]), 1.7, 0.5)
-			pencil.stroke(PackedVector2Array([c + Vector2(-2, -4), c + Vector2(4, 12), c + Vector2(2, 26)]), 1.0, 0.4)
+				body.append(c + Vector2(x * 1.2, y * 1.2 + 8.0).rotated(-0.25) * k)
+			pencil.stroke(body, 2.0 * w, 0.6 * k)
+			pencil.stroke(_arc(c + Vector2(4, -16) * k, Vector2(9, 10) * k, PI, PI * 2.0, 12), 2.0 * w, 0.5 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-5, -15) * k, c + Vector2(-5, -30) * k]), 1.7 * w, 0.5 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(12, -15) * k, c + Vector2(14, -28) * k]), 1.7 * w, 0.5 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-2, -4) * k, c + Vector2(4, 12) * k, c + Vector2(2, 26) * k]), 1.0 * w, 0.4 * k)
 		"mirror":
 			# A hand mirror: an oval glass in its frame, a handle, and a glint.
-			pencil.stroke(_ellipse(c + Vector2(0, -8), Vector2(20, 25), 30), 2.0, 0.6)
-			pencil.stroke(_ellipse(c + Vector2(0, -8), Vector2(16, 21), 28), 1.2, 0.4)
-			pencil.stroke(PackedVector2Array([c + Vector2(-4, 16), c + Vector2(-4, 36), c + Vector2(4, 36), c + Vector2(4, 16)]), 1.8, 0.5)
-			pencil.stroke(PackedVector2Array([c + Vector2(-9, -20), c + Vector2(-3, -27)]), 1.3, 0.3)
-			pencil.stroke(PackedVector2Array([c + Vector2(-10, -12), c + Vector2(-6, -16)]), 1.0, 0.3)
+			pencil.stroke(_ellipse(c + Vector2(0, -8) * k, Vector2(20, 25) * k, 30), 2.0 * w, 0.6 * k)
+			pencil.stroke(_ellipse(c + Vector2(0, -8) * k, Vector2(16, 21) * k, 28), 1.2 * w, 0.4 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-4, 16) * k, c + Vector2(-4, 36) * k, c + Vector2(4, 36) * k, c + Vector2(4, 16) * k]), 1.8 * w, 0.5 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-9, -20) * k, c + Vector2(-3, -27) * k]), 1.3 * w, 0.3 * k)
+			pencil.stroke(PackedVector2Array([c + Vector2(-10, -12) * k, c + Vector2(-6, -16) * k]), 1.0 * w, 0.3 * k)

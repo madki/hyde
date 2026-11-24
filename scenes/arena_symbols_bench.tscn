@@ -29,10 +29,7 @@ script = ExtResource("4")
 paper = NodePath("../Paper")
 
 [node name="Symbols" parent="." instance=ExtResource("5")]
-offset_left = 256.0
-offset_top = 40.0
-offset_right = 896.0
-offset_bottom = 246.0
+layout_mode = 1
 
 [node name="Keys" type="Label" parent="."]
 layout_mode = 0

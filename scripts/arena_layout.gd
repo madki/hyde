@@ -24,12 +24,12 @@ const RULE_INSET := 40.0
 
 ## The night, the round and its title, and under them the target and the score.
 static func heading(_page: Vector2) -> Rect2:
-	return Rect2(MARGIN, 38.0, 320.0, 52.0)
+	return Rect2(MARGIN, 38.0, 300.0, 52.0)
 
 
 ## The three symbols, as one row of gauges.
 static func symbols(page: Vector2) -> Rect2:
-	return _centred(page, 44.0, Vector2(400.0, 44.0))
+	return _centred(page, 44.0, Vector2(456.0, 44.0))
 
 
 ## The sovereigns: the pile of coins and the count. It hangs a little below the top rule,
@@ -64,12 +64,12 @@ static func tab_right(page: Vector2) -> Rect2:
 
 ## The line between paper and ink, as a banner under its name.
 static func balance(page: Vector2) -> Rect2:
-	return _centred(page, 104.0, Vector2(360.0, 64.0))
+	return _centred(page, 108.0, Vector2(360.0, 64.0))
 
 
 ## The restraint: a row of rings that ends in his mark.
 static func restraint(page: Vector2) -> Rect2:
-	return _centred(page, 180.0, Vector2(360.0, 56.0))
+	return _centred(page, 182.0, Vector2(360.0, 56.0))
 
 
 ## The hand's readout, one written line.
