@@ -4,6 +4,11 @@ extends Control
 ## the shelf's cards and instruments, a dose of salt, the instruments held (each can be
 ## dropped), and Leave, which goes back to the table; there the next night begins.
 ##
+## "Strike a card" opens a second list on the same panel: the deck's cards, one row for each
+## kind of card with how many the deck holds and the price to strike one (Paper Roots, then
+## Ink Roots, then Factors, each in the deck's order). Taking a row strikes one card of that
+## kind; Back, or Escape, returns to the shelf.
+##
 ## The page holds no rules. Everything it shows is read from RulesView.place: the prices,
 ## what is sold, what can be taken and why not. Taking a row calls the rules' own function,
 ## and the rows are then made again from a fresh record.
@@ -19,17 +24,28 @@ extends Control
 ##
 ## - `--purse=<n>`: the purse holds that many sovereigns.
 ## - `--held=<n>`: that many instruments are held (ones the shelf does not sell).
-## - `--keys=ddue`: keys pressed as a player would, in turn: d Down, u Up, e Enter.
+## - `--keys=ddue`: keys pressed as a player would, in turn: d Down, u Up, e Enter,
+##   x Escape.
 ## - `--point=700,300`: the pointer moved there, and `--click` a click there.
+## - `--strike`: the list of cards to strike is open (the keys and the pointer then act there).
+## - `--full-deck`: one card of every kind the deck lacks joins it (every Ink Root and every
+##   Factor), for the longest list of cards to strike a run can have.
 
 const WHERE := "lab"
 const HEADING := "The Laboratory"
 const NOTE := "Up and Down to choose, Enter to take"
+const STRIKE_HEADING := "Strike a Card"
+const STRIKE_LEAD := "A card struck here leaves his deck for good."
+const STRIKE_NOTE := "Enter to strike one, Escape to go back"
 
 ## The run at this dawn. Null only if no run could be played to one.
 var _run: RulesRun
 ## The rows the panel shows, in its order, each with its `act`.
 var _rows: Array[Dictionary] = []
+## True while the list of cards to strike is shown instead of the shelf.
+var _striking := false
+## The index of the "Strike a card" row among the shelf's rows, to come back to it.
+var _strike_row := -1
 
 @onready var _panel: PlacePanel = $Panel
 
@@ -47,20 +63,30 @@ func _ready() -> void:
 	_show_wares(false)
 	_panel.row_chosen.connect(_on_row_chosen)
 	if own:
+		if Shot.has_arg("strike"):
+			_open_strike()
 		_play_input()
 	Shot.run_if_requested(self)
 
 
 # ---------- the rows ----------
 
-## Shows the laboratory's wares as the run stands now. With `keep` the selection stays where
-## it is (after a purchase); without, it goes to the first row.
+## Shows the laboratory's wares as the run stands now, or the list of cards to strike while
+## it is open. With `keep` the selection stays where it is (after a purchase); without, it
+## goes to the first row.
 func _show_wares(keep: bool = true) -> void:
 	var place: Variant = RulesView.place(_run) if _run != null else null
 	if place == null:
+		_striking = false
 		_show([_leave_row("")], keep)
 		return
 	_panel.set_purse(int(place.sov), int(place.salt.doses))
+	if _striking:
+		_panel.set_heading(STRIKE_HEADING)
+		_panel.lead = STRIKE_LEAD
+		_show(_strike_rows(place), keep)
+		return
+	_panel.set_heading(HEADING)
 	_panel.lead = _dawn_line(place.dawn)
 	_show(_wares(place), keep)
 
@@ -80,11 +106,18 @@ func _wares(place: Dictionary) -> Array[Dictionary]:
 		if card.t == "root":
 			detail = "A Root of the %s, on paper." % String(card.key).capitalize()
 		rows.append(_ware(card, card.name, detail, Rules.buy_card.bind(_run, int(card.index))))
-	rows.append({section = "Instruments"})
+	_strike_row = rows.size()
+	rows.append({
+		text = "Strike a card",
+		detail = "Take a card out of his deck for good.",
+		act = _open_strike,
+	})
+	# The salt shares the instruments' heading: one heading less keeps the fullest page
+	# (a full rack) clear of the foot of the window.
+	rows.append({section = "Instruments and salt"})
 	for instrument: Dictionary in place.instruments:
 		rows.append(_ware(instrument, instrument.name, instrument.text,
 				Rules.buy_instrument.bind(_run, int(instrument.index))))
-	rows.append({section = "Salt"})
 	rows.append(_ware(place.salt, "A dose of salt", "One more dose for the nights ahead.",
 			Rules.buy_salt.bind(_run)))
 	if not place.held.is_empty():
@@ -111,6 +144,39 @@ func _ware(offer: Dictionary, text: String, detail: String, move: Callable) -> D
 		detail = detail,
 		act = _deal.bind(move),
 	}
+
+
+## The list of cards to strike, from the record's `strike` list: one row for each kind of
+## card (a Paper and an Ink Root of one symbol are two kinds), with how many the deck holds;
+## taking one strikes the first card of that kind. Then Back.
+func _strike_rows(place: Dictionary) -> Array[Dictionary]:
+	var groups := {}
+	var order: Array[String] = []
+	for card: Dictionary in place.strike:
+		var kind := "%s/%s/%s" % [card.t, card.key, card.ink]
+		if not groups.has(kind):
+			groups[kind] = {card = card, count = 0}
+			order.append(kind)
+		groups[kind].count += 1
+	var rows: Array[Dictionary] = []
+	for part: Array in [["Paper Roots", "root", false], ["Ink Roots", "root", true],
+			["Factors", "factor", false]]:
+		var heading := false
+		for kind in order:
+			var card: Dictionary = groups[kind].card
+			if card.t != part[1] or (card.t == "root" and bool(card.ink) != part[2]):
+				continue
+			if not heading:
+				rows.append({section = part[0]})
+				heading = true
+			var detail: String = card.text
+			if card.t == "root":
+				detail = "A Root of the %s, %s." % [String(card.key).capitalize(),
+						"in ink" if card.ink else "on paper"]
+			rows.append(_ware(card, "%s  ×%d" % [card.name, int(groups[kind].count)], detail,
+					Rules.strike.bind(_run, int(card.id))))
+	rows.append({text = "Back", detail = "Back to the shelf.", act = _close_strike})
+	return rows
 
 
 func _leave_row(detail: String) -> Dictionary:
@@ -151,8 +217,28 @@ func _on_row_chosen(index: int) -> void:
 ## stand. A refusal's reason is shown in the note.
 func _deal(move: Callable) -> void:
 	var result: Dictionary = move.call()
-	_panel.note = NOTE if result.ok else String(result.get("reason", NOTE))
+	var usual := STRIKE_NOTE if _striking else NOTE
+	_panel.note = usual if result.ok else String(result.get("reason", usual))
 	_show_wares()
+
+
+## Opens the list of cards to strike on the panel, its selection on its first row.
+func _open_strike() -> void:
+	_striking = true
+	_panel.note = STRIKE_NOTE
+	if not _panel.back.is_connected(_close_strike):
+		_panel.back.connect(_close_strike)
+	_show_wares(false)
+
+
+## Back from the list of cards to strike to the shelf, the selection on "Strike a card".
+func _close_strike() -> void:
+	_striking = false
+	_panel.note = NOTE
+	if _panel.back.is_connected(_close_strike):
+		_panel.back.disconnect(_close_strike)
+	_show_wares(false)
+	_panel.select(_strike_row)
 
 
 ## Back to the table, which leaves the laboratory in the rules and begins the next night.
@@ -162,10 +248,21 @@ func _leave() -> void:
 
 # ---------- run on its own ----------
 
-## The purse and the rack asked for on the command line, for a still.
+## The purse, the rack and the deck asked for on the command line, for a still.
 func _set_up_still() -> void:
 	if Shot.has_arg("purse"):
 		_run.sov = maxi(0, int(Shot.arg("purse")))
+	if Shot.has_arg("full-deck"):
+		var kinds := {}
+		for c: RulesCard in _run.cards:
+			kinds[[c.key(), c.is_ink()]] = true
+		for sym: String in RulesConfig.ROOTS:
+			for ink: bool in [false, true]:
+				if not kinds.has([sym, ink]):
+					Rules.add_card(_run, sym, ink, false)
+		for kind: String in RulesConfig.FACTORS:
+			if not kinds.has([kind, false]):
+				Rules.add_card(_run, kind, false, false)
 	var on_shelf: Array = []
 	if _run.shop != null:
 		for offer: Dictionary in _run.shop.instruments:
@@ -180,7 +277,7 @@ func _set_up_still() -> void:
 
 ## Plays the input asked for on the command line through the game's own input.
 func _play_input() -> void:
-	const KEYS := {"d": KEY_DOWN, "u": KEY_UP, "e": KEY_ENTER}
+	const KEYS := {"d": KEY_DOWN, "u": KEY_UP, "e": KEY_ENTER, "x": KEY_ESCAPE}
 	for letter in Shot.arg("keys"):
 		if not KEYS.has(letter):
 			continue
