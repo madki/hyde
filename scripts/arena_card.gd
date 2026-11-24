@@ -48,11 +48,24 @@ const TURN_TIME := 0.09
 const FADE_TIME := 0.18
 ## The time the rim light takes to come up on a chosen card, or to go.
 const RIM_TIME := 0.15
+## The wet reflection under a chosen card: how strongly its lines show, the gap between the
+## card's lower edge and the line it is mirrored on, and how far up the card it reaches.
+const REFLECTION := 0.4
+const REFLECTION_GAP := 3.0
+const REFLECTION_REACH := 70.0
+## The shift's split on one card changing face: how long its three coloured copies are apart,
+## and how far apart they go, in pixels, each in its own direction.
+const SPLIT_TIME := 0.3
+const SPLIT_REACH := 4.0
+const SPLIT_WAYS: Array[Vector2] = [Vector2(-1.0, -0.3), Vector2(1.0, 0.3), Vector2(0.2, 1.0)]
+## The time the ink takes to creep over a Root that has just become Hyde's, at speed 1.
+const STAIN_TIME := 0.6
 
 const PAPER_MATERIAL: ShaderMaterial = preload("res://shaders/card_paper_material.tres")
 const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tres")
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/card_line_material.tres")
 const GLOW_MATERIAL: ShaderMaterial = preload("res://shaders/card_picture_material.tres")
+const COPY_MATERIAL: ShaderMaterial = preload("res://shaders/card_copy_material.tres")
 
 ## The engine's font drawn from distance fields, for `sharp`. Made once, for every card.
 static var _sharp_face: Font
@@ -123,8 +136,21 @@ var sharp := false:
 			sharp = value
 			_set_faces()
 			_refresh()
+## How far the ink stain of a Root that is Hyde's has crept in from its corner, 0 to 1. It is
+## settled (1) at rest, and creeps from 0 when the card becomes Hyde's where it lies.
+var stain := 1.0:
+	set(value):
+		stain = value
+		_set_body("stain", stain if _stained() else 0.0)
 
 var _body := Control.new()
+## The card's lines again, mirrored on the ground under it, while it is chosen.
+var _reflection := Node2D.new()
+## The three coloured copies of the card's lines while it splits, and how far apart they are
+## now (0 to 1: 0 when it is whole).
+var _split := Node2D.new()
+var _apart := 0.0
+var _split_tween: Tween
 var _picture := Control.new()
 var _glow := Control.new()
 var _lines := Control.new()
@@ -147,6 +173,11 @@ var _change: Tween
 var _rim_tween: Tween
 ## How strongly the rim light shows, 0 to 1.
 var _rim := 0.0
+## How strongly the stain shows, 0 to 1: it fades in, instead of creeping, with "reduce flashes".
+var _stain_shown := 1.0
+var _stain_tween: Tween
+## True once the card has been given a face: a later change to Hyde's is a stain.
+var _shown := false
 var _built := false
 
 
@@ -176,6 +207,23 @@ func _init() -> void:
 	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
 
 	_body.draw.connect(_draw_body)
+	_reflection.draw.connect(_draw_reflection)
+	_reflection.scale = Vector2(1.0, -1.0)
+	_reflection.position = Vector2(0.0, SIZE.y * 2.0 + REFLECTION_GAP)
+	_reflection.visible = false
+	var mirrored := COPY_MATERIAL.duplicate() as ShaderMaterial
+	mirrored.set_shader_parameter("strength", 0.0)
+	mirrored.set_shader_parameter("soft", 0.4)
+	mirrored.set_shader_parameter("fade_from", SIZE.y)
+	mirrored.set_shader_parameter("fade_reach", REFLECTION_REACH)
+	_reflection.material = mirrored
+	add_child(_reflection)
+	_split.visible = false
+	for colour: Color in [Palette.SPLIT_JEKYLL, Palette.SPLIT_HYDE, Palette.SPLIT_THIRD]:
+		var copy := Node2D.new()
+		copy.material = COPY_MATERIAL
+		copy.draw.connect(_draw_copy.bind(copy, colour))
+		_split.add_child(copy)
 	_lines.draw.connect(_draw_lines)
 	_picture.draw.connect(_draw_picture)
 	_glow.draw.connect(_draw_glow)
@@ -205,6 +253,9 @@ func _init() -> void:
 	for child: Control in [_body, _glow, _picture, _lines, _disc, _title, _chips, _tag, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
+		if child == _lines:
+			# The split lies over the lines (hidden while it shows) and under the writing.
+			add_child(_split)
 	_built = true
 	_refresh()
 
@@ -241,12 +292,16 @@ func show_entry(entry: Dictionary, hyde_has_table: bool) -> void:
 ## Sets everything the face shows. `on_ink` is true for a card that looks like Hyde's.
 func show_face(new_key: String, on_ink: bool, new_title: String, new_chips: int,
 		new_text: String = "") -> void:
+	var turned := _shown and on_ink and not ink
 	key = new_key
 	ink = on_ink
 	title = new_title
 	chips = new_chips
 	text = new_text
+	_shown = true
 	_refresh()
+	if turned and _stained() and is_inside_tree():
+		_creep_stain()
 
 
 ## Shows a card from data shaped like one of RulesView.table().hand, {key, ink, name, chips,
@@ -280,6 +335,8 @@ func change_face(change: Callable, animate: bool = true) -> void:
 	if not animate or not is_inside_tree():
 		change.call()
 		return
+	if not ArenaPace.reduce_flashes:
+		_play_split()
 	_change = create_tween()
 	_change.tween_property(self, "scale:x", 0.0, TURN_TIME).set_ease(Tween.EASE_IN)
 	_change.tween_callback(change)
@@ -314,11 +371,13 @@ func _refresh() -> void:
 	body.set_shader_parameter("band_height", 0.0 if face_down else TITLE_BOTTOM + 1.0)
 	body.set_shader_parameter("rim_colour", Palette.HYDE if ink else Palette.JEKYLL)
 	body.set_shader_parameter("rim_strength", _rim)
+	body.set_shader_parameter("stain", stain if _stained() else 0.0)
+	body.set_shader_parameter("stain_shown", _stain_shown)
 	_body.material = body
 
-	for part: Control in [_title, _chips, _tag, _text, _picture]:
+	for part: Control in [_title, _chips, _tag, _text]:
 		part.visible = not face_down
-	_glow.visible = not face_down and not dimmed
+	_show_lines()
 	(_glow.material as ShaderMaterial).set_shader_parameter("glow_colour", _light())
 	_disc.visible = chips_above and not face_down
 	_disc.queue_redraw()
@@ -357,6 +416,10 @@ func _refresh() -> void:
 		printed.queue_redraw()
 	_glow.queue_redraw()
 	_body.queue_redraw()
+	_set_rim(_rim)
+	_reflection.queue_redraw()
+	for copy: Node2D in _split.get_children():
+		copy.queue_redraw()
 
 
 ## The title, in its whole box or in as much of it as `strip` leaves showing.
@@ -438,9 +501,41 @@ func _light_rim() -> void:
 
 func _set_rim(value: float) -> void:
 	_rim = value
+	_set_body("rim_strength", _rim)
+	_reflection.visible = _rim > 0.0 and not face_down
+	(_reflection.material as ShaderMaterial).set_shader_parameter("strength", REFLECTION * _rim)
+
+
+func _set_body(parameter: String, value: float) -> void:
 	var body := _body.material as ShaderMaterial
 	if body:
-		body.set_shader_parameter("rim_strength", _rim)
+		body.set_shader_parameter(parameter, value)
+
+
+## True for a card that carries the ink stain: a Root that is Hyde's, face up.
+func _stained() -> bool:
+	return ink and text == "" and not face_down
+
+
+## The ink creeps in from its corner over a Root that has just become Hyde's. With "reduce
+## flashes" the settled stain fades in instead.
+func _creep_stain() -> void:
+	if _stain_tween:
+		_stain_tween.kill()
+	_stain_tween = create_tween()
+	var time := STAIN_TIME / ArenaPace.speed
+	if ArenaPace.reduce_flashes:
+		stain = 1.0
+		_stain_tween.tween_method(_set_stain_shown, 0.0, 1.0, time)
+	else:
+		_set_stain_shown(1.0)
+		stain = 0.0
+		_stain_tween.tween_property(self, "stain", 1.0, time).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+
+func _set_stain_shown(value: float) -> void:
+	_stain_shown = value
+	_set_body("stain_shown", _stain_shown)
 
 
 ## The colour the card's lines and chips are drawn in: the light of the man whose stock it is,
@@ -467,6 +562,12 @@ func _draw_body() -> void:
 func _draw_lines() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = _light()
+	_lay_frame(pencil)
+	pencil.draw(_lines)
+
+
+## Lays the frame out on `pencil`: on a card's back, the back's lines.
+func _lay_frame(pencil: Pencil) -> void:
 	var inset := Vector2(FRAME_INSET, FRAME_INSET)
 	var rect := Rect2(inset, SIZE - inset * 2.0)
 	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
@@ -475,7 +576,6 @@ func _draw_lines() -> void:
 		_rule(pencil, corners[i], corners[(i + 1) % 4], FRAME_WIDTH)
 	if face_down:
 		_draw_back(pencil, rect)
-		pencil.draw(_lines)
 		return
 	_rule(pencil, Vector2(rect.position.x, TITLE_BOTTOM), Vector2(rect.end.x, TITLE_BOTTOM), 1.9)
 	_rule(pencil, Vector2(rect.position.x, FOOT_TOP), Vector2(rect.end.x, FOOT_TOP), 1.7)
@@ -485,7 +585,6 @@ func _draw_lines() -> void:
 		_rule(pencil, Vector2(rect.position.x + CHIPS_WIDTH + 2.0, FOOT_TOP),
 				Vector2(rect.position.x + CHIPS_WIDTH + 2.0, rect.end.y), 1.5)
 		_hatch(pencil, Vector2(rect.position.x + 1.5, TITLE_BOTTOM + 1.0), Vector2(1.0, 1.0), 12.0)
-	pencil.draw(_lines)
 
 
 ## The back of a card: a second frame inside the first, crossed by slanting lines both ways.
@@ -530,9 +629,57 @@ func _draw_glow() -> void:
 	RenderingServer.canvas_item_add_set_transform(item, Transform2D.IDENTITY)
 
 
-## Lays the card's picture out on `pencil`. A Factor's is small, to leave room for its text.
-func _add_picture(pencil: Pencil) -> void:
-	var box := Rect2(Vector2.ZERO, _picture.size)
+## The card comes apart into three copies of its lines, in the split's three colours, which
+## slide away from each other and snap back: the shift, on one card.
+func _play_split() -> void:
+	if _split_tween:
+		_split_tween.kill()
+	_split_tween = create_tween()
+	_split_tween.tween_method(_set_apart, 0.0, 1.0, SPLIT_TIME)
+
+
+## `k` runs 0 to 1 through the split: the copies fly apart quickly and come back more slowly.
+func _set_apart(k: float) -> void:
+	_apart = 0.0 if k >= 1.0 else sin(PI * pow(k, 0.6))
+	var copies := _split.get_children()
+	for i in copies.size():
+		(copies[i] as Node2D).position = SPLIT_WAYS[i] * SPLIT_REACH * _apart
+	_show_lines()
+
+
+## Shows the printed lines, or the split's copies of them while the card is apart.
+func _show_lines() -> void:
+	var whole := _apart <= 0.0
+	_split.visible = not whole
+	_lines.visible = whole
+	_picture.visible = whole and not face_down
+	_glow.visible = whole and not face_down and not dimmed
+
+
+## The reflection: the frame and the picture in the owner's light, drawn the right way up in
+## the card's own place (the node mirrors them under the card).
+func _draw_reflection() -> void:
+	_draw_copy(_reflection, _light())
+
+
+## Draws the card's frame and picture again on `item`, in `colour`, in the card's own place.
+func _draw_copy(item: CanvasItem, colour: Color) -> void:
+	var frame := Pencil.new(rng_seed)
+	frame.colour = colour
+	_lay_frame(frame)
+	frame.draw(item)
+	if face_down:
+		return
+	var picture := Pencil.new(rng_seed + 5)
+	picture.colour = colour
+	_add_picture(picture, _picture.position)
+	picture.draw(item)
+
+
+## Lays the card's picture out on `pencil`, its box's corner at `at`. A Factor's is small, to
+## leave room for its text.
+func _add_picture(pencil: Pencil, at: Vector2 = Vector2.ZERO) -> void:
+	var box := Rect2(at, _picture.size)
 	if text != "":
 		box.size.y = FACTOR_PICTURE
 	# A Factor has one picture for both men: its look says whose it is.

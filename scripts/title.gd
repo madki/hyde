@@ -6,7 +6,9 @@ extends Control
 ## Hyde turns back into Jekyll's magenta ghost and the two ghosts close into Jekyll. Tab goes
 ## over to the older change, in which Shift turns one man into the other through the dark,
 ## and back. A visit starts from Jekyll: while Hyde stands there, Shift turns him back through
-## the dark whichever change is chosen.
+## the dark whichever change is chosen. The panel on the dark side of the street holds one
+## row: Press SHIFT at first, and Begin (as Enter) once Shift has shown Hyde. Until then Enter
+## and a click on the row do what Shift does. `--begun` starts with Begin showing.
 ## For screenshots: `--apart=0.5` shows a moment of Jekyll coming apart, `--hyde=1` (with
 ## `--apart=1`) the magenta ghost turned into Hyde, `--glitch=0.3` a moment of the split of
 ## the screen, `--shift=1` starts on Hyde, and `--lamps=0.3` and `--dark=0.5` show a moment
@@ -29,13 +31,26 @@ const SHAKE := 0.006
 ## into the other through the dark.
 @export var change := Change.VISIT
 
+const GAME_NAME := "Versura"
+const ROW_SHIFT := "Press SHIFT"
+const ROW_BEGIN := "Begin"
+
 var _visit: Tween
+## True once Shift has been pressed and its change has played: the panel then offers Begin.
+var _begun := false
 
 @onready var _bg: TitleBackground = $Background
 @onready var _split: SplitTransition = $SplitTransition
+@onready var _panel: PlacePanel = $Panel
 
 
 func _ready() -> void:
+	_panel.accent = Palette.JEKYLL
+	_panel.set_heading(GAME_NAME)
+	_panel.set_rows([{text = ROW_SHIFT}])
+	_panel.row_chosen.connect(_on_row_chosen)
+	if Shot.has_arg("begun"):
+		_offer_begin()
 	if Shot.has_arg("shift"):
 		_bg.shift = float(Shot.arg("shift"))
 	if Shot.has_arg("lamps"):
@@ -56,18 +71,42 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if not key or key.echo or not key.pressed:
 		return
-	if _bg.is_changing() or (_visit and _visit.is_running()):
+	if _is_busy():
 		return
 	if key.keycode == KEY_TAB:
 		change = Change.DARK if change == Change.VISIT else Change.VISIT
 		print("Change: ", Change.find_key(change))
 	elif key.keycode == KEY_SHIFT:
-		if change == Change.VISIT and _bg.shift <= 0.0:
-			_visit_hyde()
-		else:
-			# Also the way back for a Hyde left standing by the other change: a visit starts
-			# from Jekyll.
-			_bg.change_to(0.0 if _bg.shift > 0.5 else 1.0)
+		_shift()
+
+
+func _on_row_chosen(_index: int) -> void:
+	if _begun:
+		SceneFlow.next() # as Enter does anywhere
+	elif not _is_busy():
+		_shift()
+
+
+## Puts Begin on the panel in place of the prompt.
+func _offer_begin() -> void:
+	if _begun:
+		return
+	_begun = true
+	_panel.set_rows([{text = ROW_BEGIN}])
+
+
+func _is_busy() -> bool:
+	return _bg.is_changing() or (_visit and _visit.is_running())
+
+
+func _shift() -> void:
+	if change == Change.VISIT and _bg.shift <= 0.0:
+		_visit_hyde()
+	else:
+		# Also the way back for a Hyde left standing by the other change: a visit starts
+		# from Jekyll.
+		_bg.change_to(0.0 if _bg.shift > 0.5 else 1.0)
+		_offer_begin()
 
 
 ## Jekyll comes apart, his magenta ghost turns into Hyde as the screen shakes and splits,
@@ -84,3 +123,4 @@ func _visit_hyde() -> void:
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_visit.tween_property(_bg, "apart", 0.0, MERGES) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_visit.tween_callback(_offer_begin)

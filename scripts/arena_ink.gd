@@ -78,6 +78,9 @@ func _ready() -> void:
 	# The page gets its own copy of the saved material: what is set here is this arena's alone.
 	_page = paper.material.duplicate() as ShaderMaterial
 	paper.material = _page
+	_page.set_shader_parameter("hatch_colour", Palette.OUTLINE)
+	_page.set_shader_parameter("lamp_jekyll", Palette.JEKYLL)
+	_page.set_shader_parameter("lamp_hyde", Palette.HYDE)
 	_wet = ShaderMaterial.new()
 	_wet.shader = WET_SHADER
 	# One viewport draws the wet layer from the other's picture of the last frame; the other
@@ -155,6 +158,8 @@ func _apply(delta: float) -> void:
 	_page.set_shader_parameter("deep_share", lerpf(DEEP_SHARE_JEKYLL, deep, _hyde))
 	_page.set_shader_parameter("mid_share", MID_SHARE)
 	_page.set_shader_parameter("mid_cover", MID_COVER_JEKYLL * (1.0 - _hyde))
+	# The lamp of whoever holds the table burns brighter.
+	_page.set_shader_parameter("lamp_hold", _hyde)
 	# In Jekyll's stance nothing moves, so once the paint has come to rest the wet layer need
 	# not be drawn again until something changes.
 	_rested = _rested + delta if _hyde == 0.0 else 0.0

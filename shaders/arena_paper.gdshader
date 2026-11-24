@@ -11,6 +11,10 @@ shader_type canvas_item;
 // (arena_wet.gdshader) where the paint is above a level: a pale wash over all of it, a pink
 // mid tone, a dark layer and a deeper one inside that. scripts/arena_ink.gd sets how much of
 // the ink each takes and how fast any of it moves.
+//
+// Over all of it lie pencil hatching, slanted strokes broken up by the noise, and two lamps:
+// Jekyll's from the top left and Hyde's from the right, the lamp of whoever holds the table at
+// full strength and the other's dimmer (`lamp_hold`, set by arena_ink.gd).
 
 #include "res://shaders/arena_ink.gdshaderinc"
 
@@ -65,6 +69,35 @@ uniform float edge_soft : hint_range(0.005, 0.15) = 0.025;
 uniform float uneven : hint_range(0.0, 0.4) = 0.12;
 /** Softness of the ink's outer edge, in rank. */
 uniform float limit_soft : hint_range(0.001, 0.05) = 0.004;
+
+group_uniforms hatch;
+/** The strokes' colour (Palette.OUTLINE) and how strongly they darken the page. */
+uniform vec3 hatch_colour : source_color = vec3(0.051, 0.012, 0.125);
+uniform float hatch_strength : hint_range(0.0, 1.0) = 0.55;
+/** Distance between strokes and their width, in pixels, and their slant from level. */
+uniform float hatch_spacing : hint_range(2.0, 24.0) = 6.0;
+uniform float hatch_width : hint_range(0.5, 6.0) = 1.4;
+uniform float hatch_angle : hint_range(-1.6, 1.6) = -0.75;
+/** Share of the page the hatched patches take, and of a stroke left unbroken. */
+uniform float hatch_cover : hint_range(0.0, 1.0) = 0.65;
+uniform float hatch_unbroken : hint_range(0.0, 1.0) = 0.6;
+/** How much of the hatching a lamp's light lifts where it is strongest. */
+uniform float hatch_lit : hint_range(0.0, 1.0) = 0.8;
+
+group_uniforms lamps;
+/** The lamps' colours (Palette.JEKYLL, Palette.HYDE). */
+uniform vec3 lamp_jekyll : source_color = vec3(0.290, 0.914, 0.976);
+uniform vec3 lamp_hyde : source_color = vec3(1.0, 0.310, 0.698);
+/** A lamp's strength where it is strongest, and how far it reaches, in page heights. */
+uniform float lamp_strength : hint_range(0.0, 1.0) = 0.28;
+uniform float lamp_reach : hint_range(0.1, 3.0) = 0.8;
+/** Who holds the table: 0 Jekyll, 1 Hyde (eased by arena_ink.gd). The other's lamp burns at
+ * `lamp_other` of its strength. */
+uniform float lamp_hold : hint_range(0.0, 1.0) = 1.0;
+uniform float lamp_other : hint_range(0.0, 1.0) = 0.5;
+/** How far Hyde's lamp, a hot light, washes out the dye it falls on before tinting it (times
+ * its strength there). */
+uniform float lamp_bleach : hint_range(0.0, 3.0) = 3.0;
 
 varying vec2 page_uv;
 
@@ -122,5 +155,33 @@ void fragment() {
 		rim = max(rim, deeper * (1.0 - smoothstep(deep_at, deep_at + rim_width, paint)) * 0.7);
 		col = mix(col, ink_deep * sheet, rim * rim_dark * mix(0.4, 1.0, vary));
 	}
+
+	// The lamps: soft washes that fade out from a point just off the page.
+	vec2 spot = page_uv * page_shape;
+	float near_j = 1.0 - smoothstep(0.0, 1.0, length(spot - vec2(-0.08, -0.12)) / lamp_reach);
+	float near_h = 1.0 - smoothstep(0.0, 1.0, length(spot - vec2(page_shape.x + 0.08, 0.45)) / lamp_reach);
+	float lamp_j = near_j * near_j * lamp_strength * mix(1.0, lamp_other, lamp_hold);
+	float lamp_h = near_h * near_h * lamp_strength * mix(lamp_other, 1.0, lamp_hold);
+
+	// The hatching: strokes along a slanted line, each row broken where a noise is low, and
+	// only in patches. A lamp's light lifts it.
+	vec2 px = page_uv * page_size;
+	vec2 dir = vec2(cos(hatch_angle), sin(hatch_angle));
+	float across = dot(px, vec2(-dir.y, dir.x)) + (texture(noise_a, spot * 1.2).r - 0.5) * hatch_spacing * 0.4;
+	float along = dot(px, dir);
+	float row = floor(across / hatch_spacing);
+	float off_line = abs(fract(across / hatch_spacing) - 0.5) * hatch_spacing;
+	float stroke = 1.0 - smoothstep(hatch_width * 0.5 - 0.5, hatch_width * 0.5 + 0.5, off_line);
+	float run = texture(noise_b, vec2(row * 0.173, along / (hatch_spacing * 30.0))).r;
+	stroke *= smoothstep(1.0 - hatch_unbroken - 0.08, 1.0 - hatch_unbroken + 0.08, run) * mix(0.55, 1.0, run);
+	float patch = texture(noise_a, spot * 0.9 + vec2(0.43, 0.71)).r;
+	stroke *= smoothstep(1.0 - hatch_cover - 0.1, 1.0 - hatch_cover + 0.1, patch);
+	float lit = clamp((lamp_j + lamp_h) / max(lamp_strength, 0.001), 0.0, 1.0);
+	col = mix(col, hatch_colour, stroke * hatch_strength * (1.0 - hatch_lit * lit));
+
+	float lit_grey = dot(col, vec3(0.299, 0.587, 0.114));
+	col = mix(col, vec3(lit_grey), clamp(lamp_h * lamp_bleach, 0.0, 1.0));
+	col = mix(col, lamp_jekyll, lamp_j);
+	col = mix(col, lamp_hyde, lamp_h);
 	COLOR = vec4(col, 1.0);
 }
