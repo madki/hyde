@@ -570,8 +570,8 @@ func _card(item: CanvasItem, edge: PackedVector2Array, colour: Color, shadow: Co
 
 
 ## Where the note of what the pointer is over lies: right of the draught's zone, left of the
-## salt's, and left of the instruments' grid at the top of the hovered emblem's row, raised
-## if need be so that its foot stays on the stage.
+## salt's, and left of the instruments' grid at the top of the hovered emblem's row: under
+## the ribbon, and raised if need be so that its foot stays on the stage.
 func _note_rect(lines: Array) -> Rect2:
 	var height := 14.0
 	for line: Array in lines:
@@ -586,6 +586,8 @@ func _note_rect(lines: Array) -> Rect2:
 		var top := zone.position.y
 		if _hover.begins_with("inst") and _part_exists(_hover):
 			top = _place_of(int(_hover.substr(4))).position.y
+		# No higher than the readout, so that it lies beside the ribbon's end and not over it.
+		top = maxf(top, ArenaLayout.readout(size).position.y)
 		top = minf(top, ArenaLayout.stage(size).end.y - height)
 		at = Vector2(zone.position.x - NOTE_GAP - NOTE_W, top)
 	at = at.clamp(Vector2.ZERO, (size - Vector2(NOTE_W, height)).max(Vector2.ZERO))
