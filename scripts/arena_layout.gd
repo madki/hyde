@@ -11,8 +11,6 @@ class_name ArenaLayout
 ## Every part asks here for its place, so a place is changed in this file alone. `--zones`
 ## on the arena's command line outlines and names every zone (ArenaZones).
 
-## The page the numbers below are written for.
-const PAGE := Vector2(1152.0, 648.0)
 ## The left and right margin every zone keeps, inside the border's rulings.
 const MARGIN := 48.0
 ## The widest the zones spread: in a wider window they lie as in a page this wide, centred.

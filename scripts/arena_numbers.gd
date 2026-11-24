@@ -2,8 +2,8 @@ class_name ArenaNumbers
 extends Control
 ## The round's numbers, drawn across the arena's page, each in its zone of ArenaLayout:
 ## everything a play changes about the round. Top left the night and the round, with the
-## night's title under them; top centre the round's score, large, over the target, with a
-## line under them that fills as the score nears the target; top right the sovereigns, one
+## night's title under them; top centre the round's score, large, then the target after a
+## stroke, with a line under them that fills as the score nears the target; top right the sovereigns, one
 ## coin and the count; in the left column the restraint gauge; in
 ## the centre the hand readout, one written line (a name, chips × mult, and the total once it
 ## is counted) with the stored restraint as ink drops at the line's end; at the foot the plays
@@ -71,7 +71,6 @@ const COIN_INSET := 11.0
 const DROPS_ROOM := 100.0
 const DROP_PITCH := 19.0
 
-const PENCIL := Color(0.015, 0.025, 0.035)
 ## The numbers are cream, the brightest thing on the board; a tick lights them in the colour
 ## of the man who scores, and they return to cream.
 const CREAM := Color(0.93, 0.87, 0.74)
@@ -569,7 +568,7 @@ func mult_place() -> Vector2:
 	return get_global_transform() * _mult_middle()
 
 
-## The sovereigns' pile, on the page.
+## The sovereigns' coin, on the page: the coins that are won fly here.
 func sov_place() -> Vector2:
 	return get_global_transform() * _pile_at()
 
@@ -805,7 +804,7 @@ func _draw_text() -> void:
 func _draw_sovereigns() -> void:
 	var c := _text
 	var at := _pile_at()
-	# The coin, in the gold of the old heap, with its dark edge and a ring stamped in it.
+	# The coin, in gold, with its dark edge and a ring stamped in it.
 	c.draw_circle(at, COIN_R + 1.2, COIN_EDGE)
 	c.draw_circle(at, COIN_R, GOLD)
 	c.draw_arc(at, COIN_R * 0.62, 0.0, TAU, 20, GOLD_DARK, 1.1)
