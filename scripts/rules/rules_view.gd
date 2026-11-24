@@ -1,6 +1,49 @@
 class_name RulesView
-## What a table shows before a move, so that no rule is worked out in the UI. Both queries
-## only read: they do not change the run and do not move its generator on.
+## What a table shows before a move, and what a dawn's place offers, so that no rule is
+## worked out in the UI. The queries only read: they do not change the run and do not move
+## its generator on.
+##
+## table() and preview() are for a round. place() is for the dawn between two nights:
+##
+## place(run) is null outside the "lab" and "alley" phases. Otherwise, in both places:
+##
+## - `where`: "lab" (Jekyll has the table) or "alley" (Hyde has it).
+## - `sov`: the purse.
+## - `night`: {no, title}: the night that begins on leaving (`no` counted from 1).
+## - `dawn`: {no, brings, brings_name, unlocks, unlocks_name, last}: what this dawn brought:
+##   the symbol and name of the Ink Root two copies of which joined, and the kind and
+##   (paper) name of the Factor that unlocked, each "" for none. `last`: no dawn follows it.
+## - `held`: the instruments held, in order, each {key, name, text}. Any of them can be
+##   dropped (Rules.drop_instrument). `slots`: how many can be held. `slots_free`.
+## - `salt`: {doses, price, ok, why}: the doses held, and the next one's price here.
+##
+## Every offer has `ok` and `why`: whether the rules' own function would accept it now, and
+## if not its refusal, a short sentence that can be shown as it is ("" when ok).
+##
+## In the laboratory only (the buying function in brackets):
+##
+## - `cards`: the shelf, each {index, key, t, name, text, price, sold, ok, why}
+##   [Rules.buy_card(run, index)]. `t` is "root" or "factor"; every card here is on paper.
+## - `instruments`: each {index, key, name, text, price, sold, ok, why}
+##   [Rules.buy_instrument(run, index)].
+## - `strike`: every card of the deck, in the deck's order, each {id, key, t, ink, name,
+##   text, price, ok, why} [Rules.strike(run, id)]. `key` is the symbol or the Factor's
+##   kind, `ink` is true for his Roots only.
+## - salt: Rules.buy_salt(run). Leaving: Rules.leave_lab(run).
+##
+## In the back alley only:
+##
+## - `habit`: his free Habit, once: one entry for each symbol with an Ink Root in the deck,
+##   each {sym, name, habit, adds, taken, ok, why} [Rules.alley_habit(run, sym)]. `name` is
+##   the Ink Root's, `habit` the gauge now, `adds` what taking it adds.
+## - `instruments`: his instruments on offer, free, one only, each {key, name, text, taken,
+##   ok, why} [Rules.alley_instrument(run, key)].
+## - `taken`: {habit, instrument}: the symbol and the key taken at this dawn, each "" for
+##   none. Once one is taken, the others of its kind are refused ("Already taken.").
+## - salt: Rules.alley_salt(run). Leaving: Rules.alley_leave(run).
+##
+## A text of a card is what a Factor does ("" for a Root), in the words of the man at the
+## table, and like an instrument's it has the run's numbers in it.
 
 
 ## Everything the table draws from. With `chosen` (ids of hand cards), `play` holds the
@@ -100,6 +143,101 @@ static func _night(run: RulesRun) -> Dictionary:
 			"ends": last_night,
 		},
 	}
+
+
+## What the dawn's place offers: see the top of this file. Null when the run is in neither
+## the laboratory nor the back alley.
+static func place(run: RulesRun) -> Variant:
+	var where: String = run.phase
+	if where != "lab" and where != "alley":
+		return null
+	var held: Array = []
+	for key: String in run.instruments:
+		held.append(_instrument(run, key))
+	var dawn: Dictionary = run.dawn if run.dawn != null else {}
+	var brings: String = dawn.brings if dawn.get("brings") != null else ""
+	var unlocks: String = dawn.unlocks if dawn.get("unlocks") != null else ""
+	var next: int = mini(run.night + 1, Rules.night_count() - 1)
+	var out := {
+		"where": where, "sov": run.sov,
+		"night": {"no": next + 1, "title": RulesConfig.NIGHTS[next].title},
+		"dawn": {
+			"no": dawn.get("no", run.night + 1),
+			"brings": brings, "brings_name": RulesConfig.ROOT[brings].ink if brings != "" else "",
+			"unlocks": unlocks, "unlocks_name": RulesConfig.FACTOR[unlocks].paper if unlocks != "" else "",
+			"last": dawn.get("last", next == Rules.night_count() - 1),
+		},
+		"held": held, "slots": RulesConfig.MAX_INSTRUMENTS,
+		"slots_free": maxi(0, RulesConfig.MAX_INSTRUMENTS - run.instruments.size()),
+		"salt": _offer({"doses": run.salt, "price": Rules.salt_cost(run, where)}, Rules.can_buy_salt(run, where)),
+	}
+	if where == "lab":
+		_lab(run, out)
+	else:
+		_alley(run, out)
+	return out
+
+
+static func _lab(run: RulesRun, out: Dictionary) -> void:
+	var cards: Array = []
+	var shelf: Array = run.shop.cards
+	for i in shelf.size():
+		var c := RulesCard.make(0, shelf[i].key, false)
+		cards.append(_offer({
+			"index": i, "key": c.key(), "t": c.t, "name": Rules.name_of(c, run.stance), "text": _card_text(run, c),
+			"price": int(shelf[i].price), "sold": shelf[i].sold,
+		}, Rules.can_buy_card(run, i)))
+	var instruments: Array = []
+	shelf = run.shop.instruments
+	for i in shelf.size():
+		var o := _instrument(run, shelf[i].key)
+		o.merge({"index": i, "price": int(shelf[i].price), "sold": shelf[i].sold})
+		instruments.append(_offer(o, Rules.can_buy_instrument(run, i)))
+	var strike: Array = []
+	for c: RulesCard in run.cards:
+		strike.append(_offer({
+			"id": c.id, "key": c.key(), "t": c.t, "ink": c.is_ink(), "name": Rules.name_of(c, run.stance),
+			"text": _card_text(run, c), "price": Rules.strike_price(c),
+		}, Rules.can_strike(run, c.id)))
+	out.cards = cards
+	out.instruments = instruments
+	out.strike = strike
+
+
+static func _alley(run: RulesRun, out: Dictionary) -> void:
+	var taken_habit: String = run.alley.habit if run.alley.get("habit") != null else ""
+	var taken_inst: String = run.alley.inst if run.alley.get("inst") != null else ""
+	var habit: Array = []
+	for sym in RulesConfig.ROOTS:
+		if Rules.count_roots(run, true, sym) == 0:
+			continue
+		habit.append(_offer({
+			"sym": sym, "name": RulesConfig.ROOT[sym].ink, "habit": run.habit[sym], "adds": run.dials.alley_habit,
+			"taken": sym == taken_habit,
+		}, Rules.can_alley_habit(run, sym)))
+	var instruments: Array = []
+	for key: String in run.alley.options:
+		var o := _instrument(run, key)
+		o.taken = key == taken_inst
+		instruments.append(_offer(o, Rules.can_alley_instrument(run, key)))
+	out.habit = habit
+	out.instruments = instruments
+	out.taken = {"habit": taken_habit, "instrument": taken_inst}
+
+
+static func _instrument(run: RulesRun, key: String) -> Dictionary:
+	return {"key": key, "name": RulesConfig.INSTRUMENTS[key].name, "text": RulesConfig.instrument_text(key, run.dials)}
+
+
+static func _card_text(run: RulesRun, c: RulesCard) -> String:
+	return RulesConfig.factor_text(c.kind, run.stance, run.dials) if c.is_factor() else ""
+
+
+# An offer with the rules' answer ({ok, why}) put in.
+static func _offer(o: Dictionary, can: Dictionary) -> Dictionary:
+	o.ok = can.ok
+	o.why = can.why
+	return o
 
 
 ## What playing these hand cards would do. {ok: false, reason} if the play is not allowed.
