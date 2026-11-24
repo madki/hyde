@@ -240,6 +240,7 @@ func _build() -> void:
 	add_child(t.reward)
 	t.bind()
 	t.shown.changed.connect(_follow_line)
+	t.move_begun.connect(_follow_line_until_end)
 
 
 # Gives every part that takes its place from the page's size that place.
@@ -328,11 +329,17 @@ func _follow_line_from(table: Dictionary) -> void:
 		ink_percent = line_share(int(table.line.paper), int(table.line.ink), ink_percent)
 
 
+# A move is about to be played back. If it ends the run, the ink stops following the line
+# for the rest of it: the ending has the page. A new run follows it again.
+func _follow_line_until_end(_move: String) -> void:
+	if _run.phase == "end" and _ink_tween:
+		_ink_tween.kill()
+
+
 # A shown value changed. When it is the line, as the ribbon shows it, the ink eases to its
-# share; at once when the move is being played back at once. Once the ink has flooded the
-# page at the run's end, it stays.
+# share; at once when the move is being played back at once. Not in the move that ends the run.
 func _follow_line(key: String, _value: Variant) -> void:
-	if not key.begins_with("line/") or Shot.has_arg("ink") or _ink.percent > LINE_SHARE_MAX + 0.5:
+	if not key.begins_with("line/") or Shot.has_arg("ink") or _run.phase == "end":
 		return
 	var share := line_share(int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)), ink_percent)
 	if _ink_tween:
