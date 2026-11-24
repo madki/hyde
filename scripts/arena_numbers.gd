@@ -67,6 +67,8 @@ const TRACK_INK := 0.35
 ## The sovereigns' coin: its radius, and where it stands in its zone.
 const COIN_R := 9.0
 const COIN_INSET := 11.0
+## How long the coin's one glint lasts when the count changes.
+const COIN_GLINT_TIME := 0.5
 ## Room kept for the stored drops at the end of the readout's line, and from one to the next.
 const DROPS_ROOM := 100.0
 const DROP_PITCH := 19.0
@@ -119,6 +121,7 @@ var _plays := 0.0
 var _discards := 0.0
 var _stored := 0.0
 var _sov := 0.0
+var _sov_glint := 0.0 ## 0 to 1 across the coin's glint, 0 at rest
 # The readout: a name or a reason, then chips × mult, or the total once they have landed.
 var _name := ""
 var _note := ""
@@ -332,9 +335,15 @@ func lean_stored(on: bool) -> void:
 	_redraw()
 
 
-## The sovereigns count to `to`.
+## The sovereigns count to `to`, and when that changes them the coin glints once (not with
+## flashes reduced).
 func count_sov(to: int) -> Tween:
-	return _count("_sov", to, COUNT_TIME)
+	var changes := to != roundi(_sov)
+	var t := _count("_sov", to, COUNT_TIME)
+	if changes and not ArenaPace.reduce_flashes:
+		t.parallel().tween_property(self, "_sov_glint", 1.0, COIN_GLINT_TIME).from(0.0)
+		t.tween_callback(func() -> void: _sov_glint = 0.0)
+	return t
 
 
 # --- A play's scoring --------------------------------------------------------------------
@@ -815,6 +824,15 @@ func _draw_sovereigns() -> void:
 	c.draw_circle(at, COIN_R + 1.2, Palette.OUTLINE)
 	c.draw_circle(at, COIN_R, Palette.GOLD)
 	c.draw_arc(at, COIN_R * 0.62, 0.0, TAU, 20, Color(Palette.OUTLINE, 0.5), 1.1)
+	# The glint: a small cross of light at the coin's upper left, up and gone again.
+	var glint := sin(_sov_glint * PI)
+	if glint > 0.01:
+		var g := at + Vector2(-COIN_R * 0.35, -COIN_R * 0.35)
+		var arm := COIN_R * 0.8 * glint
+		var light := Color(Palette.GOLD_HOT, glint)
+		c.draw_line(g + Vector2(0.0, -arm), g + Vector2(0.0, arm), light, 1.5, true)
+		c.draw_line(g + Vector2(-arm, 0.0), g + Vector2(arm, 0.0), light, 1.5, true)
+		c.draw_circle(g, 1.6 * glint, light)
 	c.draw_string(_heavy, Vector2(at.x + COIN_R + 8.0, at.y + NUMBER_SIZE * 0.36), str(roundi(_sov)),
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, Palette.GOLD)
 
