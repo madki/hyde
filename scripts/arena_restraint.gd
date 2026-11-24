@@ -70,6 +70,23 @@ var _threat := 0.0:
 		_ink_material.set_shader_parameter("threat", value)
 		set_process(value > 0.0)
 var _clock := 0.0
+## The lock of a play that adds no restraint: how present it is, and how far it has fallen.
+var _lock := 0.0:
+	set(value):
+		_lock = value
+		_text.queue_redraw()
+var _lock_fall := 0.0:
+	set(value):
+		_lock_fall = value
+		_text.queue_redraw()
+var _lock_move: Tween
+## The still mark of what the chosen play would do: "" for none, "step" (the next step is
+## outlined: it adds restraint), "breakout" (the outline is on the HYDE! end: he breaks out)
+## or "lock" (it adds none).
+var ghost := "":
+	set(value):
+		ghost = value
+		_text.queue_redraw()
 
 
 func _init() -> void:
@@ -127,8 +144,32 @@ func show_meter(new_meter: int, new_limit: int) -> void:
 	_change.tween_property(self, "_threat", _threat_of(), THREAT_TIME)
 
 
+## A small lock on the next step of the track: the play adds no restraint. With `on` it
+## lands there; without, it opens and falls away. Returns the tween doing it.
+func set_lock(on: bool) -> Tween:
+	if _lock_move:
+		_lock_move.kill()
+	_lock_move = create_tween()
+	if on:
+		_lock_fall = -1.0
+		_lock_move.tween_property(self, "_lock", 1.0, 0.12)
+		_lock_move.parallel().tween_property(self, "_lock_fall", 0.0, 0.2).set_ease(Tween.EASE_IN)
+	else:
+		_lock_move.tween_property(self, "_lock_fall", 1.0, 0.35).set_ease(Tween.EASE_IN)
+		_lock_move.parallel().tween_property(self, "_lock", 0.0, 0.35).set_ease(Tween.EASE_IN)
+	return _lock_move
+
+
+## The middle of the track's last step, the HYDE! end, on the page.
+func end_place() -> Vector2:
+	return get_global_transform() * _step(limit)
+
+
 ## Puts the ink where it belongs at once, without the change there.
 func snap() -> void:
+	if _lock_move:
+		_lock_move.kill()
+	_lock = 0.0
 	if _change:
 		_change.kill()
 	_level = float(meter)
@@ -213,4 +254,30 @@ func _draw_text() -> void:
 	var whose_x := maxf(_step(limit).x - width * 0.5 - 2.0, heading_end + 8.0)
 	_text.draw_set_transform(Vector2(whose_x, TRACK_Y - TRACK_HALF - TICK_LONG - 4.0), deg_to_rad(-9.0))
 	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, PENCIL)
+	_text.draw_set_transform(Vector2.ZERO, 0.0)
+	if _lock > 0.0:
+		_draw_lock(_lock, _lock_fall)
+	elif ghost == "lock":
+		_draw_lock(0.7, 0.0)
+	elif ghost == "step" or ghost == "breakout":
+		var at := _step(limit if ghost == "breakout" else mini(meter + 1, limit))
+		var heavy := ghost == "breakout"
+		_text.draw_arc(at, minf(BEAD, _pitch() * 0.5) + (2.0 if heavy else 0.0), 0.0, TAU, 32,
+				Color(0.42, 0.1, 0.4, 0.95) if heavy else Color(0.42, 0.13, 0.44, 0.75), 3.2 if heavy else 2.0)
+
+
+# The lock: on a cream tag over the next step. Landing, it drops onto the step; opened, its
+# shackle swings up and it falls away below the track.
+func _draw_lock(alpha: float, fall: float) -> void:
+	var _lock := alpha
+	var _lock_fall := fall
+	var at := _step(mini(meter + 1, limit)) + Vector2(0.0, 14.0 * _lock_fall if _lock_fall < 0.0 else 26.0 * _lock_fall)
+	var ink := Color(PENCIL, _lock)
+	_text.draw_circle(at, 13.0, Color(0.93, 0.88, 0.75, _lock * 0.95))
+	_text.draw_arc(at, 13.0, 0.0, TAU, 24, ink, 1.4)
+	_text.draw_rect(Rect2(at + Vector2(-6.0, -1.0), Vector2(12.0, 9.0)), ink)
+	# The shackle: shut while the lock holds, swung open as it falls.
+	var open := clampf(_lock_fall, 0.0, 1.0)
+	_text.draw_set_transform(at + Vector2(4.0, -1.0), -open * 1.1)
+	_text.draw_arc(Vector2(-4.0, 0.0), 4.0, PI, TAU, 10, ink, 2.0)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)

@@ -1,0 +1,316 @@
+class_name ArenaViews
+extends Control
+## Views on demand: what the table does not keep on the page, one step away.
+##
+## - Hold Tab: every number at once, for as long as it is held. The three symbols write
+##   their gauges in numbers, and a note in the centre gives each symbol's Roots and what
+##   one is worth, the restraint's limit and why, what the next drink costs, the scene's
+##   twist, what the dawn brings, and both men's hands with their base chips and mult.
+## - Rest the pointer on the night's heading: the scene's twist and what the dawn brings.
+##   On the restraint track: its limit and why.
+## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
+##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
+## - With the Notebook held, the next three cards of the draw pile lie face up beside it.
+## - On night 1 a small "Hint" control chooses the cards of the best hand the rules find.
+##   It shows no score.
+##
+## None of it shows the score of the chosen cards. It reads RulesView.table() and the run's
+## deck; it works out no rule.
+
+const CREAM := Color(0.95, 0.91, 0.8)
+const PENCIL := Color(0.08, 0.05, 0.04)
+const SMALL := 0.46
+
+var t: ArenaTable
+
+var _note := PanelContainer.new()
+var _words := Label.new()
+var _deck := Control.new()
+var _deck_title := Label.new()
+var _notebook := Control.new()
+var _hint := Button.new()
+var _table: Dictionary = {}
+var _open := true
+var _held := false
+var _hover := ""
+
+
+func _init() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	var font := FontVariation.new()
+	font.base_font = ThemeDB.fallback_font
+	font.variation_embolden = 0.5
+	var box := StyleBoxFlat.new()
+	box.bg_color = CREAM
+	box.border_color = PENCIL
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(3)
+	box.set_content_margin_all(12)
+	box.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+	box.shadow_size = 5
+	_note.add_theme_stylebox_override("panel", box)
+	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note.visible = false
+	_words.add_theme_font_override("font", font)
+	_words.add_theme_font_size_override("font_size", 13)
+	_words.add_theme_color_override("font_color", PENCIL)
+	_note.add_child(_words)
+	# The deck's page: it takes every click while it is open.
+	_deck.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_deck.mouse_filter = Control.MOUSE_FILTER_STOP
+	_deck.visible = false
+	_deck.gui_input.connect(func(event: InputEvent) -> void:
+		var button := event as InputEventMouseButton
+		if button and button.pressed:
+			_close_deck())
+	_deck_title.add_theme_font_override("font", font)
+	_deck_title.add_theme_font_size_override("font_size", 17)
+	_deck_title.add_theme_color_override("font_color", CREAM)
+	_deck_title.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
+	_deck_title.add_theme_constant_override("outline_size", 6)
+	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.text = "Hint"
+	_hint.size = Vector2(64.0, 28.0)
+	_hint.focus_mode = Control.FOCUS_NONE
+	_hint.tooltip_text = "Chooses the cards of a good hand."
+	_hint.add_theme_font_override("font", font)
+	_hint.add_theme_font_size_override("font_size", 13)
+	for state: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+		_hint.add_theme_color_override(state, PENCIL)
+	for state: String in ["normal", "hover", "pressed"]:
+		var tag := StyleBoxFlat.new()
+		tag.bg_color = Color(CREAM, 0.85 if state == "normal" else 1.0)
+		tag.border_color = PENCIL
+		tag.set_border_width_all(1)
+		tag.set_corner_radius_all(3)
+		_hint.add_theme_stylebox_override(state, tag)
+	_hint.visible = false
+	_hint.pressed.connect(_show_a_hand)
+	for child: Control in [_notebook, _hint, _note, _deck]:
+		add_child(child)
+
+
+## Ties the views to the table. Call once.
+func bind(table: ArenaTable) -> void:
+	t = table
+	t.synced.connect(_on_synced)
+	t.move_begun.connect(func(_move: String) -> void:
+		_open = false
+		_hint.visible = false
+		_clear(_notebook)
+		_close_deck())
+
+
+func _on_synced(table: Dictionary) -> void:
+	_table = table
+	_open = table.phase == "play"
+	_hint.visible = _open and int(table.night.no) == 1
+	_hint.position = Vector2((295.0 + size.x - 190.0) * 0.5 + 142.0, size.y - 83.0)
+	_show_notebook()
+
+
+func _process(_delta: float) -> void:
+	if t == null or _table.is_empty():
+		return
+	var held := Input.is_key_pressed(KEY_TAB) and not _deck.visible
+	var hover := ""
+	if not held and not _deck.visible:
+		var point := get_global_mouse_position()
+		var column := t.column.get_global_rect()
+		if Rect2(column.position, Vector2(column.size.x, 52.0)).has_point(point):
+			hover = "night"
+		elif t.column.restraint.get_global_rect().has_point(point):
+			hover = "restraint"
+	if held == _held and hover == _hover:
+		return
+	_held = held
+	_hover = hover
+	t.symbols.show_numbers(held)
+	if held:
+		_say(_every_number(), Vector2(310.0, 210.0))
+	elif hover == "night":
+		_say(_night_words(), Vector2(300.0, 60.0))
+	elif hover == "restraint":
+		_say(_restraint_words(), Vector2(300.0, 372.0))
+	else:
+		_note.visible = false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	var button := event as InputEventMouseButton
+	if _deck.visible:
+		if key and key.pressed and not key.echo:
+			get_viewport().set_input_as_handled()
+			_close_deck()
+		return
+	if key and key.keycode == KEY_TAB:
+		get_viewport().set_input_as_handled()
+	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
+		for which: String in ["draw", "discards"]:
+			if t.piles.pile(which).get_global_rect().has_point(get_global_mouse_position()):
+				get_viewport().set_input_as_handled()
+				_open_pile(which)
+				return
+
+
+func _say(words: String, at: Vector2) -> void:
+	_words.text = words
+	_note.size = Vector2.ZERO
+	_note.reset_size()
+	# Kept on the page, whatever its words' length.
+	_note.position = Vector2(minf(at.x, size.x - _note.size.x - 44.0), minf(at.y, size.y - _note.size.y - 44.0))
+	_note.visible = true
+
+
+# ---------- the words ----------
+
+func _night_words() -> String:
+	var night: Dictionary = _table.night
+	var dawn: Dictionary = night.dawn
+	var lines: Array[String] = ["Night %d: %s" % [night.no, night.title], "Its scene: %s" % night.twist_text]
+	if dawn.ends:
+		lines.append("This night's scene ends the run.")
+	else:
+		var brings := "Dawn brings no Roots of his."
+		if dawn.brings_name != "":
+			brings = "Dawn brings two %s%s." % [dawn.brings_name, " (his strongest Habit)" if dawn.by_habit else ""]
+		if dawn.unlocks_name != "":
+			brings += " %s can then be found." % dawn.unlocks_name
+		lines.append(brings)
+		lines.append("The dawn is spent in %s." % ("the back alley" if dawn.place == "alley" else "the laboratory"))
+	return "\n".join(lines)
+
+
+func _restraint_words() -> String:
+	var r: Dictionary = _table.restraint
+	var words := "Restraint holds %d this round" % r.limit
+	if _table.instruments.has("balance"):
+		words += ", with the Balance"
+	words += ". At the last step he breaks out."
+	if int(r.scene_limit) != int(r.limit):
+		words += "\nIn this night's scene it holds %d." % r.scene_limit
+	if int(r.stored) > 0:
+		words += "\n%d stored: +%d mult on his first hand." % [r.stored, int(r.stored) * t.run.dials.restraint_pay]
+	return words
+
+
+func _every_number() -> String:
+	var lines: Array[String] = []
+	for sym in RulesConfig.ROOTS:
+		var s: Dictionary = _table.symbols[sym]
+		var names: Dictionary = RulesConfig.ROOT[sym]
+		lines.append("%s: Craving %d, Habit %d, Temper %d.  %d %s at %d chips, %d %s at %d." % [
+			names.label, s.craving, s.habit, s.temper, s.paper, names.paper, s.paper_chips, s.ink, names.ink, s.ink_chips])
+	lines.append("")
+	lines.append(_restraint_words())
+	var draught: Dictionary = _table.draught
+	lines.append("The next drink: %s%s" % [
+		"his four Roots join the deck." if draught.cost == "first" else "a Paper Root is stained.",
+		"" if draught.ok else "  (%s)" % draught.why])
+	var salt: Dictionary = _table.salt
+	lines.append("Salt: %d doses.%s" % [salt.doses, "" if salt.ok else "  (%s)" % salt.why])
+	lines.append("")
+	lines.append(_night_words())
+	lines.append("")
+	for stance: String in ["jekyll", "hyde"]:
+		var hands: Array[String] = []
+		for key: String in RulesConfig.HANDS[stance]:
+			var hand: Dictionary = RulesConfig.HANDS[stance][key]
+			hands.append("%s %d×%d" % [hand.name, hand.chips, hand.mult])
+		lines.append("%s: %s." % ["Jekyll" if stance == "jekyll" else "Hyde", ", ".join(hands.slice(0, 3))])
+		lines.append("    %s." % ", ".join(hands.slice(3)))
+	return "\n".join(lines)
+
+
+# ---------- the deck ----------
+
+func _open_pile(which: String) -> void:
+	_clear(_deck)
+	var run := t.run
+	# Only the cards that lie in this pile, shuffled anew each time it is looked at: the
+	# pile's own order is never shown. The shuffle is the view's, not the run's.
+	var ids: Array = (run.discard if which == "discards" else run.draw).duplicate()
+	ids.shuffle()
+	var entries: Array = []
+	for id: int in ids:
+		entries.append(t.entry(id))
+	var shade := ColorRect.new()
+	shade.color = Color(0.03, 0.02, 0.05, 0.78)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_deck.add_child(shade)
+	# A few cards are shown nearly full size, many small.
+	var card_scale := 0.85 if entries.size() <= 8 else (0.62 if entries.size() <= 14 else SMALL)
+	var pitch := Vector2(ArenaCard.SIZE.x * card_scale + 8.0, ArenaCard.SIZE.y * card_scale + 10.0)
+	var a_row := maxi(1, int((size.x - 160.0) / pitch.x))
+	var rows := ceili(entries.size() / float(a_row))
+	var top := (size.y - rows * pitch.y) * 0.5 + 16.0
+	for i in entries.size():
+		var entry: Dictionary = entries[i]
+		var card := ArenaCard.new()
+		card.show_entry(entry, t.hyde())
+		card.scale = Vector2(card_scale, card_scale)
+		@warning_ignore("integer_division")
+		var in_row := mini(a_row, entries.size() - (i / a_row) * a_row)
+		@warning_ignore("integer_division")
+		var middle := Vector2((size.x - in_row * pitch.x) * 0.5 + (i % a_row + 0.5) * pitch.x, top + (i / a_row + 0.5) * pitch.y)
+		card.position = middle - card.pivot_offset
+		_deck.add_child(card)
+	var pile_name := "discards" if which == "discards" else "draw pile"
+	if entries.is_empty():
+		_deck_title.text = "The %s is empty. Click to close." % pile_name
+	else:
+		_deck_title.text = "The %s: %d card%s, in no order. Click to close." % [pile_name, entries.size(),
+				"" if entries.size() == 1 else "s"]
+	_deck_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_deck_title.position = Vector2(0.0, top - 44.0)
+	_deck_title.size = Vector2(size.x, 26.0)
+	_deck.add_child(_deck_title)
+	_deck.visible = true
+	_note.visible = false
+
+
+func _close_deck() -> void:
+	if not _deck.visible:
+		return
+	_deck.visible = false
+	if _deck_title.get_parent() == _deck:
+		_deck.remove_child(_deck_title)
+	_clear(_deck)
+
+
+# ---------- the Notebook ----------
+
+func _show_notebook() -> void:
+	_clear(_notebook)
+	var next: Variant = _table.notebook
+	if next == null or not _open:
+		return
+	var pile := t.piles.draw_pile.top_centre()
+	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-96.0, -8.0)
+	# The next card lies on top, at the right.
+	for i in range(next.size() - 1, -1, -1):
+		var card := ArenaTravel.make_card(t.card_data(next[i].id))
+		card.scale = Vector2(SMALL, SMALL)
+		card.rotation_degrees = -6.0 + 6.0 * (next.size() - 1 - i)
+		card.position = at + Vector2(22.0 * (next.size() - 1 - i), 0.0) - card.pivot_offset
+		_notebook.add_child(card)
+
+
+# ---------- the hint ----------
+
+func _show_a_hand() -> void:
+	if not _open:
+		return
+	var best: Dictionary = Rules.best(t.run)
+	t.hand.clear_chosen()
+	for id: int in best.get("ids", []):
+		t.hand.toggle(id)
+
+
+func _clear(holder: Control) -> void:
+	for child in holder.get_children():
+		if child != _deck_title:
+			child.queue_free()

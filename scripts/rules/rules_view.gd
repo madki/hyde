@@ -106,12 +106,21 @@ static func _night(run: RulesRun) -> Dictionary:
 ## Otherwise:
 ##
 ## - `ev`: the reading (RulesHands.evaluate): the hand's name, chips, mult and score with
-##   their parts, `spends_stored`, `cheque`, `draws`, `no_craving`.
+##   their parts and steps, `spends_stored`, `cheque`, `draws`, `no_craving`.
+## - `base`: {chips, mult}: the hand's own chips and mult (rules 4.1; the mult halved when
+##   hunted; 10 x 1 for a Passing Thought), without the cards' chips or any bonus.
+## - `at_risk`: on the round's last play only, else null: the ids of the Paper Roots that
+##   would stay in the hand, in the order a rescue would take them. `line_breaks_at`: the
+##   place in that list (from 0) of the first Root whose loss would put his Roots ahead of
+##   Jekyll's, counting his first arrival and a breakout on this play; -1 for none, or when
+##   there is no list. Neither depends on the score.
 ## - `restraint`: {adds, to, limit, breaks_out}. `to` is the meter if he does not break out.
 ## - `breakout`: null, or {first, added}: whether it is his first arrival (his first four
 ##   Roots join) and the symbols of the two Ink Roots that join besides.
 ## - `craving`: for each symbol the play adds to: {adds, to, copies, habit_to}.
 ## - `turns`: for each Ink Root turned, in order: {id, sym, gain, temper_to}.
+## - `best_root`: the id of the play's best Root (the active Root with the most chips, ties
+##   going Lamp, Heart, Mirror), or -1 for a play without an active Root.
 ## - `score_to`, `target`, `meets_target`, `last_play`.
 ## - `result`: "goes_on", "won", "rescued" or "lost" (a rescue that cannot cover the round).
 ## - `rescue`: null, or for a last play that falls short {k, ids, names, pool, factor, score,
@@ -125,6 +134,11 @@ static func _night(run: RulesRun) -> Dictionary:
 ## It is worked out by playing the cards on a copy of the run, so it cannot drift from the
 ## rules. Only what does not depend on chance is reported, and the copy is given another
 ## seed so that nothing of the real draws to come can show.
+##
+## A table that hides the score before a play does not draw `ev.score`, `score_to`,
+## `meets_target`, `result`, `rescue`, `pay`, `offers_card`, `stance_to` (when it follows
+## from a win or a rescue), `line`, `ends_run`, `ending` or `ended_by`. Everything else here
+## does not depend on the score.
 static func preview(run: RulesRun, ids: Array) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "reason": "Not now."}
@@ -160,10 +174,18 @@ static func preview(run: RulesRun, ids: Array) -> Dictionary:
 			"k": info.k, "ids": info.ids, "names": info.names, "pool": info.pool, "factor": info.factor,
 			"score": sim.score, "ok": last.how == "rescued",
 		}
+	var active: Array = []
+	for id: int in ids:
+		var c := Rules.card(run, id)
+		if c.is_root() and c.ink == (run.stance == "hyde"):
+			active.append(c)
 	var li := Rules.line_info(sim)
 	var score_to: int = run.score + int(ev.score)
+	var risk := _at_risk(run, ids) if run.plays == 1 else {"ids": null, "breaks_at": -1}
 	return {
 		"ok": true, "reason": "", "ev": ev,
+		"base": {"chips": ev.steps[0].chips, "mult": ev.steps[0].mult},
+		"at_risk": risk.ids, "line_breaks_at": risk.breaks_at,
 		"restraint": {
 			"adds": adds, "to": run.restraint + (1 if adds else 0), "limit": Rules.limit(run),
 			"breaks_out": breakout != null,
@@ -171,6 +193,7 @@ static func preview(run: RulesRun, ids: Array) -> Dictionary:
 		"breakout": breakout,
 		"craving": craving,
 		"turns": turns,
+		"best_root": -1 if active.is_empty() else RulesHands.best_root(run, active).id,
 		"score_to": score_to, "target": Rules.target(run), "meets_target": score_to >= Rules.target(run),
 		"last_play": run.plays == 1,
 		"result": result,
@@ -181,3 +204,25 @@ static func preview(run: RulesRun, ids: Array) -> Dictionary:
 		"line": {"ink": li.ink, "paper": li.paper, "over": li.over},
 		"ends_run": sim.phase == "end", "ending": sim.ending, "ended_by": sim.ended_by,
 	}
+
+
+# The Roots at risk on a last play, and where the line would break, as {ids, breaks_at}.
+# The play is made on a copy that can neither win nor fall short, so what it shows is the
+# table after the play and any breakout, before a rescue, whatever the score.
+static func _at_risk(run: RulesRun, ids: Array) -> Dictionary:
+	var sim := run.copy()
+	sim.seed = 0
+	sim.plays = 2
+	sim.score = -(1 << 40)
+	var held: Array = run.hand.filter(func(id: int) -> bool: return not ids.has(id))
+	Rules.play(sim, ids)
+	var pool: Array = Rules.rescue_pool(sim, held).map(func(c: RulesCard) -> int: return c.id)
+	var li := Rules.line_info(sim)
+	var ink: int = int(li.ink) + (0 if sim.hyde_arrived else RulesConfig.FIRST_ARRIVAL.size())
+	var paper: int = li.paper
+	var breaks_at := -1
+	for i in pool.size():
+		if ink + i + 1 > paper - i - 1:
+			breaks_at = i
+			break
+	return {"ids": pool, "breaks_at": breaks_at}

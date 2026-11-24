@@ -48,6 +48,37 @@ static func same(a: Variant, b: Variant) -> bool:
 	return a == b
 
 
+# ---------- readings ----------
+
+## Checks what every reading's steps must hold: they add up to the reading, each running
+## total follows from the one before, and every card of the play has exactly one root or
+## factor step.
+func check_steps(e: Dictionary, played: Array, label: String) -> void:
+	var steps: Array = e.steps
+	if steps.is_empty():
+		_fail(label + ": no steps")
+		checks += 1
+		return
+	var chips := 0
+	var mult := 0
+	var follows := true
+	for s: Dictionary in steps:
+		chips += int(s.chips)
+		mult += int(s.mult)
+		follows = follows and int(s.chips_to) == chips and int(s.mult_to) == mult
+	ok(follows, label + ": each step's totals follow from the one before")
+	eq([steps[-1].chips_to, steps[-1].mult_to, chips, mult], [e.chips, e.mult, e.chips, e.mult], label + ": the steps end on the reading's chips and mult")
+	eq(steps[0].kind, "base", label + ": the base comes first")
+	var seen := {}
+	for s: Dictionary in steps:
+		if s.kind == "root" or s.kind == "factor":
+			seen[s.id] = int(seen.get(s.id, 0)) + 1
+	var once := {}
+	for id: int in played:
+		once[id] = 1
+	eq(seen, once, label + ": each card has one root or factor step")
+
+
 # ---------- cards and runs ----------
 
 ## A card that is in no deck, for evaluate only. "P:lamp" is a Paper Root, "I:lamp" an Ink

@@ -10,6 +10,22 @@ const SCENES: Array[String] = [
 ]
 
 
+## The screen that shows how a run ended, and the ending it is to show: "hyde", "double" or
+## "myself" (the rules' names).
+const ENDING_SCENE := "res://scenes/ending.tscn"
+var ending := ""
+
+
+## Hands a run's end over to the ending screen. False if there is no such screen yet: the
+## caller then shows the ending itself.
+func show_ending(ending_key: String) -> bool:
+	ending = ending_key
+	if not ResourceLoader.exists(ENDING_SCENE):
+		return false
+	get_tree().change_scene_to_file(ENDING_SCENE)
+	return true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if not key or key.echo or not key.pressed:
