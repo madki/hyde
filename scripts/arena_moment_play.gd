@@ -214,8 +214,8 @@ static func _draw_with_eyes(t: ArenaTable, ids: Array, eyes: Array) -> void:
 			var card := t.piles.take("draw", t.card_data(id))
 			var to: Dictionary = t.hand.take_in(card, t.entry(id), t.hyde())
 			if mark:
-				mark.fly_to(t.beats, to.centre + Vector2(0.0, -ArenaCard.SIZE.y * 0.5 - 6.0), ArenaPace.TRAVEL)
-			await t.travel.fly(card, to.centre, to.turn, 1.0, ArenaTravel.UP)
+				mark.fly_to(t.beats, to.centre + Vector2(0.0, -ArenaCard.SIZE.y * to.size * 0.5 - 6.0), ArenaPace.TRAVEL)
+			await t.travel.fly(card, to.centre, to.turn, to.size, ArenaTravel.UP)
 			t.hand.settle(card)
 			await t.beats.wait(ArenaPace.MARK)
 			if mark:

@@ -69,8 +69,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("7")
-table_left = 295.0
-room_under = 100.0
 
 [node name="Controls" type="Control" parent="."]
 layout_mode = 1

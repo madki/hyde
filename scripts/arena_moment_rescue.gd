@@ -60,7 +60,7 @@ static func _takes(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 		var at := t.hand.rest_of(e.id)
 		if card:
 			card.set_meta("away", true)
-		return {"centre": at.centre + Vector2(0.0, -ArenaHand.RISE), "turn": at.turn}
+		return {"centre": at.centre + Vector2(0.0, -ArenaHand.RISE), "turn": at.turn, "size": at.size}
 	t.moments.change_side(before, after, "hand", ArenaCaptions.changes("convert", before.name, after.name),
 			card, Vector2.ZERO, 0.0, rest)
 	t.beats.add_call(func() -> void:

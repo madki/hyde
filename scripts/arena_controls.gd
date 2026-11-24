@@ -1,8 +1,11 @@
 class_name ArenaControls
 extends Control
-## The two controls under the hand: Play and Discard. Pass takes Play's place when the play
-## can be passed. Each is on when the rules allow it, and says why not when the pointer rests
-## on it. They work out no rule: `show_table` takes RulesView.table() with the chosen cards.
+## The two controls at the foot of the page, each a written word: PLAY beside the draw pile
+## and DISCARD beside the discards (ArenaLayout.controls_play and controls_discard). A word
+## takes clicks over its whole zone, the tally under it included; the tallies themselves are
+## ArenaColumn's. PASS takes PLAY's place when the play can be passed. Each is on when the
+## rules allow it, and says why not when the pointer rests on it. They work out no rule:
+## `show_table` takes RulesView.table() with the chosen cards.
 ##
 ## While a move is played back they lie low (`lower`), and rise when input opens (`rise`).
 
@@ -10,23 +13,20 @@ signal play_pressed
 signal discard_pressed
 signal pass_pressed
 
-const BUTTON_SIZE := Vector2(118.0, 34.0)
-const GAP := 18.0
+## The room kept under a word for its tally, in pixels.
+const TALLY_ROOM := 30.0
 ## How far the controls drop while they lie low, and the time they take to rise.
 const DROP := 14.0
 const RISE_TIME := 0.2
 const CREAM := Color(0.93, 0.88, 0.75)
-const CREAM_LIT := Color(0.99, 0.95, 0.84)
-const PENCIL := Color(0.08, 0.05, 0.04)
-
-## The table's span, as in ArenaHand, and how far above the page's foot the controls lie.
-@export var table_left := 295.0
-@export var room_right := 190.0
-@export var from_foot := 86.0
+const CREAM_LIT := Color(1.0, 0.97, 0.88)
+const WARNING := Color(1.0, 0.72, 0.35)
+const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
 
 var _row := Control.new()
 var _play := Button.new()
 var _discard := Button.new()
+var _warning := Label.new()
 var _passing := false
 var _up := true
 var _move: Tween
@@ -39,23 +39,35 @@ func _init() -> void:
 	var font := FontVariation.new()
 	font.base_font = ThemeDB.fallback_font
 	font.variation_embolden = 0.9
-	font.spacing_glyph = 1
+	font.spacing_glyph = 2
+	# The word stands in the upper part of its zone: the tally lies under it.
+	var box := StyleBoxEmpty.new()
+	box.content_margin_bottom = TALLY_ROOM
 	for button: Button in [_play, _discard]:
-		button.size = BUTTON_SIZE
 		button.focus_mode = Control.FOCUS_NONE
 		button.add_theme_font_override("font", font)
-		button.add_theme_font_size_override("font_size", 15)
-		for state: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-			button.add_theme_color_override(state, PENCIL)
-		button.add_theme_color_override("font_disabled_color", Color(PENCIL, 0.45))
-		button.add_theme_stylebox_override("normal", _box(CREAM, 1.0))
-		button.add_theme_stylebox_override("hover", _box(CREAM_LIT, 1.0))
-		button.add_theme_stylebox_override("pressed", _box(CREAM_LIT, 1.0))
-		button.add_theme_stylebox_override("disabled", _box(CREAM, 0.4))
+		button.add_theme_font_size_override("font_size", 20)
+		button.add_theme_color_override("font_color", CREAM)
+		button.add_theme_color_override("font_focus_color", CREAM)
+		button.add_theme_color_override("font_hover_color", CREAM_LIT)
+		button.add_theme_color_override("font_pressed_color", CREAM_LIT)
+		button.add_theme_color_override("font_disabled_color", Color(CREAM, 0.4))
+		button.add_theme_color_override("font_outline_color", OUTLINE)
+		button.add_theme_constant_override("outline_size", 6)
+		for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+			button.add_theme_stylebox_override(state, box)
 		_row.add_child(button)
-	_play.text = "Play"
-	_discard.text = "Discard"
-	_discard.position.x = BUTTON_SIZE.x + GAP
+	_play.text = "PLAY"
+	_discard.text = "DISCARD"
+	_warning.text = "he breaks out"
+	_warning.visible = false
+	_warning.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_warning.add_theme_font_size_override("font_size", 13)
+	_warning.add_theme_color_override("font_color", WARNING)
+	_warning.add_theme_color_override("font_outline_color", OUTLINE)
+	_warning.add_theme_constant_override("outline_size", 5)
+	_row.add_child(_warning)
 	_play.pressed.connect(func() -> void:
 		if _passing:
 			pass_pressed.emit()
@@ -76,7 +88,7 @@ func show_table(table: Dictionary, chosen: int) -> void:
 	_passing = false
 	warn_breakout(false)
 	_passing = playing and table.can_pass.ok
-	_play.text = "Pass" if _passing else "Play"
+	_play.text = "PASS" if _passing else "PLAY"
 	if _passing:
 		_play.disabled = false
 		_play.tooltip_text = "Nothing can be played and no discard is left: the play is passed."
@@ -103,15 +115,10 @@ func show_table(table: Dictionary, chosen: int) -> void:
 	_discard.tooltip_text = why_not
 
 
-## Writes the warning of a play that would make him break out on the Play control, or takes
+## Writes the warning of a play that would make him break out over the word PLAY, or takes
 ## it off. `show_table` takes it off too.
 func warn_breakout(on: bool) -> void:
-	if _passing:
-		return
-	_play.text = "Play: he breaks out" if on else "Play"
-	_play.size.x = BUTTON_SIZE.x + (74.0 if on else 0.0)
-	_discard.position.x = _play.size.x + GAP
-	_row.position.x = _rest().x - (37.0 if on else 0.0)
+	_warning.visible = on and not _passing
 
 
 ## True if Play (or Pass) can be pressed now.
@@ -143,7 +150,7 @@ func _set_up(up: bool, animate: bool) -> void:
 	_up = up
 	if _move:
 		_move.kill()
-	var to := _rest() + (Vector2.ZERO if up else Vector2(0.0, DROP))
+	var to := Vector2.ZERO if up else Vector2(0.0, DROP)
 	var alpha := 1.0 if up else 0.0
 	_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for button: Button in [_play, _discard]:
@@ -157,22 +164,12 @@ func _set_up(up: bool, animate: bool) -> void:
 	_move.tween_property(_row, "modulate:a", alpha, RISE_TIME)
 
 
-func _rest() -> Vector2:
-	var middle := (table_left + size.x - room_right) * 0.5
-	return Vector2(middle - (BUTTON_SIZE.x * 2.0 + GAP) * 0.5, size.y - from_foot)
-
-
 func _lay_out() -> void:
-	_row.position = _rest() + (Vector2.ZERO if _up else Vector2(0.0, DROP))
-
-
-static func _box(colour: Color, alpha: float) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(colour, alpha)
-	box.border_color = Color(PENCIL, alpha)
-	box.set_border_width_all(2)
-	box.set_corner_radius_all(3)
-	box.shadow_color = Color(0.0, 0.0, 0.0, 0.28 * alpha)
-	box.shadow_size = 3
-	box.shadow_offset = Vector2(1.0, 2.0)
-	return box
+	var play := ArenaLayout.controls_play(size)
+	var discard := ArenaLayout.controls_discard(size)
+	_play.position = play.position
+	_play.size = play.size
+	_discard.position = discard.position
+	_discard.size = discard.size
+	_warning.position = play.position + Vector2(-20.0, -20.0)
+	_warning.size = Vector2(play.size.x + 40.0, 18.0)

@@ -93,39 +93,42 @@ func bring_to_hand(man: String, cards: Array, pile: String, to_hand: Callable,
 
 
 ## 6.3. The Root `before` becomes `after`, its twin. `where` is "hand", "draw" or "discards".
-## In the hand give its node as `card` and the place it goes back to (`rest_centre`, `rest_turn`);
+## In the hand give its node as `card` and the place it goes back to (`rest_centre`, `rest_turn`,
+## at the size it has now);
 ## it is lifted off the hand onto the travel layer and left there: the hand takes it back when
 ## `side_changed` is sent. In a pile it is drawn out face up and put back. When the hand may
 ## change before these beats play (cards leave it first), give `rest` instead: it is called
-## as the card lifts and returns {centre, turn}, the place as it then is.
+## as the card lifts and returns {centre, turn, size}, the place as it then is.
 func change_side(before: Dictionary, after: Dictionary, where: String, caption: String,
 		card: ArenaCard = null, rest_centre: Vector2 = Vector2.ZERO, rest_turn: float = 0.0,
 		rest: Callable = Callable()) -> void:
 	var held := [card]
-	var place := [rest_centre, rest_turn]
+	var place := [rest_centre, rest_turn, 1.0]
 	var time := ArenaPace.CHANGE_SIDE
 	beats.add(func() -> void:
 		stage.show_caption(caption)
 		var lifted: Vector2
 		if where == "hand":
+			place[2] = held[0].scale.y
 			if rest.is_valid():
 				var now: Dictionary = rest.call()
 				place[0] = now.centre
 				place[1] = now.turn
+				place[2] = now.get("size", place[2])
 			lifted = place[0] + Vector2(0.0, -34.0)
 		else:
 			# Drawn out of the pile, face up, to the centre of the table.
 			held[0] = piles.take(where, before)
 			lifted = stage.slot(0, 1)
 		# It lifts: a fifth of the change. Drawn out of a pile, it travels at a card's pace.
-		await travel.fly(held[0], lifted, 0.0, 1.12, ArenaTravel.UP,
+		await travel.fly(held[0], lifted, 0.0, 1.12 * float(place[2]), ArenaTravel.UP,
 				time * 0.19 if where == "hand" else ArenaPace.TRAVEL))
 	beats.add(func() -> void:
 		await _crack(held[0], after, time * 0.62))
 	beats.add(func() -> void:
 		# It settles back: the rest of the change.
 		if where == "hand":
-			await travel.fly(held[0], place[0], place[1], 1.0, ArenaTravel.KEEP, time * 0.19)
+			await travel.fly(held[0], place[0], place[1], place[2], ArenaTravel.KEEP, time * 0.19)
 		else:
 			await piles.put(where, [held[0]], where == "draw"))
 	beats.add(func() -> void:

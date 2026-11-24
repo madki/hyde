@@ -43,7 +43,7 @@ static func draw(t: ArenaTable, ids: Array) -> void:
 		for i in ids.size():
 			var card := t.piles.take("draw", t.card_data(ids[i]))
 			var to: Dictionary = t.hand.take_in(card, t.entry(ids[i]), t.hyde())
-			last = t.travel.fly(card, to.centre, to.turn, 1.0, ArenaTravel.UP)
+			last = t.travel.fly(card, to.centre, to.turn, to.size, ArenaTravel.UP)
 			last.connect(t.hand.settle.bind(card), CONNECT_ONE_SHOT)
 			if i < ids.size() - 1:
 				await t.beats.wait(ArenaPace.TRAVEL_GAP)

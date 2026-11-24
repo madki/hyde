@@ -162,9 +162,7 @@ func _show_hand(ids: Array, chosen: Array) -> void:
 	_hand = ArenaHand.new()
 	_hand.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hand.room_right = 40.0
-	_hand.table_left = 40.0
-	_hand.room_under = 200.0
+	_hand.place = Rect2(40.0, 250.0, size.x - 80.0, 210.0)
 	_hand.is_jekyll = _run.stance == "jekyll"
 	_hand.max_chosen = _run.dials.max_play
 	_stage.add_child(_hand)

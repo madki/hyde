@@ -18,6 +18,10 @@ extends Control
 ## written `set_tag` in the foot ("turns +2", "he takes", "best"). A chosen card is lifted by
 ## the hand that holds it. `change_face` changes the card where it lies, and `appear` and
 ## `leave` bring it in and take it away.
+##
+## In the hand a card is partly covered by the next and its foot may be off the page: `strip`
+## and `foot_strip` write the title and the tag in the part that shows, and `chips_above` writes the chips on
+## a disc under the title instead of in the foot.
 
 const SIZE := Vector2(96.0, 140.0)
 ## The card is printed coarsely, in square texels this many pixels wide: 0 prints it smooth.
@@ -32,6 +36,8 @@ const TITLE_BOTTOM := 28.0
 const FOOT_TOP := 115.0
 ## Width of the box the chips are written in.
 const CHIPS_WIDTH := 20.0
+## Radius of the disc the chips are written on while they stand under the title.
+const DISC := 10.0
 ## Height of a Factor's picture: what it does is written in the rest of the picture's box.
 const FACTOR_PICTURE := 38.0
 ## How dark a card that cannot be played now is printed.
@@ -84,18 +90,43 @@ var dimmed := false:
 		modulate = Color(DIM if dimmed else Color.WHITE, modulate.a)
 ## Picked for the next play or discard. The hand that holds the card lifts it.
 var chosen := false
+## How much of the card's width shows, from its left edge, while another card lies over the
+## rest: the title is then written in that much. 0 for a card that shows whole.
+var strip := 0.0:
+	set(value):
+		if not is_equal_approx(value, strip):
+			strip = value
+			_refresh_title()
+## The same for the card's foot, where the tag is written: a card that has risen shows more
+## of its title than of its foot.
+var foot_strip := 0.0:
+	set(value):
+		if not is_equal_approx(value, foot_strip):
+			foot_strip = value
+			_refresh_tag()
+## The chips are written on a disc under the title, at the left, and the foot is left to the
+## tag: for a card whose foot may be off the page.
+var chips_above := false:
+	set(value):
+		if value != chips_above:
+			chips_above = value
+			_refresh()
 
 var _body := Control.new()
 var _picture := Control.new()
 var _lines := Control.new()
 var _title := Label.new()
 var _chips := Label.new()
+var _disc := Control.new()
 var _text := Label.new()
 var _tag := Label.new()
 var _tag_warns := false
 var _upright := FontVariation.new()
 var _slanted := FontVariation.new()
 var _plain := FontVariation.new()
+## The two title faces drawn narrower, for a title written in a strip.
+var _upright_narrow := FontVariation.new()
+var _slanted_narrow := FontVariation.new()
 var _change: Tween
 var _built := false
 
@@ -114,6 +145,12 @@ func _init() -> void:
 	_slanted.base_font = ThemeDB.fallback_font
 	_slanted.variation_embolden = 0.3
 	_slanted.variation_transform = Transform2D(Vector2(1.0, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
+	_upright_narrow.base_font = ThemeDB.fallback_font
+	_upright_narrow.variation_embolden = 0.8
+	_upright_narrow.variation_transform = Transform2D(Vector2(0.68, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	_slanted_narrow.base_font = ThemeDB.fallback_font
+	_slanted_narrow.variation_embolden = 0.3
+	_slanted_narrow.variation_transform = Transform2D(Vector2(0.76, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
 	_plain.base_font = ThemeDB.fallback_font
 	_plain.variation_embolden = 0.4
 	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
@@ -129,10 +166,9 @@ func _init() -> void:
 	_picture.size = Vector2(SIZE.x - (inner + 6.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - 12.0)
 	_title.position = Vector2(inner, inner)
 	_title.size = Vector2(SIZE.x - inner * 2.0, TITLE_BOTTOM - inner)
-	_chips.position = Vector2(inner, FOOT_TOP)
-	_chips.size = Vector2(CHIPS_WIDTH, SIZE.y - inner - FOOT_TOP)
-	_tag.position = Vector2(inner + CHIPS_WIDTH + 3.0, FOOT_TOP)
-	_tag.size = Vector2(SIZE.x - inner * 2.0 - CHIPS_WIDTH - 3.0, SIZE.y - inner - FOOT_TOP)
+	_disc.position = Vector2(inner + 0.5, TITLE_BOTTOM + 2.0)
+	_disc.size = Vector2(DISC, DISC) * 2.0
+	_disc.draw.connect(_draw_disc)
 	_text.position = Vector2(inner + 2.0, TITLE_BOTTOM + FACTOR_PICTURE + 6.0)
 	_text.size = Vector2(SIZE.x - (inner + 2.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - FACTOR_PICTURE - 8.0)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -142,7 +178,7 @@ func _init() -> void:
 		label.clip_text = true
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	for child: Control in [_body, _picture, _lines, _title, _chips, _tag, _text]:
+	for child: Control in [_body, _picture, _lines, _disc, _title, _chips, _tag, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	_built = true
@@ -236,19 +272,25 @@ func _refresh() -> void:
 
 	for part: Control in [_title, _chips, _tag, _text, _picture]:
 		part.visible = not face_down
+	_disc.visible = chips_above and not face_down
+	_disc.queue_redraw()
 	_text.visible = not face_down and text != ""
 
 	var colour := INK_TEXT if ink else PAPER_TEXT
-	var font: Font = _slanted if ink else _upright
-	_title.text = title if ink else title.to_upper()
-	_title.add_theme_font_override("font", font)
-	_title.add_theme_color_override("font_color", colour)
-	_fit(_title, font, 14 if ink else 13, 5.0)
+	_refresh_title()
 
+	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
+	if chips_above:
+		_chips.position = _disc.position
+		_chips.size = _disc.size
+	else:
+		_chips.position = Vector2(inner, FOOT_TOP)
+		_chips.size = Vector2(CHIPS_WIDTH, SIZE.y - inner - FOOT_TOP)
 	_chips.text = str(chips)
 	_chips.add_theme_font_override("font", _upright)
-	_chips.add_theme_color_override("font_color", colour)
-	_fit(_chips, _upright, 14, 2.0)
+	# On the disc the chips are written in the card's own colour, the disc being the line's.
+	_chips.add_theme_color_override("font_color", _disc_text() if chips_above else colour)
+	_fit(_chips, _upright, 12 if chips_above else 14, 4.0 if chips_above else 2.0)
 
 	_text.text = text
 	_text.add_theme_font_override("font", _plain)
@@ -268,7 +310,37 @@ func _refresh() -> void:
 	_body.queue_redraw()
 
 
+## The title, in its whole box or in as much of it as `strip` leaves showing.
+func _refresh_title() -> void:
+	if not _built:
+		return
+	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
+	var whole := SIZE.x - inner * 2.0
+	var squeezed := strip > 0.0 and strip - inner < whole
+	var font: Font = _slanted if ink else _upright
+	if squeezed:
+		font = _slanted_narrow if ink else _upright_narrow
+	_title.size.x = maxf(16.0, strip - inner) if squeezed else whole
+	_title.text = title if ink else title.to_upper()
+	_title.add_theme_font_override("font", font)
+	_title.add_theme_color_override("font_color", INK_TEXT if ink else PAPER_TEXT)
+	var fits := _fit(_title, font, 14 if ink else 13, 2.0 if squeezed else 5.0, 6 if squeezed else 7)
+	# A title too long for its strip is cut at its end, not at both ends.
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if fits else HORIZONTAL_ALIGNMENT_LEFT
+
+
+## The tag, in the foot: beside the chips' box, or in the whole foot when the chips stand
+## above, and in as much of it as `foot_strip` leaves showing.
 func _refresh_tag() -> void:
+	if not _built:
+		return
+	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
+	var left := inner if chips_above else inner + CHIPS_WIDTH + 3.0
+	var whole := SIZE.x - inner - left
+	_tag.position = Vector2(left, FOOT_TOP)
+	_tag.size = Vector2(whole, SIZE.y - inner - FOOT_TOP)
+	if foot_strip > 0.0 and foot_strip - left < whole and foot_strip - left >= 28.0:
+		_tag.size.x = foot_strip - left
 	var colour := INK_TEXT if ink else PAPER_TEXT
 	if _tag_warns:
 		colour = INK_WARNING if ink else PAPER_WARNING
@@ -277,14 +349,26 @@ func _refresh_tag() -> void:
 	_fit(_tag, _plain, 11, 2.0)
 
 
-## Gives a label the largest font size, from `largest` down to 7, at which its text fits its
-## box with `room` pixels to spare.
-func _fit(label: Label, font: Font, largest: int, room: float) -> void:
+## Gives a label the largest font size, from `largest` down to `smallest`, at which its text
+## fits its box with `room` pixels to spare. False if it does not fit even at the smallest.
+func _fit(label: Label, font: Font, largest: int, room: float, smallest: int = 7) -> bool:
 	var font_size := largest
-	while font_size > 7 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0,
-			font_size).x > label.size.x - room:
+	while font_size > smallest and _width(label.text, font, font_size) > label.size.x - room:
 		font_size -= 1
 	label.add_theme_font_size_override("font_size", font_size)
+	return _width(label.text, font, font_size) <= label.size.x - room
+
+
+static func _width(words: String, font: Font, font_size: int) -> float:
+	return font.get_string_size(words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
+
+
+func _disc_text() -> Color:
+	return Color(0.2, 0.12, 0.2) if ink else Color(0.95, 0.9, 0.78)
+
+
+func _draw_disc() -> void:
+	_disc.draw_circle(_disc.size * 0.5, DISC, INK_TEXT if ink else PAPER_LINE)
 
 
 func _draw_body() -> void:
@@ -308,10 +392,12 @@ func _draw_lines() -> void:
 		return
 	_rule(pencil, Vector2(rect.position.x, TITLE_BOTTOM), Vector2(rect.end.x, TITLE_BOTTOM), 1.9)
 	_rule(pencil, Vector2(rect.position.x, FOOT_TOP), Vector2(rect.end.x, FOOT_TOP), 1.7)
-	_rule(pencil, Vector2(rect.position.x + CHIPS_WIDTH + 2.0, FOOT_TOP),
-			Vector2(rect.position.x + CHIPS_WIDTH + 2.0, rect.end.y), 1.5)
 	_hatch(pencil, Vector2(rect.end.x - 1.5, FOOT_TOP - 1.0), Vector2(-1.0, -1.0), 22.0)
-	_hatch(pencil, Vector2(rect.position.x + 1.5, TITLE_BOTTOM + 1.0), Vector2(1.0, 1.0), 12.0)
+	# With the chips on their disc the foot has no box for them, and the disc has the corner.
+	if not chips_above:
+		_rule(pencil, Vector2(rect.position.x + CHIPS_WIDTH + 2.0, FOOT_TOP),
+				Vector2(rect.position.x + CHIPS_WIDTH + 2.0, rect.end.y), 1.5)
+		_hatch(pencil, Vector2(rect.position.x + 1.5, TITLE_BOTTOM + 1.0), Vector2(1.0, 1.0), 12.0)
 	pencil.draw(_lines)
 
 

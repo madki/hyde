@@ -5,7 +5,7 @@ extends Control
 ## over on the way when asked.
 ##
 ## A place is given by the card's centre in the page's coordinates, how far it is turned (in
-## degrees) and its size (1 is a card in the hand). Every move plays through the beat queue
+## degrees) and its size (1 is a card at its own size). Every move plays through the beat queue
 ## (`beats`), so it is hurried with the rest. A move returns the Signal of its end: `await` it,
 ## or start several and await the last.
 

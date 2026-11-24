@@ -102,10 +102,11 @@ static func salt(page: Vector2) -> Rect2:
 
 # --- The foot -----------------------------------------------------------------------------
 
-## The hand, cut by the page's foot.
+## The hand, cut by the page's foot. It takes the room between the two words, up to the width
+## at which ten cards lie as far apart as they ever do.
 static func hand(page: Vector2) -> Rect2:
 	var top := foot_rule(page) + 8.0
-	return _centred(page, top, Vector2(660.0, page.y - top))
+	return _centred(page, top, Vector2(clampf(page.x - 492.0, 660.0, 1224.0), page.y - top))
 
 
 ## The draw pile.
@@ -120,12 +121,12 @@ static func pile_discard(page: Vector2) -> Rect2:
 
 ## PLAY, and under the word the plays left.
 static func controls_play(page: Vector2) -> Rect2:
-	return Rect2(140.0, page.y - 88.0, 96.0, 68.0)
+	return Rect2(134.0, page.y - 88.0, 108.0, 68.0)
 
 
 ## DISCARD, and under the word the discards left.
 static func controls_discard(page: Vector2) -> Rect2:
-	return _from_right(page, 140.0, page.y - 88.0, Vector2(96.0, 68.0))
+	return _from_right(page, 134.0, page.y - 88.0, Vector2(108.0, 68.0))
 
 
 # --- The rules ----------------------------------------------------------------------------

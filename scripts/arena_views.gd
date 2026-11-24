@@ -10,8 +10,8 @@ extends Control
 ##   On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
 ##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
-## - With the Notebook held, the next three cards of the draw pile lie face up beside it.
-## - On night 1 a small "Hint" control chooses the cards of the best hand the rules find.
+## - With the Notebook held, the next three cards of the draw pile lie face up over it.
+## - On night 1 the small word "Hint", over PLAY, chooses the cards of the best hand the rules find.
 ##   It shows no score.
 ##
 ## None of it shows the score of the chosen cards. It reads RulesView.table() and the run's
@@ -70,21 +70,21 @@ func _init() -> void:
 	_deck_title.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
 	_deck_title.add_theme_constant_override("outline_size", 6)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A written word, as PLAY and DISCARD are, and smaller.
 	_hint.text = "Hint"
-	_hint.size = Vector2(64.0, 28.0)
+	_hint.size = Vector2(64.0, 24.0)
 	_hint.focus_mode = Control.FOCUS_NONE
 	_hint.tooltip_text = "Chooses the cards of a good hand."
 	_hint.add_theme_font_override("font", font)
-	_hint.add_theme_font_size_override("font_size", 13)
-	for state: String in ["font_color", "font_hover_color", "font_pressed_color"]:
-		_hint.add_theme_color_override(state, PENCIL)
-	for state: String in ["normal", "hover", "pressed"]:
-		var tag := StyleBoxFlat.new()
-		tag.bg_color = Color(CREAM, 0.85 if state == "normal" else 1.0)
-		tag.border_color = PENCIL
-		tag.set_border_width_all(1)
-		tag.set_corner_radius_all(3)
-		_hint.add_theme_stylebox_override(state, tag)
+	_hint.add_theme_font_size_override("font_size", 14)
+	_hint.add_theme_color_override("font_color", Color(CREAM, 0.8))
+	_hint.add_theme_color_override("font_focus_color", Color(CREAM, 0.8))
+	_hint.add_theme_color_override("font_hover_color", Color.WHITE)
+	_hint.add_theme_color_override("font_pressed_color", Color.WHITE)
+	_hint.add_theme_color_override("font_outline_color", Color(0.05, 0.035, 0.06, 0.9))
+	_hint.add_theme_constant_override("outline_size", 5)
+	for state: String in ["normal", "hover", "pressed", "focus"]:
+		_hint.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_hint.visible = false
 	_hint.pressed.connect(_show_a_hand)
 	for child: Control in [_notebook, _hint, _note, _deck]:
@@ -106,7 +106,8 @@ func _on_synced(table: Dictionary) -> void:
 	_table = table
 	_open = table.phase == "play"
 	_hint.visible = _open and int(table.night.no) == 1
-	_hint.position = Vector2((295.0 + size.x - 190.0) * 0.5 + 142.0, size.y - 83.0)
+	var play := ArenaLayout.controls_play(size)
+	_hint.position = Vector2(play.get_center().x - _hint.size.x * 0.5, play.position.y - 46.0)
 	_show_notebook()
 
 
@@ -288,7 +289,8 @@ func _show_notebook() -> void:
 	if next == null or not _open:
 		return
 	var pile := t.piles.draw_pile.top_centre()
-	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-96.0, -8.0)
+	# Over the pile, between it and the lower rule.
+	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-18.0, -90.0)
 	# The next card lies on top, at the right.
 	for i in range(next.size() - 1, -1, -1):
 		var card := ArenaTravel.make_card(t.card_data(next[i].id))

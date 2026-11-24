@@ -1,9 +1,13 @@
 class_name ArenaHand
 extends Control
-## The hand of cards on the arena's table: a row in a shallow arc across the lower part of
-## the table, each card overlapping the next a little, with room left under it and at the
-## right. The card under the pointer rises and straightens. While Hyde has the table the row
-## is a little out of true: each card is pushed and turned a little its own way.
+## The hand of cards on the arena's table: a row in a shallow arc along the foot of the page
+## (ArenaLayout.hand), the cards larger than anywhere else on the table (CARD_SCALE), each
+## lying over the one before it, and all of them cut by the page's foot. A card that is partly
+## covered has its title written in the part that shows, and every card its chips under the
+## title, where the page's foot does not cut them off. The card under the pointer
+## rises whole onto the page, straightens and lies on top of the others; a chosen card rises
+## further. While Hyde has the table the row is a little out of true: each card is pushed and
+## turned a little its own way.
 ##
 ## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, when
 ## nothing is moving and after every change of the chosen cards. It keeps one card for each
@@ -23,23 +27,26 @@ extends Control
 ##
 ## While a move is played back the cards travel instead (ArenaTravel): `give` hands a card's
 ## node over and the row closes up; `take_in` makes room for a card on its way and says where
-## it is to land, and `settle` puts it in the row when it has arrived.
+## it is to land, and `settle` puts it in the row when it has arrived. A place in the row is
+## {centre (on the page), turn (degrees), size (the card's scale there)}.
 
 ## The chosen cards changed: their ids, in the hand's order.
 signal chosen_changed(ids: Array)
 
+## A card in the hand is this much larger than its own size.
+const CARD_SCALE := 1.5
 ## Distance between one card's centre and the next, in pixels, while the row has the room.
-const PITCH := 90.0
+const PITCH := 120.0
 ## How far the row's ends turn, in degrees, and how far they drop, in pixels.
-const FAN_TURN := 5.0
-const FAN_DROP := 12.0
+const FAN_TURN := 4.0
+const FAN_DROP := 8.0
 ## How far out of true a card may be while Hyde has the table: across, up or down (in pixels)
 ## and turned (in degrees). And the time the row takes to go out of true or back.
 const UNRULY := Vector3(3.0, 6.0, 3.0)
 const UNRULY_TIME := 0.25
 ## How far a card rises under the pointer and when chosen, in pixels, and the time it takes.
-const RISE := 16.0
-const CHOSEN_RISE := 30.0
+const RISE := 22.0
+const CHOSEN_RISE := 42.0
 const RISE_TIME := 0.12
 ## How far a refused card turns each way, in degrees.
 const SHAKE := 4.0
@@ -48,11 +55,12 @@ const SLIDE_TIME := 0.2
 ## The fixed order of the symbols and kinds within each group of cards.
 const KEY_ORDER: Array[String] = ["lamp", "heart", "mirror", "cup", "eye", "lock", "pen", "cane"]
 
-## Where the table begins, from the page's left edge, and the room kept free at its right and
-## under the hand, all in pixels.
-@export var table_left := 0.0
-@export var room_right := 190.0
-@export var room_under := 120.0
+## Where the row lies, for a hand that is not the arena's: the cards' tops along its top, the
+## row no wider than it. Left empty, the place is ArenaLayout's.
+var place := Rect2():
+	set(value):
+		place = value
+		snap()
 
 ## Who has the table: the row is out of true for Hyde.
 var is_jekyll := true:
@@ -113,6 +121,7 @@ func show_table(table: Dictionary) -> void:
 		card.leave(not _still)
 	_cards = next
 	_restack()
+	_fit_titles()
 	_mark(table, entries)
 	for card in _cards:
 		if card in fresh:
@@ -145,8 +154,8 @@ func card_of(id: int) -> ArenaCard:
 func rest_of(id: int) -> Dictionary:
 	var card := card_of(id)
 	if card == null:
-		return {"centre": Vector2.ZERO, "turn": 0.0}
-	return {"centre": get_global_transform() * (_rest(card) + card.pivot_offset), "turn": _rest_turn(card)}
+		return {"centre": Vector2.ZERO, "turn": 0.0, "size": CARD_SCALE}
+	return _rest_place(card)
 
 
 ## Hands over the node of the card with this id, which leaves the hand: the row closes up.
@@ -161,7 +170,11 @@ func give(id: int) -> ArenaCard:
 	card.chosen = false
 	card.dimmed = false
 	card.set_tag("")
+	card.strip = 0.0
+	card.foot_strip = 0.0
+	card.chips_above = false
 	card.set_meta("away", true)
+	_fit_titles()
 	for other in _cards:
 		_move(other, SLIDE_TIME)
 	return card
@@ -169,10 +182,12 @@ func give(id: int) -> ArenaCard:
 
 ## Makes room in the row for a card on its way to the hand: `card` is its node, wherever it
 ## is, and `entry` its entry of RulesView.table().hand. The row opens at its place. Returns
-## where it is to land: {centre (on the page), turn (degrees)}. Call `settle` when it is there.
+## where it is to land: {centre (on the page), turn (degrees), size}. Call `settle` when it is
+## there.
 func take_in(card: ArenaCard, entry: Dictionary, hyde_has_table: bool) -> Dictionary:
 	var lies_face_down := card.face_down
 	card.show_entry(entry, hyde_has_table)
+	card.chips_above = true
 	card.face_down = lies_face_down
 	card.dimmed = not entry.get("playable", true)
 	card.chosen = false
@@ -183,10 +198,11 @@ func take_in(card: ArenaCard, entry: Dictionary, hyde_has_table: bool) -> Dictio
 	while at < _cards.size() and int(_cards[at].get_meta("rank")) < int(card.get_meta("rank")):
 		at += 1
 	_cards.insert(at, card)
+	_fit_titles()
 	for other in _cards:
 		if other != card:
 			_move(other, SLIDE_TIME)
-	return {"centre": get_global_transform() * (_rest(card) + card.pivot_offset), "turn": _rest_turn(card)}
+	return _rest_place(card)
 
 
 ## A card that `take_in` made room for has arrived: it lies in the row from now on.
@@ -198,11 +214,12 @@ func settle(card: ArenaCard) -> void:
 		if card.get_parent():
 			card.get_parent().remove_child(card)
 		add_child(card)
-	card.scale = Vector2.ONE
+	card.scale = Vector2(CARD_SCALE, CARD_SCALE)
 	card.face_down = false
 	card.position = _place(card)
 	card.rotation_degrees = _turn(card)
 	_restack()
+	_fit_titles()
 
 
 ## The table changes hands while the cards lie in the row: each takes the face `entry_of`
@@ -252,12 +269,14 @@ func clear_chosen() -> void:
 		any = any or card.chosen
 		card.chosen = false
 		_move(card, RISE_TIME)
+	_fit_titles()
 	if any:
 		chosen_changed.emit(chosen())
 
 
 ## Puts every card where it belongs at once, without the move there.
 func snap() -> void:
+	_fit_titles()
 	for card in _cards:
 		if _away(card):
 			continue
@@ -291,6 +310,8 @@ func _mark(table: Dictionary, entries: Array) -> void:
 
 func _new_card() -> ArenaCard:
 	var card := ArenaCard.new()
+	card.scale = Vector2(CARD_SCALE, CARD_SCALE)
+	card.chips_above = true
 	_give_metas(card)
 	add_child(card)
 	return card
@@ -324,13 +345,35 @@ func _sorted(entries: Array) -> Array:
 
 
 ## Puts the nodes of the cards that lie in the row in the row's order, so that each overlaps
-## the one before it.
+## the one before it, and the one under the pointer on top of them all.
 func _restack() -> void:
 	var at := 0
 	for card in _cards:
 		if card.get_parent() == self:
 			move_child(card, at)
 			at += 1
+	for card in _cards:
+		if card.get_parent() == self and card.get_meta("raised"):
+			move_child(card, at - 1)
+
+
+## Tells each card how much of it shows: all of the last card of the row and of the one under
+## the pointer, and of every other as much as the next card leaves uncovered. A chosen card
+## has risen clear of the cards that are not by its title: that title has the room up to the
+## next chosen card.
+func _fit_titles() -> void:
+	var a_card := _pitch() / CARD_SCALE
+	for i in _cards.size():
+		var card := _cards[i]
+		var next := i + 1
+		if card.chosen:
+			while next < _cards.size() and not _cards[next].chosen and not _cards[next].get_meta("raised"):
+				next += 1
+		var shows := (next - i) * a_card - 2.0
+		var whole: bool = next >= _cards.size() or card.get_meta("raised") or shows >= ArenaCard.SIZE.x
+		card.strip = 0.0 if whole else shows
+		var covered: bool = i < _cards.size() - 1 and not card.get_meta("raised") and a_card < ArenaCard.SIZE.x
+		card.foot_strip = a_card - 2.0 if covered else 0.0
 
 
 func _notification(what: int) -> void:
@@ -342,12 +385,17 @@ func _notification(what: int) -> void:
 
 func _process(_delta: float) -> void:
 	var under := _card_under(get_local_mouse_position()) if _pointer_here else null
+	var changed := false
 	for card in _cards:
 		if _away(card):
 			continue
-		if _raised(card) != (card == under):
+		if card.get_meta("raised") != (card == under):
 			card.set_meta("raised", card == under)
+			changed = true
 			_move(card, RISE_TIME)
+	if changed:
+		_restack()
+		_fit_titles()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -371,6 +419,7 @@ func toggle(id: int) -> void:
 			_shake(card)
 			return
 		card.chosen = not card.chosen
+		_fit_titles()
 		_move(card, RISE_TIME)
 		chosen_changed.emit(chosen())
 		return
@@ -387,19 +436,37 @@ func toggle_at(place: int) -> void:
 ## a card cannot rise away from the pointer and drop again. A raised or chosen card also
 ## keeps the pointer for as far as it has risen.
 func _card_under(point: Vector2) -> ArenaCard:
-	var half := ArenaCard.SIZE * 0.5
+	var half := ArenaCard.SIZE * CARD_SCALE * 0.5
 	for i in range(_cards.size() - 1, -1, -1):
 		var card := _cards[i]
 		if _away(card):
 			continue
-		var rest := Rect2(_rest(card), ArenaCard.SIZE)
+		var rest := _covers(_rest(card))
 		# The point as the card at rest sees it: the card is turned about its middle.
 		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(card)))
 		if absf(seen.x) <= half.x and absf(seen.y) <= half.y:
 			return card
-		if (_raised(card) or card.chosen) and rest.merge(Rect2(_place(card), ArenaCard.SIZE)).has_point(point):
+		if (_raised(card) or card.chosen) and rest.merge(_covers(_place(card))).has_point(point):
 			return card
 	return null
+
+
+## What a card whose top left corner is at `at` covers, lying straight: it is drawn larger
+## than its own size, about its middle.
+func _covers(at: Vector2) -> Rect2:
+	var extent := ArenaCard.SIZE * CARD_SCALE
+	return Rect2(at + ArenaCard.SIZE * 0.5 - extent * 0.5, extent)
+
+
+## The hand's place on the page.
+func _zone() -> Rect2:
+	return place if place.has_area() else ArenaLayout.hand(size)
+
+
+## Where a card rests in the row, as ArenaTravel takes a place.
+func _rest_place(card: ArenaCard) -> Dictionary:
+	return {"centre": get_global_transform() * (_rest(card) + card.pivot_offset), "turn": _rest_turn(card),
+			"size": CARD_SCALE}
 
 
 func _raised(card: ArenaCard) -> bool:
@@ -409,7 +476,7 @@ func _raised(card: ArenaCard) -> bool:
 ## The distance between one card's centre and the next: the row tightens when it holds more
 ## cards than fit.
 func _pitch() -> float:
-	var room := size.x - room_right - table_left - ArenaCard.SIZE.x
+	var room := _zone().size.x - ArenaCard.SIZE.x * CARD_SCALE
 	return minf(PITCH, room / maxf(1.0, _cards.size() - 1))
 
 
@@ -425,11 +492,12 @@ func _place(card: ArenaCard) -> Vector2:
 	return _slot(card) - Vector2(0.0, RISE) if _raised(card) else _rest(card)
 
 
-## A card's place in a row that is level and true.
+## A card's place in a row that is level and true: its top, as it is drawn, along the zone's.
 func _slot(card: ArenaCard) -> Vector2:
-	var middle := (table_left + size.x - room_right) * 0.5
-	return Vector2(middle + (_cards.find(card) - (_cards.size() - 1) * 0.5) * _pitch()
-			- ArenaCard.SIZE.x * 0.5, size.y - room_under - ArenaCard.SIZE.y)
+	var zone := _zone()
+	var middle := Vector2(zone.get_center().x + (_cards.find(card) - (_cards.size() - 1) * 0.5) * _pitch(),
+			zone.position.y + ArenaCard.SIZE.y * CARD_SCALE * 0.5)
+	return middle - ArenaCard.SIZE * 0.5
 
 
 ## Where a card's top left corner lies while the card is neither raised nor chosen.
