@@ -3,10 +3,10 @@ extends Control
 ## The restraint gauge on the arena's page: the word RESTRAINT at the top left, and under it a
 ## track of numbered steps, from 1 at the gauge's left edge to the limit at the right, with tick
 ## marks along both its sides. A lower limit is a shorter track from the same start. Under each
-## number the page's slate has come off in a round patch like old paint, each patch touching the
-## next, and the cream of the paper shows
-## (shaders/arena_restraint_strip.gdshader). Hyde's ink lies over every step that has been
-## reached, so the amount of ink is the reading, and a clean track reads nothing. The last
+## number lies a round pip, each touching the next (shaders/arena_restraint_strip.gdshader):
+## an unspent pip is raised night with a plain chalk ring. Hyde's ink lies over every step that
+## has been reached, and a spent pip is filled with the deepest ink under a dashed ring in his
+## light, so the amount of ink is the reading, and a clean track reads nothing. The last
 ## step is marked as Hyde's. One step short of it the ink looks threatening (see
 ## shaders/arena_restraint.gdshader).
 ##
@@ -46,11 +46,9 @@ const THREAT_TIME := 1.2
 ## coming back) does not make the ink jump.
 const MAX_FRAME := 0.1
 
-const PENCIL := Color(0.015, 0.025, 0.035)
-const WORD_COLOUR := Color(0.93, 0.87, 0.74)
-const PAPER_TEXT := Color(0.16, 0.13, 0.15)
-## A number under the ink: the ink's own pale wash, a little lighter, to be read without standing out.
-const INKED_TEXT := Color(0.56, 0.46, 0.58)
+## A pip's ring: its width, and how many dashes a spent pip's ring is broken into.
+const RING := 1.5
+const DASHES := 10
 
 ## Changes the lines and the blots a little while keeping the look.
 @export var rng_seed := 5
@@ -220,6 +218,7 @@ func _lay_out() -> void:
 	_strip_material.set_shader_parameter("steps", float(limit))
 	_strip_material.set_shader_parameter("radius", minf(BEAD, _pitch() * 0.5))
 	_strip_material.set_shader_parameter("seed", float(rng_seed))
+	_strip_material.set_shader_parameter("paper", Palette.NIGHT_3)
 	for child: Control in [_marks, _strip, _text]:
 		child.queue_redraw()
 
@@ -227,7 +226,7 @@ func _lay_out() -> void:
 ## The tick marks along both sides of the track.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
-	pencil.colour = PENCIL
+	pencil.colour = Palette.RULE
 	var left := _step(1).x - _pitch() * 0.5
 	var count := limit * TICKS
 	for side: float in [-1.0, 1.0]:
@@ -250,16 +249,23 @@ func _draw_strip() -> void:
 ## The word, the numbers, and whose the end of the track is.
 func _draw_text() -> void:
 	var word_at := Vector2(0.0, WORD_BASE)
-	# Cream with a dark edge: the word lies on the page itself, slate or ink.
-	_text.draw_string_outline(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, 4, Color(PENCIL, 0.7))
-	_text.draw_string(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, WORD_COLOUR)
+	# Chalk with a dark edge: the word lies on the page itself, slate or ink.
+	_text.draw_string_outline(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, 4, Color(Palette.OUTLINE, 0.7))
+	_text.draw_string(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, Palette.CHALK_2)
 	var number_size := 17
 	var drop := (_heavy.get_ascent(number_size) - _heavy.get_descent(number_size)) * 0.5
-	# A number is dark on the bared paper, and a dull mauve once the ink has its step.
+	# An unspent pip keeps the strip's raised night under a plain ring; a spent one is filled
+	# with the deepest ink under a dashed ring in Hyde's light. The number is chalk on both.
+	var pip := minf(BEAD, _pitch() * 0.5) - RING
 	for i in range(1, limit + 1):
 		var at := _step(i)
+		if _level >= i - 0.5:
+			_text.draw_circle(at, pip, Palette.INK_DEEP)
+			_draw_dashed_ring(at, pip, Palette.HYDE)
+		else:
+			_text.draw_arc(at, pip, 0.0, TAU, 32, Palette.CHALK_2, RING, true)
 		_text.draw_string(_heavy, Vector2(at.x - _pitch() * 0.5, at.y + drop), str(i), HORIZONTAL_ALIGNMENT_CENTER,
-				_pitch(), number_size, INKED_TEXT if _level >= i - 0.5 else PAPER_TEXT)
+				_pitch(), number_size, Palette.CHALK)
 	# Written by hand above the last step, slanting up and away from it; after a short
 	# track's end, level with its numbers.
 	var whose := "HYDE!"
@@ -269,8 +275,8 @@ func _draw_text() -> void:
 	else:
 		var mark_drop := (_slanted.get_ascent(12) - _slanted.get_descent(12)) * 0.5
 		_text.draw_set_transform(Vector2(_pitch() * limit + MARK_GAP, _track_y() + mark_drop), 0.0)
-	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(PENCIL, 0.7))
-	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, WORD_COLOUR)
+	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(Palette.OUTLINE, 0.7))
+	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Palette.CHALK_2)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
 	if _lock > 0.0:
 		_draw_lock(_lock, _lock_fall)
@@ -280,18 +286,26 @@ func _draw_text() -> void:
 		var at := _step(limit if ghost == "breakout" else mini(meter + 1, limit))
 		var heavy := ghost == "breakout"
 		_text.draw_arc(at, minf(BEAD, _pitch() * 0.5) + (2.0 if heavy else 0.0), 0.0, TAU, 32,
-				Color(0.42, 0.1, 0.4, 0.95) if heavy else Color(0.42, 0.13, 0.44, 0.75), 3.2 if heavy else 2.0)
+				Color(Palette.HYDE, 0.95) if heavy else Color(Palette.CHALK, 0.85), 3.2 if heavy else 2.0)
 
 
-# The lock: on a cream tag over the next step. Landing, it drops onto the step; opened, its
+## A ring broken into DASHES dashes, as on a spent pip.
+func _draw_dashed_ring(at: Vector2, radius: float, colour: Color) -> void:
+	var arc := TAU / DASHES
+	for k in DASHES:
+		var from := k * arc
+		_text.draw_arc(at, radius, from, from + arc * 0.55, 6, colour, RING + 0.5, true)
+
+
+# The lock: on a dark tag over the next step. Landing, it drops onto the step; opened, its
 # shackle swings up and it falls away below the track.
 func _draw_lock(alpha: float, fall: float) -> void:
 	var _lock := alpha
 	var _lock_fall := fall
 	var at := _step(mini(meter + 1, limit)) + Vector2(0.0, 14.0 * _lock_fall if _lock_fall < 0.0 else 26.0 * _lock_fall)
-	var ink := Color(PENCIL, _lock)
-	_text.draw_circle(at, 13.0, Color(0.93, 0.88, 0.75, _lock * 0.95))
-	_text.draw_arc(at, 13.0, 0.0, TAU, 24, ink, 1.4)
+	var ink := Color(Palette.CHALK, _lock)
+	_text.draw_circle(at, 13.0, Color(Palette.NIGHT_2, _lock * 0.95))
+	_text.draw_arc(at, 13.0, 0.0, TAU, 24, Color(Palette.RULE, _lock), 1.4)
 	_text.draw_rect(Rect2(at + Vector2(-6.0, -1.0), Vector2(12.0, 9.0)), ink)
 	# The shackle: shut while the lock holds, swung open as it falls.
 	var open := clampf(_lock_fall, 0.0, 1.0)
