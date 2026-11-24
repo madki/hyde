@@ -1,15 +1,14 @@
 class_name ArenaTabs
 extends Control
 ## The two tabs on the arena's page, one on each edge (ArenaLayout.tab_left and tab_right):
-## slips of cream stock that stick in from outside the border, each with a few words written
+## slips of night stock that stick in from outside the border, each with a few words written
 ## along it. The left one names the scene's twist; the right one says which key to hold for
 ## every number. They only show their words and say where they are: ArenaViews answers the
 ## pointer.
 
-const CREAM := Color(0.87, 0.81, 0.67)
-const CREAM_LIT := Color(0.97, 0.93, 0.82)
-const PENCIL := Color(0.08, 0.05, 0.04)
-const SHADOW := Color(0.0, 0.0, 0.0, 0.28)
+## Border width at rest and lit: a lit tab is raised, with a brighter, heavier edge.
+const EDGE := 1.5
+const EDGE_LIT := 2.0
 const FONT_SIZE := 12
 
 ## The words on the left and on the right tab. A tab with no words is not drawn.
@@ -63,20 +62,14 @@ func _draw() -> void:
 		if words == "":
 			continue
 		var r := rect_of(which)
-		# Its inner corners are cut; the outer side runs off the page.
+		# A square slip whose outer side runs off the page.
 		var inner := r.end.x if which == "left" else r.position.x
 		var outer := r.position.x - 4.0 if which == "left" else r.end.x + 4.0
-		var cut := 7.0 if which == "left" else -7.0
-		var slip := PackedVector2Array([Vector2(outer, r.position.y), Vector2(inner - cut, r.position.y),
-				Vector2(inner, r.position.y + 7.0), Vector2(inner, r.end.y - 7.0),
-				Vector2(inner - cut, r.end.y), Vector2(outer, r.end.y)])
-		var under := PackedVector2Array()
-		for p in slip:
-			under.append(p + Vector2(2.0 if which == "left" else -2.0, 3.0))
-		draw_colored_polygon(under, SHADOW)
-		draw_colored_polygon(slip, CREAM_LIT if lit == which else CREAM)
-		var edge := slip.duplicate()
-		draw_polyline(edge, Color(PENCIL, 0.8), 1.2, true)
+		var slip := PackedVector2Array([Vector2(outer, r.position.y), Vector2(inner, r.position.y),
+				Vector2(inner, r.end.y), Vector2(outer, r.end.y)])
+		var is_lit := lit == which
+		draw_colored_polygon(slip, Palette.NIGHT_3 if is_lit else Palette.NIGHT_2)
+		draw_polyline(slip, Palette.CHALK if is_lit else Palette.RULE, EDGE_LIT if is_lit else EDGE)
 		# The words run up the left tab and down the right one, as on a book's spine.
 		var width := _font.get_string_size(words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, FONT_SIZE).x
 		var middle := r.get_center()
@@ -84,5 +77,6 @@ func _draw() -> void:
 			draw_set_transform(middle + Vector2(4.0, width * 0.5), -PI * 0.5)
 		else:
 			draw_set_transform(middle + Vector2(-4.0, -width * 0.5), PI * 0.5)
-		draw_string(_font, Vector2.ZERO, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, FONT_SIZE, PENCIL)
+		draw_string(_font, Vector2.ZERO, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, FONT_SIZE,
+				Palette.CHALK if is_lit else Palette.CHALK_2)
 		draw_set_transform(Vector2.ZERO)

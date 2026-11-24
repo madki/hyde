@@ -1,6 +1,6 @@
 shader_type canvas_item;
 // The strip under the restraint gauge's numbers (scripts/arena_restraint.gd): places where the
-// page's slate has come off like old paint and the cream of the paper shows, one round patch
+// page's slate has come off like old paint and a raised night surface shows, one round patch
 // under each number, each touching the next. A patch is nearly a circle: its edge is chipped
 // a little where the paint broke away, and a few flecks of slate are left just inside it.
 //
@@ -15,8 +15,8 @@ uniform float steps = 5.0;
 uniform float radius = 17.0;
 /** Changes the patches while keeping the look. */
 uniform float seed = 3.0;
-/** The paper under the slate. */
-uniform vec3 paper : source_color = vec3(0.86, 0.8, 0.68);
+/** The surface under the slate: set from Palette.NIGHT_3 by the gauge. */
+uniform vec3 paper : source_color = vec3(0.188, 0.169, 0.290);
 /** How deep the chips in a patch's edge go, in pixels. */
 uniform float chip : hint_range(0.0, 8.0) = 2.6;
 /** How much slate is left in the flecks just inside the edge. */
@@ -65,7 +65,7 @@ void fragment() {
 	// A few flecks of slate still hold, just inside the edge.
 	float fleck = smoothstep(0.7, 0.76, value_noise(at * 0.55 + seed + 20.0));
 	shown *= 1.0 - fleck * left_over * (1.0 - smoothstep(1.0, 5.0, inside));
-	// The bared paper is not one flat colour.
+	// The bared surface is not one flat colour.
 	vec3 col = paper * (0.93 + 0.1 * value_noise(at * 0.25 + seed + 7.0));
 	COLOR = vec4(col, shown);
 }
