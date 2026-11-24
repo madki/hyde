@@ -8,10 +8,10 @@ extends Control
 ## Everything here plays through the beat queue, so it is hurried with the rest. Nothing is
 ## awaited: a pop is seen alongside the tick it belongs to.
 
-const CREAM := Color(0.95, 0.9, 0.78)
-const CYAN := Color(0.36, 0.9, 1.0)
-const MAGENTA := Color(1.0, 0.34, 0.78)
-const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+const CREAM := Palette.CHALK
+const CYAN := Palette.JEKYLL
+const MAGENTA := Palette.HYDE
+const OUTLINE := Color(Palette.OUTLINE, 0.9)
 ## How far a number rises, in pixels, and how long it is on the page.
 const RISE := 30.0
 const TIME := 0.55
@@ -128,14 +128,14 @@ func fade(beats: ArenaBeats) -> void:
 func _draw() -> void:
 	var middle := size * 0.5
 	if _coin:
-		draw_circle(middle, 8.5, Color(0.08, 0.05, 0.04))
-		draw_circle(middle, 7.0, Color(0.78, 0.64, 0.33))
-		draw_arc(middle, 4.6, 0.0, TAU, 16, Color(0.55, 0.42, 0.18), 1.0)
+		draw_circle(middle, 8.5, Palette.OUTLINE)
+		draw_circle(middle, 7.0, Palette.GOLD)
+		draw_arc(middle, 4.6, 0.0, TAU, 16, Palette.GOLD.darkened(0.35), 1.0)
 		return
 	draw_set_transform(middle, 0.0, Vector2(1.0, 0.72))
-	draw_circle(Vector2.ZERO, 15.0, Color(0.08, 0.05, 0.04))
-	draw_circle(Vector2.ZERO, 13.4, Color(0.93, 0.88, 0.75))
+	draw_circle(Vector2.ZERO, 15.0, Palette.OUTLINE)
+	draw_circle(Vector2.ZERO, 13.4, Palette.CHALK)
 	draw_set_transform(middle, 0.0, Vector2(1.0, 0.5))
-	draw_arc(Vector2.ZERO, 9.5, 0.0, TAU, 24, Color(0.08, 0.05, 0.04), 1.6)
+	draw_arc(Vector2.ZERO, 9.5, 0.0, TAU, 24, Palette.OUTLINE, 1.6)
 	draw_set_transform(middle, 0.0, Vector2.ONE)
-	draw_circle(Vector2.ZERO, 3.2, Color(0.08, 0.05, 0.04))
+	draw_circle(Vector2.ZERO, 3.2, Palette.OUTLINE)

@@ -9,9 +9,9 @@ extends Control
 ## how far the twin has spread, `glow` (0 to 1) the flare of the light. With reduce flashes on
 ## the flare is not drawn: the crack is a plain hairline of the two colours.
 
-const CYAN := Color(0.45, 0.95, 1.0)
-const MAGENTA := Color(1.0, 0.4, 0.85)
-const DARK := Color(0.05, 0.03, 0.06)
+const CYAN := Palette.JEKYLL
+const MAGENTA := Palette.HYDE
+const DARK := Palette.OUTLINE
 
 var run := 0.0:
 	set(value):

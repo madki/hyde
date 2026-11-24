@@ -7,8 +7,8 @@ extends Control
 ##
 ## It is given its words; it works out nothing. It plays through the beat queue (`beats`).
 
-const TEXT := Color(0.95, 0.9, 0.78)
-const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+const TEXT := Palette.CHALK
+const OUTLINE := Color(Palette.OUTLINE, 0.9)
 const WIDTH := 560.0
 const FADE := 0.25
 const SHRINK := 0.35

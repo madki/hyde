@@ -76,7 +76,7 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 			flood.tween_property(t.ink, "percent", 100.0, 1.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 			for node: Node in t.hand.get_children() + t.travel.get_children():
 				if node is ArenaCard:
-					flood.tween_property(node, "modulate", Color(0.35, 0.2, 0.4, 0.0), 1.6)
+					flood.tween_property(node, "modulate", Color(Palette.INK_WASH, 0.0), 1.6)
 			await flood.finished
 		else:
 			# The page stills.

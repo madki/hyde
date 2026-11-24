@@ -4,8 +4,8 @@ extends Control
 ## card more it would draw (Curiosity, Impulse), beside the draw pile, and the one line said
 ## on a round's last play. They are still: nothing here moves.
 
-const CREAM := Color(0.95, 0.9, 0.78)
-const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+const CREAM := Palette.CHALK
+const OUTLINE := Color(Palette.OUTLINE, 0.9)
 
 var _draws := 0
 var _pile := Vector2.ZERO

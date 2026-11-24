@@ -10,7 +10,7 @@ extends RefCounted
 const HALF_WIDTH := 2.4 ## Half the ribbon's width in pixels: no line gets wider than twice this.
 const STEP := 3.0 ## Distance between the points a stroke is cut into, in pixels.
 
-var colour := Color(0.015, 0.025, 0.035)
+var colour := Palette.OUTLINE
 ## No stroke is drawn thinner than this, in the pencil's own units, whatever width it is given.
 var min_width := 0.0
 

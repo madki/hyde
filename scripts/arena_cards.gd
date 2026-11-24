@@ -25,8 +25,8 @@ const TITLES := [
 	"Where a card lies",
 	"What happens to a card  (S: stain, T: turn, D: draw, P: play away, X: strike)",
 ]
-const PAPER := Color(0.16, 0.2, 0.24)
-const WRITING := Color(0.86, 0.82, 0.72)
+const PAPER := Palette.NIGHT_3
+const WRITING := Palette.CHALK
 
 var _page := 0
 var _run: RulesRun
