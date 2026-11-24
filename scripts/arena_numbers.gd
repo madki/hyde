@@ -2,8 +2,9 @@ class_name ArenaNumbers
 extends Control
 ## The round's numbers, drawn across the arena's page, each in its zone of ArenaLayout:
 ## everything a play changes about the round. Top left the night and the round, with the
-## night's title under them; top centre the target and the round's score; top right the
-## sovereigns, a small heap of coins and the count; in the left column the restraint gauge; in
+## night's title under them; top centre the round's score, large, over the target, with a
+## line under them that fills as the score nears the target; top right the sovereigns, one
+## coin and the count; in the left column the restraint gauge; in
 ## the centre the hand readout, one written line (a name, chips × mult, and the total once it
 ## is counted) with the stored restraint as ink drops at the line's end; at the foot the plays
 ## and discards left as tallies, each at the right end of its control (`tallies`, a layer of
@@ -51,15 +52,21 @@ const REASON_SIZE := 16
 ## A tally's height, and how far in from its control's right edge it ends.
 const TALLY_HIGH := 18.0
 const TALLY_INSET := 14.0
-## The most coins drawn in the sovereigns' pile, and how much smaller than a coin's own
-## size the heap is drawn.
-const COINS := 14
-const HEAP_SCALE := 0.5
-## The goal: how far left of its zone's middle the target's number begins and how far right
-## the score's, and their baseline under the zone's top.
-const GOAL_TARGET := 88.0
-const GOAL_SCORE := 62.0
-const GOAL_BASE := 34.0
+## The goal: the score's size; how far left of the zone's middle the score ends and how far
+## right of it the target begins; their baseline under the zone's top; the line's height
+## over the zone's foot, its heavy stroke's width and the height of the tick that ends it.
+const SCORE_SIZE := 32
+const SCORE_GAP := 14.0
+const TARGET_GAP := 8.0
+const GOAL_BASE := 32.0
+const GOAL_LINE := 5.0
+const GOAL_STROKE := 5.0
+const GOAL_TICK := 10.0
+## The night and round's two lines, and how strongly they are drawn.
+const NIGHT_INK := 0.7
+## The sovereigns' coin: its radius, and where it stands in its zone.
+const COIN_R := 9.0
+const COIN_INSET := 11.0
 ## Room kept for the stored drops at the end of the readout's line, and from one to the next.
 const DROPS_ROOM := 100.0
 const DROP_PITCH := 19.0
@@ -72,11 +79,15 @@ const CYAN := Color(0.36, 0.9, 1.0)
 const MAGENTA := Color(1.0, 0.34, 0.78)
 const DROP_INK := Color(0.42, 0.13, 0.44)
 const DROP_SHINE := Color(0.8, 0.55, 0.8)
-## The small words (TARGET, SCORE, sovereigns): cream too, a little back, to read on slate and on ink.
+## The small words (TARGET, SCORE): cream too, a little back, to read on slate and on ink.
 const LABEL := Color(0.93, 0.87, 0.74, 0.62)
 const GOLD := Color(0.78, 0.64, 0.33)
 const GOLD_DARK := Color(0.42, 0.31, 0.12)
 const COIN_EDGE := Color(0.07, 0.05, 0.04)
+## The dark outline round the goal's words and numbers, as the caption has: the band's centre
+## lies on the ink's pale edge, where cream alone reads weakly.
+const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
+const OUTLINE_SIZE := 5
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
 ## Changes the hand of the lines a little while keeping the look.
@@ -97,6 +108,8 @@ var tallies := Control.new()
 
 var _marks := Control.new()
 var _text := Control.new()
+## The total on its way to the score, drawn over the rest of the page: it crosses the ribbon.
+var _flight := Control.new()
 var _heavy := FontVariation.new()
 var _slanted := FontVariation.new()
 var _tweens: Array[Tween] = []
@@ -156,10 +169,12 @@ func _init() -> void:
 	_marks.material = LINE_MATERIAL
 	_marks.draw.connect(_draw_marks)
 	_text.draw.connect(_draw_text)
+	_flight.draw.connect(_draw_flight)
+	_flight.z_index = 1
 	tallies.material = LINE_MATERIAL
 	tallies.draw.connect(_draw_tallies)
 	restraint.name = "Restraint"
-	for child: Control in [_marks, restraint, _text, tallies]:
+	for child: Control in [_marks, restraint, _text, tallies, _flight]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -515,10 +530,11 @@ func _redraw() -> void:
 	_marks.queue_redraw()
 	_text.queue_redraw()
 	tallies.queue_redraw()
+	_flight.queue_redraw()
 
 
 func _lay_out() -> void:
-	for child: Control in [_marks, _text, tallies]:
+	for child: Control in [_marks, _text, tallies, _flight]:
 		child.size = size
 	var gauge := ArenaLayout.restraint(size)
 	restraint.position = gauge.position
@@ -559,8 +575,9 @@ func plays_place() -> Vector2:
 ## Where the night and the round are written, on the page: the first line's middle, and the
 ## whole zone.
 func heading_place() -> Vector2:
-	var r := ArenaLayout.night(size)
-	return get_global_transform() * (r.position + Vector2(90.0, 12.0))
+	var at := _night_at()
+	var w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x
+	return get_global_transform() * (at + Vector2(w * 0.5, -HEAD_SIZE * 0.35))
 
 
 func heading_rect() -> Rect2:
@@ -615,22 +632,33 @@ func _drop_at(i: int) -> Vector2:
 	return Vector2(r.end.x - DROPS_ROOM + 10.0 + i * DROP_PITCH, _baseline() - 9.0)
 
 
-## Where the target's and the score's numbers begin, and their baseline: the target left of
-## the goal's middle, the score right of it.
+## The baseline of the night and round's first line, at its left end.
+func _night_at() -> Vector2:
+	return ArenaLayout.night(size).position + Vector2(0.0, 16.0)
+
+
+## Where the target's number begins, on the goal's baseline: right of the zone's middle.
 func _target_at() -> Vector2:
 	var r := ArenaLayout.goal(size)
-	return Vector2(r.get_center().x - GOAL_TARGET, r.position.y + GOAL_BASE)
+	return Vector2(r.get_center().x + TARGET_GAP, r.position.y + GOAL_BASE)
 
 
+## Where the score's number ends, on the goal's baseline: left of the zone's middle. The total
+## of a play travels here.
 func _score_at() -> Vector2:
 	var r := ArenaLayout.goal(size)
-	return Vector2(r.get_center().x + GOAL_SCORE, r.position.y + GOAL_BASE)
+	return Vector2(r.get_center().x - SCORE_GAP, r.position.y + GOAL_BASE)
 
 
-## The foot of the sovereigns' heap, at the left of their zone: the coins are heaped up from here.
+## How far the goal's line is filled: the score's share of the target, at most all of it.
+func _goal_share() -> float:
+	return clampf(_score / _target, 0.0, 1.0) if _target > 0.0 else 0.0
+
+
+## The middle of the sovereigns' coin: the coins that are won fly here.
 func _pile_at() -> Vector2:
 	var r := ArenaLayout.sovereigns(size)
-	return Vector2(r.position.x + 26.0, r.get_center().y + 9.0)
+	return Vector2(r.position.x + COIN_INSET, r.get_center().y)
 
 
 ## The tallies lie inside the controls' zones, at the right end, level with the words written
@@ -665,28 +693,32 @@ func set_tally_look(i: int, colour: Color, drop: float) -> void:
 
 # --- Drawing -----------------------------------------------------------------------------
 
-## The pencil and the chalk: the stroke between target and score, the strike and the
-## underline.
+## The pencil and the chalk of the goal, in cream: the stroke "/" between score and target,
+## the line under them that fills to score / target with its tick, and the target struck
+## through once it is reached.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = Color(CREAM, 0.85)
-	var target_at := _target_at()
-	var score_at := _score_at()
-	# The stroke that parts the target from the score.
-	var part_x := score_at.x - 62.0
-	pencil.stroke(PackedVector2Array([Vector2(part_x + 1.0, target_at.y - 17.0), Vector2(part_x, target_at.y + 3.0)]),
-			1.3, 0.4, 0.2)
-	# The target struck through, then the score underlined.
+	var goal := ArenaLayout.goal(size)
+	var base := goal.position.y + GOAL_BASE
+	var middle := goal.get_center().x
+	# The stroke that parts the score from the target.
+	pencil.stroke(PackedVector2Array([Vector2(middle + 5.0, base - 24.0), Vector2(middle - 4.0, base + 2.0)]), 1.6, 0.4, 0.2)
+	# The line: thin the whole way, heavy as far as the score has come, and a tick at its end.
+	var y := goal.end.y - GOAL_LINE
+	pencil.colour = Color(CREAM, 0.35)
+	pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(goal.end.x, y)]), 1.4, 0.4)
+	pencil.colour = Color(CREAM, 0.9)
+	var end := goal.position.x + goal.size.x * _goal_share()
+	if end > goal.position.x + 1.0:
+		pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(end, y)]), GOAL_STROKE, 0.5)
+	pencil.stroke(PackedVector2Array([Vector2(end, y - GOAL_TICK * 0.5), Vector2(end, y + GOAL_TICK * 0.5)]), 2.0, 0.3)
+	# The target struck through.
 	if _strike > 0.0:
+		var target_at := _target_at()
 		var width := _heavy.get_string_size(_thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-		var first := clampf(_strike * 2.0, 0.0, 1.0)
 		var from := target_at + Vector2(-4.0, -6.0)
-		pencil.stroke(PackedVector2Array([from, from.lerp(target_at + Vector2(width + 4.0, -9.0), first)]), 2.2, 0.5)
-		var second := clampf(_strike * 2.0 - 1.0, 0.0, 1.0)
-		if second > 0.0:
-			var score_w := _heavy.get_string_size(_thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-			var under := score_at + Vector2(-3.0, 5.0)
-			pencil.stroke(PackedVector2Array([under, under.lerp(score_at + Vector2(score_w + 3.0, 4.0), second)]), 2.0, 0.5)
+		pencil.stroke(PackedVector2Array([from, from.lerp(target_at + Vector2(width + 4.0, -9.0), _strike)]), 2.2, 0.5)
 	pencil.draw(_marks)
 
 
@@ -723,18 +755,25 @@ func _draw_text() -> void:
 	var c := _text
 	var head := ArenaLayout.night(size)
 	# The night and the round, and the night's title under them.
-	var at := head.position + Vector2(0.0, 16.0)
-	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, CREAM)
-	c.draw_string(_slanted, at + Vector2(0.0, 19.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE - 1, LABEL)
+	var at := _night_at()
+	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, Color(CREAM, NIGHT_INK))
+	c.draw_string(_slanted, at + Vector2(0.0, 18.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE,
+			Color(CREAM, NIGHT_INK))
 
-	var target_at := _target_at()
-	c.draw_string(_heavy, Vector2(target_at.x - 58.0, target_at.y - 2.0), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)
-	c.draw_string(_heavy, target_at, _thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE,
-			CREAM.darkened(0.25 * _strike))
+	# The goal: SCORE at the zone's top left, the score large ending left of the middle, the
+	# target after the stroke, and TARGET after it.
+	var goal := ArenaLayout.goal(size)
+	_outlined(goal.position + Vector2(0.0, LABEL_SIZE), "SCORE", LABEL_SIZE, LABEL)
+	var score := _thousands(roundi(_score))
 	var score_at := _score_at()
-	c.draw_string(_heavy, Vector2(score_at.x - 50.0, score_at.y - 2.0), "SCORE", HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_SIZE, LABEL)
+	var score_w := _heavy.get_string_size(score, HORIZONTAL_ALIGNMENT_LEFT, -1.0, SCORE_SIZE).x
 	var score_colour := CREAM.lerp(_man(), 0.6) if _travel >= 1.0 else CREAM
-	c.draw_string(_heavy, score_at, _thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, score_colour)
+	_outlined(score_at - Vector2(score_w, 0.0), score, SCORE_SIZE, score_colour)
+	var target := _thousands(roundi(_target))
+	var target_at := _target_at()
+	_outlined(target_at, target, NUMBER_SIZE, CREAM.darkened(0.25 * _strike))
+	var target_w := _heavy.get_string_size(target, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
+	_outlined(target_at + Vector2(target_w + 8.0, 0.0), "TARGET", LABEL_SIZE, LABEL)
 
 	_draw_sovereigns()
 	_draw_readout()
@@ -754,39 +793,23 @@ func _draw_text() -> void:
 		_drop(drop_at, 1.0 - _fly * 0.6)
 
 
-## The sovereigns: a small heap of coins, one for each up to COINS, and the count beside it.
+## The sovereigns: one coin, and the count beside it.
 func _draw_sovereigns() -> void:
 	var c := _text
-	var r := ArenaLayout.sovereigns(size)
-	var foot := _pile_at()
-	var held := roundi(_sov)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = rng_seed
-	# Heaped in rows from the bottom up, each row a coin shorter: 5, 4, 3, 2.
-	var k := 0
-	for row in 4:
-		var in_row := 5 - row
-		for i in in_row:
-			var jitter := Vector2(rng.randf_range(-2.0, 2.0), rng.randf_range(-1.5, 1.5))
-			var tilt := rng.randf_range(-0.5, 0.5)
-			# One coin lies there with none held, so that the count is known for what it is.
-			if k < clampi(held, 1, COINS):
-				_coin(foot + (Vector2((i - (in_row - 1) * 0.5) * 18.0, -row * 9.0) + jitter) * HEAP_SCALE, tilt)
-			k += 1
-	c.draw_string(_heavy, Vector2(r.position.x + 54.0, r.get_center().y + 7.0), str(held), HORIZONTAL_ALIGNMENT_LEFT, -1.0,
-			NUMBER_SIZE, CREAM)
+	var at := _pile_at()
+	# The coin, in the gold of the old heap, with its dark edge and a ring stamped in it.
+	c.draw_circle(at, COIN_R + 1.2, COIN_EDGE)
+	c.draw_circle(at, COIN_R, GOLD)
+	c.draw_arc(at, COIN_R * 0.62, 0.0, TAU, 20, GOLD_DARK, 1.1)
+	c.draw_string(_heavy, Vector2(at.x + COIN_R + 8.0, at.y + NUMBER_SIZE * 0.36), str(roundi(_sov)),
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE, CREAM)
 
 
-## One coin of the heap, seen a little from above.
-func _coin(at: Vector2, tilt: float) -> void:
-	var c := _text
-	c.draw_set_transform(at, tilt * 0.4, Vector2(1.0, 0.72) * HEAP_SCALE)
-	c.draw_circle(Vector2(0.0, 3.4), 10.4, COIN_EDGE)
-	c.draw_circle(Vector2(0.0, 2.6), 9.2, GOLD_DARK)
-	c.draw_circle(Vector2.ZERO, 10.4, COIN_EDGE)
-	c.draw_circle(Vector2.ZERO, 9.2, GOLD)
-	c.draw_arc(Vector2.ZERO, 6.0, 0.0, TAU, 20, GOLD_DARK, 1.1)
-	c.draw_set_transform(Vector2.ZERO, 0.0)
+## Words or a number of the goal, in the heavy face, with the dark outline under them.
+func _outlined(at: Vector2, words: String, font_size: int, colour: Color) -> void:
+	_text.draw_string_outline(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, OUTLINE_SIZE,
+			Color(OUTLINE, OUTLINE.a * colour.a))
+	_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, colour)
 
 
 func _draw_readout() -> void:
@@ -810,28 +833,38 @@ func _draw_readout() -> void:
 		c.draw_string(_slanted, Vector2(left + line.note, base - 2.0), " " + _note,
 				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, MAGENTA)
 	c.draw_string(_heavy, Vector2(left + line.dash, base - 4.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 20, LABEL)
-	_number(_thousands(roundi(_chips)), Vector2(left + line.chips, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _chips_pop,
+	_number(c, _thousands(roundi(_chips)), Vector2(left + line.chips, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _chips_pop,
 			CREAM.lerp(_man(), _chips_glow))
 	c.draw_string(_heavy, Vector2(left + line.times, base - 3.0), "×", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22, LABEL)
-	_number(str(roundi(_mult)), Vector2(left + line.mult, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
+	_number(c, str(roundi(_mult)), Vector2(left + line.mult, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
 			CREAM.lerp(_man(), _mult_glow))
-	# The total is written after them as it is counted, and travels from there to the score.
-	if _merge > 0.0 and _travel < 1.0:
+	# The total is written after them as it is counted; it travels from there to the score
+	# on a layer of its own (`_draw_flight`).
+	if _merge > 0.0 and _travel < 0.0:
 		var a := clampf(_merge * 2.0, 0.0, 1.0)
-		var total_at := Vector2(left + line.total, base)
-		var grow := 1.0 + 0.2 * sin(_merge * PI)
-		if _travel >= 0.0:
-			total_at = total_at.lerp(_score_at(), _travel)
-			grow = lerpf(1.0, float(NUMBER_SIZE) / READOUT_SIZE, _travel)
-		else:
-			c.draw_string(_heavy, Vector2(left + line.equals, base - 3.0), "=", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22,
-					Color(LABEL, LABEL.a * a))
-		_number(_thousands(_total), total_at, HORIZONTAL_ALIGNMENT_LEFT, grow, Color(CREAM.lerp(_man(), 0.85), a))
+		c.draw_string(_heavy, Vector2(left + line.equals, base - 3.0), "=", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22,
+				Color(LABEL, LABEL.a * a))
+		_number(c, _thousands(_total), Vector2(left + line.total, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + 0.2 * sin(_merge * PI),
+				Color(CREAM.lerp(_man(), 0.85), a))
 
 
-## A readout number with its baseline at `at`, aligned at `at` (right edge, left edge or
+## The total on its way to the score: it travels, by its middle, to where it would stand as
+## the score, ending at the score's right end at the score's size.
+func _draw_flight() -> void:
+	if _travel < 0.0 or _travel >= 1.0 or _merge <= 0.0 or not _numbers:
+		return
+	var total := _thousands(_total)
+	var w := _number_width(total)
+	var size_there := float(SCORE_SIZE) / READOUT_SIZE
+	var from := Vector2(_line_left() + _line().total + w * 0.5, _baseline())
+	var to := _score_at() - Vector2(w * size_there * 0.5, 0.0)
+	var at := from.lerp(to, _travel) - Vector2(w * 0.5, 0.0)
+	_number(_flight, total, at, HORIZONTAL_ALIGNMENT_LEFT, lerpf(1.0, size_there, _travel), CREAM.lerp(_man(), 0.85))
+
+
+## A readout number drawn on `c`, its baseline at `at`, aligned at `at` (right edge, left edge or
 ## middle), scaled about its own middle by `scale_by`.
-func _number(text: String, at: Vector2, align: HorizontalAlignment, scale_by: float, colour: Color) -> void:
+func _number(c: CanvasItem, text: String, at: Vector2, align: HorizontalAlignment, scale_by: float, colour: Color) -> void:
 	var w := _heavy.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, READOUT_SIZE).x
 	var left := at.x
 	if align == HORIZONTAL_ALIGNMENT_RIGHT:
@@ -839,9 +872,9 @@ func _number(text: String, at: Vector2, align: HorizontalAlignment, scale_by: fl
 	elif align == HORIZONTAL_ALIGNMENT_CENTER:
 		left -= w * 0.5
 	var middle := Vector2(left + w * 0.5, at.y - READOUT_SIZE * 0.35)
-	_text.draw_set_transform(middle, 0.0, Vector2(scale_by, scale_by))
-	_text.draw_string(_heavy, Vector2(left, at.y) - middle, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, READOUT_SIZE, colour)
-	_text.draw_set_transform(Vector2.ZERO, 0.0)
+	c.draw_set_transform(middle, 0.0, Vector2(scale_by, scale_by))
+	c.draw_string(_heavy, Vector2(left, at.y) - middle, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, READOUT_SIZE, colour)
+	c.draw_set_transform(Vector2.ZERO, 0.0)
 
 
 ## An ink drop: a rounded blot, narrowing to a point at the top, with a pale shine and a
