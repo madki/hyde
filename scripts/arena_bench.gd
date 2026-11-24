@@ -123,7 +123,11 @@ static func _change(run: RulesRun, name: String, value: String) -> void:
 	elif name in ["night", "round", "restraint", "stored", "plays", "discards", "score", "sov", "salt"]:
 		run.set(name, int(value))
 	elif name == "inst":
-		run.instruments.append(value)
+		# A key the rules do not know cannot be held: the table would have no emblem for it.
+		if RulesConfig.INSTRUMENTS.has(value):
+			run.instruments.append(value)
+		else:
+			push_warning("--set=inst:%s: no such instrument. They are %s." % [value, ", ".join(RulesConfig.INSTRUMENTS.keys())])
 	elif name.get_slice("_", 0) in ["craving", "habit", "temper"]:
 		(run.get(name.get_slice("_", 0)) as Dictionary)[name.get_slice("_", 1)] = int(value)
 
