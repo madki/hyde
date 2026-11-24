@@ -1,4 +1,4 @@
-class_name ArenaColumn
+class_name ArenaNumbers
 extends Control
 ## The round's numbers, drawn across the arena's page, each in its zone of ArenaLayout:
 ## everything a play changes about the round. Top left the night and the round with the
@@ -6,12 +6,12 @@ extends Control
 ## a pile of coins with the count; in the centre the restraint gauge and under it the hand
 ## readout, one written line (a name, chips × mult, and the total once it is counted) with
 ## the stored restraint as ink drops at the line's end; at the foot the plays and discards
-## left as tallies. (It was once a column down the page's left side, and keeps the name.)
+## left as tallies.
 ##
-## The column works out no rule. `show_table` puts up what RulesView.table() gives, at once,
+## It works out no rule. `show_table` puts up what RulesView.table() gives, at once,
 ## and `show_choice` the readout of RulesView.preview() for the chosen cards. Everything else
 ## is a call that moves one thing in its own time and returns the Tween doing it, so that a
-## beat can wait for it (`await column.tick_chips(15).finished`):
+## beat can wait for it (`await numbers.tick_chips(15).finished`):
 ##
 ## - `count_target(to)`, `count_score(to)`, `strike_target()`: the round's two numbers.
 ## - `name_hand(name, chips, mult)`, `tick_chips(by)`, `tick_mult(by)`, `pulse_chips()`,
@@ -78,7 +78,7 @@ var is_jekyll := true
 ## How fast every call plays: 1 at the usual pace, 3 to hurry.
 var speed := 1.0
 
-## The restraint gauge, laid out in the column.
+## The restraint gauge, laid out in its zone.
 var restraint := ArenaRestraint.new()
 
 var _marks := Control.new()

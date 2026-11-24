@@ -1,7 +1,7 @@
 class_name ArenaMomentRound
 ## A round begins: the heading in the centre, with the target, and on a night's first round
-## the night's title and its scene's twist; the numbers settle in the left column; the deck
-## shuffles in its corner; and the hand is dealt from the draw pile, card by card.
+## the night's title and its scene's twist; the numbers settle in their places; the deck
+## shuffles at the bottom left; and the hand is dealt from it, card by card.
 ##
 ## `result.events` are those of Rules.start_round (after Rules.new_run they are the run's
 ## `events`), or of the move that began the round: continue_result, leave_lab, alley_leave.
@@ -117,7 +117,7 @@ static func _begin(t: ArenaTable, deck: int, before: Dictionary) -> void:
 			blank[key] = 0
 			t.shown.set_value(key, 0)
 		blank.play = null
-		t.column.show_table(blank)
+		t.numbers.show_table(blank)
 		t.shown.set_value("draw_count", deck)
 		t.shown.set_value("discard_count", 0))
 	var words := {
@@ -131,9 +131,9 @@ static func _begin(t: ArenaTable, deck: int, before: Dictionary) -> void:
 		words.title = night.title
 		words.twist = "Its scene: %s" % night.twist_text
 	t.beats.add(func() -> void:
-		await t.heading.play(words, t.column.heading_place()))
+		await t.heading.play(words, t.numbers.heading_place()))
 	# The numbers settle.
-	t.add_mark("target", table.target, ArenaColumn.COUNT_TIME)
+	t.add_mark("target", table.target, ArenaNumbers.COUNT_TIME)
 	t.add_mark("plays", table.plays)
 	t.add_mark("discards", table.discards)
 	# The deck shuffles.

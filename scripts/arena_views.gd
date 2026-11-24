@@ -129,7 +129,7 @@ func _process(_delta: float) -> void:
 	if not held and not _deck.visible and _pointer_here:
 		if tab == "left":
 			hover = "night"
-		elif t.column.restraint.get_global_rect().has_point(point):
+		elif t.numbers.restraint.get_global_rect().has_point(point):
 			hover = "restraint"
 	if held == _held and hover == _hover:
 		return

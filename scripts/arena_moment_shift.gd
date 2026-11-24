@@ -54,7 +54,7 @@ static func page(t: ArenaTable, to_hyde: bool) -> void:
 	t.beats.add(func() -> void:
 		t.shown.set_value("stance", "hyde" if to_hyde else "jekyll")
 		t.ink.is_jekyll = not to_hyde
-		t.column.is_jekyll = not to_hyde
+		t.numbers.is_jekyll = not to_hyde
 		t.hand.turn_to(t.entry, to_hyde)
 		await t.beats.wait(PAGE_WAIT))
 

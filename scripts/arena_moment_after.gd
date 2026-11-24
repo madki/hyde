@@ -41,7 +41,7 @@ static func add_event(t: ArenaTable, e: Dictionary, order: Array = []) -> bool:
 static func unlock(t: ArenaTable, on_track: bool) -> void:
 	t.beats.add(func() -> void:
 		if on_track:
-			t.follow(t.column.restraint.set_lock(false))
+			t.follow(t.numbers.restraint.set_lock(false))
 		else:
 			t.symbols.set_lock(false)
 		await t.beats.wait(ArenaPace.MARK))

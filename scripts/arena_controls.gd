@@ -3,7 +3,7 @@ extends Control
 ## The two controls at the foot of the page, each a written word: PLAY beside the draw pile
 ## and DISCARD beside the discards (ArenaLayout.controls_play and controls_discard). A word
 ## takes clicks over its whole zone, the tally under it included; the tallies themselves are
-## ArenaColumn's. PASS takes PLAY's place when the play can be passed. Each is on when the
+## ArenaNumbers's. PASS takes PLAY's place when the play can be passed. Each is on when the
 ## rules allow it, and says why not when the pointer rests on it. They work out no rule:
 ## `show_table` takes RulesView.table() with the chosen cards.
 ##

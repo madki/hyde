@@ -30,12 +30,12 @@ static func setup(t: ArenaTable) -> void:
 
 
 static func _show(t: ArenaTable, marks: ArenaGhostMarks, play: Variant) -> void:
-	var track := t.column.restraint
+	var track := t.numbers.restraint
 	var on: bool = play != null and play.ok
 	if not on:
 		track.ghost = ""
 		t.symbols.clear_ghosts()
-		t.column.lean_stored(false)
+		t.numbers.lean_stored(false)
 		t.controls.warn_breakout(false)
 		marks.show_draws(0, Vector2.ZERO)
 		marks.say("")
@@ -55,7 +55,7 @@ static func _show(t: ArenaTable, marks: ArenaGhostMarks, play: Variant) -> void:
 	t.controls.warn_breakout(p.restraint.breaks_out)
 	# The three symbols: Craving, a rollover, Temper, the lock of a play that adds no Craving.
 	t.symbols.show_preview(p)
-	t.column.lean_stored(bool(ev.spends_stored))
+	t.numbers.lean_stored(bool(ev.spends_stored))
 	marks.show_draws(int(ev.draws), t.piles.draw_pile.top_centre())
 	if bool(ev.cheque):
 		t.means.glint("cheque")

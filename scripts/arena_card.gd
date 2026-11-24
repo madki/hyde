@@ -124,9 +124,12 @@ var _tag_warns := false
 var _upright := FontVariation.new()
 var _slanted := FontVariation.new()
 var _plain := FontVariation.new()
-## The two title faces drawn narrower, for a title written in a strip.
+## The two title faces drawn narrower, for a title written in a strip, and narrower still
+## for a long word in a thin one.
 var _upright_narrow := FontVariation.new()
 var _slanted_narrow := FontVariation.new()
+var _upright_tight := FontVariation.new()
+var _slanted_tight := FontVariation.new()
 var _change: Tween
 var _built := false
 
@@ -151,6 +154,13 @@ func _init() -> void:
 	_slanted_narrow.base_font = ThemeDB.fallback_font
 	_slanted_narrow.variation_embolden = 0.3
 	_slanted_narrow.variation_transform = Transform2D(Vector2(0.76, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
+	_upright_tight.base_font = ThemeDB.fallback_font
+	_upright_tight.variation_embolden = 0.7
+	_upright_tight.variation_transform = Transform2D(Vector2(0.56, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	_slanted_tight.base_font = ThemeDB.fallback_font
+	_slanted_tight.variation_embolden = 0.3
+	_slanted_tight.variation_transform = Transform2D(Vector2(0.6, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
+	_title.add_theme_constant_override("line_spacing", -4)
 	_plain.base_font = ThemeDB.fallback_font
 	_plain.variation_embolden = 0.4
 	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
@@ -322,9 +332,23 @@ func _refresh_title() -> void:
 		font = _slanted_narrow if ink else _upright_narrow
 	_title.size.x = maxf(16.0, strip - inner) if squeezed else whole
 	_title.text = title if ink else title.to_upper()
-	_title.add_theme_font_override("font", font)
 	_title.add_theme_color_override("font_color", INK_TEXT if ink else PAPER_TEXT)
-	var fits := _fit(_title, font, 14 if ink else 13, 2.0 if squeezed else 5.0, 6 if squeezed else 7)
+	var fits := _fit(_title, font, 14 if ink else 13, 2.0 if squeezed else 5.0, 8 if squeezed else 7)
+	if squeezed and not fits:
+		# Too long for its strip at a size that reads: two words go on two lines, and one
+		# long word is drawn narrower still.
+		if _title.text.count(" ") == 1:
+			var longer := _title.text.get_slice(" ", 0)
+			if _title.text.get_slice(" ", 1).length() > longer.length():
+				longer = _title.text.get_slice(" ", 1)
+			var both := _title.text.replace(" ", "\n")
+			_title.text = longer
+			fits = _fit(_title, font, 10, 2.0, 6)
+			_title.text = both
+		else:
+			font = _slanted_tight if ink else _upright_tight
+			fits = _fit(_title, font, 10, 2.0, 6)
+	_title.add_theme_font_override("font", font)
 	# A title too long for its strip is cut at its end, not at both ends.
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if fits else HORIZONTAL_ALIGNMENT_LEFT
 

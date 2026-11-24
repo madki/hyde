@@ -41,7 +41,7 @@ var t := ArenaTable.new()
 @onready var _border: ArenaBorder = $Border
 @onready var _ink: ArenaInk = $Ink
 @onready var _hand: ArenaHand = $Hand
-@onready var _column: ArenaColumn = $Column
+@onready var _numbers: ArenaNumbers = $Numbers
 @onready var _symbols: ArenaSymbols = $Symbols
 @onready var _means: ArenaMeans = $Means
 @onready var _controls: ArenaControls = $Controls
@@ -139,7 +139,7 @@ func do_move(move: String, result: Dictionary) -> void:
 	if not move in ["play", "discard"]:
 		_hand.clear_chosen()
 	if move != "play":
-		_column.show_choice(null)
+		_numbers.show_choice(null)
 	t.move_begun.emit(move)
 	t.after = RulesView.table(_run)
 	t.unhandled = false
@@ -227,7 +227,7 @@ func _build() -> void:
 	t.stage = stage
 	t.moments = ArenaCardMoments.new(_beats, travel, piles, stage)
 	t.hand = _hand
-	t.column = _column
+	t.numbers = _numbers
 	t.symbols = _symbols
 	t.means = _means
 	t.ink = _ink
@@ -255,7 +255,7 @@ func _on_choice(ids: Array) -> void:
 		return
 	var table := RulesView.table(_run, ids)
 	t.after = table
-	_column.show_choice(table.play)
+	_numbers.show_choice(table.play)
 	_hand.show_table(table)
 	_controls.show_table(table, ids.size())
 	t.choice_changed.emit(table.play)

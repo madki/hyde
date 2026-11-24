@@ -20,12 +20,12 @@ static func add(t: ArenaTable, _e: Dictionary) -> void:
 		t.stage.show_caption("He breaks out.")
 		var burst := ArenaBurst.new()
 		t.arena.add_child(burst)
-		t.arena.move_child(burst, t.column.get_index())
-		await burst.play(t.beats, t.column.restraint.end_place(), func() -> void:
+		t.arena.move_child(burst, t.numbers.get_index())
+		await burst.play(t.beats, t.numbers.restraint.end_place(), func() -> void:
 			t.shown.set_value("stance", "hyde")
 			t.ink.is_jekyll = false
 			t.ink.snap_to_stance()
-			t.column.is_jekyll = false
+			t.numbers.is_jekyll = false
 			t.hand.turn_to(t.entry, true)
 			t.mark("restraint/meter", 0))
 		burst.queue_free())

@@ -5,7 +5,7 @@ class_name ArenaBench
 ##   over: 1 to 9 and 0 choose the card at that place, P plays, D discards, N passes, Q drinks,
 ##   S takes salt, X lets the chosen cards go, B plays the best hand the rules find, and Z
 ##   leaves nothing to play (the cards that can be played go to the discards, and no discard
-##   is left), so that N can pass. T holds Tab down (every number), K opens the draw pile's view and L the discards',
+##   is left), so that N can pass. T holds Tab down (every number, as Shift does), K opens the draw pile's view and L the discards',
 ##   H presses the hint. At a reward 1 to 3 take that card and 0 none.
 ## - `--set=<name>:<value>,...`: numbers and names of the run to change before its first
 ##   round is shown, for looking at a moment that is far into a run: `restraint`, `stored`,
@@ -17,7 +17,7 @@ class_name ArenaBench
 ##   `lock`, `pen`, `cane` for a Factor. A card the deck lacks is added to it.
 ## - `--time`: plays the last key's move at the usual speed and prints how long it took.
 ## - `--quit`: quits when the keys' moves are over (for a run without a window).
-## - `--trace`: prints the readout after each step of a play, as the column shows it.
+## - `--trace`: prints the readout after each step of a play, as the readout shows it.
 ## - `--at=<seconds>`: with `--shot`, the still is taken this long into the last key's move
 ##   (or into the deal, without keys) instead of when it is over.
 ## - `--fast`: every move is played back at once.

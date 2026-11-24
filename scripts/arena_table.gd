@@ -43,7 +43,7 @@ var piles: ArenaPiles
 var stage: ArenaStage
 var moments: ArenaCardMoments
 var hand: ArenaHand
-var column: ArenaColumn
+var numbers: ArenaNumbers
 var symbols: ArenaSymbols
 var means: ArenaMeans
 var ink: ArenaInk
@@ -112,7 +112,7 @@ func card_data(id: int) -> Dictionary:
 	return data
 
 
-## Has a tween made by one of the parts (the column's calls return theirs) play at the
+## Has a tween made by one of the parts (the numbers' calls return theirs) play at the
 ## queue's rate, and keep up with it when the player hurries. Returns the tween.
 func follow(tween: Tween) -> Tween:
 	_followed = _followed.filter(func(old: Tween) -> bool: return old.is_valid())
@@ -161,21 +161,21 @@ func mark(key: String, value: Variant) -> void:
 	shown.set_value(key, value)
 	match key:
 		"plays":
-			follow(column.set_plays(value))
+			follow(numbers.set_plays(value))
 		"discards":
-			follow(column.set_discards(value))
+			follow(numbers.set_discards(value))
 		"sov":
-			follow(column.count_sov(value))
+			follow(numbers.count_sov(value))
 		"target":
-			follow(column.count_target(value))
+			follow(numbers.count_target(value))
 		"score":
-			follow(column.count_score(value))
+			follow(numbers.count_score(value))
 		"restraint/stored":
-			follow(column.set_stored(value))
+			follow(numbers.set_stored(value))
 		"restraint/meter":
-			column.restraint.show_meter(value, shown.value("restraint/limit", column.restraint.limit))
+			numbers.restraint.show_meter(value, shown.value("restraint/limit", numbers.restraint.limit))
 		"restraint/limit":
-			column.restraint.show_meter(shown.value("restraint/meter", 0), value)
+			numbers.restraint.show_meter(shown.value("restraint/meter", 0), value)
 
 
 ## Adds a beat that moves one shown number, with the part that draws it, and waits.
@@ -203,7 +203,7 @@ func sync() -> void:
 	after = table
 	ink.is_jekyll = table.stance == "jekyll"
 	hand.is_jekyll = table.stance == "jekyll"
-	column.show_table(table)
+	numbers.show_table(table)
 	symbols.show_table(table)
 	_stale = false
 	if not _means_settling:
@@ -230,7 +230,7 @@ func catch_up() -> void:
 
 func _set_rate() -> void:
 	var rate := beats.rate()
-	column.speed = rate
+	numbers.speed = rate
 	for tween in _followed:
 		if tween.is_valid():
 			tween.set_speed_scale(rate)
