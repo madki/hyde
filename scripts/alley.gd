@@ -149,7 +149,9 @@ func _add_held(rows: Array[Dictionary], place: Dictionary) -> void:
 
 # An instrument's name as it reads after "the".
 func _plain(text: String) -> String:
-	return text.trim_prefix("The ")
+	if text.begins_with("The "):
+		return text.trim_prefix("The ")
+	return text.to_lower()
 
 
 func _count(n: int, word: String) -> String:
