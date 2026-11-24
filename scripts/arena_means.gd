@@ -112,13 +112,36 @@ const CHALK := Palette.CHALK
 const CHALK_DIM := Color(Palette.CHALK, 0.55)
 const OUTLINE := Color(Palette.OUTLINE, 0.9)
 ## A seal's wax, the part the die pressed flat, and what the die left raised (and its rim).
-const WAX := Palette.INK_BLOOM
-const WAX_PRESSED := Palette.INK_BODY
+const WAX := Palette.NIGHT_3
+const WAX_PRESSED := Palette.NIGHT_2
 const WAX_LINE := Palette.CHALK
-## The draught in the flask, and its cork.
+## The draught in the flask: deep while it is corked, in his light when it can be drunk, with a
+## hot core that flares for a moment as the cork comes out.
 const DRAUGHT := Palette.HYDE_DEEP
-const CORK := Palette.GOLD
+const DRAUGHT_READY := Palette.HYDE
+const DRAUGHT_CORE := Palette.HOT
+## The cork, a dark step of the night, and its lines.
+const CORK := Palette.NIGHT_3
+const CORK_LINE := Palette.CHALK_3
+## The flask's glass and the light on it.
+const GLASS := Palette.CHALK_3
+const GLASS_LIGHT := Palette.CHALK_2
+## The salt, with a fringe in Jekyll's light.
 const SALT := Palette.SALT
+const SALT_FRINGE := Palette.JEKYLL
+## The place the flask and the paper stand in: its border at rest, and the light of each when it
+## can be used.
+const SLOT_REST := Palette.RULE
+const DRAUGHT_LIGHT := Palette.HYDE
+const SALT_LIGHT := Palette.JEKYLL
+## How the place is drawn: its corners, its border, the glow round it when it can be used, and
+## how much its drawing dims when it is spent.
+const SLOT_CORNER := 6
+const SLOT_BORDER := 1.5
+const SLOT_GLOW := 10
+const SPENT_DIM := 0.35
+## How long the draught's core flares as the cork comes out.
+const CORE_TIME := 0.6
 
 ## Changes the lines and the edges a little while keeping the look.
 @export var rng_seed := 23
@@ -135,6 +158,10 @@ var _keys: Array[String] = []
 var _tip := 0.0
 var _level := 1.0
 var _cork := 0.0
+## How far the draught's core flares over its rest (0 at rest, 1 hot), and whether the draught
+## has been drunk and not yet offered again: its place then shows as spent.
+var _core := 0.0
+var _drunk := false
 ## How open the paper is (0 folded shut, 1 open), and how far it has gone while a dose is
 ## taken (0 there, 1 gone).
 var _open := 0.0
@@ -190,6 +217,9 @@ func show_table(table: Dictionary, dials: RulesDials = null) -> void:
 	_tip = 0.0
 	_level = 1.0
 	_cork = 0.0 if _draught.ok else 1.0
+	if _draught.ok:
+		_drunk = false
+	_core = 0.0
 	_open = 1.0 if _salt.ok else 0.0
 	_spend = 0.0
 	_keys.clear()
@@ -224,7 +254,9 @@ func spot(key: String) -> Vector2:
 ## The flask tips over and empties, then stands up again, empty.
 func tip_flask() -> void:
 	_cork = 0.0
+	_core = 0.0
 	await _tween(TIP_TIME, func(t: float) -> void: _tip = t)
+	_drunk = true
 	await _tween(POUR_TIME, func(t: float) -> void: _level = 1.0 - t)
 	await _tween(RIGHT_TIME, func(t: float) -> void: _tip = 1.0 - t)
 
@@ -234,6 +266,8 @@ func tip_flask() -> void:
 func set_draught(draught: Dictionary) -> void:
 	var was_ok: bool = _draught.ok
 	_draught = {"ok": draught.ok, "why": draught.why, "cost": draught.cost}
+	if _draught.ok:
+		_drunk = false
 	if _level < 1.0:
 		var from := _level
 		await _tween(FILL_TIME, func(t: float) -> void: _level = lerpf(from, 1.0, t))
@@ -241,6 +275,10 @@ func set_draught(draught: Dictionary) -> void:
 		var from := _cork
 		var to := 0.0 if _draught.ok else 1.0
 		await _tween(CORK_TIME, func(t: float) -> void: _cork = lerpf(from, to, t))
+		# Uncorked: the core flares for a moment and settles, without holding up the move. With
+		# flashes reduced it does not flare.
+		if to == 0.0 and not ArenaPace.reduce_flashes:
+			_flare_core()
 	_redraw()
 	_hovered(_hover)
 
@@ -514,6 +552,52 @@ func _paper_at() -> Vector2:
 	return Vector2(zone.end.x - PAPER_FROM_RIGHT, zone.get_center().y)
 
 
+## The place the flask stands in: round the flask, short of its words.
+func _flask_slot() -> Rect2:
+	var zone := _flask_zone()
+	return Rect2(zone.position + Vector2(-2.0, -6.0), Vector2(44.0, zone.size.y + 8.0))
+
+
+## The place the paper lies in: a square round it.
+func _salt_slot() -> Rect2:
+	var half := PAPER_SIZE * 0.5 + 8.0
+	return Rect2(_paper_at() - Vector2(half, half), Vector2(half, half) * 2.0)
+
+
+## The draught's colour: deep while corked, his light as the cork comes out.
+func _draught_colour() -> Color:
+	return DRAUGHT.lerp(DRAUGHT_READY, 1.0 - _cork)
+
+
+## A colour of a spent item's drawing, sunk most of the way into the night. (A pencil's alpha
+## is its pressure, so a line is dimmed by its colour, not by its alpha.)
+static func _dimmed(colour: Color) -> Color:
+	return colour.lerp(Palette.NIGHT_2, 1.0 - SPENT_DIM)
+
+
+## How far the draught's place is lit as ready (0 to 1, with the cork), and whether it is spent.
+func _flask_ready() -> float:
+	return 0.0 if _drunk else 1.0 - _cork
+
+
+func _flask_spent() -> bool:
+	return _drunk or _level < 0.5
+
+
+func _salt_ready() -> float:
+	return _open if _salt.doses > 0 else 0.0
+
+
+func _salt_spent() -> bool:
+	return _salt.doses <= 0
+
+
+## The draught's core flares and settles.
+func _flare_core() -> void:
+	await _tween(CORE_TIME, func(t: float) -> void: _core = 1.0 - t)
+	_core = 0.0
+
+
 func _tween(seconds: float, apply: Callable) -> void:
 	var tw := create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tw.tween_method(func(t: float) -> void:
@@ -538,6 +622,8 @@ func _lay_out() -> void:
 
 ## The emblems' stock and wax with their shadows, the seals' rims, and the note's card.
 func _draw_back() -> void:
+	_slot_frame(_flask_slot(), DRAUGHT_LIGHT, _flask_ready(), _flask_spent())
+	_slot_frame(_salt_slot(), SALT_LIGHT, _salt_ready(), _salt_spent())
 	var rng := RandomNumberGenerator.new()
 	for i in _slots.size():
 		var s: Dictionary = _slots[i]
@@ -559,6 +645,27 @@ func _draw_back() -> void:
 		var box := _note_rect(lines)
 		_back.draw_rect(Rect2(box.position + Vector2(3.0, 4.0), box.size), SHADOW)
 		_back.draw_rect(box, NOTE_CREAM)
+
+
+## The place of the flask or the paper, in one of three states that differ twice over: at rest
+## a plain border in the rule's colour; ready (`lit` towards 1) a border in the item's
+## `light` with a soft glow of it round the place; spent a dashed border (and its drawing dimmed,
+## which is the drawing's own).
+func _slot_frame(rect: Rect2, light: Color, lit: float, spent: bool) -> void:
+	if spent:
+		var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
+		for k in 4:
+			_back.draw_dashed_line(corners[k], corners[(k + 1) % 4], SLOT_REST, SLOT_BORDER, 4.0)
+		return
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(light, 0.0)
+	box.set_corner_radius_all(SLOT_CORNER)
+	box.set_border_width_all(int(ceilf(SLOT_BORDER)))
+	box.border_color = SLOT_REST.lerp(light, lit)
+	box.shadow_color = Color(light, 0.3 * lit)
+	box.shadow_size = roundi(SLOT_GLOW * lit)
+	box.anti_aliasing = true
+	_back.draw_style_box(box, rect)
 
 
 func _card(item: CanvasItem, edge: PackedVector2Array, colour: Color, shadow: Color = SHADOW) -> void:
@@ -614,28 +721,51 @@ func _draw_fills() -> void:
 		var top := lerpf(centre.y + r, full, _level)
 		var under := PackedVector2Array([Vector2(centre.x - 100.0, top), Vector2(centre.x + 100.0, top),
 				Vector2(centre.x + 100.0, top + 100.0), Vector2(centre.x - 100.0, top + 100.0)])
+		var liquid_colour := _dimmed(_draught_colour()) if _flask_spent() else _draught_colour()
 		for liquid in Geometry2D.intersect_polygons(body, under):
-			_fills.draw_colored_polygon(liquid, Color(DRAUGHT, 0.9))
+			_fills.draw_colored_polygon(liquid, liquid_colour)
+		# Uncorked and full, a core lit in the draught: a warm step of his light, flaring hot for
+		# a moment as the cork comes out.
+		var showing := (1.0 - _cork) * clampf((_level - 0.8) * 5.0, 0.0, 1.0) * (1.0 - _tip)
+		if showing > 0.01:
+			var core := centre + Vector2(-r * 0.1, r * 0.3)
+			_fills.draw_circle(core, r * 0.42, Color(DRAUGHT_READY.lerp(DRAUGHT_CORE, 0.18), 0.6 * showing))
+			_fills.draw_circle(core, r * 0.22, Color(DRAUGHT_READY.lerp(DRAUGHT_CORE, 0.3 + 0.7 * _core), showing))
 	# The draught pouring out while the flask lies over.
 	if _tip > 0.8 and _level > 0.02 and _level < 0.99:
 		var mouth := _flask_xform() * Vector2(0.0, -BULB_R - NECK_H)
 		var floor_y := _bulb_at().y + r + 2.0
-		_fills.draw_line(mouth, Vector2(mouth.x + 1.0, floor_y), Color(DRAUGHT, 0.7 * _level + 0.2), 2.0)
-		_fills.draw_circle(Vector2(mouth.x + 1.0, floor_y), 2.0 + 2.0 * (1.0 - _level), Color(DRAUGHT, 0.7))
+		_fills.draw_line(mouth, Vector2(mouth.x + 1.0, floor_y), Color(DRAUGHT_READY, 0.7 * _level + 0.2), 2.0)
+		_fills.draw_circle(Vector2(mouth.x + 1.0, floor_y), 2.0 + 2.0 * (1.0 - _level), Color(DRAUGHT_READY, 0.7))
+	# The cork's body, a dark step of the night, under its lines.
+	if _cork > 0.01:
+		var top := -BULB_R - NECK_H + (1.0 - _cork) * -16.0
+		_fills.draw_set_transform_matrix(_flask_xform())
+		_fills.draw_colored_polygon(PackedVector2Array([Vector2(-NECK_W * 0.5 + 0.5, top + 6.0),
+				Vector2(-NECK_W * 0.5 - 1.5, top - 6.0), Vector2(NECK_W * 0.5 + 1.5, top - 6.0),
+				Vector2(NECK_W * 0.5 - 0.5, top + 6.0)]), Color(CORK, _cork))
+		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 	if _salt.doses > 0:
 		var heap := _open * (1.0 - _spend * 1.6)
 		var c := _paper_at()
-		if heap > 0.05:
+		if heap > 0.15:
 			# A small mound of salt on the open paper.
 			var mound := PackedVector2Array()
 			for a in 9:
 				var x := lerpf(-7.0, 7.0, a / 8.0)
 				mound.append(c + Vector2(x, 4.0 - 7.0 * heap * (1.0 - pow(x / 7.0, 2.0))))
-			_fills.draw_colored_polygon(mound, Color(SALT, 0.95))
+			# Its fringe first, a little wider, in Jekyll's light; the salt over it.
+			var fringe := PackedVector2Array()
+			for p in mound:
+				fringe.append(c + Vector2(0.0, 1.0) + (p - c) * 1.25)
+			_fills.draw_colored_polygon(fringe, Color(SALT_FRINGE, 0.8))
+			_fills.draw_colored_polygon(mound, Color(SALT, 0.85))
 		if _spend > 0.0:
 			for g in 7:
 				var fall := fposmod(_spend * 1.4 + g * 0.13, 1.0)
-				_fills.draw_circle(c + Vector2(-6.0 + g * 2.0, 6.0 + fall * 14.0), 1.2, Color(SALT, 1.0 - fall))
+				var grain := c + Vector2(-6.0 + g * 2.0, 6.0 + fall * 14.0)
+				_fills.draw_circle(grain, 1.7, Color(SALT_FRINGE, 0.7 * (1.0 - fall)))
+				_fills.draw_circle(grain, 1.1, Color(SALT, 0.85 * (1.0 - fall)))
 	var round_edge := _circle(Vector2.ZERO, ROUND_R - 1.0, 24)
 	for i in _slots.size():
 		var s: Dictionary = _slots[i]
@@ -657,18 +787,27 @@ func _draw_fills() -> void:
 ## Every line: the flask and its cork, the paper, the instruments, and the mark of a hover.
 func _draw_lines() -> void:
 	var base := rng_seed * 1000
-	# The flask.
+	# The flask: its glass, over a dark edge, and the light on the glass; dimmed when spent.
+	var spent := _flask_spent()
+	var edge := Pencil.new(base + 1)
+	edge.colour = OUTLINE
 	var flask := Pencil.new(base + 1)
-	flask.colour = CHALK if _draught.ok else Color(CHALK, 0.8)
+	flask.colour = _dimmed(GLASS) if spent else GLASS
+	var shine := Pencil.new(base + 3)
+	shine.colour = _dimmed(GLASS_LIGHT) if spent else GLASS_LIGHT
 	_lines.draw_set_transform_matrix(_flask_xform())
+	var rim := PackedVector2Array([Vector2(-NECK_W * 0.5 - 2.0, -BULB_R - NECK_H - 1.0),
+			Vector2(NECK_W * 0.5 + 2.0, -BULB_R - NECK_H - 1.0)])
+	edge.stroke(_bulb_path(), 6.0, 0.5)
+	edge.stroke(rim, 5.0, 0.3)
 	flask.stroke(_bulb_path(), 3.0, 0.5)
-	flask.stroke(PackedVector2Array([Vector2(-NECK_W * 0.5 - 2.0, -BULB_R - NECK_H - 1.0),
-			Vector2(NECK_W * 0.5 + 2.0, -BULB_R - NECK_H - 1.0)]), 2.6, 0.3)
-	flask.stroke(PackedVector2Array([Vector2(-BULB_R * 0.55, -BULB_R * 0.1), Vector2(-BULB_R * 0.35, -BULB_R * 0.5)]), 1.6, 0.2)
+	flask.stroke(rim, 2.6, 0.3)
+	shine.stroke(PackedVector2Array([Vector2(-BULB_R * 0.6, -BULB_R * 0.05), Vector2(-BULB_R * 0.35, -BULB_R * 0.55)]), 2.4, 0.2)
+	edge.draw(_lines)
 	if _cork > 0.01:
 		var rise := (1.0 - _cork) * -16.0
 		var cork := Pencil.new(base + 2)
-		cork.colour = Color(CORK, _cork)
+		cork.colour = Color(CORK_LINE, _cork)
 		var top := -BULB_R - NECK_H + rise
 		cork.stroke(PackedVector2Array([Vector2(-NECK_W * 0.5 + 0.5, top + 6.0), Vector2(-NECK_W * 0.5 - 1.5, top - 6.0),
 				Vector2(NECK_W * 0.5 + 1.5, top - 6.0), Vector2(NECK_W * 0.5 - 0.5, top + 6.0)]), 2.6, 0.2)
@@ -676,17 +815,17 @@ func _draw_lines() -> void:
 			cork.stroke(PackedVector2Array([Vector2(-3.5 + h * 3.5, top - 4.0), Vector2(-4.5 + h * 3.5, top + 4.0)]), 1.6, 0.1)
 		cork.draw(_lines)
 	flask.draw(_lines)
+	shine.draw(_lines)
 	_lines.draw_set_transform_matrix(Transform2D.IDENTITY)
-	# The paper: open with salt in it, or folded shut; with no dose left, only its place.
+	# The paper: open with salt in it, or folded shut; with no dose left, a dim folded paper, gone.
 	var paper := Pencil.new(base + 100)
 	var c := _paper_at()
 	if _salt.doses > 0:
-		paper.colour = Color(CHALK, (1.0 - _spend) * (1.0 if _salt.ok or _open > 0.0 else 0.8))
+		paper.colour = Color(GLASS_LIGHT, (1.0 - _spend) * (1.0 if _salt.ok or _open > 0.0 else 0.8))
 		_paper_path(paper, c, _open)
 	else:
-		paper.colour = Color(CHALK, 0.4)
-		var h := PAPER_SIZE * 0.4
-		_dashed(paper, _rect_path(Rect2(c - Vector2(h, h), Vector2(h, h) * 2.0)), 4.0, 4.0, 1.1)
+		paper.colour = _dimmed(GLASS_LIGHT)
+		_paper_path(paper, c, 0.0)
 	paper.draw(_lines)
 	# Hovering salt that can be taken: the paper it will spend is outlined, and struck.
 	if _hover == "salt" and _salt.ok and _salt.doses > 0:
