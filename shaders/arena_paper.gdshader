@@ -23,15 +23,15 @@ uniform float contrast : hint_range(0.0, 8.0) = 3.8;
 uniform float mid_at : hint_range(0.0, 1.0) = 0.48;
 
 group_uniforms colours;
-uniform vec3 paper_dark : source_color = vec3(0.122, 0.141, 0.157);
-uniform vec3 paper_mid : source_color = vec3(0.184, 0.243, 0.275);
-uniform vec3 paper_light : source_color = vec3(0.306, 0.376, 0.447);
+uniform vec3 paper_dark : source_color = vec3(0.016, 0.114, 0.165);
+uniform vec3 paper_mid : source_color = vec3(0.004, 0.176, 0.247);
+uniform vec3 paper_light : source_color = vec3(0.063, 0.263, 0.333);
 /** The ink's four colours, palest to darkest: pale wash, pink where the ink thins, wine, and
  * the darkest. */
-uniform vec3 ink_wash : source_color = vec3(0.415, 0.325, 0.455);
-uniform vec3 ink_bloom : source_color = vec3(0.40, 0.21, 0.37);
-uniform vec3 ink_body : source_color = vec3(0.29, 0.14, 0.25);
-uniform vec3 ink_deep : source_color = vec3(0.13, 0.05, 0.115);
+uniform vec3 ink_wash : source_color = vec3(0.361, 0.184, 0.349);
+uniform vec3 ink_bloom : source_color = vec3(0.369, 0.063, 0.251);
+uniform vec3 ink_body : source_color = vec3(0.247, 0.012, 0.173);
+uniform vec3 ink_deep : source_color = vec3(0.122, 0.012, 0.090);
 
 group_uniforms ink;
 /** The wet layer's paint (read with ink_paint): 1 at the right border, 0 at the ink's limit,
@@ -85,7 +85,7 @@ void fragment() {
 	inside = max(inside, step(0.999, presence));
 	float total = smoothstep(0.0, limit_soft, inside) * step(0.0005, presence);
 	if (total > 0.0) {
-		float sheet = 1.0 + (t - mid_at) * 2.0 * ink_paper;
+		float sheet = clamp(1.0 + (t - mid_at) * 2.0 * ink_paper, 0.85, 1.0);
 		float paint = ink_paint(texture(wet, page_uv));
 		// Smooth noises that travel with the ink: one shifts the layers' levels so their edges
 		// do not run alongside each other, one is how much pigment dried where.
