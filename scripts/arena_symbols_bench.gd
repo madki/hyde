@@ -8,10 +8,11 @@ extends Control
 ## the ghost marks (a pip, a rollover, Temper, none) and L sets the lock. F flashes the
 ## sketch. On the line: A moves a paper mark across to ink, S an ink mark back to paper,
 ## Z and X add a paper or an ink mark, C runs the check at the end of a round (V resets a
-## flooded line). Hold Tab for every number.
+## flooded line). Hold Tab for the page as a held key leaves it: no ledger, no change's number.
 ##
 ## For a screenshot: `tools/shot.sh /abs/out.png res://scenes/arena_symbols_bench.tscn`, with
-## `--state=rich` for gauges with marks on them, `--hover=<lamp|heart|mirror>`, `--numbers`,
+## `--state=rich` for gauges with marks on them, `--state=wide` for the widest a gauge gets (more
+## marks on both sides than are drawn), `--hover=<lamp|heart|mirror>`, `--numbers`,
 ## `--ghost=<pip|roll|temper>`, `--lock`, `--hyde`, and `--line=<paper>:<ink>`.
 
 ## Sent when the keys of `--keys` have all been pressed.
@@ -41,6 +42,10 @@ func _ready() -> void:
 		_set_gauges("mirror", 0, 7, 2)
 		_table.line.paper = 9
 		_table.line.ink = 7
+	elif Shot.arg("state") == "wide":
+		_set_gauges("lamp", 2, 26, 31)
+		_set_gauges("heart", 1, 20, 20)
+		_set_gauges("mirror", 0, 11, 9)
 	if Shot.has_arg("line"):
 		var parts := Shot.arg("line").split(":")
 		_table.line.paper = int(parts[0])
@@ -56,7 +61,7 @@ func _ready() -> void:
 	if Shot.has_arg("lock"):
 		_symbols.set_lock(true)
 	_keys.text = "1 2 3 symbol   P pip   O empty   R rollover   T turn   H habit   G ghost   L lock   F flash" \
-			+ "\nA paper to ink   S ink to paper   Z + paper   X + ink   C line check   V reset   Tab numbers"
+			+ "\nA paper to ink   S ink to paper   Z + paper   X + ink   C line check   V reset   Tab held key"
 	_show_choice()
 	# `--keys=<letters>` presses those keys one after another; the shot is taken when they are
 	# done, or `--wait=<seconds>` after they start, to catch one in motion.

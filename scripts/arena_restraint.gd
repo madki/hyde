@@ -1,9 +1,10 @@
 class_name ArenaRestraint
 extends Control
-## The restraint gauge on the arena's page: one row, the word RESTRAINT and after it a track of
-## numbered steps, from 1 at the left to the limit at the right, with tick marks along both
-## its sides. The row is centred in the gauge's width and height. Under each number the page's slate has come off in a round patch like old paint,
-## each patch touching the next, and the cream of the paper shows
+## The restraint gauge on the arena's page: the word RESTRAINT at the top left, and under it a
+## track of numbered steps, from 1 at the gauge's left edge to the limit at the right, with tick
+## marks along both its sides. A lower limit is a shorter track from the same start. Under each
+## number the page's slate has come off in a round patch like old paint, each patch touching the
+## next, and the cream of the paper shows
 ## (shaders/arena_restraint_strip.gdshader). Hyde's ink lies over every step that has been
 ## reached, so the amount of ink is the reading, and a clean track reads nothing. The last
 ## step is marked as Hyde's. One step short of it the ink looks threatening (see
@@ -18,11 +19,17 @@ const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_materia
 
 ## Distance from one step to the next, in pixels, where the gauge is wide enough for it.
 const PITCH := 34.0
-## Half the track's height, and the size of the word before it with the room after the word.
+## Half the track's height, and how far its middle lies above the gauge's foot.
 const TRACK_HALF := 19.0
+const TRACK_FROM_FOOT := 28.0
+## The word over the track, its size, and its baseline under the gauge's top.
 const WORD := "RESTRAINT"
 const WORD_SIZE := 14
-const WORD_GAP := 12.0
+const WORD_BASE := 13.0
+## His mark stands over the last step when the track has at least this many; on a shorter
+## track it would lie on the word, and is written after the track's end, this far from it.
+const MARK_OVER_FROM := 4
+const MARK_GAP := 8.0
 ## Tick marks to a step, and the lengths of a short one and of the one at a step's middle.
 const TICKS := 4
 const TICK_SHORT := 4.5
@@ -184,28 +191,18 @@ func _threat_of() -> float:
 	return 1.0 if meter > 0 and meter == limit - 1 else 0.0
 
 
-## The room the word takes before the track.
-func _word_room() -> float:
-	return _heavy.get_string_size(WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE).x + WORD_GAP
-
-
 func _pitch() -> float:
-	return minf(PITCH, (size.x - _word_room()) / limit)
-
-
-## Where the row begins: the word's left end.
-func _row_left() -> float:
-	return (size.x - _word_room() - _pitch() * limit) * 0.5
+	return minf(PITCH, size.x / limit)
 
 
 ## The height of the track's middle.
 func _track_y() -> float:
-	return size.y * 0.5
+	return size.y - TRACK_FROM_FOOT
 
 
-## The middle of the i-th step, 1 to `limit`.
+## The middle of the i-th step, 1 to `limit`: the track begins at the gauge's left edge.
 func _step(i: int) -> Vector2:
-	return Vector2(_row_left() + _word_room() + (i - 0.5) * _pitch(), _track_y())
+	return Vector2((i - 0.5) * _pitch(), _track_y())
 
 
 func _lay_out() -> void:
@@ -252,8 +249,7 @@ func _draw_strip() -> void:
 
 ## The word, the numbers, and whose the end of the track is.
 func _draw_text() -> void:
-	var word_drop := (_heavy.get_ascent(WORD_SIZE) - _heavy.get_descent(WORD_SIZE)) * 0.5
-	var word_at := Vector2(_row_left(), _track_y() + word_drop)
+	var word_at := Vector2(0.0, WORD_BASE)
 	# Cream with a dark edge: the word lies on the page itself, slate or ink.
 	_text.draw_string_outline(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, 4, Color(PENCIL, 0.7))
 	_text.draw_string(_heavy, word_at, WORD, HORIZONTAL_ALIGNMENT_LEFT, -1.0, WORD_SIZE, WORD_COLOUR)
@@ -264,10 +260,15 @@ func _draw_text() -> void:
 		var at := _step(i)
 		_text.draw_string(_heavy, Vector2(at.x - _pitch() * 0.5, at.y + drop), str(i), HORIZONTAL_ALIGNMENT_CENTER,
 				_pitch(), number_size, INKED_TEXT if _level >= i - 0.5 else PAPER_TEXT)
-	# Written by hand above the last step, slanting up and away from it.
+	# Written by hand above the last step, slanting up and away from it; after a short
+	# track's end, level with its numbers.
 	var whose := "HYDE!"
 	var width := _slanted.get_string_size(whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12).x
-	_text.draw_set_transform(Vector2(_step(limit).x - width * 0.5 + 6.0, _track_y() - TRACK_HALF - TICK_LONG + 2.0), deg_to_rad(-9.0))
+	if limit >= MARK_OVER_FROM:
+		_text.draw_set_transform(Vector2(_step(limit).x - width * 0.5 + 6.0, _track_y() - TRACK_HALF - TICK_LONG + 2.0), deg_to_rad(-9.0))
+	else:
+		var mark_drop := (_slanted.get_ascent(12) - _slanted.get_descent(12)) * 0.5
+		_text.draw_set_transform(Vector2(_pitch() * limit + MARK_GAP, _track_y() + mark_drop), 0.0)
 	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(PENCIL, 0.7))
 	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, WORD_COLOUR)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)

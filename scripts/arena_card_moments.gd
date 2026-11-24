@@ -115,9 +115,9 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 				place[0] = now.centre
 				place[1] = now.turn
 				place[2] = now.get("size", place[2])
-			# A card of the hand lifts well clear of the row; a small one, laid in the centre,
-			# only a little, to stay under the caption.
-			lifted = place[0] + Vector2(0.0, -34.0 if place[2] >= 1.0 else -12.0)
+			# A card of the hand lifts well clear of the row; one laid on the stage is held up
+			# where it lies, to stay under the caption and over the lower rule.
+			lifted = place[0] + Vector2(0.0, 0.0 if stage.holds(place[0]) else -34.0)
 		else:
 			# Drawn out of the pile, face up, to the centre of the table.
 			held[0] = piles.take(where, before)

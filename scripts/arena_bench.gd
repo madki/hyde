@@ -11,7 +11,7 @@ class_name ArenaBench
 ##   round is shown, for looking at a moment that is far into a run: `restraint`, `stored`,
 ##   `plays`, `discards`, `score`, `sov`, `salt`, `stance`, `hyde_arrived` (0 or 1), and
 ##   `night` and `round` (from 0), which begin that round anew; `craving_lamp`, `habit_heart`,
-##   `temper_mirror` and so on for a gauge; `inst:<key>` to hold an instrument.
+##   `temper_mirror` and so on for a gauge; `inst:<key>` to hold an instrument (once for each).
 ## - `--hand=<card>,...`: the cards of the first hand, in place of those dealt: `lamp`,
 ##   `heart`, `mirror` for a Paper Root, with `*` after it for its Ink twin, and `cup`, `eye`,
 ##   `lock`, `pen`, `cane` for a Factor. A card the deck lacks is added to it.
@@ -65,10 +65,16 @@ static func run_if_requested(arena: Node) -> void:
 ## Changes the run as `--set` asks. Call before the run's first round is shown.
 static func apply_set(run: RulesRun) -> void:
 	var values := {}
+	var held: Array[String] = []
 	for part in Shot.arg("set").split(",", false):
 		var pair := part.split(":")
-		if pair.size() == 2:
+		if pair.size() == 2 and pair[0] == "inst":
+			held.append(pair[1])
+		elif pair.size() == 2:
 			values[pair[0]] = pair[1]
+	# Held before the round begins anew, so that the round counts on them.
+	for key in held:
+		_change(run, "inst", key)
 	var again := false
 	for name: String in ["night", "round", "stance", "hyde_arrived", "restraint"]:
 		if values.has(name):
@@ -117,7 +123,11 @@ static func _change(run: RulesRun, name: String, value: String) -> void:
 	elif name in ["night", "round", "restraint", "stored", "plays", "discards", "score", "sov", "salt"]:
 		run.set(name, int(value))
 	elif name == "inst":
-		run.instruments.append(value)
+		# A key the rules do not know cannot be held: the table would have no emblem for it.
+		if RulesConfig.INSTRUMENTS.has(value):
+			run.instruments.append(value)
+		else:
+			push_warning("--set=inst:%s: no such instrument. They are %s." % [value, ", ".join(RulesConfig.INSTRUMENTS.keys())])
 	elif name.get_slice("_", 0) in ["craving", "habit", "temper"]:
 		(run.get(name.get_slice("_", 0)) as Dictionary)[name.get_slice("_", 1)] = int(value)
 

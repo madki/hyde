@@ -3,16 +3,16 @@ extends Control
 ## Views on demand: what the table does not keep on the page, one step away.
 ##
 ## - Hold Shift (or Tab, or rest the pointer on the tab at the right edge, which says so):
-##   every number at once, for as long as it is held. The three symbols write their gauges in
-##   numbers, and a note in the centre gives each symbol's Roots and what one is worth, the
-##   restraint's limit and why, what the next drink costs, the scene's twist, what the dawn
-##   brings, and both men's hands with their base chips and mult.
+##   every number at once, for as long as it is held. A sheet in the centre gives each
+##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and
+##   why, what the next drink costs, the scene's twist, what the dawn brings, and both men's
+##   hands with their base chips and mult.
 ## - Rest the pointer on the tab at the left edge, which names the scene's twist: the twist
 ##   and what the dawn brings. On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
 ##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
-## - On night 1 the small word "Hint", over PLAY, chooses the cards of the best hand the rules find.
+## - On night 1 the small word "Hint", right of DISCARD, chooses the cards of the best hand the rules find.
 ##   It shows no score.
 ##
 ## None of it shows the score of the chosen cards. It reads RulesView.table() and the run's
@@ -21,6 +21,8 @@ extends Control
 const CREAM := Color(0.95, 0.91, 0.8)
 const PENCIL := Color(0.08, 0.05, 0.04)
 const SMALL := 0.46
+## The Notebook's first card, from the middle of the draw pile's zone.
+const NOTEBOOK_FROM_PILE := Vector2(-20.0, -104.0)
 
 var t: ArenaTable
 
@@ -76,7 +78,6 @@ func _init() -> void:
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
 	_hint.text = "Hint"
-	_hint.size = Vector2(64.0, 24.0)
 	_hint.focus_mode = Control.FOCUS_NONE
 	_hint.tooltip_text = "Chooses the cards of a good hand."
 	_hint.add_theme_font_override("font", font)
@@ -100,6 +101,7 @@ func _init() -> void:
 func bind(table: ArenaTable) -> void:
 	t = table
 	t.synced.connect(_on_synced)
+	resized.connect(_place_hint)
 	t.move_begun.connect(func(_move: String) -> void:
 		_name_twist(RulesView.table(t.run).night)
 		_open = false
@@ -112,10 +114,16 @@ func _on_synced(table: Dictionary) -> void:
 	_table = table
 	_open = table.phase == "play"
 	_hint.visible = _open and int(table.night.no) == 1
-	var play := ArenaLayout.controls_play(size)
-	_hint.position = Vector2(play.get_center().x - _hint.size.x * 0.5, play.position.y - 46.0)
+	_place_hint()
 	_name_twist(table.night)
 	_show_notebook()
+
+
+## The word "Hint" stands in its zone, right of DISCARD, wherever the page's size puts it.
+func _place_hint() -> void:
+	var zone := ArenaLayout.hint(size)
+	_hint.position = zone.position
+	_hint.size = zone.size
 
 
 func _process(_delta: float) -> void:
@@ -137,8 +145,8 @@ func _process(_delta: float) -> void:
 	_hover = hover
 	t.symbols.show_numbers(held)
 	if held:
-		# In the middle of the page, under the numbers the symbols write below their gauges.
-		_say(_every_number(), Vector2(0.0, ArenaLayout.restraint(size).position.y + 4.0), true)
+		# In the middle of the page.
+		_say(_every_number(), Vector2(0.0, ArenaLayout.note_top(size)), true)
 	elif hover == "night":
 		var left := _tabs.rect_of("left")
 		_say(_night_words(), Vector2(left.end.x + 12.0, left.position.y))
@@ -240,6 +248,8 @@ func _every_number() -> String:
 		"" if draught.ok else "  (%s)" % draught.why])
 	var salt: Dictionary = _table.salt
 	lines.append("Salt: %d doses.%s" % [salt.doses, "" if salt.ok else "  (%s)" % salt.why])
+	for key: String in _table.instruments:
+		lines.append("%s: %s" % [RulesConfig.INSTRUMENTS[key].name, RulesConfig.instrument_text(key, t.run.dials)])
 	lines.append("")
 	lines.append(_night_words())
 	lines.append("")
@@ -299,6 +309,8 @@ func _open_pile(which: String) -> void:
 	_deck.add_child(_deck_title)
 	_deck.visible = true
 	_note.visible = false
+	# The hand lies under the view: no card of it grows there while the view is open.
+	t.hand.enabled = false
 
 
 func _close_deck() -> void:
@@ -308,6 +320,8 @@ func _close_deck() -> void:
 	if _deck_title.get_parent() == _deck:
 		_deck.remove_child(_deck_title)
 	_clear(_deck)
+	# The hand takes the pointer again, unless a move has begun meanwhile.
+	t.hand.enabled = _open
 
 
 # ---------- the Notebook ----------
@@ -317,9 +331,8 @@ func _show_notebook() -> void:
 	var next: Variant = _table.notebook
 	if next == null or not _open:
 		return
-	var pile := t.piles.draw_pile.top_centre()
-	# Over the pile, between it and the lower rule.
-	var at: Vector2 = get_global_transform().affine_inverse() * pile + Vector2(-18.0, -90.0)
+	# Over the pile's zone, between it and the lower rule, left of the hand's zone.
+	var at := ArenaLayout.pile_draw(size).get_center() + NOTEBOOK_FROM_PILE
 	# The next card lies on top, at the right.
 	for i in range(next.size() - 1, -1, -1):
 		var card := ArenaTravel.make_card(t.card_data(next[i].id))

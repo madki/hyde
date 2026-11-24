@@ -1,9 +1,10 @@
 class_name ArenaStage
 extends Control
 ## The stage for the laid play and for every moment that shows cards: the band between the
-## readout and the lower rule (ArenaLayout.stage). It lays up to five cards there in a row,
-## small (LAID_SCALE), and holds them still face up; the caption line over them
-## (ArenaLayout.caption) says what is happening.
+## readout and the lower rule (ArenaLayout.stage). It lays up to five cards there in a row
+## about its middle, at their own size (LAID_SCALE), and holds them still face up; the caption
+## line over them (ArenaLayout.caption) says what is happening. A reward's three cards are
+## laid larger and further apart (REWARD_SCALE, REWARD_GAP), to be read where they lie.
 ##
 ## A caption stays on the page for ArenaPace.CAPTION_MIN at least, counted at the queue's rate
 ## (a hurried caption goes sooner): `clear_caption` waits for what is left of it.
@@ -12,7 +13,10 @@ extends Control
 ## laid card is (1 is a card at its own size).
 const MOST := 5
 const GAP := 10.0
-const LAID_SCALE := 0.7
+const LAID_SCALE := 1.0
+## A reward's cards: how large they are laid, and the room between two of them.
+const REWARD_SCALE := 1.25
+const REWARD_GAP := 20.0
 ## The caption's box: it may run to a second line, which then spreads above and below its zone.
 const CAPTION_SIZE := Vector2(600.0, 48.0)
 const CAPTION_COLOUR := Color(0.95, 0.9, 0.78)
@@ -47,25 +51,32 @@ func _ready() -> void:
 	_place_caption()
 
 
-## The centre, on the page, of the i-th of n cards laid in the row.
-func slot(i: int, n: int) -> Vector2:
+## The centre, on the page, of the i-th of n cards laid in the row, at `card_scale` and `gap`
+## apart.
+func slot(i: int, n: int, card_scale: float = LAID_SCALE, gap: float = GAP) -> Vector2:
 	n = clampi(n, 1, MOST)
 	var middle := ArenaLayout.stage(size).get_center()
-	var x := middle.x + (i - (n - 1) * 0.5) * (ArenaCard.SIZE.x * LAID_SCALE + GAP)
+	var x := middle.x + (i - (n - 1) * 0.5) * (ArenaCard.SIZE.x * card_scale + gap)
 	return get_global_transform() * Vector2(x, middle.y)
 
 
 ## The centres of a row of n cards.
-func slots(n: int) -> Array[Vector2]:
+func slots(n: int, card_scale: float = LAID_SCALE, gap: float = GAP) -> Array[Vector2]:
 	var out: Array[Vector2] = []
 	for i in n:
-		out.append(slot(i, n))
+		out.append(slot(i, n, card_scale, gap))
 	return out
 
 
-## Lays `cards` in the row, face up, each from where it lies. Returns the end of the last.
-func lay(travel: ArenaTravel, cards: Array) -> Signal:
-	return travel.fly_group(cards, slots(cards.size()), [], LAID_SCALE, ArenaTravel.UP)
+## Lays `cards` in the row, face up, each from where it lies, at `card_scale` and `gap` apart.
+## Returns the end of the last.
+func lay(travel: ArenaTravel, cards: Array, card_scale: float = LAID_SCALE, gap: float = GAP) -> Signal:
+	return travel.fly_group(cards, slots(cards.size(), card_scale, gap), [], card_scale, ArenaTravel.UP)
+
+
+## True for a point of the page that lies on the stage.
+func holds(point: Vector2) -> bool:
+	return ArenaLayout.stage(size).has_point(get_global_transform().affine_inverse() * point)
 
 
 ## Puts a caption over the row. It replaces the one there, which is then cut short.

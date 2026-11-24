@@ -74,6 +74,7 @@ var _stale := false
 ## Call once, when every part is set.
 func bind() -> void:
 	shown = beats.shown
+	controls.hold_tallies(numbers)
 	beats.hurried.connect(_set_rate)
 	beats.skipped.connect(_set_rate)
 	beats.started.connect(_set_rate)

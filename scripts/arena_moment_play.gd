@@ -169,7 +169,8 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			return
 		"instrument":
 			t.play(t.means.hop.bind("hcane"))
-			at = t.means.spot("hcane")
+			# What it gives rises from just over its emblem, not across it.
+			at = t.means.spot("hcane") + Vector2(0.0, -ArenaMeans.ROUND_R - 6.0)
 	if words != "" and at != Vector2.ZERO:
 		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)
 	if step.chips != 0:

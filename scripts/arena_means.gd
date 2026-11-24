@@ -4,24 +4,28 @@ extends Control
 ## of the arena's page, each in its own zone of ArenaLayout, all drawn by this one element,
 ## which lies over the whole page and takes the pointer only on its parts.
 ##
-## - The laboratory's instruments (`whose` "lab" in the rules' config): round medallions of
-##   cream stock under the top rule at the left, each with its name under it. Room for three.
-## - His instruments (`whose` "his"): seals of dark wax at the right, named the same way.
-## - The draught, just above the lower rule at the left: the flask, open with its draught in
+## - The laboratory's instruments (`whose` "lab" in the rules' config): small round emblems
+##   of cream stock with a pencil sketch.
+## - His instruments (`whose` "his"): seals of dark wax with a pale rim and a pale sketch.
+##   Neither kind is named at rest. They stand in a grid at the top of the right column, five
+##   to a row, each row filled from the column's right side, so that none moves when another
+##   joins its row: the laboratory's rows first, his rows under them, and a kind with none
+##   takes no row.
+## - The draught, in the left column under the restraint: the flask, open with its draught in
 ##   it when it can be drunk and corked when it cannot, and beside it in words what the next
 ##   drink costs (his first arrival, or a stain).
-## - The salt, just above the lower rule at the right: one paper, open when a dose can be
+## - The salt, in the right column level with the draught: one paper, open when a dose can be
 ##   taken now and folded shut when it cannot, with the doses held written beside it.
 ##
-## Nothing but the medallions and the seals has stock under it: the flask, the paper and the
-## words are drawn light, to read on Jekyll's slate and on Hyde's ink alike.
+## Nothing but the emblems has stock under it: the flask, the paper and the words are drawn
+## light, to read on Jekyll's slate and on Hyde's ink alike.
 ##
 ## Hovering the flask or the salt shows what it will do, or why it is refused, in a note
-## over it, and before use marks what will change: hovering salt that can be taken outlines
+## beside it, towards the page's middle, and before use marks what will change: hovering salt that can be taken outlines
 ## the paper as spent. What lies outside this element (the restraint as stored drops, the
 ## stored drops struck through) is for the arena to mark: `preview_changed` says which to
-## show. Hovering an instrument shows its name and what it does in a note under it. Nothing
-## asks "are you sure".
+## show. Hovering an instrument shows its name, what it does and whose it is in a note left of
+## the grid. Nothing asks "are you sure".
 ##
 ## Pressing the flask or the salt only sends `drink_pressed` or `salt_pressed`, and only when
 ## it can be used. What a drink and a dose do is the arena's.
@@ -38,7 +42,8 @@ extends Control
 ## - `set_instruments(keys)`: an instrument new to the list is laid in its place, one gone is
 ##   taken away.
 ## - `hop(key)`: an instrument hops (The Cane, on his Mania). `glint(key)`: a light crosses it
-##   (the Cheque book, when it pays). `spot(key)` is the point just over it, on the page.
+##   (the Cheque book, when it pays). `spot(key)` is its middle, on the page: where what it
+##   gives starts from.
 
 ## The pointer is over the flask or the salt, and it can be used: "drink" or "salt". "" when it
 ## leaves, or over one that is refused. For the arena: "drink" outlines the restraint as
@@ -49,14 +54,23 @@ signal salt_pressed
 
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
-## A medallion's or a seal's radius, the distance from one's middle to the next, and how far
-## under the zone's top and inside its outer side the first one's edge lies.
-const ROUND_R := 34.0
-const ROUND_PITCH := 76.0
-const ROUND_INSET := Vector2(8.0, 6.0)
+## An emblem's radius, and the side of the square place it stands in, one beside the next.
+const ROUND_R := 18.0
+const ROUND_PITCH := 44.0
+## How many emblems stand in a row.
+const PER_ROW := 5
 ## An instrument's sketch is drawn this much smaller than it was sketched, to lie in the round.
-const SKETCH_SCALE := 0.82
-const NAME_SIZE := 11
+const SKETCH_SCALE := 0.44
+## No line of an emblem is drawn thinner than this, in pixels on the page.
+const MIN_STROKE := 1.4
+## The pale rim round a seal, so that dark wax keeps an edge on dark ink.
+const RIM_WIDTH := 1.5
+## How far an emblem's shadow falls.
+const SHADOW_OFFSET := Vector2(2.0, 3.0)
+## How far an emblem rises when it hops and when it is laid, and how far it turns.
+const HOP_RISE := 14.0
+const HOP_TURN := 0.08
+const LAY_DROP := 18.0
 ## The flask is sketched about its round body's middle, with this radius and this neck, and
 ## drawn this much smaller.
 const BULB_R := 25.0
@@ -97,7 +111,7 @@ const SHADOW := Color(0.0, 0.0, 0.0, 0.28)
 const CHALK := Color(0.95, 0.9, 0.78)
 const CHALK_DIM := Color(0.95, 0.9, 0.78, 0.55)
 const OUTLINE := Color(0.05, 0.035, 0.06, 0.9)
-## A seal's wax, the part the die pressed flat, and what the die left raised.
+## A seal's wax, the part the die pressed flat, and what the die left raised (and its rim).
 const WAX := Color(0.36, 0.1, 0.33)
 const WAX_PRESSED := Color(0.25, 0.06, 0.24)
 const WAX_LINE := Color(0.9, 0.74, 0.86)
@@ -108,6 +122,8 @@ const SALT := Color(0.99, 0.98, 0.95)
 
 ## Changes the lines and the edges a little while keeping the look.
 @export var rng_seed := 23
+## How many instruments are laid at most: the rules' limit, which a bench may raise.
+var max_held := RulesConfig.MAX_INSTRUMENTS
 
 var _dials: RulesDials = RulesDials.new()
 var _draught := {"ok": false, "why": "", "cost": "first"}
@@ -179,7 +195,7 @@ func show_table(table: Dictionary, dials: RulesDials = null) -> void:
 	_keys.clear()
 	_slots.clear()
 	var held: Array = table.instruments
-	for i in mini(held.size(), RulesConfig.MAX_INSTRUMENTS):
+	for i in mini(held.size(), max_held):
 		_keys.append(held[i])
 		_slots.append(_slot(held[i], 1.0))
 	_redraw()
@@ -193,13 +209,13 @@ func hover(part: String) -> void:
 	_hovered("inst%d" % i if i >= 0 else part)
 
 
-## The point just over an instrument, on the page: where what it gives rises from. For one
-## that is not held, the middle of his instruments' zone.
+## The middle of an instrument's emblem, on the page: where what it gives starts from. For one
+## that is not held, the middle of the instruments' first row.
 func spot(key: String) -> Vector2:
 	var i := _keys.find(key)
 	if i < 0:
-		return get_global_transform() * ArenaLayout.instruments_right(size).get_center()
-	return get_global_transform() * (_centre_of(i) + Vector2(0.0, -ROUND_R - 6.0))
+		return get_global_transform() * ArenaLayout.instruments(size).get_center()
+	return get_global_transform() * _centre_of(i)
 
 
 # --- Movements ------------------------------------------------------------------------------
@@ -271,7 +287,7 @@ func set_instruments(keys: Array) -> void:
 			kept.append(key)
 	var coming: Array[String] = []
 	for key: String in keys:
-		if not kept.has(key) and kept.size() + coming.size() < RulesConfig.MAX_INSTRUMENTS:
+		if not kept.has(key) and kept.size() + coming.size() < max_held:
 			coming.append(key)
 	_keys = kept + coming
 	_slots.clear()
@@ -340,9 +356,8 @@ func _part_at(point: Vector2) -> String:
 	if _salt_hit().has_point(point):
 		return "salt"
 	for i in _slots.size():
-		# The medallion or the seal, and its name under it.
-		var c := _centre_of(i)
-		if point.distance_to(c) <= ROUND_R + 3.0 or Rect2(c.x - ROUND_R, c.y, ROUND_R * 2.0, ROUND_R + 30.0).has_point(point):
+		# The emblem's own square place.
+		if _place_of(i).has_point(point):
 			return "inst%d" % i
 	return ""
 
@@ -374,8 +389,8 @@ func _preview_kind() -> String:
 # --- Words ----------------------------------------------------------------------------------
 
 
-## The next drink's cost, as it is written beside the flask: short, to end before the hand's
-## first card, which rises beside it.
+## The next drink's cost, as it is written beside the flask: short, to end inside the left
+## column.
 func _cost_words() -> String:
 	if _draught.cost == "first":
 		return "He arrives: %d Roots join" % RulesConfig.FIRST_ARRIVAL.size()
@@ -405,11 +420,13 @@ func _note_lines() -> Array:
 	if _hover.begins_with("inst") and _part_exists(_hover):
 		var key := _keys[int(_hover.substr(4))]
 		var colour := INK if _his(key) else PENCIL
-		return [[RulesConfig.INSTRUMENTS[key].name, colour, true], [RulesConfig.instrument_text(key, _dials), colour, false]]
+		var whose := "One of his instruments." if _his(key) else "One of the laboratory's instruments."
+		return [[RulesConfig.INSTRUMENTS[key].name, colour, true], [RulesConfig.instrument_text(key, _dials), colour, false],
+				[whose, colour, false]]
 	return []
 
 
-## True for an instrument of his: a seal at the right. The laboratory's are medallions at the left.
+## True for an instrument of his: a seal of wax. The laboratory's are of cream stock.
 static func _his(key: String) -> bool:
 	return RulesConfig.INSTRUMENTS[key].whose == "his"
 
@@ -421,20 +438,31 @@ func _slot(key: String, laid: float) -> Dictionary:
 	return {"key": key, "in": laid, "hop": 0.0, "glint": 0.0}
 
 
-## The middle of the i-th held instrument: the laboratory's in a row from the left of their
-## zone, his in a row from the right of theirs.
-func _centre_of(i: int) -> Vector2:
+## The square place of the i-th held instrument in the grid: each kind in the order it is
+## held, five to a row from the column's right side, the laboratory's rows first and his rows
+## under them.
+func _place_of(i: int) -> Rect2:
 	var his := _his(_slots[i].key)
 	var nth := 0
-	for j in i:
-		if _his(_slots[j].key) == his:
+	var labs := 0
+	for j in _slots.size():
+		var other := _his(_slots[j].key)
+		if not other:
+			labs += 1
+		if other == his and j < i:
 			nth += 1
-	var along := ROUND_INSET.x + ROUND_R + nth * ROUND_PITCH
+	@warning_ignore("integer_division")
+	var row := nth / PER_ROW
 	if his:
-		var zone := ArenaLayout.instruments_right(size)
-		return Vector2(zone.end.x - along, zone.position.y + ROUND_INSET.y + ROUND_R)
-	var zone := ArenaLayout.instruments_left(size)
-	return Vector2(zone.position.x + along, zone.position.y + ROUND_INSET.y + ROUND_R)
+		row += ceili(labs / float(PER_ROW))
+	var zone := ArenaLayout.instruments(size)
+	return Rect2(zone.end.x - (nth % PER_ROW + 1) * ROUND_PITCH, zone.position.y + row * ArenaLayout.INSTRUMENT_ROW,
+			ROUND_PITCH, ArenaLayout.INSTRUMENT_ROW)
+
+
+## The middle of the i-th held instrument's emblem, at rest.
+func _centre_of(i: int) -> Vector2:
+	return _place_of(i).get_center()
 
 
 ## Where an instrument is drawn: its place, lifted by a hop, dropped in while laid.
@@ -442,8 +470,8 @@ func _slot_xform(i: int) -> Transform2D:
 	var s: Dictionary = _slots[i]
 	var laid: float = s.get("in", 1.0)
 	var hop_by: float = s.get("hop", 0.0)
-	var lift := Vector2(0.0, -14.0 * hop_by - 18.0 * (1.0 - laid))
-	var turn := 0.08 * hop_by - 0.12 * (1.0 - laid)
+	var lift := Vector2(0.0, -HOP_RISE * hop_by - LAY_DROP * (1.0 - laid))
+	var turn := HOP_TURN * hop_by - 0.12 * (1.0 - laid)
 	return Transform2D(turn, _centre_of(i) + lift)
 
 
@@ -456,7 +484,7 @@ func _salt_zone() -> Rect2:
 
 
 ## What of the draught's zone takes the pointer: the flask and its words, and no more of the
-## zone, whose far end a risen card of the hand lies over.
+## zone.
 func _flask_hit() -> Rect2:
 	var zone := _flask_zone()
 	return Rect2(zone.position, Vector2(minf(WORDS_LEFT + _words_width(), zone.size.x), zone.size.y))
@@ -508,7 +536,7 @@ func _lay_out() -> void:
 # --- Drawing --------------------------------------------------------------------------------
 
 
-## The medallions' stock and the seals' wax with their shadows, and the note's card.
+## The emblems' stock and wax with their shadows, the seals' rims, and the note's card.
 func _draw_back() -> void:
 	var rng := RandomNumberGenerator.new()
 	for i in _slots.size():
@@ -518,8 +546,11 @@ func _draw_back() -> void:
 		var laid: float = s.in
 		_back.draw_set_transform_matrix(_slot_xform(i))
 		if _his(s.key):
-			_card(_back, _blob(rng, ROUND_R + 1.0, 3.2, 7), Color(WAX, laid), Color(SHADOW, SHADOW.a * laid))
-			_back.draw_colored_polygon(_blob(rng, ROUND_R - 7.0, 0.6, 3), Color(WAX_PRESSED, laid))
+			var edge := _blob(rng, ROUND_R, 1.2, 5)
+			_card(_back, edge, Color(WAX, laid), Color(SHADOW, SHADOW.a * laid))
+			_back.draw_colored_polygon(_blob(rng, ROUND_R - 4.5, 0.4, 3), Color(WAX_PRESSED, laid))
+			edge.append(edge[0])
+			_back.draw_polyline(edge, Color(WAX_LINE, laid), RIM_WIDTH, true)
 		else:
 			_card(_back, _blob(rng, ROUND_R, 0.5, 3), Color(CREAM, laid), Color(SHADOW, SHADOW.a * laid))
 		_back.draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -533,28 +564,33 @@ func _draw_back() -> void:
 func _card(item: CanvasItem, edge: PackedVector2Array, colour: Color, shadow: Color = SHADOW) -> void:
 	var under := PackedVector2Array()
 	for p in edge:
-		under.append(p + Vector2(3.0, 4.0))
+		under.append(p + SHADOW_OFFSET)
 	item.draw_colored_polygon(under, shadow)
 	item.draw_colored_polygon(edge, colour)
 
 
-## Where the note of what the pointer is over lies: over the flask or the salt, under an
-## instrument's name, and always inside the page.
+## Where the note of what the pointer is over lies: right of the draught's zone, left of the
+## salt's, and left of the instruments' grid at the top of the hovered emblem's row: under
+## the ribbon, and raised if need be so that its foot stays on the stage.
 func _note_rect(lines: Array) -> Rect2:
 	var height := 14.0
 	for line: Array in lines:
 		height += _note_line_height(line)
 	var at: Vector2
 	if _hover == "flask":
-		at = _flask_zone().position + Vector2(0.0, -height - NOTE_GAP)
+		at = Vector2(_flask_zone().end.x + NOTE_GAP, _flask_zone().position.y)
 	elif _hover == "salt":
-		at = Vector2(_salt_zone().end.x - NOTE_W, _salt_zone().position.y - height - NOTE_GAP)
-	elif _his(_keys[int(_hover.substr(4))]):
-		var zone := ArenaLayout.instruments_right(size)
-		at = Vector2(zone.end.x - NOTE_W, zone.end.y + 4.0)
+		at = Vector2(_salt_zone().position.x - NOTE_GAP - NOTE_W, _salt_zone().position.y)
 	else:
-		var zone := ArenaLayout.instruments_left(size)
-		at = Vector2(zone.position.x, zone.end.y + 4.0)
+		var zone := ArenaLayout.instruments(size)
+		var top := zone.position.y
+		if _hover.begins_with("inst") and _part_exists(_hover):
+			top = _place_of(int(_hover.substr(4))).position.y
+		# No higher than the readout, so that it lies beside the ribbon's end and not over it.
+		top = maxf(top, ArenaLayout.readout(size).position.y)
+		top = minf(top, ArenaLayout.stage(size).end.y - height)
+		at = Vector2(zone.position.x - NOTE_GAP - NOTE_W, top)
+	at = at.clamp(Vector2.ZERO, (size - Vector2(NOTE_W, height)).max(Vector2.ZERO))
 	return Rect2(at, Vector2(NOTE_W, height))
 
 
@@ -609,12 +645,12 @@ func _draw_fills() -> void:
 		var x := lerpf(-ROUND_R * 1.3, ROUND_R * 1.3, s.glint)
 		var light := sin(s.glint * PI)
 		# A slanting bar of light, as much of it as lies on the round.
-		var bar := PackedVector2Array([Vector2(x - 10.0, -ROUND_R), Vector2(x + 2.0, -ROUND_R),
-				Vector2(x - 6.0, ROUND_R), Vector2(x - 18.0, ROUND_R)])
+		var bar := PackedVector2Array([Vector2(x - 5.0, -ROUND_R), Vector2(x + 1.0, -ROUND_R),
+				Vector2(x - 3.0, ROUND_R), Vector2(x - 9.0, ROUND_R)])
 		for lit in Geometry2D.intersect_polygons(bar, round_edge):
 			_fills.draw_colored_polygon(lit, Color(1.0, 0.98, 0.88, 0.75 * light))
-		if absf(x - 4.0) < ROUND_R - 8.0:
-			_fills.draw_circle(Vector2(x - 4.0, -6.0), 4.0 * light, Color(1.0, 1.0, 0.95, light))
+		if absf(x - 2.0) < ROUND_R - 4.0:
+			_fills.draw_circle(Vector2(x - 2.0, -3.0), 2.5 * light, Color(1.0, 1.0, 0.95, light))
 		_fills.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
@@ -660,21 +696,23 @@ func _draw_lines() -> void:
 		_dashed(mark, _rect_path(Rect2(c - Vector2(h, h), Vector2(h, h) * 2.0)), 4.0, 3.0, 1.5)
 		mark.stroke(PackedVector2Array([c + Vector2(-h + 2.0, h - 2.0), c + Vector2(h - 2.0, -h + 2.0)]), 1.8, 0.3)
 		mark.draw(_lines)
-	# The instruments: a ruled ring on a medallion, the die's ring on a seal, and its sketch.
+	# The instruments: one ruled ring on the laboratory's emblem (a seal has its rim), and the
+	# sketch, no line of it thinner than MIN_STROKE on the page.
 	for i in _slots.size():
 		var s: Dictionary = _slots[i]
 		var his := _his(s.key)
-		var sketch := Pencil.new(base + 400 + hash(s.key) % 97)
-		sketch.colour = Color(WAX_LINE if his else PENCIL, s.in)
-		_lines.draw_set_transform_matrix(_slot_xform(i))
-		if his:
-			sketch.stroke(_circle(Vector2.ZERO, ROUND_R - 8.5, 26), 1.0, 0.3)
-		else:
-			sketch.stroke(_circle(Vector2.ZERO, ROUND_R - 2.5, 30), 1.8, 0.3)
-			sketch.stroke(_circle(Vector2.ZERO, ROUND_R - 5.5, 28), 0.8, 0.2)
-		sketch.draw(_lines)
+		var colour := Color(WAX_LINE if his else PENCIL, s.in)
+		if not his:
+			var ring := Pencil.new(base + 400 + hash(s.key) % 97)
+			ring.colour = colour
+			ring.min_width = MIN_STROKE
+			_lines.draw_set_transform_matrix(_slot_xform(i))
+			ring.stroke(_circle(Vector2.ZERO, ROUND_R - 2.5, 30), 1.6, 0.2)
+			ring.draw(_lines)
 		var drawing := Pencil.new(base + 600 + hash(s.key) % 97)
-		drawing.colour = sketch.colour
+		drawing.colour = colour
+		# A pale line on wax reads lighter than pencil on cream: it is given a little more.
+		drawing.min_width = MIN_STROKE * (1.3 if his else 1.0) / SKETCH_SCALE
 		_lines.draw_set_transform_matrix(_slot_xform(i).scaled_local(Vector2(SKETCH_SCALE, SKETCH_SCALE)))
 		_instrument(drawing, s.key)
 		drawing.draw(_lines)
@@ -682,7 +720,7 @@ func _draw_lines() -> void:
 	if _hover.begins_with("inst") and _part_exists(_hover):
 		var ring := Pencil.new(base + 500)
 		ring.colour = CHALK
-		ring.stroke(_circle(_centre_of(int(_hover.substr(4))), ROUND_R + 4.0, 30), 1.4, 0.3)
+		ring.stroke(_circle(_centre_of(int(_hover.substr(4))), ROUND_R + 3.0, 30), 1.4, 0.2)
 		ring.draw(_lines)
 	elif _hover == "flask" or _hover == "salt":
 		# A line under the part the pointer is on: bright when it can be used.
@@ -700,17 +738,8 @@ func _words_width() -> float:
 			_heavy.get_string_size("DRAUGHT  corked", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14).x)
 
 
-## The instruments' names, the draught's words and the doses held, and the hover's note.
+## The draught's words and the doses held, and the hover's note.
 func _draw_text() -> void:
-	for i in _slots.size():
-		var s: Dictionary = _slots[i]
-		var name: String = RulesConfig.INSTRUMENTS[s.key].name
-		var c := _centre_of(i)
-		var width := ROUND_PITCH - 4.0
-		var at := Vector2(c.x - width * 0.5, c.y + ROUND_R + 8.0 + _heavy.get_ascent(NAME_SIZE))
-		_text.draw_multiline_string_outline(_heavy, at, name, HORIZONTAL_ALIGNMENT_CENTER, width, NAME_SIZE, 2, 5,
-				Color(OUTLINE, OUTLINE.a * s.in))
-		_text.draw_multiline_string(_heavy, at, name, HORIZONTAL_ALIGNMENT_CENTER, width, NAME_SIZE, 2, Color(CHALK, s.in))
 	# The draught: its name, "corked" when it is, and what the next drink costs.
 	var zone := _flask_zone()
 	var at := zone.position + Vector2(WORDS_LEFT, 19.0)
@@ -833,10 +862,9 @@ func _instrument(pencil: Pencil, key: String) -> void:
 			pencil.stroke(_ellipse(Vector2(-3, -6), Vector2(20, 6), 22), 1.6, 0.3)
 			pencil.stroke(PackedVector2Array([Vector2(-14, -9), Vector2(-8, -10)]), 0.9, 0.2)
 		"hcane":
-			# A heavy stick with a crook.
-			pencil.stroke(PackedVector2Array([Vector2(-14, 26), Vector2(8, -14)]), 2.4, 0.4)
-			pencil.stroke(_arc(Vector2(14, -14), Vector2(6, 7), PI, TAU + 0.6, 12), 2.4, 0.3)
-			pencil.stroke(PackedVector2Array([Vector2(-16, 22), Vector2(-12, 26)]), 1.4, 0.2)
+			# A heavy stick with a wide crook, drawn large to read as a cane at an emblem's size.
+			pencil.stroke(PackedVector2Array([Vector2(-12, 25), Vector2(0, -11)]), 2.4, 0.3)
+			pencil.stroke(_arc(Vector2(9, -11), Vector2(9, 10), PI, TAU + 0.9, 16), 2.4, 0.3)
 		"cheque":
 			# A cheque book, open on its first cheque, a signature across it.
 			pencil.stroke(_rect_path(Rect2(-26, -14, 52, 28)), 1.7, 0.3)

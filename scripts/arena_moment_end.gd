@@ -156,15 +156,17 @@ static func _reward(t: ArenaTable) -> void:
 				"chips": t.run.dials.factor_chips if factor else int(t.after.symbols[key].paper_chips),
 				"text": RulesConfig.factor_text(key, "jekyll", t.run.dials) if factor else "",
 			})
+			# Laid larger than its own size: its words are drawn sharp.
+			card.sharp = true
 			t.travel.place(card, from, 0.0, 0.5)
 			card.modulate.a = 0.0
 			nodes.append(card)
 			t.beats.tween().tween_property(card, "modulate:a", 1.0, ArenaPace.TRAVEL * 0.5)
 		t.stage.show_caption("Take a card for the deck, or none.")
-		await t.stage.lay(t.travel, nodes))
+		await t.stage.lay(t.travel, nodes, ArenaStage.REWARD_SCALE, ArenaStage.REWARD_GAP))
 	t.beats.add_choice(func() -> void:
 		t.freshen()
-		t.reward.offer(nodes, t.stage.slot(0, 1) + Vector2(0.0, ArenaCard.SIZE.y * ArenaStage.LAID_SCALE * 0.5 + 22.0))
+		t.reward.offer(nodes)
 		t.picked = await t.reward.chosen
 		t.offered = nodes)
 	t.beats.add(func() -> void: await t.stage.clear_caption())

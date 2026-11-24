@@ -11,6 +11,8 @@ const HALF_WIDTH := 2.4 ## Half the ribbon's width in pixels: no line gets wider
 const STEP := 3.0 ## Distance between the points a stroke is cut into, in pixels.
 
 var colour := Color(0.015, 0.025, 0.035)
+## No stroke is drawn thinner than this, in the pencil's own units, whatever width it is given.
+var min_width := 0.0
 
 var _rng := RandomNumberGenerator.new()
 var _points := PackedVector2Array()
@@ -35,6 +37,7 @@ func stroke(path: PackedVector2Array, width: float, wobble: float = 0.8, fade: f
 		down: float = 0.0) -> void:
 	if path.size() < 2:
 		return
+	width = maxf(width, min_width)
 	var points := PackedVector2Array()
 	for i in path.size() - 1:
 		var pieces := maxi(1, int(path[i].distance_to(path[i + 1]) / STEP))

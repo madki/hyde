@@ -19,9 +19,9 @@ extends Control
 ## the hand that holds it. `change_face` changes the card where it lies, and `appear` and
 ## `leave` bring it in and take it away.
 ##
-## In the hand a card is partly covered by the next and its foot may be off the page: `strip`
-## and `foot_strip` write the title and the tag in the part that shows, and `chips_above` writes the chips on
-## a disc under the title instead of in the foot.
+## In the hand a card is partly covered by the next: `strip` and `foot_strip` write the title
+## and the tag in the part that shows, and `chips_above` writes the chips on a disc under the
+## title, where the next card does not cover them, instead of in the foot.
 
 const SIZE := Vector2(96.0, 140.0)
 ## The card is printed coarsely, in square texels this many pixels wide: 0 prints it smooth.
@@ -50,6 +50,9 @@ const FADE_TIME := 0.18
 const PAPER_MATERIAL: ShaderMaterial = preload("res://shaders/card_paper_material.tres")
 const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tres")
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/card_line_material.tres")
+
+## The engine's font drawn from distance fields, for `sharp`. Made once, for every card.
+static var _sharp_face: Font
 
 const PAPER_LINE := Color(0.07, 0.045, 0.03)
 const PAPER_TEXT := Color(0.07, 0.045, 0.03)
@@ -105,11 +108,20 @@ var foot_strip := 0.0:
 			foot_strip = value
 			_refresh_tag()
 ## The chips are written on a disc under the title, at the left, and the foot is left to the
-## tag: for a card whose foot may be off the page.
+## tag: for a card of the hand, whose foot the next card covers.
 var chips_above := false:
 	set(value):
 		if value != chips_above:
 			chips_above = value
+			_refresh()
+## The card is shown larger than its size (the hand's card under the pointer): its words are
+## drawn from distance fields, sharp at any size, instead of being the small card's words
+## blown up. Off, the usual face is kept, whose small sizes are the crisper.
+var sharp := false:
+	set(value):
+		if value != sharp:
+			sharp = value
+			_set_faces()
 			_refresh()
 
 var _body := Control.new()
@@ -142,26 +154,20 @@ func _init() -> void:
 
 	# The engine's own font, until the game has its two faces: made heavy and narrow for
 	# paper, and slanted for ink.
-	_upright.base_font = ThemeDB.fallback_font
+	_set_faces()
 	_upright.variation_embolden = 0.9
 	_upright.variation_transform = Transform2D(Vector2(0.84, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
-	_slanted.base_font = ThemeDB.fallback_font
 	_slanted.variation_embolden = 0.3
 	_slanted.variation_transform = Transform2D(Vector2(1.0, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
-	_upright_narrow.base_font = ThemeDB.fallback_font
 	_upright_narrow.variation_embolden = 0.8
 	_upright_narrow.variation_transform = Transform2D(Vector2(0.68, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
-	_slanted_narrow.base_font = ThemeDB.fallback_font
 	_slanted_narrow.variation_embolden = 0.3
 	_slanted_narrow.variation_transform = Transform2D(Vector2(0.76, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
-	_upright_tight.base_font = ThemeDB.fallback_font
 	_upright_tight.variation_embolden = 0.7
 	_upright_tight.variation_transform = Transform2D(Vector2(0.56, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
-	_slanted_tight.base_font = ThemeDB.fallback_font
 	_slanted_tight.variation_embolden = 0.3
 	_slanted_tight.variation_transform = Transform2D(Vector2(0.6, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
 	_title.add_theme_constant_override("line_spacing", -4)
-	_plain.base_font = ThemeDB.fallback_font
 	_plain.variation_embolden = 0.4
 	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
 
@@ -193,6 +199,26 @@ func _init() -> void:
 		add_child(child)
 	_built = true
 	_refresh()
+
+
+## Gives every face of the card the base font `sharp` asks for.
+func _set_faces() -> void:
+	var base: Font = _sharp_base() if sharp else ThemeDB.fallback_font
+	for face: FontVariation in [_upright, _slanted, _upright_narrow, _slanted_narrow, _upright_tight,
+			_slanted_tight, _plain]:
+		face.base_font = base
+
+
+## The engine's font, drawn from distance fields (made the first time it is asked for).
+static func _sharp_base() -> Font:
+	if _sharp_face == null:
+		var face := ThemeDB.fallback_font
+		if face is FontFile:
+			var copy := (face as FontFile).duplicate() as FontFile
+			copy.multichannel_signed_distance_field = true
+			face = copy
+		_sharp_face = face
+	return _sharp_face
 
 
 ## Shows one card of RulesView.table().hand: {id, t, key, ink, name, chips, text, ...}.
