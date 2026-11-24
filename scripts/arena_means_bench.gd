@@ -1,6 +1,6 @@
 extends Control
 ## A bench for the flask, the salt and the instruments (scripts/arena_means.gd): the element
-## alone in the top right of the arena's page, with keys that run each of its movements. The
+## alone on the arena's page, each part in its place, with keys that run each of its movements. The
 ## states here are the bench's own, made up to drive the element; the arena takes them from
 ## the rules.
 ##

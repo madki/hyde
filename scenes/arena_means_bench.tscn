@@ -29,10 +29,7 @@ script = ExtResource("4")
 paper = NodePath("../Paper")
 
 [node name="Means" parent="." instance=ExtResource("5")]
-offset_left = 872.0
-offset_top = 36.0
-offset_right = 1116.0
-offset_bottom = 282.0
+layout_mode = 1
 
 [node name="Keys" type="Label" parent="."]
 layout_mode = 0

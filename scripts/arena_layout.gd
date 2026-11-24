@@ -92,12 +92,12 @@ static func stage(page: Vector2) -> Rect2:
 
 ## The draught.
 static func draught(page: Vector2) -> Rect2:
-	return Rect2(MARGIN, foot_rule(page) - 50.0, 200.0, 44.0)
+	return Rect2(MARGIN, foot_rule(page) - 50.0, 230.0, 44.0)
 
 
 ## The salt.
 static func salt(page: Vector2) -> Rect2:
-	return _from_right(page, MARGIN, foot_rule(page) - 50.0, Vector2(200.0, 44.0))
+	return _from_right(page, MARGIN, foot_rule(page) - 50.0, Vector2(230.0, 44.0))
 
 
 # --- The foot -----------------------------------------------------------------------------

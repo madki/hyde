@@ -169,7 +169,7 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			return
 		"instrument":
 			t.play(t.means.hop.bind("hcane"))
-			at = t.means.get_global_transform() * Vector2(ArenaMeans.SIZE.x * 0.5, 40.0)
+			at = t.means.spot("hcane")
 	if words != "" and at != Vector2.ZERO:
 		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)
 	if step.chips != 0:
