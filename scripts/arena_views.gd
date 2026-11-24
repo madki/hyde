@@ -309,6 +309,8 @@ func _open_pile(which: String) -> void:
 	_deck.add_child(_deck_title)
 	_deck.visible = true
 	_note.visible = false
+	# The hand lies under the view: no card of it grows there while the view is open.
+	t.hand.enabled = false
 
 
 func _close_deck() -> void:
@@ -318,6 +320,8 @@ func _close_deck() -> void:
 	if _deck_title.get_parent() == _deck:
 		_deck.remove_child(_deck_title)
 	_clear(_deck)
+	# The hand takes the pointer again, unless a move has begun meanwhile.
+	t.hand.enabled = _open
 
 
 # ---------- the Notebook ----------

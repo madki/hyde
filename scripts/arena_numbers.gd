@@ -102,10 +102,13 @@ var speed := 1.0
 
 ## The restraint gauge, laid out in its zone.
 var restraint := ArenaRestraint.new()
-## The two tallies, plays and discards, drawn on a layer of their own: the controls lay it
-## over their buttons (ArenaControls.hold_tallies), which would hide it from under them.
+## The two tallies, plays and discards, on a layer of their own: the controls lay it over
+## their buttons (ArenaControls.hold_tallies), which would hide it from under them.
 var tallies := Control.new()
 
+## What each tally is drawn on, plays then discards: one each, because a tally is made faint
+## as a whole (a pencil stroke's own alpha is its pressure, not its strength).
+var _tally_items: Array[Control] = [Control.new(), Control.new()]
 var _marks := Control.new()
 var _text := Control.new()
 ## The total on its way to the score, drawn over the rest of the page: it crosses the ribbon.
@@ -148,7 +151,7 @@ var _plays_most := 0.0
 var _discards_most := 0.0
 ## How each tally is drawn, plays then discards: its colour, and how far down it is pushed
 ## (a pressed button). The controls set them as their buttons change (`set_tally_look`).
-var _tally_colours: Array[Color] = [Color(CREAM, 0.85), Color(CREAM, 0.85)]
+var _tally_colours: Array[Color] = [CREAM, CREAM]
 var _tally_drops: Array[float] = [0.0, 0.0]
 ## Before a drink: this many drops outlined, as the restraint would be stored. Before a dose
 ## of salt: the stored drops struck through.
@@ -171,8 +174,11 @@ func _init() -> void:
 	_text.draw.connect(_draw_text)
 	_flight.draw.connect(_draw_flight)
 	_flight.z_index = 1
-	tallies.material = LINE_MATERIAL
-	tallies.draw.connect(_draw_tallies)
+	for i in 2:
+		_tally_items[i].material = LINE_MATERIAL
+		_tally_items[i].mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_tally_items[i].draw.connect(_draw_tally.bind(i))
+		tallies.add_child(_tally_items[i])
 	restraint.name = "Restraint"
 	for child: Control in [_marks, restraint, _text, tallies, _flight]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -292,7 +298,7 @@ func count_score(to: int) -> Tween:
 	return _count("_score", to, COUNT_TIME)
 
 
-## The target is struck through and the score underlined (or both rubbed out, with false).
+## The target is struck through (or the stroke rubbed out, with false).
 func strike_target(struck: bool = true) -> Tween:
 	var t := _tween()
 	t.tween_property(self, "_strike", 1.0 if struck else 0.0, MARK_TIME)
@@ -529,12 +535,13 @@ func _stop_readout() -> void:
 func _redraw() -> void:
 	_marks.queue_redraw()
 	_text.queue_redraw()
-	tallies.queue_redraw()
+	for item in _tally_items:
+		item.queue_redraw()
 	_flight.queue_redraw()
 
 
 func _lay_out() -> void:
-	for child: Control in [_marks, _text, tallies, _flight]:
+	for child: Control in [_marks, _text, tallies, _flight] + _tally_items:
 		child.size = size
 	var gauge := ArenaLayout.restraint(size)
 	restraint.position = gauge.position
@@ -681,14 +688,15 @@ func _tally_left(i: int) -> float:
 	return _tally_zone(i).end.x - TALLY_INSET - width
 
 
-## How the tally of plays (0) or of discards (1) is drawn: its colour, and how far down it is
-## pushed, in pixels.
+## How the tally of plays (0) or of discards (1) is drawn: its colour, whose alpha is how
+## strongly the whole tally shows, and how far down it is pushed, in pixels.
 func set_tally_look(i: int, colour: Color, drop: float) -> void:
 	if _tally_colours[i] == colour and _tally_drops[i] == drop:
 		return
 	_tally_colours[i] = colour
 	_tally_drops[i] = drop
-	tallies.queue_redraw()
+	_tally_items[i].modulate.a = colour.a
+	_tally_items[i].queue_redraw()
 
 
 # --- Drawing -----------------------------------------------------------------------------
@@ -722,13 +730,13 @@ func _draw_marks() -> void:
 	pencil.draw(_marks)
 
 
-## The two tallies, each in the colour its control gives it.
-func _draw_tallies() -> void:
-	var pencil := Pencil.new(rng_seed + 1)
-	for i in 2:
-		pencil.colour = _tally_colours[i]
-		_tally(pencil, _tally_left(i), _tally_top(i), _plays if i == 0 else _discards)
-	pencil.draw(tallies)
+## The tally of plays (0) or of discards (1), in the colour its control gives it.
+func _draw_tally(i: int) -> void:
+	# Each has its own hand, whichever is drawn.
+	var pencil := Pencil.new(rng_seed + 1 + i)
+	pencil.colour = _tally_colours[i]
+	_tally(pencil, _tally_left(i), _tally_top(i), _plays if i == 0 else _discards)
+	pencil.draw(_tally_items[i])
 
 
 ## Tally marks in fives, the fifth across the other four. The last mark is drawn (or rubbed
