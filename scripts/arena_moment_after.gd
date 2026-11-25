@@ -4,11 +4,12 @@ class_name ArenaMomentAfter
 ##
 ## - `restraint`: the next step of the restraint track is inked.
 ## - `craving`: a Craving pip of that symbol fills (or the pips are left as a rollover left them).
-## - `breed`: the rollover. The three pips join into a Habit tally, the sketch pulses with
-##   its number, and a copy of that Ink Root rises from the sketch and joins the deck, before
+## - `breed`: the rollover. The three pips join into a Habit tally, the sketch pulses, and
+##   'Habit 2' stands beside the gauge under a caption that says why (`grown`); then a copy of that Ink Root rises from the sketch and joins the deck, before
 ##   the refill, because it can be drawn at once. The line gains a mark on his side.
 ## - `turn`: a Sublimation turns an Ink Root. The symbol's Craving pips travel into Temper,
-##   the Root changes side where it lies in the centre, and the line moves a mark across.
+##   'Temper 3' stands beside the gauge under a caption that says why, the Root changes side
+##   where it lies in the centre, and the line moves a mark across.
 ## - `cheque`: the Cheque book glints and a sovereign flies from it into the purse.
 ##
 ## After a symbol's gauges change, the chips on every card of that symbol on the table count
@@ -18,6 +19,10 @@ class_name ArenaMomentAfter
 
 ## Seconds the Cheque book's sovereign takes to reach the purse.
 const COIN_TIME := 0.3
+## Seconds a gauge that grew holds its new value beside it, with the caption, and the words'
+## fade after (laid over the next beat).
+const GROWN_HOLD := 1.4
+const GROWN_FADE := 0.15
 
 ## Adds the beats of one of the events above. False for any other event. `order` is the
 ## played cards' ids as they lie in the centre.
@@ -52,6 +57,18 @@ static func unlock(t: ArenaTable, on_track: bool) -> void:
 		else:
 			t.symbols.set_lock(false)
 		await t.beats.wait(ArenaPace.MARK))
+
+
+## A gauge of `sym` has grown: its name and new value ("Habit 2") stand beside it, in its
+## colour, while `caption` says why, for GROWN_HOLD. The caption is left for the next
+## moment's to replace; the words fade as that moment begins.
+static func grown(t: ArenaTable, sym: String, row: String, caption: String) -> void:
+	t.beats.add(func() -> void:
+		t.stage.show_caption(caption)
+		t.symbols.set_pay(sym, row, 1.0, 0.0)
+		await t.beats.wait(GROWN_HOLD)
+		var fade := t.beats.tween()
+		fade.tween_method(func(a: float) -> void: t.symbols.set_pay(sym, row, a, 0.0), 1.0, 0.0, GROWN_FADE))
 
 
 ## The chips on every Root of `sym` on the table count to what the engine now gives them.
@@ -97,6 +114,7 @@ static func _breed(t: ArenaTable, e: Dictionary) -> void:
 		t.shown.set_value("symbols/%s/habit" % sym, e.habit)
 		t.beats.sound("rollover")
 		await t.play(t.symbols.rollover.bind(sym, e.habit)))
+	grown(t, sym, "habit", ArenaCaptions.grows("rollover", RulesConfig.ROOT[sym].label))
 	var copy := t.card_data(e.id)
 	ArenaMomentShift.hyde_joins(t)
 	t.moments.join_deck([copy], ArenaCaptions.joins("rollover", [copy.name]), t.symbols.sketch_place(sym))
@@ -114,6 +132,7 @@ static func _turn(t: ArenaTable, e: Dictionary, order: Array) -> void:
 		t.shown.set_value("symbols/%s/temper" % sym, e.temper)
 		t.beats.sound("temper")
 		await t.play(t.symbols.turn.bind(sym, e.temper)))
+	grown(t, sym, "temper", ArenaCaptions.grows("turn", RulesConfig.ROOT[sym].label))
 	var card := t.hand.card_of(e.id)
 	var after := t.card_data(e.id)
 	var before := after.duplicate()
