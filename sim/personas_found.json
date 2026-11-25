@@ -1,0 +1,40 @@
+{
+	"found-dance": {
+		"based_on": "dance",
+		"drink_at": 2,
+		"forced_drink": false
+	},
+	"found-edge": {
+		"based_on": "edge",
+		"discard_gain": 1.2,
+		"drink_at": 1,
+		"hyde_stay": 6,
+		"min_cushion": 1
+	},
+	"found-hyde": {
+		"based_on": "hyde",
+		"scene_aware": true,
+		"w_break": 0.4
+	},
+	"found-jekyll": {
+		"alley_inst": [
+			"cheque",
+			"hcane"
+		],
+		"based_on": "jekyll",
+		"card_lamp": 1.8,
+		"card_mirror": 1.6,
+		"hyde_stay": 3
+	},
+	"found-thin": {
+		"based_on": "thin",
+		"card_lock": 0.2,
+		"drink_at": 2,
+		"w_turn": 0.1
+	},
+	"found-wide": {
+		"based_on": "wide",
+		"drink_at": 2,
+		"w_temper": 0.14
+	}
+}
