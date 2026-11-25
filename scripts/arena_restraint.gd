@@ -12,6 +12,14 @@ extends Control
 ##
 ## The gauge works out no rule. Give it what RulesView.table() returns with `show_table`: it
 ## shows that table's meter against that table's limit.
+##
+## The tight twist (`show_tight`): before the scene, the steps the scene will take from the
+## track have dashed rings in the twist's colour; in the scene, the shorter track ends at a
+## tick in that colour with the number taken, "−2". `twist_acted` is sent as the scene's
+## shorter limit is first shown.
+
+## The tight twist's lower limit is shown in the scene.
+signal twist_acted
 
 const INK_SHADER: Shader = preload("res://shaders/arena_restraint.gdshader")
 const STRIP_SHADER: Shader = preload("res://shaders/arena_restraint_strip.gdshader")
@@ -91,6 +99,10 @@ var _lock_move: Tween
 ## The still mark of what the chosen play would do: "" for none, "step" (the next step is
 ## outlined: it adds restraint), "breakout" (the outline is on the HYDE! end: he breaks out)
 ## or "lock" (it adds none).
+## The tight twist: how many steps the scene takes from the track (0 for none), and whether
+## this is the scene.
+var tight_drop := 0
+var tight_scene := false
 var ghost := "":
 	set(value):
 		ghost = value
@@ -138,9 +150,24 @@ func show_table(table: Dictionary) -> void:
 	show_meter(restraint.meter, restraint.limit)
 
 
+## The tight twist: `drop` steps taken from the track in the scene (0 for none), and whether
+## the scene is the round now.
+func show_tight(drop: int, scene: bool) -> void:
+	if drop == tight_drop and scene == tight_scene:
+		return
+	var acts := drop > 0 and scene and not tight_scene
+	tight_drop = drop
+	tight_scene = scene
+	_text.queue_redraw()
+	if acts:
+		twist_acted.emit()
+
+
 ## Shows `new_meter` on a track that ends at `new_limit`: the ink comes over the steps, or
 ## draws back from them, in its own time.
 func show_meter(new_meter: int, new_limit: int) -> void:
+	if new_limit < limit and tight_drop > 0 and tight_scene:
+		twist_acted.emit()
 	if new_limit != limit:
 		limit = maxi(new_limit, 1)
 		_lay_out()
@@ -264,6 +291,9 @@ func _draw_text() -> void:
 		if _level >= i - 0.5:
 			_text.draw_circle(at, pip, Palette.INK_DEEP)
 			_draw_dashed_ring(at, pip, Palette.HYDE)
+		elif tight_drop > 0 and not tight_scene and i > limit - tight_drop:
+			# A step the tight scene will take from the track.
+			_draw_dashed_ring(at, pip, Palette.TWIST)
 		else:
 			_text.draw_arc(at, pip, 0.0, TAU, 32, Palette.CHALK_2, RING, true)
 		_text.draw_string(_heavy, Vector2(at.x - _pitch() * 0.5, at.y + drop), str(i), HORIZONTAL_ALIGNMENT_CENTER,
@@ -280,6 +310,13 @@ func _draw_text() -> void:
 	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(Palette.OUTLINE, 0.7))
 	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Palette.CHALK_2)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
+	if tight_drop > 0 and tight_scene:
+		# The tight scene's track ends short: a tick in the twist's colour, and what it took.
+		var end := _step(limit).x + _pitch() * 0.5
+		_text.draw_line(Vector2(end, _track_y() - TRACK_HALF - 4.0), Vector2(end, _track_y() + TRACK_HALF + 4.0),
+				Palette.TWIST, 2.0)
+		_text.draw_string(_heavy, Vector2(end + 3.0, _track_y() + TRACK_HALF + 12.0), "−%d" % tight_drop,
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, Palette.TWIST)
 	if _lock > 0.0:
 		_draw_lock(_lock, _lock_fall)
 	elif ghost == "lock":
