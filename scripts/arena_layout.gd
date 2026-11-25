@@ -91,11 +91,6 @@ static func salt(page: Vector2) -> Rect2:
 
 # --- The edges ----------------------------------------------------------------------------
 
-## The tab on the left edge: the scene's twist. On the window's own edge, however wide.
-static func tab_left(_page: Vector2) -> Rect2:
-	return Rect2(0.0, 140.0, 34.0, 110.0)
-
-
 ## The tab on the right edge: the hint of the held key. On the window's own edge.
 static func tab_right(page: Vector2) -> Rect2:
 	return Rect2(page.x - 34.0, 140.0, 34.0, 110.0)
@@ -224,7 +219,6 @@ static func zones(page: Vector2) -> Dictionary:
 		"draught": draught(page),
 		"instruments": instruments(page),
 		"salt": salt(page),
-		"tab_left": tab_left(page),
 		"tab_right": tab_right(page),
 		"balance": balance(page),
 		"readout": readout(page),
