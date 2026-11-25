@@ -190,7 +190,6 @@ func give(id: int) -> ArenaCard:
 	card.set_tag("")
 	card.strip = 0.0
 	card.foot_strip = 0.0
-	card.chips_above = false
 	card.set_meta("away", true)
 	card.set_meta("enlarged", false)
 	card.sharp = false
@@ -207,7 +206,6 @@ func give(id: int) -> ArenaCard:
 func take_in(card: ArenaCard, entry: Dictionary, hyde_has_table: bool) -> Dictionary:
 	var lies_face_down := card.face_down
 	card.show_entry(entry, hyde_has_table)
-	card.chips_above = true
 	card.face_down = lies_face_down
 	card.dimmed = not entry.get("playable", true)
 	card.chosen = false
@@ -332,7 +330,6 @@ func _mark(table: Dictionary, entries: Array) -> void:
 func _new_card() -> ArenaCard:
 	var card := ArenaCard.new()
 	card.scale = Vector2(CARD_SCALE, CARD_SCALE)
-	card.chips_above = true
 	_give_metas(card)
 	add_child(card)
 	return card

@@ -4,3 +4,5 @@
 
 [resource]
 shader = ExtResource("1")
+shader_parameter/rough = 0.0
+shader_parameter/missing = 0.0

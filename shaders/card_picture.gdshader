@@ -3,17 +3,23 @@ render_mode blend_add;
 // The halo around a card's picture: the light its lines give off onto the dark card.
 //
 // The picture's ribbons (built by scripts/pencil.gd: UV.y runs -1..1 across, COLOR.a carries
-// the pressure) are drawn under the printed lines four times by scripts/arena_card.gd, moved
-// by `glow_reach` pixels each way. Each copy adds a quarter of `glow_strength`, so the four
-// together add the average of the drawing at those four places, in `glow_colour`.
+// the line's half width as a share of the ribbon's) are drawn under the printed lines by
+// scripts/arena_card.gd several times: once in place and in two rings of copies moved a few
+// pixels each way, each copy as bright as its COLOR.rgb. Each copy is a soft line, so that
+// together they add up to a smooth light around the drawing, in `glow_colour`.
 
 uniform vec3 glow_colour : source_color = vec3(1.0);
-/** How far the halo reaches from the lines, in pixels (read by arena_card.gd). */
-uniform float glow_reach : hint_range(0.0, 12.0) = 3.0;
-uniform float glow_strength : hint_range(0.0, 1.0) = 0.5;
+/** Half the ribbon's width in pixels (set by arena_card.gd). */
+uniform float ribbon_half = 4.0;
+/** How far each copy's light spreads past its line, in pixels, and how strong it is. */
+uniform float spread : hint_range(0.5, 6.0) = 1.0;
+uniform float strength : hint_range(0.0, 2.0) = 0.8;
 
 void fragment() {
-	float pressure = COLOR.a;
-	float line = 1.0 - smoothstep(pressure * 0.5, pressure + 0.5, abs(UV.y));
-	COLOR = vec4(glow_colour, line * glow_strength * 0.25);
+	float core = COLOR.a * ribbon_half;
+	float out_by = max(abs(UV.y) * ribbon_half - core, 0.0);
+	float light = strength * exp(-out_by * out_by / (2.0 * spread * spread));
+	// The ribbon's own sides fade out, so that it does not end in a hard edge.
+	light *= 1.0 - smoothstep(0.7, 1.0, abs(UV.y));
+	COLOR = vec4(glow_colour * COLOR.rgb, light);
 }
