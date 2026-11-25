@@ -32,10 +32,12 @@ static func _steps_in(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 	var gap: int = int(e.target) - int(e.prior) - int(e.last)
 	t.beats.add(func() -> void:
 		t.stage.show_caption("%s short." % ArenaMomentRound.thousands(gap))
+		t.beats.sound("low_note")
 		await t.beats.wait(ArenaPace.HOLD)
 		await t.stage.clear_caption())
 	t.beats.add(func() -> void:
 		t.stage.show_caption("He covers the rest.")
+		t.beats.sound("rescue")
 		t.hand.lift(true)
 		for id: int in t.hand.ids():
 			var card := t.hand.card_of(id)
@@ -70,10 +72,14 @@ static func _takes(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 			t.hand.settle(card))
 	# The last play's total doubles, and the round's score follows.
 	@warning_ignore("integer_division")
+	var taken: int = state.taken
 	t.beats.add(func() -> void:
+		# Each doubling sounds higher and heavier than the last.
+		t.beats.sound("double", Sfx.semitones(2.0 * (taken - 1)), minf(1.0, 0.7 + 0.1 * taken))
 		await t.follow(t.numbers.tick_mult(doubled - doubled / 2)).finished)
 	t.add_mark("score", e.score, ArenaNumbers.COUNT_TIME)
 	t.beats.add(func() -> void:
 		t.shown.add("line/paper", -1)
 		t.shown.add("line/ink", 1)
+		t.line_sound(true)
 		await t.play(t.symbols.line_across.bind(true)))

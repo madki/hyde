@@ -50,3 +50,6 @@ Thumbs.db
 # Jekyll's figure meshes are made from a licensed model that may not be passed on: they stay
 # out of the repository. Only pictures rendered from them are committed (see CREDITS.md).
 /studio/figures/jekyll*.res
+
+# Sounds built from licensed libraries (tools in the private notes repo): never committed.
+/audio/sfx_local/

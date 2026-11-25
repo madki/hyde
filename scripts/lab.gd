@@ -218,6 +218,16 @@ func _on_row_chosen(index: int) -> void:
 ## stand. A refusal's reason is shown in the note.
 func _deal(move: Callable) -> void:
 	var result: Dictionary = move.call()
+	if not result.ok:
+		Sfx.play("refuse")
+	else:
+		match String(move.get_method()):
+			"strike":
+				Sfx.play("target_struck", 0.85) # a firm pen strike: final
+			"drop_instrument":
+				Sfx.play("lock", 0.7) # brass set down on wood
+			_:
+				Sfx.play("buy")
 	var usual := STRIKE_NOTE if _striking else NOTE
 	_panel.note = usual if result.ok else String(result.get("reason", usual))
 	_show_wares()
@@ -225,6 +235,7 @@ func _deal(move: Callable) -> void:
 
 ## Opens the list of cards to strike on the panel, its selection on its first row.
 func _open_strike() -> void:
+	Sfx.play("button")
 	_striking = true
 	_panel.note = STRIKE_NOTE
 	if not _panel.back.is_connected(_close_strike):
@@ -234,6 +245,7 @@ func _open_strike() -> void:
 
 ## Back from the list of cards to strike to the shelf, the selection on "Strike a card".
 func _close_strike() -> void:
+	Sfx.play("put_back_j", 1.0, 0.7)
 	_striking = false
 	_panel.note = NOTE
 	if _panel.back.is_connected(_close_strike):
@@ -244,6 +256,7 @@ func _close_strike() -> void:
 
 ## Back to the table, which leaves the laboratory in the rules and begins the next night.
 func _leave() -> void:
+	Sfx.play("button")
 	SceneFlow.back_to_table()
 
 

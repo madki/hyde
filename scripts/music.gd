@@ -10,13 +10,15 @@ extends Node
 ## `Sfx.hyde`, and the danger from `Music.set_dread(source, amount)`. The loops crossfade
 ## on their own and a loop that is faded out waits where it was, so it carries on from there.
 
-## Where we are, and how loud each loop is there (dB, before the master level).
+## Where we are, and how loud each loop is there (dB, before the master level). Hyde's piece
+## measures 3.6 dB quieter than Jekyll's and has more of its weight in the sub, which small
+## speakers lose: it is played 2 dB up, so that his table does not sound smaller than Jekyll's.
 const PLACES: Dictionary[String, Dictionary] = {
 	"none": {jekyll = -80.0, hyde = -80.0},
 	"title": {jekyll = 0.0, hyde = -80.0},
-	"table": {jekyll = 0.0, hyde = 0.0},
+	"table": {jekyll = 0.0, hyde = 2.0},
 	"lab": {jekyll = -3.0, hyde = -80.0},
-	"alley": {jekyll = -80.0, hyde = -3.0},
+	"alley": {jekyll = -80.0, hyde = -1.0},
 }
 ## The level of all the music, under the sounds.
 const MASTER_DB := -9.0

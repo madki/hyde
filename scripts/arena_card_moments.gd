@@ -56,6 +56,7 @@ func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool =
 	beats.add_wait(ArenaPace.HOLD)
 	beats.add(func() -> void:
 		var last: Signal
+		beats.sound("card_flip", Sfx.vary() * 0.9)
 		for card: ArenaCard in nodes:
 			last = travel.turn_over(card, false)
 		await last)
@@ -84,9 +85,13 @@ func bring_to_hand(man: String, cards: Array, pile: String, to_hand: Callable,
 		for data: Dictionary in cards:
 			nodes.append(piles.take(pile, data))
 		stage.show_caption(caption)
+		# Hyde's cards come out lower and thicker than Jekyll's.
+		beats.sound("draw_%d" % randi_range(1, 3), Sfx.vary() * (0.8 if man == "Hyde" else 1.0), 0.6)
 		await stage.lay(travel, nodes))
 	beats.add_wait(ArenaPace.HOLD)
-	beats.add(func() -> void: await to_hand.call(nodes))
+	beats.add(func() -> void:
+		beats.sound("draw_%d" % randi_range(1, 3), Sfx.vary() * (0.8 if man == "Hyde" else 1.0), 0.6)
+		await to_hand.call(nodes))
 	beats.add(func() -> void:
 		await stage.clear_caption()
 		brought.emit(cards))
@@ -127,6 +132,7 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 				ArenaTravel.UP,
 				time * 0.19 if where == "hand" else ArenaPace.TRAVEL))
 	beats.add(func() -> void:
+		beats.sound("crack_ink" if after.get("ink", false) else "crack_paper")
 		await _crack(held[0], after, time * 0.62))
 	beats.add(func() -> void:
 		# It settles back: the rest of the change.

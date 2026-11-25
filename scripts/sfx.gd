@@ -11,8 +11,12 @@ extends Node
 ## ArenaBeats.sound instead, which stays silent while the move is skipped.
 
 const DIR := "res://audio/sfx/"
+## Sounds made from licensed libraries are not in the repository: they are built into this
+## folder, which is ignored by git. A sound found here is used in place of the one in DIR.
+const LOCAL_DIR := "res://audio/sfx_local/"
 ## Every sound the game asks for: those that have a file are loaded with the game, so that
-## none stalls its first play. The second group is the key moments, which have no file yet.
+## none stalls its first play. Only the first three lines have a file in DIR; the rest are
+## silent in a copy of the game that has no LOCAL_DIR.
 const NAMES: Array[String] = [
 	"hover_j", "hover_h", "choose_j", "choose_h", "put_back_j", "put_back_h",
 	"draw_1", "draw_2", "draw_3", "lay", "button", "refuse",
@@ -20,9 +24,14 @@ const NAMES: Array[String] = [
 	"heartbeat", "shift_to_hyde", "breakout", "hyde_card_whisper", "hyde_card_wail",
 	"hand_j_1", "hand_j_2", "hand_j_3", "hand_h_1", "hand_h_2", "hand_h_3",
 	"round_won", "run_lost",
+	"title_visit", "shift_to_jekyll", "drink", "crack_ink", "crack_paper", "coin", "restraint_step",
+	"restraint_threat", "tally", "count", "total", "target_struck", "heading", "shuffle", "riffle",
+	"card_flip", "lock", "eye", "ink_drop", "rollover", "temper", "cork", "paper", "salt",
+	"low_note", "warn", "rescue", "double", "line_holds", "line_floods", "run_end",
+	"passage", "dawn_j", "dawn_h", "buy", "take", "amb_title",
 ]
 ## How many sounds can be heard at once; one more cuts the oldest short.
-const VOICES := 12
+const VOICES := 16
 
 ## Who has the table, for `play_sided`: Hyde (the `_h` sounds) or Jekyll (the `_j` ones).
 var hyde := false
@@ -32,19 +41,24 @@ var _missing: Dictionary[String, bool] = {}
 var _voices: Array[AudioStreamPlayer] = []
 var _next := 0
 var _loops: Dictionary[String, AudioStreamPlayer] = {}
+var _across: AudioStreamPlayer
 
 
 func _ready() -> void:
 	# Sounds go on while the tree is paused, as the beat queue does.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	for sound in NAMES:
-		var path := DIR + sound + ".ogg"
-		if ResourceLoader.exists(path):
-			_streams[sound] = load(path) as AudioStream
+		for dir in [LOCAL_DIR, DIR]:
+			var path: String = dir + sound + ".ogg"
+			if ResourceLoader.exists(path):
+				_streams[sound] = load(path) as AudioStream
+				break
 	for i in VOICES:
 		var voice := AudioStreamPlayer.new()
 		add_child(voice)
 		_voices.append(voice)
+	_across = AudioStreamPlayer.new()
+	add_child(_across)
 
 
 ## Plays `sound` once. Returns the player it is on (to stop it early, say), or null if there
@@ -57,6 +71,15 @@ func play(sound: String, pitch: float = 1.0, volume: float = 1.0) -> AudioStream
 	_tune(voice, stream, pitch, volume)
 	voice.play()
 	return voice
+
+
+## Plays `sound` on a voice of its own, which `hush` and `stop_all` leave alone: for a sound
+## that runs across a change of screen (the passage).
+func play_across(sound: String, pitch: float = 1.0, volume: float = 1.0) -> void:
+	var stream := _stream(sound)
+	if stream:
+		_tune(_across, stream, pitch, volume)
+		_across.play()
 
 
 ## Plays Jekyll's or Hyde's version of `sound` (`<sound>_j` or `<sound>_h`), by `hyde`.

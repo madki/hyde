@@ -151,7 +151,7 @@ static func _stinger(key: String, hyde: bool) -> String:
 
 # A step raised the chips (or the mult): their sound, a semitone above the last of the play.
 static func _ramp(t: ArenaTable, sound_name: String, ramp: Array) -> void:
-	t.beats.sound_sided(sound_name, Sfx.semitones(mini(ramp[0], RAMP_TOP)), 0.7)
+	t.beats.sound_sided(sound_name, Sfx.semitones(mini(ramp[0], RAMP_TOP)))
 	ramp[0] += 1
 
 
@@ -189,10 +189,13 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			if step.chips == 0 and step.mult == 0:
 				words = step.label
 				if step.label == "no restraint":
+					t.beats.sound("lock")
 					t.follow(t.numbers.restraint.set_lock(true))
 				elif step.label == "no Craving":
+					t.beats.sound("lock")
 					t.play(t.symbols.set_lock.bind(true))
 				if str(step.label).begins_with("draws") and card:
+					t.beats.sound("eye")
 					var mark := ArenaPop.eye(t.travel, ArenaTravel.centre_of(card))
 					eyes.append(mark)
 					mark.fly_to(t.beats, t.piles.draw_pile.top_centre() + Vector2(-34.0, -40.0))
@@ -225,6 +228,8 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 # Beats 6 and 7: the total lands, travels to the round's score, and may strike the target.
 static func _total(t: ArenaTable, score_to: int) -> void:
 	t.beats.add(func() -> void:
+		# The ticks gather into one landing; Hyde's is lower and heavier.
+		t.beats.sound("total", 0.84 if t.hyde() else 1.0)
 		await t.follow(t.numbers.land_total()).finished
 		if Shot.has_arg("trace"):
 			print("  total     %d, the round's score to %d" % [t.numbers.get("_total"), score_to]))
@@ -239,7 +244,9 @@ static func _total(t: ArenaTable, score_to: int) -> void:
 			t.landed.emit())
 		await send.finished)
 	if score_to >= int(t.after.target):
-		t.beats.add(func() -> void: await t.follow(t.numbers.strike_target()).finished)
+		t.beats.add(func() -> void:
+			t.beats.sound("target_struck")
+			await t.follow(t.numbers.strike_target()).finished)
 
 
 # The laid cards go to the discards.

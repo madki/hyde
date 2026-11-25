@@ -51,6 +51,7 @@ static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
 		ArenaMomentShift.cue_to_hyde(t, ArenaPace.CAPTION_MIN + ArenaPace.CAPTION_FADE)
 	t.beats.add(func() -> void:
 		t.stage.show_caption("Rescued. No pay, no card.")
+		t.beats.sound("target_struck", 0.8)
 		t.hand.lift(false)
 		t.numbers.clear_readout()
 		await t.follow(t.numbers.strike_target()).finished
@@ -86,6 +87,7 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 			await flood.finished
 		else:
 			# The page stills.
+			t.beats.sound("run_end")
 			await t.beats.wait(ArenaPace.HOLD)
 		# The round's cards are the deck's again.
 		t.shown.set_value("draw_count", 0)
@@ -125,6 +127,7 @@ static func line(t: ArenaTable, e: Dictionary) -> void:
 		if not e.over:
 			words = "The line holds%s: %d against %d." % [", even" if e.ink == e.paper else "", e.paper, e.ink]
 		t.stage.show_caption(words)
+		t.beats.sound("line_floods" if e.over else "line_holds")
 		var centre: Vector2 = t.symbols.get_global_transform().affine_inverse() * t.stage.slot(0, 1)
 		await t.play(t.symbols.line_check.bind(centre))
 		await t.stage.clear_caption())
@@ -171,6 +174,10 @@ static func _reward(t: ArenaTable) -> void:
 			nodes.append(card)
 			t.beats.tween().tween_property(card, "modulate:a", 1.0, ArenaPace.TRAVEL * 0.5)
 		t.stage.show_caption("Take a card for the deck, or none.")
+		var lays := t.beats.tween()
+		for i in nodes.size():
+			lays.tween_callback(t.beats.sound.bind("lay", Sfx.vary() * 1.1, 0.7))
+			lays.tween_interval(0.09)
 		await t.stage.lay(t.travel, nodes, ArenaStage.REWARD_SCALE, ArenaStage.REWARD_GAP))
 	t.beats.add_choice(func() -> void:
 		t.freshen()

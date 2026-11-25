@@ -46,6 +46,7 @@ static func add_event(t: ArenaTable, e: Dictionary, order: Array = []) -> bool:
 ## The lock of Resolve (on the track) or of Cunning (on the sketches) opens and falls away.
 static func unlock(t: ArenaTable, on_track: bool) -> void:
 	t.beats.add(func() -> void:
+		t.beats.sound("lock", 0.75, 0.8) # lower and slower than it landed: a small release
 		if on_track:
 			t.follow(t.numbers.restraint.set_lock(false))
 		else:
@@ -73,6 +74,7 @@ static func recount(t: ArenaTable, sym: String) -> void:
 				if is_instance_valid(card):
 					card.set_chips(roundi(n)), float(card.chips), float(to), ArenaPace.MARK)
 		if any:
+			t.tick_run(ArenaPace.MARK, 0.6)
 			await t.beats.wait(ArenaPace.MARK))
 
 
@@ -83,6 +85,7 @@ static func _craving(t: ArenaTable, e: Dictionary) -> void:
 		if int(t.shown.value(key, 0)) == int(e.n):
 			return
 		t.shown.set_value(key, e.n)
+		t.beats.sound("ink_drop", Sfx.semitones(-4.0 + 2.0 * int(e.n)), 0.6)
 		await t.play(t.symbols.set_craving.bind(e.sym, e.n)))
 
 
@@ -92,12 +95,14 @@ static func _breed(t: ArenaTable, e: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		t.shown.set_value("symbols/%s/craving" % sym, 0)
 		t.shown.set_value("symbols/%s/habit" % sym, e.habit)
+		t.beats.sound("rollover")
 		await t.play(t.symbols.rollover.bind(sym, e.habit)))
 	var copy := t.card_data(e.id)
 	ArenaMomentShift.hyde_joins(t)
 	t.moments.join_deck([copy], ArenaCaptions.joins("rollover", [copy.name]), t.symbols.sketch_place(sym))
 	t.beats.add(func() -> void:
 		t.shown.add("line/ink", 1)
+		t.line_sound(true)
 		await t.play(t.symbols.line_gain.bind(true)))
 
 
@@ -107,6 +112,7 @@ static func _turn(t: ArenaTable, e: Dictionary, order: Array) -> void:
 	t.beats.add(func() -> void:
 		t.shown.set_value("symbols/%s/craving" % sym, 0)
 		t.shown.set_value("symbols/%s/temper" % sym, e.temper)
+		t.beats.sound("temper")
 		await t.play(t.symbols.turn.bind(sym, e.temper)))
 	var card := t.hand.card_of(e.id)
 	var after := t.card_data(e.id)
@@ -121,4 +127,5 @@ static func _turn(t: ArenaTable, e: Dictionary, order: Array) -> void:
 	t.beats.add(func() -> void:
 		t.shown.add("line/ink", -1)
 		t.shown.add("line/paper", 1)
+		t.line_sound(false)
 		await t.play(t.symbols.line_across.bind(false)))

@@ -85,6 +85,8 @@ func _lay_out() -> void:
 func _show(index: int) -> void:
 	if index == _shown:
 		return
+	if index >= 0:
+		Sfx.play("hover_j", Sfx.vary(), 0.35)
 	_shown = index
 	for i in _cards.size():
 		var card: ArenaCard = _cards[i]

@@ -34,6 +34,7 @@ const SHAKE := 0.006
 const GAME_NAME := "Versura"
 const ROW_SHIFT := "Press SHIFT"
 const ROW_BEGIN := "Begin"
+const RAIN := "amb_title" ## the street's loop
 
 var _visit: Tween
 ## True once Shift has been pressed and its change has played: the panel then offers Begin.
@@ -46,6 +47,9 @@ var _begun := false
 
 func _ready() -> void:
 	Music.enter("title")
+	# The street's rain, under the music; it ends with the screen.
+	Sfx.loop(RAIN)
+	tree_exiting.connect(Sfx.stop_loop.bind(RAIN, 0.0))
 	_panel.accent = Palette.JEKYLL
 	_panel.set_heading(GAME_NAME)
 	_panel.set_rows([{text = ROW_SHIFT}])
@@ -86,6 +90,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_row_chosen(_index: int) -> void:
 	if _begun:
 		Sfx.play("button")
+		Sfx.stop_loop(RAIN, 0.5)
 		SceneFlow.next() # as Enter does anywhere
 	elif not _is_busy():
 		Sfx.play("button")
@@ -117,6 +122,10 @@ func _shift() -> void:
 ## Jekyll comes apart, his magenta ghost turns into Hyde as the screen shakes and splits,
 ## Hyde turns back into the ghost and the ghosts close into Jekyll.
 func _visit_hyde() -> void:
+	Sfx.play("title_visit")
+	# The rain drops away while he is here, and comes back as he goes.
+	if Sfx.is_looping(RAIN):
+		Sfx.loop(RAIN, 1.0, 0.15)
 	_visit = create_tween()
 	_visit.tween_property(_bg, "apart", 1.0, PARTS) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -128,4 +137,7 @@ func _visit_hyde() -> void:
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_visit.tween_property(_bg, "apart", 0.0, MERGES) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_visit.tween_callback(func() -> void:
+		if Sfx.is_looping(RAIN):
+			Sfx.loop(RAIN))
 	_visit.tween_callback(_offer_begin)

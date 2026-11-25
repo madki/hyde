@@ -64,6 +64,7 @@ static func _reward_goes(t: ArenaTable, taken: Dictionary) -> void:
 		if words != "":
 			t.stage.show_caption(words)
 		var last: Signal
+		t.beats.sound("card_flip", Sfx.vary())
 		for i in nodes.size():
 			last = t.travel.turn_over(nodes[i], false)
 			if i != index or words == "":

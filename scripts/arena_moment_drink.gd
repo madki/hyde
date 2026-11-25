@@ -11,6 +11,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 			# The page shifts once the flask has tipped and the track has been stored.
 			ArenaMomentShift.cue_to_hyde(t, ArenaMeans.TIP_TIME + int(e.ev.stored) * ArenaMomentShift.STORE_STEP)
 	t.beats.add(func() -> void:
+		t.beats.sound("drink")
 		t.play_means(t.means.tip_flask)
 		await t.beats.wait(ArenaMeans.TIP_TIME))
 	for e: Dictionary in result.events:

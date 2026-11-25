@@ -232,14 +232,24 @@ func select(index: int) -> void:
 ## Moves the selection by `step` rows (negative is up), skipping section headings and going
 ## round at the ends.
 func move_selection(step: int) -> void:
+	var was := _selected
 	for i in absi(step):
 		select(_step_from(_selected, signi(step)))
+	if _selected != was:
+		_tick()
+
+
+# The tick of the selection moving: the alley's (Hyde's accent) is damper and lower.
+func _tick() -> void:
+	Sfx.play("hover_h" if accent == Palette.HYDE else "hover_j", Sfx.vary(), 0.35)
 
 
 ## Takes the selected row, as Enter does. Nothing happens if it cannot be taken.
 func choose() -> void:
 	if _can_take(_selected):
 		row_chosen.emit(_selected)
+	else:
+		Sfx.play("refuse")
 
 
 func _can_take(index: int) -> bool:
@@ -335,6 +345,8 @@ func _gui_input(event: InputEvent) -> void:
 		var hovered := _row_at(motion.position)
 		if hovered != _selected:
 			# Not brought into view: the list must not run away under the pointer.
+			if _can_select(hovered):
+				_tick()
 			_select(hovered, false)
 		return
 	var button := event as InputEventMouseButton

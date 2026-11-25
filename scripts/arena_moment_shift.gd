@@ -78,6 +78,8 @@ static func hyde_joins(t: ArenaTable) -> void:
 ## The page shifts to Hyde (`to_hyde`) or back to Jekyll.
 static func page(t: ArenaTable, to_hyde: bool) -> void:
 	t.beats.add(func() -> void:
+		if not to_hyde:
+			t.beats.sound("shift_to_jekyll")
 		t.shown.set_value("stance", "hyde" if to_hyde else "jekyll")
 		t.ink.is_jekyll = not to_hyde
 		t.numbers.is_jekyll = not to_hyde
@@ -100,6 +102,7 @@ static func joined(t: ArenaTable, e: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		# The line's marks are drawn while the table goes on.
 		var ink: int = t.shown.add("line/ink", cards.size())
+		t.line_sound(true)
 		t.play(t.symbols.set_line.bind(int(t.shown.value("line/paper", 0)), ink)))
 
 
@@ -127,6 +130,7 @@ static func stained(t: ArenaTable, e: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		t.shown.add("line/paper", -1)
 		t.shown.add("line/ink", 1)
+		t.line_sound(true)
 		await t.play(t.symbols.line_across.bind(true)))
 
 

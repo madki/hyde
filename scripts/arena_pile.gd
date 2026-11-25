@@ -138,6 +138,7 @@ func take_all() -> Array[ArenaCard]:
 func riffle(beats: ArenaBeats, deep: bool = false) -> Signal:
 	if _riffle and _riffle.is_valid():
 		_riffle.kill()
+	beats.sound("shuffle" if deep else "riffle", Sfx.vary(0.04))
 	var t := beats.tween().set_parallel()
 	var time := ArenaPace.RESHUFFLE_RIFFLE if deep else ArenaPace.RIFFLE
 	var reach := 1.5 if ArenaPace.reduce_flashes else (6.0 if deep else 3.5)

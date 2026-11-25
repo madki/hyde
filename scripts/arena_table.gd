@@ -35,6 +35,9 @@ const KEYS: Array[String] = [
 	"symbols/mirror/craving", "symbols/mirror/habit", "symbols/mirror/temper",
 ]
 
+## The scale a run of ticks climbs, in semitones: a natural minor, never a siren.
+const TICK_SCALE: Array[int] = [0, 2, 3, 5, 7, 8, 10, 12]
+
 var run: RulesRun
 ## The page, for places on it.
 var arena: Control
@@ -169,7 +172,10 @@ func freshen() -> void:
 ## Moves one shown number and the part that draws it, without waiting: follow it with
 ## `await t.beats.wait(ArenaPace.MARK)`, or use `add_mark`.
 func mark(key: String, value: Variant) -> void:
+	var was: Variant = shown.value(key, 0)
 	shown.set_value(key, value)
+	if (value is int or value is float) and (was is int or was is float):
+		_mark_sound(key, int(value) - int(was), int(value))
 	match key:
 		"plays":
 			follow(numbers.set_plays(value))
@@ -187,6 +193,49 @@ func mark(key: String, value: Variant) -> void:
 			numbers.restraint.show_meter(value, shown.value("restraint/limit", numbers.restraint.limit))
 		"restraint/limit":
 			numbers.restraint.show_meter(shown.value("restraint/meter", 0), value)
+
+
+## A run of dry ticks climbing the scale over `seconds`: a number counting.
+func tick_run(seconds: float, volume: float = 0.8) -> void:
+	var run := beats.tween()
+	for step in TICK_SCALE:
+		run.tween_callback(beats.sound.bind("count", Sfx.semitones(step), volume))
+		run.tween_interval(seconds / TICK_SCALE.size())
+
+
+# The sound of a shown number moving by `change` to `value`: a pencil for the tallies, ticks
+# for a count, a drop for restraint stored, ink seeping into the track for a step of it.
+func _mark_sound(key: String, change: int, value: int) -> void:
+	if change == 0:
+		return
+	match key:
+		"plays", "discards":
+			if change < 0:
+				# Rubbed out: one lower, softer stroke.
+				beats.sound("tally", 0.72 * Sfx.vary(0.04), 0.7)
+				return
+			# Drawn: a stroke for each tally, of which three at most are heard.
+			var strokes := beats.tween()
+			for i in mini(change, 3):
+				strokes.tween_callback(beats.sound.bind("tally", Sfx.vary(), 0.9))
+				strokes.tween_interval(0.09)
+		"target", "score":
+			tick_run(ArenaNumbers.COUNT_TIME)
+		"restraint/stored":
+			if change > 0:
+				beats.sound("ink_drop", Sfx.semitones(2.0 * value))
+		"restraint/meter":
+			if change > 0:
+				# Each step sounds higher: how near the line is can be heard.
+				beats.sound("restraint_step", Sfx.semitones(float(value) - 2.0))
+				if value > 1 and value == int(shown.value("restraint/limit", 0)) - 1:
+					# One step short of the end: the dread comes in under it.
+					beats.sound("restraint_threat")
+
+
+## The pencil of a mark on the line: his side's is lower and wetter than the paper side's.
+func line_sound(ink: bool) -> void:
+	beats.sound("tally", (0.8 if ink else 1.15) * Sfx.vary(0.04), 0.9)
 
 
 ## Adds a beat that moves one shown number, with the part that draws it, and waits.

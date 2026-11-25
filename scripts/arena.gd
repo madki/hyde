@@ -171,6 +171,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var button := event as InputEventMouseButton
 	if t.waiting_press and ((key and key.pressed and not key.echo) or (button and button.pressed)):
 		get_viewport().set_input_as_handled()
+		Sfx.play("button")
 		t.pressed.emit()
 		return
 	if not key or not key.pressed or key.echo:

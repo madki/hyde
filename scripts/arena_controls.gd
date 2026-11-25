@@ -147,6 +147,8 @@ func show_table(table: Dictionary, chosen: int) -> void:
 ## The chosen play would make him break out: PLAY turns amber and the warning is written left
 ## of it. Or the warning is taken off. `show_table` takes it off too.
 func warn_breakout(on: bool) -> void:
+	if on and not _breaks:
+		Sfx.play("warn")
 	_breaks = on
 	_apply()
 

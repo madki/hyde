@@ -141,6 +141,11 @@ func _process(_delta: float) -> void:
 			hover = "restraint"
 	if held == _held and hover == _hover:
 		return
+	if held != _held:
+		# The sheet of every number: a page turned in, and softer as it goes.
+		Sfx.play("paper", 1.0 if held else 0.85, 0.8 if held else 0.45)
+	elif hover != "":
+		Sfx.play("hover_j", Sfx.vary(), 0.35)
 	_held = held
 	_hover = hover
 	t.symbols.show_numbers(held)
@@ -308,6 +313,7 @@ func _open_pile(which: String) -> void:
 	_deck_title.size = Vector2(size.x, 26.0)
 	_deck.add_child(_deck_title)
 	_deck.visible = true
+	Sfx.play("riffle", 1.15, 0.8) # the pile fanned out
 	_note.visible = false
 	# The hand lies under the view: no card of it grows there while the view is open.
 	t.hand.enabled = false
@@ -317,6 +323,7 @@ func _close_deck() -> void:
 	if not _deck.visible:
 		return
 	_deck.visible = false
+	Sfx.play("riffle", 0.9, 0.5)
 	if _deck_title.get_parent() == _deck:
 		_deck.remove_child(_deck_title)
 	_clear(_deck)
@@ -349,6 +356,8 @@ func _show_a_hand() -> void:
 		return
 	var best: Dictionary = Rules.best(t.run)
 	t.hand.clear_chosen()
+	if not best.get("ids", []).is_empty():
+		Sfx.play("choose_j", 1.12, 0.7) # a card lifted, a touch brighter: a thought arriving
 	for id: int in best.get("ids", []):
 		t.hand.toggle(id)
 
