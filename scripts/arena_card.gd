@@ -1,16 +1,16 @@
 class_name ArenaCard
 extends Control
-## One card as it lies on the arena: a worn piece of paper with its shadow, a frame printed in
-## heavy ink, a title, a picture and its chips. A Common Factor also has what it does written
-## under its picture.
+## One card as it lies on the arena: dark stock with its shadow, a faint edge in the owner's
+## light, a title, a picture and its chips on a disc. A Common Factor also has what it does
+## written under its picture.
 ##
 ## Jekyll's card is dark blue stock with a heavy upright title; Hyde's is dark plum stock with
-## a slanted one. Writing is in chalk; the frame, the picture and the chips are drawn in the
-## owner's light, and the picture glows (shaders/card_picture.gdshader). The body (outline, paper, stains, shadow) is shaders/card_body.gdshader,
+## a slanted one. Writing is in chalk; the picture and the chips are drawn in the owner's
+## light, and the picture glows (shaders/card_picture.gdshader). The body (outline, stock,
+## stains, shadow) is shaders/card_body.gdshader,
 ## through shaders/card_paper_material.tres or card_ink_material.tres: change the look there.
-## The frame's lines and the picture are laid out with Pencil and printed by
-## shaders/card_line.gdshader, coarsely, in texels of TEXEL pixels. `rng_seed` changes the
-## wear, the stains and the hand of the lines, so that no two cards are alike.
+## The edge (or a back's frame) and the picture are laid out with Pencil and printed by
+## shaders/card_line.gdshader, in a steady hand. `rng_seed` picks where a card's stain starts.
 ##
 ## A card is set up from the rules' data: `show_entry` takes one card of
 ## RulesView.table().hand, and `show_face` a card that is in no hand (on offer, or seen on
@@ -21,24 +21,38 @@ extends Control
 ## `leave` bring it in and take it away.
 ##
 ## In the hand a card is partly covered by the next: `strip` and `foot_strip` write the title
-## and the tag in the part that shows, and `chips_above` writes the chips on a disc under the
-## title, where the next card does not cover them, instead of in the foot.
+## and the tag in the part that shows. The chips are on a disc under the title, at the left,
+## where the next card does not cover them.
 
 const SIZE := Vector2(96.0, 140.0)
-## The card is printed coarsely, in square texels this many pixels wide: 0 prints it smooth.
-const TEXEL := 1.0
+## The card's lines are printed in square texels this many pixels wide: 0 prints them smooth.
+const TEXEL := 0.0
 ## Room around the card for its shadow, in pixels.
 const MARGIN := 24.0
-## Distance of the frame from the card's edge, and its width.
+## Distance of the frame from the card's edge, and its width: the frame of a card's back, and
+## the box the face's writing keeps inside.
 const FRAME_INSET := 5.5
 const FRAME_WIDTH := 2.2
+## The face's edge: its distance from the card's edge, its width, and how far it is lit, from
+## the stock (0) to the owner's light (1).
+const EDGE_INSET := 2.5
+const EDGE_WIDTH := 1.0
+const EDGE_LIGHT := 0.38
 ## Where the title's box ends and where the foot (the chips) begins, from the top.
 const TITLE_BOTTOM := 28.0
 const FOOT_TOP := 115.0
-## Width of the box the chips are written in.
-const CHIPS_WIDTH := 20.0
 ## Radius of the disc the chips are written on while they stand under the title.
 const DISC := 10.0
+## Half the width of the ribbons the picture's glow is drawn on, in pixels: room for its light.
+const GLOW_RIBBON := 4.0
+## The rings of copies the glow is drawn in around the picture: each ring's distance from it in
+## pixels, and how bright each copy in it is. GLOW_COPIES copies make a ring.
+const GLOW_RINGS: Array[Vector2] = [Vector2(2.5, 0.07), Vector2(5.0, 0.035)]
+const GLOW_COPIES := 8
+## The width of the picture's lines, in pixels.
+const PICTURE_WIDTH := 2.0
+## How far the light around the disc reaches, in pixels.
+const DISC_GLOW := 3
 ## Height of a Factor's picture: what it does is written in the rest of the picture's box.
 const FACTOR_PICTURE := 38.0
 ## How dark a card that cannot be played now is printed.
@@ -120,13 +134,6 @@ var foot_strip := 0.0:
 		if not is_equal_approx(value, foot_strip):
 			foot_strip = value
 			_refresh_tag()
-## The chips are written on a disc under the title, at the left, and the foot is left to the
-## tag: for a card of the hand, whose foot the next card covers.
-var chips_above := false:
-	set(value):
-		if value != chips_above:
-			chips_above = value
-			_refresh()
 ## The card is shown larger than its size (the hand's card under the pointer): its words are
 ## drawn from distance fields, sharp at any size, instead of being the small card's words
 ## blown up. Off, the usual face is kept, whose small sizes are the crisper.
@@ -163,6 +170,8 @@ var _tag_warns := false
 var _upright := FontVariation.new()
 var _slanted := FontVariation.new()
 var _plain := FontVariation.new()
+## The chips: the plain face, a little heavier, and not narrowed.
+var _number := FontVariation.new()
 ## The two title faces drawn narrower, for a title written in a strip, and narrower still
 ## for a long word in a thin one.
 var _upright_narrow := FontVariation.new()
@@ -187,24 +196,27 @@ func _init() -> void:
 	pivot_offset = SIZE * 0.5
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# The engine's own font, until the game has its two faces: made heavy and narrow for
-	# paper, and slanted for ink.
+	# The engine's own plain sans, until the game has its own faces: upright for paper, and
+	# slanted for ink. The narrow and tight faces are for titles squeezed into a strip.
 	_set_faces()
-	_upright.variation_embolden = 0.9
-	_upright.variation_transform = Transform2D(Vector2(0.84, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	_upright.variation_embolden = 0.3
 	_slanted.variation_embolden = 0.3
-	_slanted.variation_transform = Transform2D(Vector2(1.0, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
-	_upright_narrow.variation_embolden = 0.8
-	_upright_narrow.variation_transform = Transform2D(Vector2(0.68, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	_slanted.variation_transform = Transform2D(Vector2(1.0, 0.2), Vector2(0.0, 1.0), Vector2.ZERO)
+	# Narrowing a face shrinks its letters but not the room each takes, which spreads them
+	# apart: the narrow and tight faces close the letters up instead.
+	_upright_narrow.variation_embolden = 0.3
+	_upright_narrow.spacing_glyph = -1
 	_slanted_narrow.variation_embolden = 0.3
-	_slanted_narrow.variation_transform = Transform2D(Vector2(0.76, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
-	_upright_tight.variation_embolden = 0.7
-	_upright_tight.variation_transform = Transform2D(Vector2(0.56, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	_slanted_narrow.variation_transform = _slanted.variation_transform
+	_slanted_narrow.spacing_glyph = -1
+	_upright_tight.variation_embolden = 0.3
+	_upright_tight.spacing_glyph = -2
 	_slanted_tight.variation_embolden = 0.3
-	_slanted_tight.variation_transform = Transform2D(Vector2(0.6, 0.22), Vector2(0.0, 1.0), Vector2.ZERO)
+	_slanted_tight.variation_transform = _slanted.variation_transform
+	_slanted_tight.spacing_glyph = -2
 	_title.add_theme_constant_override("line_spacing", -4)
-	_plain.variation_embolden = 0.4
-	_plain.variation_transform = Transform2D(Vector2(0.86, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+	_plain.variation_embolden = 0.1
+	_number.variation_embolden = 0.25
 
 	_body.draw.connect(_draw_body)
 	_reflection.draw.connect(_draw_reflection)
@@ -231,6 +243,7 @@ func _init() -> void:
 	_lines.material = LINE_MATERIAL.duplicate()
 	_picture.material = LINE_MATERIAL.duplicate()
 	_glow.material = GLOW_MATERIAL.duplicate()
+	(_glow.material as ShaderMaterial).set_shader_parameter("ribbon_half", GLOW_RIBBON)
 	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
 	_picture.position = Vector2(inner + 6.0, TITLE_BOTTOM + 6.0)
 	_picture.size = Vector2(SIZE.x - (inner + 6.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - 12.0)
@@ -264,7 +277,7 @@ func _init() -> void:
 func _set_faces() -> void:
 	var base: Font = _sharp_base() if sharp else ThemeDB.fallback_font
 	for face: FontVariation in [_upright, _slanted, _upright_narrow, _slanted_narrow, _upright_tight,
-			_slanted_tight, _plain]:
+			_slanted_tight, _plain, _number]:
 		face.base_font = base
 
 
@@ -367,8 +380,6 @@ func _refresh() -> void:
 	var body := (INK_MATERIAL if ink and not face_down else PAPER_MATERIAL).duplicate() as ShaderMaterial
 	body.set_shader_parameter("card_size", SIZE)
 	body.set_shader_parameter("seed", float(rng_seed))
-	body.set_shader_parameter("texel", TEXEL)
-	body.set_shader_parameter("band_height", 0.0 if face_down else TITLE_BOTTOM + 1.0)
 	body.set_shader_parameter("rim_colour", Palette.HYDE if ink else Palette.JEKYLL)
 	body.set_shader_parameter("rim_strength", _rim)
 	body.set_shader_parameter("stain", stain if _stained() else 0.0)
@@ -379,7 +390,7 @@ func _refresh() -> void:
 		part.visible = not face_down
 	_show_lines()
 	(_glow.material as ShaderMaterial).set_shader_parameter("glow_colour", _light())
-	_disc.visible = chips_above and not face_down
+	_disc.visible = not face_down
 	_disc.queue_redraw()
 	_text.visible = not face_down and text != ""
 
@@ -387,17 +398,13 @@ func _refresh() -> void:
 	_refresh_title()
 
 	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
-	if chips_above:
-		_chips.position = _disc.position
-		_chips.size = _disc.size
-	else:
-		_chips.position = Vector2(inner, FOOT_TOP)
-		_chips.size = Vector2(CHIPS_WIDTH, SIZE.y - inner - FOOT_TOP)
+	_chips.position = _disc.position
+	_chips.size = _disc.size
 	_chips.text = str(chips)
-	_chips.add_theme_font_override("font", _upright)
+	_chips.add_theme_font_override("font", _number)
 	# The chips are a value: drawn in the owner's light, like the lines.
 	_chips.add_theme_color_override("font_color", _light())
-	_fit(_chips, _upright, 12 if chips_above else 14, 4.0 if chips_above else 2.0)
+	_fit(_chips, _number, 11, 4.0)
 
 	_text.text = text
 	_text.add_theme_font_override("font", _plain)
@@ -461,7 +468,7 @@ func _refresh_tag() -> void:
 	if not _built:
 		return
 	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
-	var left := inner if chips_above else inner + CHIPS_WIDTH + 3.0
+	var left := inner
 	var whole := SIZE.x - inner - left
 	_tag.position = Vector2(left, FOOT_TOP)
 	_tag.size = Vector2(whole, SIZE.y - inner - FOOT_TOP)
@@ -548,43 +555,56 @@ func _light() -> Color:
 	return Palette.HYDE if ink else Palette.JEKYLL
 
 
+## The chips' disc: dark, ringed in the owner's light, with a little of that light around it.
 func _draw_disc() -> void:
-	_disc.draw_circle(_disc.size * 0.5, DISC, Palette.OUTLINE)
-	_disc.draw_circle(_disc.size * 0.5, DISC - 0.75, _light(), false, 1.5, true)
+	var centre := _disc.size * 0.5
+	if not dimmed:
+		for k in DISC_GLOW:
+			var glow := _light()
+			glow.a = 0.1 * (1.0 - float(k) / DISC_GLOW)
+			_disc.draw_circle(centre, DISC + 1.0 + k, glow)
+	_disc.draw_circle(centre, DISC, Palette.OUTLINE)
+	_disc.draw_circle(centre, DISC - 0.75, _light(), false, 1.5, true)
 
 
 func _draw_body() -> void:
 	_body.draw_rect(Rect2(-Vector2(MARGIN, MARGIN), SIZE + Vector2(MARGIN, MARGIN) * 2.0), Color.WHITE)
 
 
-## The frame: a heavy line around the card, a line under the title, the foot's line and the
-## side of the chips' box, then a little hatching in two corners of the picture's box.
+## The face's edge: one thin line just inside the card's outline, in the owner's light let
+## down into the stock. A card that cannot be played has none. On a back, the back's frame.
 func _draw_lines() -> void:
+	if dimmed and not face_down:
+		return
 	var pencil := Pencil.new(rng_seed)
-	pencil.colour = _light()
+	pencil.colour = _edge_colour()
 	_lay_frame(pencil)
 	pencil.draw(_lines)
 
 
-## Lays the frame out on `pencil`: on a card's back, the back's lines.
+## The colour of the face's edge: the owner's light, EDGE_LIGHT of the way up from the stock.
+func _edge_colour() -> Color:
+	if face_down:
+		return _light()
+	var stock := Palette.H_STOCK_LIGHT if ink else Palette.J_STOCK_LIGHT
+	return stock.lerp(_light(), EDGE_LIGHT)
+
+
+## Lays the frame out on `pencil`: the face's edge, or on a card's back, the back's lines.
 func _lay_frame(pencil: Pencil) -> void:
+	if not face_down:
+		pencil.steady = true
+		var edge := Rect2(Vector2(EDGE_INSET, EDGE_INSET), SIZE - Vector2(EDGE_INSET, EDGE_INSET) * 2.0)
+		pencil.stroke(PackedVector2Array([edge.position, Vector2(edge.end.x, edge.position.y),
+				edge.end, Vector2(edge.position.x, edge.end.y), edge.position]), EDGE_WIDTH, 0.0)
+		return
 	var inset := Vector2(FRAME_INSET, FRAME_INSET)
 	var rect := Rect2(inset, SIZE - inset * 2.0)
 	var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end,
 			Vector2(rect.position.x, rect.end.y)]
 	for i in 4:
 		_rule(pencil, corners[i], corners[(i + 1) % 4], FRAME_WIDTH)
-	if face_down:
-		_draw_back(pencil, rect)
-		return
-	_rule(pencil, Vector2(rect.position.x, TITLE_BOTTOM), Vector2(rect.end.x, TITLE_BOTTOM), 1.9)
-	_rule(pencil, Vector2(rect.position.x, FOOT_TOP), Vector2(rect.end.x, FOOT_TOP), 1.7)
-	_hatch(pencil, Vector2(rect.end.x - 1.5, FOOT_TOP - 1.0), Vector2(-1.0, -1.0), 22.0)
-	# With the chips on their disc the foot has no box for them, and the disc has the corner.
-	if not chips_above:
-		_rule(pencil, Vector2(rect.position.x + CHIPS_WIDTH + 2.0, FOOT_TOP),
-				Vector2(rect.position.x + CHIPS_WIDTH + 2.0, rect.end.y), 1.5)
-		_hatch(pencil, Vector2(rect.position.x + 1.5, TITLE_BOTTOM + 1.0), Vector2(1.0, 1.0), 12.0)
+	_draw_back(pencil, rect)
 
 
 ## The back of a card: a second frame inside the first, crossed by slanting lines both ways.
@@ -614,18 +634,23 @@ func _draw_picture() -> void:
 	pencil.draw(_picture)
 
 
-## The picture's halo: its strokes again, under the printed ones, moved `glow_reach` pixels
-## each way, so that the four copies add up to the light around the lines.
+## The picture's halo: its strokes again, under the printed ones, as soft lines
+## (shaders/card_picture.gdshader): once in place, and in rings of fainter copies around it
+## (GLOW_RINGS), which add up to a smooth light.
 func _draw_glow() -> void:
-	var pencil := Pencil.new(rng_seed + 5)
-	pencil.colour = Color.WHITE
-	_add_picture(pencil)
-	var reach: float = (_glow.material as ShaderMaterial).get_shader_parameter("glow_reach")
 	var item := _glow.get_canvas_item()
-	for offset: Vector2 in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach),
-			Vector2(0.0, -reach)]:
-		RenderingServer.canvas_item_add_set_transform(item, Transform2D(0.0, offset))
-		pencil.draw(_glow)
+	var rings: Array[Vector2] = [Vector2(0.0, 0.45)]
+	rings.append_array(GLOW_RINGS)
+	for ring: Vector2 in rings:
+		var pencil := Pencil.new(rng_seed + 5)
+		pencil.colour = Color(ring.y, ring.y, ring.y)
+		pencil.half_width = GLOW_RIBBON
+		_add_picture(pencil)
+		var turns := 1 if ring.x == 0.0 else GLOW_COPIES
+		for k in turns:
+			var offset := Vector2.from_angle(TAU * k / turns) * ring.x
+			RenderingServer.canvas_item_add_set_transform(item, Transform2D(0.0, offset))
+			pencil.draw(_glow)
 	RenderingServer.canvas_item_add_set_transform(item, Transform2D.IDENTITY)
 
 
@@ -683,7 +708,8 @@ func _add_picture(pencil: Pencil, at: Vector2 = Vector2.ZERO) -> void:
 	if text != "":
 		box.size.y = FACTOR_PICTURE
 	# A Factor has one picture for both men: its look says whose it is.
-	ArenaCardPictures.add(pencil, ArenaCardPictures.picture_of(key, ink), box.grow(-2.0))
+	pencil.steady = true
+	ArenaCardPictures.add(pencil, ArenaCardPictures.picture_of(key, ink), box.grow(-2.0), PICTURE_WIDTH)
 
 
 ## One ruled line: a little off true and running a little past both ends, and gone over again
@@ -699,15 +725,3 @@ func _rule(pencil: Pencil, from: Vector2, to: Vector2, width: float) -> void:
 		var end := start + pencil.randf_range(0.25, 0.5)
 		pencil.stroke(PackedVector2Array([from.lerp(to, start) + across * 0.7,
 				from.lerp(to, end) + across * 0.4]), width * 0.6, 0.4, 0.3)
-
-
-## Slanting strokes that shade a corner of a box. `corner` is the corner, `inward` points from
-## it into the box along both sides, and `reach` is how far along the sides the shading goes.
-func _hatch(pencil: Pencil, corner: Vector2, inward: Vector2, reach: float) -> void:
-	var k := 3.0
-	while k < reach:
-		var from := corner + Vector2(inward.x * k, inward.y * 1.0)
-		var to := corner + Vector2(inward.x * 1.0, inward.y * k)
-		var kept := pencil.randf_range(0.65, 1.0)
-		pencil.stroke(PackedVector2Array([from, from.lerp(to, kept)]), 0.9, 0.3, 0.0)
-		k += pencil.randf_range(2.6, 3.6)

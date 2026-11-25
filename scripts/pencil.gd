@@ -13,6 +13,10 @@ const STEP := 3.0 ## Distance between the points a stroke is cut into, in pixels
 var colour := Palette.OUTLINE
 ## No stroke is drawn thinner than this, in the pencil's own units, whatever width it is given.
 var min_width := 0.0
+## Half the ribbon's width in pixels, for a shader that draws past the line (a glow around it).
+var half_width := HALF_WIDTH
+## A steady hand: strokes neither waver, nor taper, nor change their pressure.
+var steady := false
 
 var _rng := RandomNumberGenerator.new()
 var _points := PackedVector2Array()
@@ -49,8 +53,9 @@ func stroke(path: PackedVector2Array, width: float, wobble: float = 0.8, fade: f
 	var length := 0.0
 	for i in points.size() - 1:
 		length += points[i].distance_to(points[i + 1])
-	for i in points.size():
-		points[i] += Vector2(_noise(offset + i * 0.05), _noise(offset + 40.0 + i * 0.05)) * wobble
+	if not steady:
+		for i in points.size():
+			points[i] += Vector2(_noise(offset + i * 0.05), _noise(offset + 40.0 + i * 0.05)) * wobble
 
 	var first := _points.size()
 	var along := 0.0
@@ -67,9 +72,13 @@ func stroke(path: PackedVector2Array, width: float, wobble: float = 0.8, fade: f
 		if fade > 0.0:
 			var lift := _noise(offset + 170.0 + along * 0.012) * 0.5 + 0.5
 			pressure *= lerpf(1.0, smoothstep(0.18, 0.5, lift), fade)
-		pressure = clampf(pressure * (0.25 + 0.75 * taper), 0.0, 1.6) * width / (HALF_WIDTH * 2.0)
-		_points.append(points[i] + side * HALF_WIDTH)
-		_points.append(points[i] - side * HALF_WIDTH)
+		if steady:
+			pressure = 1.0
+		else:
+			pressure = clampf(pressure * (0.25 + 0.75 * taper), 0.0, 1.6)
+		pressure *= width / (half_width * 2.0)
+		_points.append(points[i] + side * half_width)
+		_points.append(points[i] - side * half_width)
 		_uvs.append(Vector2(along, 1.0))
 		_uvs.append(Vector2(along, -1.0))
 		_colours.append(Color(colour, pressure))

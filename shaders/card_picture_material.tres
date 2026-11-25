@@ -5,5 +5,3 @@
 [resource]
 shader = ExtResource("1")
 shader_parameter/glow_colour = Color(1, 1, 1, 1)
-shader_parameter/glow_reach = 3.0
-shader_parameter/glow_strength = 0.5
