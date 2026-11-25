@@ -93,6 +93,8 @@ var speed := 1.0
 
 ## The restraint gauge, laid out in its zone.
 var restraint := ArenaRestraint.new()
+## The night's road (scripts/arena_road.gd), under the heading.
+var road := ArenaRoad.new()
 ## The two tallies, plays and discards, on a layer of their own: the controls lay it over
 ## their buttons (ArenaControls.hold_tallies), which would hide it from under them.
 var tallies := Control.new()
@@ -180,7 +182,8 @@ func _init() -> void:
 		_tally_items[i].draw.connect(_draw_tally.bind(i))
 		tallies.add_child(_tally_items[i])
 	restraint.name = "Restraint"
-	for child: Control in [_track, _marks, restraint, _text, tallies, _flight]:
+	road.name = "Road"
+	for child: Control in [_track, _marks, restraint, road, _text, tallies, _flight]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -215,6 +218,7 @@ func show_table(table: Dictionary) -> void:
 	var night: Dictionary = table.night
 	set_night(night.no, night.title, night.round, night.scene)
 	is_jekyll = table.stance == "jekyll"
+	road.show_night(night, is_jekyll)
 	_target = table.target
 	_score = table.score
 	# A target of 0 is one not yet written (a round's start counts it up): nothing to strike.
@@ -590,7 +594,7 @@ func plays_place() -> Vector2:
 
 
 ## Where the night and the round are written, on the page: the first line's middle, and the
-## whole zone.
+## whole heading with the road under it (for a hover).
 func heading_place() -> Vector2:
 	var at := _night_at()
 	var w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x
@@ -598,7 +602,7 @@ func heading_place() -> Vector2:
 
 
 func heading_rect() -> Rect2:
-	return get_global_transform() * ArenaLayout.night(size)
+	return get_global_transform() * ArenaLayout.night(size).merge(ArenaLayout.road(size))
 
 
 func _baseline() -> float:
@@ -651,7 +655,7 @@ func _drop_at(i: int) -> Vector2:
 
 ## The baseline of the night and round's first line, at its left end.
 func _night_at() -> Vector2:
-	return ArenaLayout.night(size).position + Vector2(0.0, 16.0)
+	return ArenaLayout.night(size).position + Vector2(0.0, 13.0)
 
 
 ## Where the target's number begins, on the goal's baseline: right of the zone's middle.
@@ -784,7 +788,7 @@ func _draw_text() -> void:
 	# The night and the round, and the night's title under them.
 	var at := _night_at()
 	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, Palette.CHALK_2)
-	c.draw_string(_slanted, at + Vector2(0.0, 18.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE,
+	c.draw_string(_slanted, at + Vector2(0.0, 16.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE,
 			Palette.CHALK_2)
 
 	# The goal: SCORE at the zone's top left, the score large ending left of the middle, the
