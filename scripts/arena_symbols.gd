@@ -84,8 +84,8 @@ const GROW_SCALE := 1.6
 const LEDGER := Vector2(282.0, 76.0)
 const LEDGER_GAP := 8.0
 ## The size a change's number is written at, and from one line of them to the next.
-const NOTE_SIZE := 13
-const NOTE_STEP := 15.0
+const NOTE_SIZE := 15
+const NOTE_STEP := 17.0
 
 ## Seconds for each movement.
 const FILL_TIME := 0.3
@@ -956,7 +956,8 @@ func _draw_text() -> void:
 		if not _numbers and not s.ghost_roll:
 			var lit: Array[String] = []
 			for row: String in ["habit", "craving", "temper"]:
-				if s.note[row] > 0.01:
+				# A gauge whose words stand at its slip is named there, not twice.
+				if s.note[row] > 0.01 and not (s.pay == row and s.pay_words > 0.01):
 					lit.append(row)
 			var base := r.get_center().y + _heavy.get_ascent(NOTE_SIZE) * 0.36 - (lit.size() - 1) * NOTE_STEP * 0.5
 			for i in lit.size():
@@ -964,7 +965,8 @@ func _draw_text() -> void:
 				var words := "%s %d" % [lit[i].capitalize(), int(s[lit[i]])]
 				var at := Vector2(_beside_x(), base + i * NOTE_STEP)
 				_text.draw_string_outline(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, 4, Color(edge, edge.a * note))
-				_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, Color(Palette.CHALK, note))
+				var colour: Color = {"habit": HABIT, "temper": TEMPER}.get(lit[i], Palette.CHALK)
+				_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, Color(colour, note))
 		_draw_pay(sym, edge)
 		if s.ghost_roll:
 			var slip := _roll_slip(sym)
