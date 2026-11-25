@@ -5,6 +5,9 @@
 # Usage: tools/sim_report.sh [batch ...]       (every batch of the rules' version of now when
 #                                               none is named; a batch is a name or a folder)
 #        tools/sim_report.sh --compare a b     (two batches side by side, differences marked)
+#        tools/sim_report.sh --strategies [batch ...]   (the batches' runs together: the won
+#                                               runs grouped into the strategies that win,
+#                                               the lost by the round and the way they ended)
 #        tools/sim_report.sh --csv ...         (also write the tables as files beside the batch)
 #        REPORT_TIMEOUT=seconds tools/sim_report.sh ...   (time limit of each step, 300 by default)
 cd "$(dirname "$0")/.." || exit 1

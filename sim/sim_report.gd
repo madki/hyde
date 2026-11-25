@@ -9,6 +9,9 @@ extends SceneTree
 ##                     now when none is named.
 ##   --compare a b     two batches side by side, each difference marked against the noise
 ##   --csv             also writes each table as a file beside the batch
+##   --strategies      instead of each batch's tables, the named batches' runs together: the
+##                     won runs grouped into the strategies that win, the lost runs by the
+##                     round and the way they ended (SimStrategies)
 ##
 ## A report is a list of tables, each {name, title, cols, rows: [{label, cells}], note}. A
 ## cell is {k: "share" | "mean", s, q, n} (the sum, the sum of squares and the count of what
@@ -37,8 +40,10 @@ func _run(args: PackedStringArray) -> String:
 	var names: Array[String] = []
 	var compare := false
 	var csv := false
+	var strategies := false
 	for a in args:
 		match a:
+			"--strategies", "strategies": strategies = true
 			"--compare", "compare": compare = true
 			"--csv", "csv": csv = true
 			_:
@@ -65,6 +70,9 @@ func _run(args: PackedStringArray) -> String:
 		dirs = SimStore.batches(RulesConfig.RULES_VERSION)
 		if dirs.is_empty():
 			return "No batches under %s/%s. Make one with tools/sim.sh." % [SimStore.root.trim_prefix("res://"), RulesConfig.RULES_VERSION]
+	if strategies:
+		SimStrategies.run(dirs, csv)
+		return ""
 	for i in dirs.size():
 		var data := SimStore.load(dirs[i])
 		if i > 0:
