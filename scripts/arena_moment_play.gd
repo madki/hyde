@@ -4,9 +4,10 @@ class_name ArenaMomentPlay
 ## 1. The chosen cards leave the hand and are laid in the centre, in the order they score:
 ##    Roots first, then Factors. A play is taken off the tally.
 ## 2. The readout names the hand and shows its base, and both numbers pulse.
-## 3. Each Root hops and gives its chips; its gauge bonus follows it: Temper's and Habit's
-##    mult travel from the symbol's sketch to the mult, a Sublimation's burst rises from the
-##    Ink Root.
+## 3. Each Root hops and gives its chips; what its gauge gives of them rises under its own,
+##    in the gauge's colour. Its gauge's mult follows it, a beat of its own: the Root hops, a
+##    tally mark leaves it for the gauge, the gauge pulses and says its name and value, and
+##    the mult travels from it to the mult. A Sublimation's burst rises from the Ink Root.
 ## 4. Each Factor hops, gives its chips, and then its effect. Vigour and Restlessness make
 ##    the best Root hop again; Reason and Alibi make each Root they count hop.
 ## 5. Stored restraint flies into the mult a drop at a time, and The Cane hops.
@@ -29,6 +30,18 @@ const HAND_TIERS := {
 }
 ## The most semitones the chips and mult of one play climb, so that a long play does not squeak.
 const RAMP_TOP := 12
+## The beat of a gauge that pays, by how many times that symbol's gauge has paid in the play
+## (the first, the second, the third and later), before its mult ticks; and the shares of it
+## that the mark's flight, the gauge's pulse and the mult's flight take.
+const PAY_BEATS: Array[float] = [0.60, 0.35, 0.25]
+const PAY_MARK := 0.20 / 0.60
+const PAY_PULSE := 0.15 / 0.60
+const PAY_FLIGHT := 0.25 / 0.60
+## The words of a gauge that pays fade this long once its mult has ticked.
+const PAY_FADE := 0.15
+
+## For `--trace`: when the play's score began to be shown, in milliseconds.
+static var _began_ms := 0
 
 
 static func add(t: ArenaTable, result: Dictionary) -> void:
@@ -122,6 +135,7 @@ static func _score(t: ArenaTable, steps: Array, laid: Dictionary, eyes: Array, c
 	var base: Dictionary = steps[0]
 	var note := "(hunted)" if str(base.label).ends_with(", hunted") else ""
 	var hand_name := str(base.label).trim_suffix(", hunted")
+	t.beats.add_call(func() -> void: _began_ms = Time.get_ticks_msec())
 	t.beats.add(func() -> void:
 		t.beats.sound(stinger, 1.0, 0.8)
 		await t.follow(t.numbers.name_hand(hand_name, base.chips, base.mult, note)).finished
@@ -130,12 +144,14 @@ static func _score(t: ArenaTable, steps: Array, laid: Dictionary, eyes: Array, c
 	var tick := 0
 	# Each step that raises the chips or the mult sounds a semitone above the one before.
 	var ramp := [0]
+	# How many times each symbol's gauge has paid in this play.
+	var paid := {}
 	for i in range(1, steps.size()):
 		var step: Dictionary = steps[i]
 		var n := tick
 		if step.chips != 0 or step.mult != 0:
 			tick += 1
-		t.beats.add(func() -> void: await _step(t, step, n, laid, eyes, colour, ramp))
+		t.beats.add(func() -> void: await _step(t, step, n, laid, eyes, colour, ramp, paid))
 
 
 # The stinger played as the hand is named: its man's, louder for a stronger hand. A hand of
@@ -157,7 +173,7 @@ static func _ramp(t: ArenaTable, sound_name: String, ramp: Array) -> void:
 
 # One step: the card that acts hops, what it gives rises from it, and the readout ticks.
 static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eyes: Array, colour: Color,
-		ramp: Array) -> void:
+		ramp: Array, paid: Dictionary) -> void:
 	var card: ArenaCard = laid.get(step.id)
 	var at := _above(card) if card else Vector2.ZERO
 	var words := ""
@@ -165,15 +181,15 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 		words = "+%d" % step.chips
 	elif step.mult != 0:
 		words = "+%d mult" % step.mult
+	var pays: bool = step.kind == "gauge" and step.gauge in ["temper", "habit"]
 	match step.kind:
 		"root", "factor":
 			ArenaPop.hop(t.beats, card)
+			if step.kind == "root" and _gauge_chips(t, step, card, colour):
+				words = ""
 		"gauge":
-			if step.gauge in ["temper", "habit"]:
-				# The gauge pays from its sketch: its tallies flash and the mult travels.
-				t.play(t.symbols.flash.bind(step.sym))
-				ArenaPop.fly_text(t.beats, t.travel, t.symbols.sketch_place(step.sym), t.numbers.mult_place(),
-						words, colour, ArenaPace.tick(n))
+			if pays:
+				await _pay(t, step, card, paid)
 				words = ""
 			else:
 				words = "%s %s" % [str(step.label).capitalize(), words]
@@ -221,8 +237,56 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 		await t.follow(t.numbers.tick_mult(step.mult)).finished
 	else:
 		await t.beats.wait(ArenaPace.tick(n) * QUIET)
+	if pays:
+		var fade := t.beats.tween()
+		fade.tween_method(func(a: float) -> void: t.symbols.set_pay(step.sym, step.gauge, a, 0.0), 1.0, 0.0, PAY_FADE)
 	if Shot.has_arg("trace"):
-		print("  %-9s %-18s %d x %d" % [step.kind, step.label, roundi(t.numbers.get("_chips")), roundi(t.numbers.get("_mult"))])
+		print("  %-9s %-18s %d x %d   %.2f s" % [step.kind, step.label, roundi(t.numbers.get("_chips")),
+				roundi(t.numbers.get("_mult")), (Time.get_ticks_msec() - _began_ms) / 1000.0])
+
+
+# A Root whose gauge gives some of its chips (15 a point, from the run's dials): its own chips
+# rise in the man's colour and, under them, the gauge's in the gauge's colour. True if it did.
+static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colour: Color) -> bool:
+	if card == null or step.sym == "" or step.chips <= 0:
+		return false
+	var data: Dictionary = card.get_meta("data", {})
+	var row := "habit" if data.get("ink", false) else "temper"
+	var each: int = t.run.dials.habit_chips if row == "habit" else t.run.dials.temper_chips
+	var given := each * int(t.shown.value("symbols/%s/%s" % [step.sym, row], 0))
+	if given <= 0 or given >= step.chips:
+		return false
+	var at := _above(card)
+	ArenaPop.text(t.beats, t.travel, at, "+%d" % (step.chips - given), colour, 20)
+	ArenaPop.text(t.beats, t.travel, at + Vector2(0.0, 20.0), "+%d %s" % [given, row.capitalize()],
+			_gauge_colour(row), 15)
+	return true
+
+
+# A gauge that pays, up to its mult's tick: the Root hops, its mark leaves it for the gauge,
+# the gauge pulses and stands its name and value beside it, and the mult leaves it for the
+# mult. The first time a symbol's gauge pays in a play is the slowest.
+static func _pay(t: ArenaTable, step: Dictionary, card: ArenaCard, paid: Dictionary) -> void:
+	var sym: String = step.sym
+	var row: String = step.gauge
+	var k: int = paid.get(sym, 0)
+	paid[sym] = k + 1
+	var beat: float = PAY_BEATS[mini(k, PAY_BEATS.size() - 1)]
+	var tint := _gauge_colour(row)
+	var gauge := t.symbols.pay_place(sym, row)
+	ArenaPop.hop(t.beats, card)
+	if card:
+		await ArenaPop.tally(t.beats, t.travel, _above(card), gauge, tint, row == "habit", beat * PAY_MARK)
+	var pulse := t.beats.tween()
+	pulse.tween_method(func(a: float) -> void: t.symbols.set_pay(sym, row, 1.0, sin(a * PI)), 0.0, 1.0,
+			beat * PAY_PULSE)
+	await pulse.finished
+	await ArenaPop.fly_text(t.beats, t.travel, t.symbols.pay_from(sym), t.numbers.mult_place(), "+%d mult" % step.mult, tint,
+			beat * PAY_FLIGHT)
+
+
+static func _gauge_colour(row: String) -> Color:
+	return Palette.TEMPER if row == "temper" else Palette.HABIT
 
 
 # Beats 6 and 7: the total lands, travels to the round's score, and may strike the target.

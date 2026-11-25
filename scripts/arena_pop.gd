@@ -2,8 +2,8 @@ class_name ArenaPop
 extends Control
 ## The small things that rise from a card while a play scores: a number ("+15", "+2 mult")
 ## or a few words that lift off the card that gives them and fade, a card's hop as it
-## scores, and the eye mark of Curiosity and Impulse, which flies to the draw pile and waits
-## there for the card it draws.
+## scores, the tally mark that leaves a Root for its gauge as the gauge pays, and the eye mark
+## of Curiosity and Impulse, which flies to the draw pile and waits there for the card it draws.
 ##
 ## Everything here plays through the beat queue, so it is hurried with the rest. Nothing is
 ## awaited: a pop is seen alongside the tick it belongs to.
@@ -15,6 +15,9 @@ const OUTLINE := Color(Palette.OUTLINE, 0.9)
 ## How far a number rises, in pixels, and how long it is on the page.
 const RISE := 30.0
 const TIME := 0.55
+## A gauge's tally mark: its height and its stroke, in pixels.
+const TALLY_H := 10.0
+const TALLY_W := 2.4
 ## How far a card hops, in pixels, and how long the hop takes.
 const HOP := 14.0
 const HOP_TIME := 0.2
@@ -32,6 +35,9 @@ static var _font: FontVariation
 
 ## True for a mark that is a sovereign, not an eye.
 var _coin := false
+## For a tally mark, its colour (else clear), and whether it leans (Habit's) or stands (Temper's).
+var _tally := Color(0.0, 0.0, 0.0, 0.0)
+var _slant := false
 
 
 ## The colour of the man who scores.
@@ -52,15 +58,15 @@ static func text(beats: ArenaBeats, layer: Control, at: Vector2, words: String, 
 
 
 ## `words` travel from `from` to `to` (points on the page) over `time` and are gone: what a
-## gauge pays, from its sketch into the mult.
+## gauge pays, from the gauge into the mult. Returns the end of the flight.
 static func fly_text(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2, words: String,
-		colour: Color, time: float) -> void:
+		colour: Color, time: float) -> Signal:
 	var label := _label(layer, from, words, colour, 20)
 	var end: Vector2 = layer.get_global_transform().affine_inverse() * to - label.size * 0.5
 	var t := beats.tween()
-	t.tween_interval(time * 0.25)
-	t.tween_property(label, "position", end, time * 0.75).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	t.tween_property(label, "position", end, time).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	t.tween_callback(label.queue_free)
+	return t.finished
 
 
 static func _label(layer: Control, at: Vector2, words: String, colour: Color, font_size: int) -> Label:
@@ -137,6 +143,18 @@ static func coin(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2,
 	mark.queue_free()
 
 
+## A gauge's tally mark leaves `from` for `to` (points on the page) over `time` and is gone:
+## upright for Temper, leaning for Habit (`slant`), in `colour`. Await it.
+static func tally(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2, colour: Color,
+		slant: bool, time: float) -> void:
+	var mark := eye(layer, from)
+	mark._tally = colour
+	mark._slant = slant
+	mark.queue_redraw()
+	await mark.fly_to(beats, to, time)
+	mark.queue_free()
+
+
 ## A new eye mark on `layer`, its middle at `at` (a point on the page).
 static func eye(layer: Control, at: Vector2) -> ArenaPop:
 	var mark := ArenaPop.new()
@@ -163,9 +181,16 @@ func fade(beats: ArenaBeats) -> void:
 	t.tween_callback(queue_free)
 
 
-# The eye: a cream tag with an eye drawn on it in pencil.
+# The eye: a cream tag with an eye drawn on it in pencil. A tally: one stroke, outlined.
 func _draw() -> void:
 	var middle := size * 0.5
+	if _tally.a > 0.0:
+		var lean := TALLY_H * 0.3 if _slant else 0.0
+		var top := middle + Vector2(lean * 0.5, -TALLY_H * 0.5)
+		var bottom := middle + Vector2(-lean * 0.5, TALLY_H * 0.5)
+		draw_line(top, bottom, OUTLINE, TALLY_W + 3.0)
+		draw_line(top, bottom, _tally, TALLY_W)
+		return
 	if _coin:
 		draw_circle(middle, 8.5, Palette.OUTLINE)
 		draw_circle(middle, 7.0, Palette.GOLD)

@@ -28,6 +28,10 @@ extends Control
 ## - `turn(sym, temper_to)`: the filled pips travel into Temper, one tally each.
 ## - `set_habit(sym, n)`, `set_temper(sym, n)`: tallies drawn or taken away.
 ## - `flash(sym)`: the sketch pulses.
+## - `set_pay(sym, row, words, pulse)`: a gauge that pays ("temper" or "habit"): its tallies
+##   pulse by `pulse` and "Temper 2" stands beside it, as strong as `words` (each 0 to 1). The
+##   beat that pays drives both, through the beat queue. `pay_place(sym, row)` is where its
+##   mark lands, `pay_from(sym)` where its mult leaves from.
 ## - `set_line(paper, ink)`: the line moves one mark across, or gains or loses marks.
 ##   `line_across(to_ink)` and `line_gain(ink)` are the two moves named.
 ## - `line_check(centre)`: the line grows to `centre` (in this control's coordinates) and,
@@ -99,6 +103,15 @@ const SURFACE := Palette.NIGHT_2
 const FRAME := Palette.CHALK_2
 const MARK := Palette.CHALK
 const INK := Palette.HYDE
+## Each gauge's own colour: its tallies, its ghosts, its words and its line in the ledger.
+const TEMPER := Palette.TEMPER
+const HABIT := Palette.HABIT
+## The size of the words a gauge that pays stands beside it.
+const PAY_SIZE := 15
+## The gap between a paying gauge's slip and its words, and how far past their end the middle
+## of what it pays sets off.
+const PAY_GAP := 8.0
+const PAY_FROM := 52.0
 
 ## Changes the lines and the tags' edges a little while keeping the look.
 @export var rng_seed := 11
@@ -168,6 +181,7 @@ func _blank() -> Dictionary:
 		"join": 0.0, # how far the three pips have drawn together
 		"habit_shown": 0.0, "temper_shown": 0.0, # tallies drawn; a fraction is one partly drawn
 		"flash": 0.0,
+		"pay": "", "pay_words": 0.0, "pay_pulse": 0.0, # a gauge that pays, and how strongly it shows
 		"note": {"craving": 0.0, "habit": 0.0, "temper": 0.0},
 		"ghost_pips": 0, "ghost_roll": false, "ghost_temper": 0,
 	}
@@ -375,6 +389,44 @@ func set_temper(sym: String, n: int) -> void:
 func flash(sym: String) -> void:
 	var s: Dictionary = _s[sym]
 	await _tween(FLASH_TIME, func(t: float) -> void: s.flash = sin(t * PI))
+
+
+## A gauge that pays: its tallies pulse by `pulse` and its name and value stand beside it, as
+## strong as `words` (each 0 to 1). Both 0 put it back.
+func set_pay(sym: String, row: String, words: float, pulse: float) -> void:
+	var s: Dictionary = _s[sym]
+	s.pay = row if words > 0.0 or pulse > 0.0 else ""
+	s.pay_words = words
+	s.pay_pulse = pulse
+	_redraw()
+
+
+## Where a gauge's mark lands, on the page: the middle of its side's tallies.
+func pay_place(sym: String, row: String) -> Vector2:
+	_measure()
+	var n := maxi(int(_s[sym][row]), 1)
+	var first := _tally_at(sym, row, 0)
+	var last := _tally_at(sym, row, n - 1)
+	return get_global_transform() * first.lerp(last, 0.5)
+
+
+## Where what a gauge pays leaves from, on the page: just past the words it stands beside it,
+## clear of the column's edge.
+func pay_from(sym: String) -> Vector2:
+	_measure()
+	var words := _heavy.get_string_size(_pay_words(sym), HORIZONTAL_ALIGNMENT_LEFT, -1.0, PAY_SIZE).x
+	return get_global_transform() * Vector2(_pay_x(sym) + words + PAY_FROM, _y(sym))
+
+
+## What a paying gauge says beside it: "Temper 2".
+func _pay_words(sym: String) -> String:
+	var s: Dictionary = _s[sym]
+	return "" if s.pay == "" else "%s %d" % [str(s.pay).capitalize(), int(s[s.pay])]
+
+
+## Where a paying gauge's words begin: just right of its slip.
+func _pay_x(sym: String) -> float:
+	return _gauge_rect(sym).end.x + PAY_GAP
 
 
 func _grow_tallies(sym: String, row: String, n: int) -> void:
@@ -696,7 +748,7 @@ func _notification(what: int) -> void:
 func _draw_back() -> void:
 	for sym in SYMS:
 		var s: Dictionary = _s[sym]
-		var flash: float = s.flash
+		var flash: float = maxf(s.flash, s.pay_pulse)
 		_slip(_gauge_rect(sym), SURFACE.lerp(Palette.NIGHT_3, flash))
 		if s.ghost_roll:
 			_slip(_roll_slip(sym), SURFACE)
@@ -721,7 +773,7 @@ func _slip(r: Rect2, colour: Color) -> void:
 ## The words on the slip of a rollover's card, and the slip: at the gauge's right end, level
 ## with it, so that it lies on no other gauge.
 func _roll_words(sym: String) -> String:
-	return "+1 %s" % RulesConfig.ROOT[sym].ink
+	return "Habit %d  +1 %s" % [int(_s[sym].habit) + 1, RulesConfig.ROOT[sym].ink]
 
 
 func _roll_slip(sym: String) -> Rect2:
@@ -776,22 +828,23 @@ func _draw_lines() -> void:
 			rims.stroke(_circle(_pip_at(sym, k), PIP_R, 12), 2.0 if ghost else 1.4, 0.25)
 		if s.ghost_roll:
 			# The three pips joined by a loop round them.
-			rims.colour = _faint(INK, 0.8)
+			rims.colour = _faint(HABIT, 0.8)
 			var mid := _pip_at(sym, 1)
 			rims.stroke(_ellipse(mid, Vector2(PIP_PITCH + PIP_R + 2.5, PIP_R + 3.5), 24), 1.4, 0.4)
 		rims.draw(_lines)
-		_draw_tallies(sym, "habit", seed_base + 10, INK)
-		_draw_tallies(sym, "temper", seed_base + 60, MARK)
+		_draw_tallies(sym, "habit", seed_base + 10, HABIT)
+		_draw_tallies(sym, "temper", seed_base + 60, TEMPER)
 		var ghosts := Pencil.new(seed_base + 120)
-		ghosts.colour = _faint(INK, 0.4)
+		ghosts.colour = _faint(HABIT, 0.45)
 		if s.ghost_roll and int(s.habit) < TALLY_MAX:
 			ghosts.stroke(_tally_path(sym, "habit", int(s.habit), 1.0), 1.5, 0.3)
 		for n_ghost in int(s.ghost_temper):
 			var n: int = int(s.temper) + n_ghost
 			if n < TALLY_MAX:
-				ghosts.colour = _faint(MARK, 0.45)
+				ghosts.colour = _faint(TEMPER, 0.45)
 				ghosts.stroke(_tally_path(sym, "temper", n, 1.0), 1.5, 0.3)
 		if _lock > 0.01:
+			ghosts.colour = _faint(INK, 0.4)
 			_lock_path(ghosts, _pip_at(sym, 2) + Vector2(0.0, -3.0), _lock)
 		ghosts.draw(_lines)
 	_lines.draw_set_transform_matrix(_line_xform())
@@ -816,16 +869,19 @@ func _draw_lines() -> void:
 	_lines.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
-## A side's tallies on a gauge, the newest partly drawn while it comes.
+## A side's tallies on a gauge, the newest partly drawn while it comes; brighter and heavier
+## while the gauge pays.
 func _draw_tallies(sym: String, row: String, pencil_seed: int, colour: Color) -> void:
-	var shown: float = _s[sym][row + "_shown"]
+	var s: Dictionary = _s[sym]
+	var shown: float = s[row + "_shown"]
 	var whole := floori(shown)
 	var count := mini(ceili(shown), TALLY_MAX)
+	var pulse: float = s.pay_pulse if s.pay == row else 0.0
 	for n in count:
 		var pencil := Pencil.new(pencil_seed + n)
-		pencil.colour = colour
+		pencil.colour = colour.lerp(Palette.CHALK, pulse * 0.5)
 		var part := 1.0 if n < whole else shown - whole
-		pencil.stroke(_tally_path(sym, row, n, part), 1.7, 0.25)
+		pencil.stroke(_tally_path(sym, row, n, part), 1.7 + 1.3 * pulse, 0.25)
 		pencil.draw(_lines)
 
 
@@ -909,10 +965,11 @@ func _draw_text() -> void:
 				var at := Vector2(_beside_x(), base + i * NOTE_STEP)
 				_text.draw_string_outline(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, 4, Color(edge, edge.a * note))
 				_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE, Color(Palette.CHALK, note))
+		_draw_pay(sym, edge)
 		if s.ghost_roll:
 			var slip := _roll_slip(sym)
 			_text.draw_string(_slanted, slip.position + Vector2(0.0, 12.0), _roll_words(sym), HORIZONTAL_ALIGNMENT_CENTER,
-					slip.size.x, 11, Palette.CHALK)
+					slip.size.x, 11, HABIT)
 	# The line's counts, at the banner's two ends: each a little larger for a moment when it changes.
 	var xf := _line_xform()
 	var scale := xf.get_scale().x
@@ -931,6 +988,20 @@ func _draw_text() -> void:
 		_draw_ledger(_hover)
 
 
+## The words of a gauge that pays ("Temper 2"), just right of its slip and level with it, in
+## the gauge's colour.
+func _draw_pay(sym: String, edge: Color) -> void:
+	var s: Dictionary = _s[sym]
+	var a: float = s.pay_words
+	if s.pay == "" or a <= 0.01 or _numbers:
+		return
+	var words := _pay_words(sym)
+	var colour := TEMPER if s.pay == "temper" else HABIT
+	var at := Vector2(_pay_x(sym), _gauge_rect(sym).get_center().y + _heavy.get_ascent(PAY_SIZE) * 0.36)
+	_text.draw_string_outline(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, PAY_SIZE, 4, Color(edge, edge.a * a))
+	_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, PAY_SIZE, Color(colour, a))
+
+
 ## A symbol's ledger, to the right of the column and level with its gauge, but no higher
 ## than the readout, so that it lies under the line's banner and not on it: its gauges in
 ## numbers, and its two Roots in the deck with their worth.
@@ -944,8 +1015,12 @@ func _draw_ledger(sym: String) -> void:
 	var x := box.position.x + 10.0
 	var y := box.position.y + 19.0
 	var names: Array = [RulesConfig.ROOT[sym].paper, RulesConfig.ROOT[sym].ink]
-	_text.draw_string(_heavy, Vector2(x, y), "Habit %d   Craving %d   Temper %d" % [s.habit, s.craving, s.temper],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 13, Palette.CHALK)
+	# The gauges' line: Habit and Temper each in its own colour.
+	var at := Vector2(x, y)
+	for part: Array in [["Habit %d   " % s.habit, HABIT], ["Craving %d   " % s.craving, Palette.CHALK],
+			["Temper %d" % s.temper, TEMPER]]:
+		_text.draw_string(_heavy, at, part[0], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, part[1])
+		at.x += _heavy.get_string_size(part[0], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
 	_text.draw_string(_slanted, Vector2(x, y + 24.0), "%d %s in the deck, %d chips each" % [s.paper, names[0], s.paper_chips],
 			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
 	_text.draw_string(_slanted, Vector2(x, y + 46.0), "%d %s in the deck, %d chips each" % [s.ink, names[1], s.ink_chips],
