@@ -19,8 +19,8 @@ const PLACE_SCENES := {
 }
 ## The line the passage to a place shows, in that place's light.
 const PLACE_LINES := {
-	"lab": "Dawn. The laboratory.",
-	"alley": "Dawn. The back alley.",
+	"lab": "Dawn. Jekyll held the table: the laboratory.",
+	"alley": "Dawn. Hyde held the table: the back alley.",
 }
 ## The command-line arguments that drive a screen for a still or a check (Shot, ArenaBench):
 ## with any of them a change of screen is a plain cut, at once.
