@@ -20,7 +20,7 @@ const LOCAL_DIR := "res://audio/sfx_local/"
 const NAMES: Array[String] = [
 	"hover_j", "hover_h", "choose_j", "choose_h", "put_back_j", "put_back_h",
 	"draw_1", "draw_2", "draw_3", "lay", "button", "refuse",
-	"chips_j", "chips_h", "mult_j", "mult_h", "bloom_j", "bloom_h",
+	"chips_j", "chips_h", "mult_j", "mult_h", "bloom_j", "bloom_h", "pen",
 	"heartbeat", "shift_to_hyde", "breakout", "hyde_card_whisper", "hyde_card_wail",
 	"hand_j_1", "hand_j_2", "hand_j_3", "hand_h_1", "hand_h_2", "hand_h_3",
 	"round_won", "run_lost",
