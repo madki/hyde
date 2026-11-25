@@ -45,8 +45,10 @@ func _update() -> void:
 	var on := _landing or (_live and _plays() == 1)
 	if on and not Sfx.is_looping(LOOP):
 		Sfx.loop(LOOP, 1.0, 0.9)
+		Music.set_dread("last_play", 0.7)
 	elif not on and Sfx.is_looping(LOOP):
 		Sfx.stop_loop(LOOP, 0.6)
+		Music.set_dread("last_play", 0.0)
 
 
 func _on_move_begun(move: String) -> void:

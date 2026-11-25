@@ -37,6 +37,9 @@ Every third-party asset must be listed here before it is committed.
 | Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
 | Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 | Old paper7 (scan of a sheet of old paper, modified) | `art/arena/paper_mask.png` | Digital Yard Sale | <https://commons.wikimedia.org/wiki/File:Old_paper7.jpg> | Public domain |
+| Echoes (music, modified: made a seamless loop, converted to OGG) | `audio/music/music_jekyll.ogg` | Scott Buckley | <https://www.scottbuckley.com.au/library/echoes/> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| Division (music, modified: first 35 s only, made a seamless loop, converted to OGG) | `audio/music/music_hyde.ogg` | Kevin MacLeod (incompetech.com) | <https://incompetech.com/music/royalty-free/music.html> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| Decoherence (music, modified: 3:20 section from 2:00, made a seamless loop, converted to OGG) | `audio/music/music_dread.ogg` | Scott Buckley | <https://www.scottbuckley.com.au/library/decoherence/> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 
 Meshes cut from the Poly Haven models are saved one to a file in `studio/kit/` (facade pieces,
 the two street lamps and the pieces of the chemistry set, by `studio/street_builder.gd` and

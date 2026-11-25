@@ -51,6 +51,7 @@ var _strike_row := -1
 
 
 func _ready() -> void:
+	Music.enter("lab")
 	var held: RulesRun = SceneFlow.run
 	var own := held == null or held.phase != WHERE
 	_run = SceneFlow.run_for_place(WHERE)

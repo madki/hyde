@@ -45,6 +45,7 @@ var _begun := false
 
 
 func _ready() -> void:
+	Music.enter("title")
 	_panel.accent = Palette.JEKYLL
 	_panel.set_heading(GAME_NAME)
 	_panel.set_rows([{text = ROW_SHIFT}])

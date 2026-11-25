@@ -82,6 +82,7 @@ func bind() -> void:
 	beats.started.connect(_set_rate)
 	# Who has the table, for the sounds: Hyde while the table shows his stance.
 	Sfx.hyde = run.stance == "hyde"
+	Music.enter("table")
 	shown.changed.connect(_follow_stance)
 	# Leaving the page leaves no sound behind, and the next screen is no one's.
 	arena.tree_exiting.connect(func() -> void:

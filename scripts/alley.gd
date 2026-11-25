@@ -37,6 +37,7 @@ var _acts: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	Music.enter("alley")
 	var own := SceneFlow.run == null or SceneFlow.run.phase != WHERE
 	_run = SceneFlow.run_for_place(WHERE)
 	if own and _run != null:
