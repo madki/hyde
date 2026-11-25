@@ -15,7 +15,9 @@ const GUARD := 5000
 ## rules refused. `night` and `round` are where it ended, from 0. `rounds` has one
 ## {n, r, how, used, score, target, stance, ink, paper, sov} for each round played (`used`:
 ## plays and passes made; `sov`: sovereigns held when it ended) and `moves` one
-## {n, r, who, t, key, score} for each move at the table. `deck` is the count of cards, `ink`
+## {n, r, who, t, key, score, gap, lead} for each move at the table (`gap`: how far the move
+## was ahead of the best of another key, only when the player gave its options; `lead`: the
+## score against the target's pace after it; see SimReport). `deck` is the count of cards, `ink`
 ## and `paper` the counts of Roots of each side, and `ms` the time the run took, the one
 ## number that differs when a seed is played again.
 static func play_run(player: SimPlayer, run_seed: int, dials: Dictionary = {}, give: Array = []) -> Dictionary:
@@ -45,6 +47,7 @@ static func play_run(player: SimPlayer, run_seed: int, dials: Dictionary = {}, g
 		var night: int = run.night
 		var round_no: int = run.round
 		var who: String = run.stance
+		var target: int = Rules.target(run)
 		var move := player.choose(run)
 		var res := SimMoves.apply(run, move)
 		if not res.get("ok", false):
@@ -59,6 +62,13 @@ static func play_run(player: SimPlayer, run_seed: int, dials: Dictionary = {}, g
 		})
 		if is_play or t == "pass":
 			used += 1
+		# The log of the choice: `gap` from the options the player weighed, if it gave any,
+		# and `lead`, the round's score against the pace once the move is made.
+		var gap: Variant = SimReport.gap(move)
+		if gap != null:
+			moves[-1]["gap"] = gap
+		var score_now: int = run.history[-1].score if run.phase != "play" else run.score
+		moves[-1]["lead"] = SimReport.lead(score_now, target, used, run.dials.plays)
 		if run.phase != "play":
 			var h: Dictionary = run.history[-1]
 			rounds.append({

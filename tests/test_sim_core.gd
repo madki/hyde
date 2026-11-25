@@ -16,7 +16,7 @@ func test_one_seed_one_run() -> void:
 	ok(a.by != "guard" and a.by != "illegal" and a.ending != "", "the run ends by the rules")
 	ok(not a.rounds.is_empty() and not a.moves.is_empty(), "with its rounds and moves")
 	eq(a.rounds[0].keys(), ["n", "r", "how", "used", "score", "target", "stance", "ink", "paper", "sov"], "a round's keys")
-	eq(a.moves[0].keys(), ["n", "r", "who", "t", "key", "score"], "a move's keys")
+	eq(a.moves[0].keys(), ["n", "r", "who", "t", "key", "score", "gap", "lead"], "a move's keys")
 	eq(SimStore.whole(JSON.parse_string(JSON.stringify(a))), a, "the line is plain data")
 	# An instrument held from the start counts from the first round.
 	var with := _line(7, {}, ["spirit"])
