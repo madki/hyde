@@ -78,7 +78,7 @@ func _ready() -> void:
 	_controls.pass_pressed.connect(_pressed.bind(pass_play))
 	_means.drink_pressed.connect(_pressed.bind(drink))
 	_means.salt_pressed.connect(_pressed.bind(take_salt))
-	for extra: String in ["ghosts", "previews", "views", "sound"]:
+	for extra: String in ["ghosts", "previews", "twist", "views", "sound"]:
 		var script := _script("res://scripts/arena_extra_%s.gd" % extra)
 		if script:
 			script.setup(t)
