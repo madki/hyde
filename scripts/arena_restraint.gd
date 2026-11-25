@@ -38,6 +38,8 @@ const WORD_BASE := 13.0
 ## track it would lie on the word, and is written after the track's end, this far from it.
 const MARK_OVER_FROM := 4
 const MARK_GAP := 8.0
+## In the tight scene the track ends at a tick: his mark keeps this far from it.
+const TIGHT_CLEAR := 9.0
 ## Tick marks to a step, and the lengths of a short one and of the one at a step's middle.
 const TICKS := 4
 const TICK_SHORT := 4.5
@@ -302,15 +304,22 @@ func _draw_text() -> void:
 	# track's end, level with its numbers.
 	var whose := "HYDE!"
 	var width := _slanted.get_string_size(whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12).x
+	var tight := tight_drop > 0 and tight_scene
+	var track_end := _pitch() * limit
 	if limit >= MARK_OVER_FROM:
-		_text.draw_set_transform(Vector2(_step(limit).x - width * 0.5 + 6.0, _track_y() - TRACK_HALF - TICK_LONG + 2.0), deg_to_rad(-9.0))
+		var mark_x := _step(limit).x - width * 0.5 + 6.0
+		if tight:
+			# The mark ends short of the tick, not across its top.
+			mark_x = minf(mark_x, track_end - TIGHT_CLEAR - width)
+		_text.draw_set_transform(Vector2(mark_x, _track_y() - TRACK_HALF - TICK_LONG + 2.0), deg_to_rad(-9.0))
 	else:
 		var mark_drop := (_slanted.get_ascent(12) - _slanted.get_descent(12)) * 0.5
-		_text.draw_set_transform(Vector2(_pitch() * limit + MARK_GAP, _track_y() + mark_drop), 0.0)
+		var gap := MARK_GAP + (TIGHT_CLEAR if tight else 0.0)
+		_text.draw_set_transform(Vector2(track_end + gap, _track_y() + mark_drop), 0.0)
 	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(Palette.OUTLINE, 0.7))
 	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Palette.CHALK_2)
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
-	if tight_drop > 0 and tight_scene:
+	if tight:
 		# The tight scene's track ends short: a tick in the twist's colour, and what it took.
 		var end := _step(limit).x + _pitch() * 0.5
 		_text.draw_line(Vector2(end, _track_y() - TRACK_HALF - 4.0), Vector2(end, _track_y() + TRACK_HALF + 4.0),
