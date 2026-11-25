@@ -400,9 +400,15 @@ func _gui_input(event: InputEvent) -> void:
 			salt_pressed.emit()
 		elif part == "flask" or part == "salt":
 			# Not ready: the same dull knock as its key gives, a little softer.
-			Sfx.play("refuse", 1.0, 0.7)
-			if _last:
-				twist_acted.emit()
+			refused(0.7)
+
+
+## The flask or the salt was asked for, by a press or by its key, and cannot be used: the dull
+## knock, and `twist_acted` in the scene where the last twist forbids both.
+func refused(volume: float = 1.0) -> void:
+	Sfx.play("refuse", 1.0, volume)
+	if _last:
+		twist_acted.emit()
 
 
 func _notification(what: int) -> void:
