@@ -310,12 +310,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
 			if key.echo:
 				return
+			# Handled first: what the row does may change the screen, and take this panel
+			# out of the tree.
+			get_viewport().set_input_as_handled()
 			choose()
+			return
 		KEY_ESCAPE:
 			# Left to the screen when nothing listens for it here.
 			if key.echo or back.get_connections().is_empty():
 				return
+			get_viewport().set_input_as_handled()
 			back.emit()
+			return
 		_:
 			return
 	get_viewport().set_input_as_handled()
