@@ -96,6 +96,10 @@ func _process(delta: float) -> void:
 		_level[loop] = move_toward(_level[loop], db, FADE_RATE * delta)
 		_apply(_players[loop], _level[loop])
 	_filter.cutoff_hz = lerpf(20500.0, DARKEST_HZ, danger * danger)
+	# With no danger the filter is taken out: it would cost a pass over the music for nothing.
+	var index := AudioServer.get_bus_index(BUS)
+	if AudioServer.is_bus_effect_enabled(index, 0) != (danger > 0.0):
+		AudioServer.set_bus_effect_enabled(index, 0, danger > 0.0)
 
 
 func _apply(player: AudioStreamPlayer, db: float) -> void:
@@ -104,10 +108,11 @@ func _apply(player: AudioStreamPlayer, db: float) -> void:
 		# Faded out: wait where it is, and carry on from there.
 		if player.playing:
 			player.stream_paused = true
+	elif player.stream_paused:
+		# Asked first: a paused player is not `playing`, and `play` would start it over.
+		player.stream_paused = false
 	elif not player.playing:
 		player.play()
-	elif player.stream_paused:
-		player.stream_paused = false
 
 
 func _make_bus() -> void:

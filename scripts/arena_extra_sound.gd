@@ -20,6 +20,8 @@ var _live := false
 ## True from the start of the round's last play until its total lands.
 var _landing := false
 var _move := ""
+## True while the heartbeat is asked for.
+var _beating := false
 
 
 static func setup(t: ArenaTable) -> void:
@@ -43,10 +45,15 @@ func _plays() -> int:
 # Starts or stops the heartbeat by what is shown now.
 func _update() -> void:
 	var on := _landing or (_live and _plays() == 1)
-	if on and not Sfx.is_looping(LOOP):
+	if on == _beating:
+		return
+	# Kept here, not asked of Sfx: with no heartbeat file there is no loop, and the dread
+	# must still end.
+	_beating = on
+	if on:
 		Sfx.loop(LOOP, 1.0, 0.9)
 		Music.set_dread("last_play", 0.7)
-	elif not on and Sfx.is_looping(LOOP):
+	else:
 		Sfx.stop_loop(LOOP, 0.6)
 		Music.set_dread("last_play", 0.0)
 
