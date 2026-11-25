@@ -110,6 +110,11 @@ func stop_loop(sound: String, fade: float = 0.3) -> void:
 func stop_all() -> void:
 	for sound: String in _loops.keys():
 		stop_loop(sound, 0.0)
+	hush()
+
+
+## Cuts short every sound that is playing once (the loops go on): a move is being skipped.
+func hush() -> void:
 	for voice in _voices:
 		voice.stop()
 

@@ -198,6 +198,7 @@ func skip() -> void:
 	_hurrying = true
 	_skipping = true
 	_set_rate()
+	Sfx.hush()
 	skipped.emit()
 
 
