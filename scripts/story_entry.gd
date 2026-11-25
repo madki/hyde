@@ -23,7 +23,7 @@ const FACE: Font = preload("res://fonts/Cedarville-Cursive.ttf")
 const WIDTH := 560.0
 const LINE_SPACING := 1.4
 
-const JEKYLL_SIZE := 24
+const JEKYLL_SIZE := 26
 const HYDE_SIZE := 26
 const PLAIN_SIZE := 20
 ## Hyde's hand: the same letters sloped backward, and heavier. The face leans forward of
@@ -32,6 +32,8 @@ const HYDE_SLOPE := 0.42
 ## The plain face stands upright, so its slope is the one seen.
 const PLAIN_SLOPE := 0.28
 const HYDE_WEIGHT := 0.6
+## Jekyll's hand is the face a little heavier, so its thin strokes hold at this size.
+const JEKYLL_WEIGHT := 0.3
 
 ## Letters a second.
 const JEKYLL_SPEED := 45.0
@@ -209,7 +211,7 @@ func _dress() -> void:
 		font = _sloped(ThemeDB.fallback_font, PLAIN_SLOPE, 0.0) if hyde else ThemeDB.fallback_font
 	else:
 		font_size = HYDE_SIZE if hyde else JEKYLL_SIZE
-		font = _sloped(FACE, HYDE_SLOPE, HYDE_WEIGHT) if hyde else FACE
+		font = _sloped(FACE, HYDE_SLOPE, HYDE_WEIGHT) if hyde else _sloped(FACE, 0.0, JEKYLL_WEIGHT)
 	_label.add_theme_font_override("normal_font", font)
 	_label.add_theme_font_size_override("normal_font_size", font_size)
 	var spacing := roundi(font_size * LINE_SPACING - font.get_height(font_size))

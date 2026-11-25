@@ -124,6 +124,7 @@ var _paper_shown := 0.0
 var _ink_shown := 0.0
 ## The line's counts are lit for a moment when they change.
 var _line_note := {"paper": 0.0, "ink": 0.0}
+var _note_fade := {} # "lamp/craving": the Tween that fades that note
 var _grow := 0.0
 var _centre := Vector2.ZERO
 var _lead := 0.0
@@ -398,6 +399,11 @@ func set_pay(sym: String, row: String, words: float, pulse: float) -> void:
 	s.pay = row if words > 0.0 or pulse > 0.0 else ""
 	s.pay_words = words
 	s.pay_pulse = pulse
+	# Craving's number would stand on the words' line and read as part of them: it goes, and
+	# does not come back when they fade.
+	if words > 0.0 and s.note.craving > 0.0:
+		_end_note(sym, "craving")
+		s.note.craving = 0.0
 	_redraw()
 
 
@@ -445,11 +451,20 @@ func _note(sym: String, row: String) -> void:
 	var note: Dictionary = _s[sym].note
 	note[row] = 1.0
 	_redraw()
+	_end_note(sym, row)
 	var tw := create_tween()
+	_note_fade[sym + "/" + row] = tw
 	tw.tween_interval(NOTE_TIME)
 	tw.tween_method(func(a: float) -> void:
 		note[row] = a
 		_text.queue_redraw(), 1.0, 0.0, 0.4)
+
+
+# A note's fading is stopped where it is.
+func _end_note(sym: String, row: String) -> void:
+	var tw: Tween = _note_fade.get(sym + "/" + row)
+	if tw and tw.is_valid():
+		tw.kill()
 
 
 # --- The line's movements -------------------------------------------------------------------
@@ -955,9 +970,11 @@ func _draw_text() -> void:
 		# a rollover's slip stands at the gauge's end: on a wide gauge the two would cross.
 		if not _numbers and not s.ghost_roll:
 			var lit: Array[String] = []
+			var named: bool = s.pay != "" and s.pay_words > 0.01
 			for row: String in ["habit", "craving", "temper"]:
-				# A gauge whose words stand at its slip is named there, not twice.
-				if s.note[row] > 0.01 and not (s.pay == row and s.pay_words > 0.01):
+				# A gauge whose words stand at its slip is named there, not twice. Craving's
+				# number would stand on their line and read as part of them: it is left out.
+				if s.note[row] > 0.01 and not (named and (row == s.pay or row == "craving")):
 					lit.append(row)
 			var base := r.get_center().y + _heavy.get_ascent(NOTE_SIZE) * 0.36 - (lit.size() - 1) * NOTE_STEP * 0.5
 			for i in lit.size():

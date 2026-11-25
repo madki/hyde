@@ -195,12 +195,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if Rules.can_drink(_run).ok:
 				_pressed(drink)
 			else:
-				Sfx.play("refuse")
+				_means.refused()
 		KEY_S:
 			if Rules.can_salt(_run).ok:
 				_pressed(take_salt)
 			else:
-				Sfx.play("refuse")
+				_means.refused()
 		KEY_ESCAPE:
 			_hand.put_back_all()
 		KEY_0:
