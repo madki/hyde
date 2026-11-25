@@ -8,7 +8,7 @@ extends CanvasLayer
 
 ## How long the night takes to fall, to stay with a line on it, and to lift, in seconds.
 const FALLS := 0.22
-const STAYS := 0.42
+const STAYS := 1.6
 const STAYS_BARE := 0.04 # without a line: just long enough to read as one movement
 const LIFTS := 0.3
 ## How long the line takes to come up once the night is down.
