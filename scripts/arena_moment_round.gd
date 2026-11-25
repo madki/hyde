@@ -77,8 +77,8 @@ static func _reward_goes(t: ArenaTable, taken: Dictionary) -> void:
 			await t.stage.clear_caption())
 
 
-# The two Roots of his that the dawn brings join the deck. Until the dawn has pages of its
-# own they are shown here, on the table, before the next night's first round.
+# The two Roots of his that the dawn brings join the deck. They are shown here, on the
+# table, before the dawn's place opens.
 static func _dawn(t: ArenaTable, e: Dictionary) -> void:
 	var cards: Array = []
 	var names: Array = []
