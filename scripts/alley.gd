@@ -37,6 +37,7 @@ var _acts: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	Music.enter("alley")
 	var own := SceneFlow.run == null or SceneFlow.run.phase != WHERE
 	_run = SceneFlow.run_for_place(WHERE)
 	if own and _run != null:
@@ -165,6 +166,7 @@ func _on_row_chosen(index: int) -> void:
 	var result := {"ok": true}
 	match act.act:
 		"leave":
+			Sfx.play("button")
 			SceneFlow.back_to_table()
 			return
 		"habit":
@@ -175,6 +177,11 @@ func _on_row_chosen(index: int) -> void:
 			result = Rules.alley_salt(_run)
 		"drop":
 			result = Rules.drop_instrument(_run, act.arg)
+	if not result.ok:
+		Sfx.play("refuse")
+	else:
+		# Taken, not bought: a hand sliding it off a ledge. The chemist's salt is paid for.
+		Sfx.play({"salt": "buy", "drop": "lock"}.get(act.act, "take"), 0.7 if act.act == "drop" else 1.0)
 	# A move the rules refuse although its row could be taken: their reason is shown.
 	_panel.note = NOTE if result.ok else String(result.get("reason", "Not now."))
 	_show()
@@ -182,6 +189,7 @@ func _on_row_chosen(index: int) -> void:
 
 # Escape: the selection goes to Leave.
 func _on_back() -> void:
+	Sfx.play("hover_h", Sfx.vary(), 0.35)
 	_panel.select(_acts.size() - 1)
 
 

@@ -33,6 +33,7 @@ static func leave(t: ArenaTable, ids: Array) -> void:
 			t.travel.take(card)
 			cards.append(card)
 		if not cards.is_empty():
+			on_each_start(t, cards.size(), discard_sound.bind(t))
 			await t.piles.put("discards", cards))
 
 
@@ -43,6 +44,7 @@ static func draw(t: ArenaTable, ids: Array) -> void:
 		for i in ids.size():
 			var card := t.piles.take("draw", t.card_data(ids[i]))
 			var to: Dictionary = t.hand.take_in(card, t.entry(ids[i]), t.hyde())
+			draw_sound(t)
 			last = t.travel.fly(card, to.centre, to.turn, to.size, ArenaTravel.UP)
 			last.connect(t.hand.settle.bind(card), CONNECT_ONE_SHOT)
 			if i < ids.size() - 1:
@@ -54,3 +56,25 @@ static func draw(t: ArenaTable, ids: Array) -> void:
 ## The draw pile ran out: the discards turn over and become the new draw pile.
 static func reshuffle(t: ArenaTable) -> void:
 	t.beats.add(func() -> void: await t.piles.reshuffle())
+
+
+## The sound of a card drawn to the hand, as it sets off: one of three, a little off pitch.
+static func draw_sound(t: ArenaTable) -> void:
+	t.beats.sound("draw_%d" % randi_range(1, 3), Sfx.vary(), 0.6)
+
+
+## The sound of a card thrown away: a drawn card's, lower.
+static func discard_sound(t: ArenaTable) -> void:
+	t.beats.sound("draw_%d" % randi_range(1, 3), Sfx.vary() * 0.8, 0.6)
+
+
+## Calls `call` once for each of `n` cards that set off ArenaPace.TRAVEL_GAP apart (a group
+## laid or put on a pile), as each sets off: the first at once. From inside a beat.
+static func on_each_start(t: ArenaTable, n: int, call: Callable) -> void:
+	for i in n:
+		if i == 0:
+			call.call()
+			continue
+		var at := t.beats.tween()
+		at.tween_interval(ArenaPace.travel_start(i))
+		at.tween_callback(call)

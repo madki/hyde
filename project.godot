@@ -15,9 +15,16 @@ run/main_scene="res://scenes/title.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[audio]
+
+general/default_playback_type.web=0
+
 [autoload]
 
 SceneFlow="*res://scripts/scene_flow.gd"
+Sfx="*res://scripts/sfx.gd"
+Perf="*res://scripts/perf.gd"
+Music="*res://scripts/music.gd"
 
 [display]
 

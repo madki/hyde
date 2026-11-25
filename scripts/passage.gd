@@ -60,6 +60,11 @@ func run(scene: String, line: String = "", light: Color = Palette.CHALK) -> void
 	_line_alpha = 0.0
 	visible = true
 	_sheet.queue_redraw()
+	# Night drawn across; at dawn, a rise in the voice of the place it opens on.
+	if line == "":
+		Sfx.play_across("passage")
+	else:
+		Sfx.play_across("dawn_h" if light == Palette.HYDE else "dawn_j")
 
 	await _stage(FALLS, func(k: float) -> void: _cover = _ease_in_out(k))
 	if _line != "":

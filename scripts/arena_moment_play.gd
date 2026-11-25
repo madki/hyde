@@ -20,6 +20,15 @@ class_name ArenaMomentPlay
 
 ## The time of a step that moves no number (a lock, an eye), as a share of a tick's.
 const QUIET := 0.7
+## How strong each hand sounds as it is named, 1 to 3 (the stingers `hand_j_<n>` and
+## `hand_h_<n>`): mostly by its base chips × mult among its man's hands; a Sublimation, rare
+## and turning his Roots, is a middle one.
+const HAND_TIERS := {
+	"thought": 1, "spark": 1, "rumination": 1, "goodwork": 2, "sublimation": 2, "dogma": 2, "lucid": 3,
+	"stirring": 1, "lapse": 1, "turmoil": 2, "fixation": 2, "mania": 3,
+}
+## The most semitones the chips and mult of one play climb, so that a long play does not squeak.
+const RAMP_TOP := 12
 
 
 static func add(t: ArenaTable, result: Dictionary) -> void:
@@ -37,7 +46,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 	var laid := {}
 	var eyes: Array = []
 	_lay(t, order, laid)
-	_score(t, steps, laid, eyes, colour)
+	_score(t, steps, laid, eyes, colour, _stinger(str(ev.key), hyde))
 	var score_to := 0
 	# The symbols whose gauges the play changes: their cards' chips are counted anew.
 	var changed: Array = []
@@ -102,29 +111,53 @@ static func _lay(t: ArenaTable, order: Array, laid: Dictionary) -> void:
 			laid[id] = card
 			cards.append(card)
 		if not cards.is_empty():
+			ArenaMomentCards.on_each_start(t, cards.size(), func() -> void:
+				t.beats.sound("lay", Sfx.vary(), 0.8))
 			await t.stage.lay(t.travel, cards))
 
 
 # Beats 2 to 5: the hand is named, then each step of the score.
-static func _score(t: ArenaTable, steps: Array, laid: Dictionary, eyes: Array, colour: Color) -> void:
+static func _score(t: ArenaTable, steps: Array, laid: Dictionary, eyes: Array, colour: Color,
+		stinger: String) -> void:
 	var base: Dictionary = steps[0]
 	var note := "(hunted)" if str(base.label).ends_with(", hunted") else ""
 	var hand_name := str(base.label).trim_suffix(", hunted")
 	t.beats.add(func() -> void:
+		t.beats.sound(stinger, 1.0, 0.8)
 		await t.follow(t.numbers.name_hand(hand_name, base.chips, base.mult, note)).finished
 		if Shot.has_arg("trace"):
 			print("  %s %s  %d x %d" % [hand_name, note, base.chips, base.mult]))
 	var tick := 0
+	# Each step that raises the chips or the mult sounds a semitone above the one before.
+	var ramp := [0]
 	for i in range(1, steps.size()):
 		var step: Dictionary = steps[i]
 		var n := tick
 		if step.chips != 0 or step.mult != 0:
 			tick += 1
-		t.beats.add(func() -> void: await _step(t, step, n, laid, eyes, colour))
+		t.beats.add(func() -> void: await _step(t, step, n, laid, eyes, colour, ramp))
+
+
+# The stinger played as the hand is named: its man's, louder for a stronger hand. A hand of
+# neither man's (a Passing Thought) is the man's at the table.
+static func _stinger(key: String, hyde: bool) -> String:
+	var side := "h" if hyde else "j"
+	if RulesConfig.HANDS.hyde.has(key):
+		side = "h"
+	elif RulesConfig.HANDS.jekyll.has(key):
+		side = "j"
+	return "hand_%s_%d" % [side, int(HAND_TIERS.get(key, 1))]
+
+
+# A step raised the chips (or the mult): their sound, a semitone above the last of the play.
+static func _ramp(t: ArenaTable, sound_name: String, ramp: Array) -> void:
+	t.beats.sound_sided(sound_name, Sfx.semitones(mini(ramp[0], RAMP_TOP)))
+	ramp[0] += 1
 
 
 # One step: the card that acts hops, what it gives rises from it, and the readout ticks.
-static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eyes: Array, colour: Color) -> void:
+static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eyes: Array, colour: Color,
+		ramp: Array) -> void:
 	var card: ArenaCard = laid.get(step.id)
 	var at := _above(card) if card else Vector2.ZERO
 	var words := ""
@@ -156,15 +189,20 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			if step.chips == 0 and step.mult == 0:
 				words = step.label
 				if step.label == "no restraint":
+					t.beats.sound("lock")
 					t.follow(t.numbers.restraint.set_lock(true))
 				elif step.label == "no Craving":
+					t.beats.sound("lock")
 					t.play(t.symbols.set_lock.bind(true))
 				if str(step.label).begins_with("draws") and card:
+					t.beats.sound("eye")
 					var mark := ArenaPop.eye(t.travel, ArenaTravel.centre_of(card))
 					eyes.append(mark)
 					mark.fly_to(t.beats, t.piles.draw_pile.top_centre() + Vector2(-34.0, -40.0))
 		"stored":
 			t.shown.set_value("restraint/stored", maxi(0, int(t.shown.value("restraint/stored", 0)) - 1))
+			if step.mult > 0:
+				_ramp(t, "mult", ramp)
 			await t.follow(t.numbers.fly_drop(step.mult)).finished
 			return
 		"instrument":
@@ -174,8 +212,12 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 	if words != "" and at != Vector2.ZERO:
 		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)
 	if step.chips != 0:
+		if step.chips > 0:
+			_ramp(t, "chips", ramp)
 		await t.follow(t.numbers.tick_chips(step.chips)).finished
 	elif step.mult != 0:
+		if step.mult > 0:
+			_ramp(t, "mult", ramp)
 		await t.follow(t.numbers.tick_mult(step.mult)).finished
 	else:
 		await t.beats.wait(ArenaPace.tick(n) * QUIET)
@@ -186,14 +228,25 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 # Beats 6 and 7: the total lands, travels to the round's score, and may strike the target.
 static func _total(t: ArenaTable, score_to: int) -> void:
 	t.beats.add(func() -> void:
+		# The ticks gather into one landing; Hyde's is lower and heavier.
+		t.beats.sound("total", 0.84 if t.hyde() else 1.0)
 		await t.follow(t.numbers.land_total()).finished
 		if Shot.has_arg("trace"):
 			print("  total     %d, the round's score to %d" % [t.numbers.get("_total"), score_to]))
 	t.beats.add(func() -> void:
 		t.shown.set_value("score", score_to)
-		await t.follow(t.numbers.send_total(score_to)).finished)
+		var send := t.follow(t.numbers.send_total(score_to))
+		# The score blooms as the total reaches it.
+		var bloom := t.beats.tween()
+		bloom.tween_interval(ArenaNumbers.TRAVEL_TIME)
+		bloom.tween_callback(func() -> void:
+			t.beats.sound_sided("bloom")
+			t.landed.emit())
+		await send.finished)
 	if score_to >= int(t.after.target):
-		t.beats.add(func() -> void: await t.follow(t.numbers.strike_target()).finished)
+		t.beats.add(func() -> void:
+			t.beats.sound("target_struck")
+			await t.follow(t.numbers.strike_target()).finished)
 
 
 # The laid cards go to the discards.
@@ -204,6 +257,7 @@ static func _leave(t: ArenaTable, order: Array, laid: Dictionary) -> void:
 			if laid.has(id):
 				cards.append(laid[id])
 		if not cards.is_empty():
+			ArenaMomentCards.on_each_start(t, cards.size(), ArenaMomentCards.discard_sound.bind(t))
 			await t.piles.put("discards", cards))
 
 
@@ -216,6 +270,7 @@ static func _draw_with_eyes(t: ArenaTable, ids: Array, eyes: Array) -> void:
 			var to: Dictionary = t.hand.take_in(card, t.entry(id), t.hyde())
 			if mark:
 				mark.fly_to(t.beats, to.centre + Vector2(0.0, -ArenaCard.SIZE.y * to.size * 0.5 - 6.0), ArenaPace.TRAVEL)
+			ArenaMomentCards.draw_sound(t)
 			await t.travel.fly(card, to.centre, to.turn, to.size, ArenaTravel.UP)
 			t.hand.settle(card)
 			await t.beats.wait(ArenaPace.MARK)

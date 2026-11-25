@@ -11,3 +11,13 @@ CLAUDE.local.md
 # run `tools/install_mcp.sh --no-download` in it to switch the plugin on in project.godot.
 .mcp.json
 addons/godot_mcp/
+
+# Godot's import cache. With a copy of it a new worktree opens without re-importing
+# everything; Godot then re-imports only what differs on that branch.
+.godot/
+
+# Jekyll's figure meshes (see CREDITS.md): needed to re-bake the pictures he is in.
+studio/figures/jekyll*.res
+
+# Sounds built from licensed libraries: ignored by git, so a new worktree needs a copy.
+audio/sfx_local/

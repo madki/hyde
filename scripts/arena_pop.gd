@@ -133,6 +133,7 @@ static func coin(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2,
 	mark._coin = true
 	mark.queue_redraw()
 	await mark.fly_to(beats, to, time)
+	beats.sound("coin", Sfx.vary(0.06))
 	mark.queue_free()
 
 

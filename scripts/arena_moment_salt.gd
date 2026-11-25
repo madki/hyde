@@ -6,12 +6,14 @@ class_name ArenaMomentSalt
 static func add(t: ArenaTable, result: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		t.shown.add("salt/doses", -1)
+		t.beats.sound("salt")
 		await t.play(t.means.open_paper))
 	for e: Dictionary in result.events:
 		if e.t == "shift":
 			if int(e.ev.lost_stored) > 0:
 				t.beats.add(func() -> void:
 					t.stage.show_caption("The stored restraint is lost.")
+					t.beats.sound("low_note", 0.84, 0.8)
 					t.mark("restraint/stored", 0)
 					await t.stage.clear_caption())
 			t.beats.add_call(func() -> void:

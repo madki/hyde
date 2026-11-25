@@ -77,6 +77,7 @@ func play(words: Dictionary, to: Vector2) -> void:
 	_block.position = middle
 	_block.scale = Vector2.ONE
 	_block.modulate.a = 0.0
+	beats.sound("heading")
 	var t := beats.tween()
 	t.tween_property(_block, "modulate:a", 1.0, FADE)
 	t.tween_interval(ArenaPace.HOLD + (0.6 if _twist.text != "" else 0.0))

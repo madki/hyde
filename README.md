@@ -52,6 +52,9 @@ Other scripts: `tools/check.sh` reports script and scene errors headlessly;
 - **Art:** public domain (CC0), Creative Commons Attribution (CC BY 4.0), or generated
   procedurally in code, except the figure of Jekyll, which is rendered from a bought model
   that is not in this repository. No AI-generated art.
+- **Sound:** the music is CC BY 4.0. Most sound effects are made from a licensed sound
+  library and are in the game build but not in this repository: a clone plays only the few
+  CC0 sounds in `audio/sfx/`, and the rest are silent. No AI-generated audio.
 - Attribution for all third-party assets is in [CREDITS.md](CREDITS.md).
 
 ## Licence

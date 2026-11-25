@@ -7,6 +7,7 @@ class_name ArenaMomentPass
 static func add(t: ArenaTable, result: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		t.stage.show_caption("Nothing to play.")
+		t.beats.sound("low_note", 1.19, 0.7)
 		t.mark("plays", t.after.plays)
 		await t.stage.clear_caption())
 	var rescue := {}

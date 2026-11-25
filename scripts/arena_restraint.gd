@@ -145,6 +145,8 @@ func show_meter(new_meter: int, new_limit: int) -> void:
 		limit = maxi(new_limit, 1)
 		_lay_out()
 	meter = clampi(new_meter, 0, limit)
+	# The nearer the end of the track, the nearer the dread in the music.
+	Music.set_dread("restraint", (meter - 2.0) / maxf(limit - 2.0, 1.0))
 	if _change:
 		_change.kill()
 	_change = create_tween().set_parallel().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)

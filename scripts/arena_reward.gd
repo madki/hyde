@@ -35,7 +35,7 @@ func _init() -> void:
 	_none.add_theme_font_override("font", font)
 	_none.add_theme_font_size_override("font_size", 17)
 	ArenaControls.dress_dark(_none)
-	_none.pressed.connect(pick.bind(-1))
+	_none.pressed.connect(_pick_by_player.bind(-1))
 	add_child(_none)
 	set_process(false)
 
@@ -58,16 +58,17 @@ func offer(cards: Array) -> void:
 	set_process(true)
 
 
-## Takes the card at `index`, or none with -1.
-func pick(index: int) -> void:
+## Takes the card at `index`, or none with -1. False if it cannot be taken.
+func pick(index: int) -> bool:
 	if not waiting or index >= _cards.size():
-		return
+		return false
 	waiting = false
 	set_process(false)
 	_none.visible = false
 	_show(-1)
 	_cards = []
 	chosen.emit(index)
+	return true
 
 
 func _process(_delta: float) -> void:
@@ -84,6 +85,8 @@ func _lay_out() -> void:
 func _show(index: int) -> void:
 	if index == _shown:
 		return
+	if index >= 0:
+		Sfx.play("hover_j", Sfx.vary(), 0.35)
 	_shown = index
 	for i in _cards.size():
 		var card: ArenaCard = _cards[i]
@@ -103,14 +106,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		var under := _under()
 		if under >= 0:
 			get_viewport().set_input_as_handled()
-			pick(under)
+			_pick_by_player(under)
 	elif key and key.pressed and not key.echo:
 		if key.keycode >= KEY_1 and key.keycode <= KEY_3:
 			get_viewport().set_input_as_handled()
-			pick(key.keycode - KEY_1)
+			_pick_by_player(key.keycode - KEY_1)
 		elif key.keycode in [KEY_0, KEY_ESCAPE]:
 			get_viewport().set_input_as_handled()
-			pick(-1)
+			_pick_by_player(-1)
+
+
+# The player picks: `pick`, with the button's sound, or refused when there is no such card.
+func _pick_by_player(index: int) -> void:
+	Sfx.play("button" if pick(index) else "refuse")
 
 
 # The place of the card under the pointer, or -1.

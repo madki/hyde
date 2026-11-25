@@ -274,6 +274,8 @@ func set_draught(draught: Dictionary) -> void:
 	if was_ok != _draught.ok or _cork != (0.0 if _draught.ok else 1.0):
 		var from := _cork
 		var to := 0.0 if _draught.ok else 1.0
+		# The cork comes out with a small pop; pushed in, lower and softer.
+		Sfx.play("cork", 1.0 if to == 0.0 else 0.8, 1.0 if to == 0.0 else 0.6)
 		await _tween(CORK_TIME, func(t: float) -> void: _cork = lerpf(from, to, t))
 		# Uncorked: the core flares for a moment and settles, without holding up the move. With
 		# flashes reduced it does not flare.
@@ -302,6 +304,7 @@ func set_salt(salt: Dictionary) -> void:
 	var from := _open
 	var to := 1.0 if _salt.ok else 0.0
 	if from != to:
+		Sfx.play("paper", Sfx.vary() * 1.2, 0.6)
 		await _tween(FOLD_TIME, func(t: float) -> void: _open = lerpf(from, to, t))
 	_redraw()
 	_hovered(_hover)
@@ -371,6 +374,8 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var over := _part_at(event.position)
 		if over != _hover:
+			if over != "" and _part_exists(over):
+				Sfx.play_sided("hover", Sfx.vary(), 0.35)
 			_hovered(over)
 	var button := event as InputEventMouseButton
 	if button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
@@ -381,6 +386,9 @@ func _gui_input(event: InputEvent) -> void:
 		elif part == "salt" and _salt.ok:
 			accept_event()
 			salt_pressed.emit()
+		elif part == "flask" or part == "salt":
+			# Not ready: the same dull knock as its key gives, a little softer.
+			Sfx.play("refuse", 1.0, 0.7)
 
 
 func _notification(what: int) -> void:

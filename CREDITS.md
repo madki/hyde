@@ -23,8 +23,9 @@ the game build.
 ## Art, audio and fonts
 
 Art is public domain (CC0), Creative Commons Attribution (CC BY 4.0, credited below), or
-generated procedurally in code (shaders, particles, drawn primitives), with one exception:
-the figure of Jekyll, rendered from a bought model, noted under the table. No AI-generated image or audio assets.
+generated procedurally in code (shaders, particles, drawn primitives), with two exceptions,
+both noted under the table: the figure of Jekyll, rendered from a bought model, and most of
+the game's sounds, made from a licensed sound library. No AI-generated image or audio assets.
 
 Every third-party asset must be listed here before it is committed.
 
@@ -37,6 +38,9 @@ Every third-party asset must be listed here before it is committed.
 | Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
 | Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 | Old paper7 (scan of a sheet of old paper, modified) | `art/arena/paper_mask.png` | Digital Yard Sale | <https://commons.wikimedia.org/wiki/File:Old_paper7.jpg> | Public domain |
+| Echoes (music, modified: made a seamless loop, converted to OGG) | `audio/music/music_jekyll.ogg` | Scott Buckley | <https://www.scottbuckley.com.au/library/echoes/> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| Division (music, modified: first 35 s only, made a seamless loop, converted to OGG) | `audio/music/music_hyde.ogg` | Kevin MacLeod (incompetech.com) | <https://incompetech.com/music/royalty-free/music.html> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
+| Decoherence (music, modified: 3:20 section from 2:00, made a seamless loop, converted to OGG) | `audio/music/music_dread.ogg` | Scott Buckley | <https://www.scottbuckley.com.au/library/decoherence/> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 
 Meshes cut from the Poly Haven models are saved one to a file in `studio/kit/` (facade pieces,
 the two street lamps and the pieces of the chemistry set, by `studio/street_builder.gd` and
@@ -54,6 +58,52 @@ The paper scan is one of "6 Old Paper Textures" given away by Digital Yard Sale 
 public domain by its author. `studio/paper_mask_bake.gd` turns it on its side, crops its edges
 off and saves it as greys, a mask that the arena's page takes its light and dark from; the
 scan itself is not part of this repository.
+
+### Sounds
+
+The sounds in `audio/sfx/` are Kenney's, each mixed to mono, set to one level and saved as
+Ogg Vorbis; the `_h` files are the same sounds three semitones lower.
+
+| Source pack | Author | Source URL | Licence |
+|---|---|---|---|
+| Casino Audio | Kenney | <https://kenney.nl/assets/casino-audio> | CC0 |
+| Interface Sounds | Kenney | <https://kenney.nl/assets/interface-sounds> | CC0 |
+| UI Audio | Kenney | <https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks> | CC0 |
+
+| Sound (`audio/sfx/`) | Made from |
+|---|---|
+| `draw_1.ogg`, `draw_2.ogg`, `draw_3.ogg` | Casino Audio: `card-slide-1`, `-2`, `-3` |
+| `lay.ogg` | Casino Audio: `card-place-1` |
+| `chips_j.ogg`, `chips_h.ogg` | Casino Audio: `chip-lay-1` |
+| `mult_j.ogg`, `mult_h.ogg` | Casino Audio: `chips-stack-1` |
+| `bloom_j.ogg`, `bloom_h.ogg` | Casino Audio: `chips-handle-1` |
+| `choose_j.ogg`, `choose_h.ogg` | Interface Sounds: `select_001` |
+| `put_back_j.ogg`, `put_back_h.ogg` | Interface Sounds: `back_001` |
+| `button.ogg` | Interface Sounds: `click_001` |
+| `refuse.ogg` | Interface Sounds: `error_004` |
+| `hover_j.ogg`, `hover_h.ogg` | UI Audio: `rollover1` |
+
+### Sounds from a licensed library
+
+Most of the sounds the game plays (the shifts, the breakout, the hand stings, the cards, the
+pencil and ticks, the heartbeat, the rain on the title and the rest: 63 files) are made from
+recordings in the Sonniss #GameAudioGDC Bundle, which is not under a Creative Commons licence.
+
+| Asset | Author | Source URL | Licence |
+|---|---|---|---|
+| The #GameAudioGDC Bundle, Part 9 (2026) | Sonniss, with recordings by 344 Audio, Alexander Kopeikin, Cinematic Sound Design, Epic Stock Media, Federico Soler, InMotionAudio, Sonic Bat, SoundBits and The Noisery | <https://sonniss.com/gameaudiogdc> | The Sonniss #GameAudioGDC Bundle Licensing Agreement (royalty-free; in the bundle as `License - GDC Game Audio.pdf`) |
+
+That licence allows the sounds to be used and modified in personal and commercial projects,
+games among them, without attribution, and to be distributed as part of such a project. It
+does not allow the sounds to be sold as they come, or to be used to train or develop
+artificial intelligence.
+
+Each of the game's sounds is cut, filtered and mixed from one or more of those recordings,
+often with tones and noise made in code, by scripts written with AI assistance; no sound was
+made by a generative audio model. The recordings, and the sounds made from them
+(`audio/sfx_local/`), are not part of this repository: `.gitignore` keeps them out. They are
+part of the game build. In a clone without them the game runs with the sounds in `audio/sfx/`
+only, and every other sound is silent.
 
 ### Jekyll: a bought model
 

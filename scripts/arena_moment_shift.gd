@@ -15,6 +15,12 @@ class_name ArenaMomentShift
 const PAGE_WAIT := 0.6
 ## The time one step of the track takes to lift off and settle as a stored drop.
 const STORE_STEP := 0.22
+## How far into the change to Hyde's sound its hit comes: started this long before the page
+## shifts, it lands on the shift.
+const TO_HYDE_HIT := 1.6
+## The two sounds one of which greets a card of his joining the deck, and how loud.
+const HYDE_CARD_SOUNDS: Array[String] = ["hyde_card_whisper", "hyde_card_wail"]
+const HYDE_CARD_VOLUME := 0.9
 
 
 ## Adds the beats of a `joined`, `stained` or `brought` event. False for any other.
@@ -49,9 +55,31 @@ static func store(t: ArenaTable, n: int) -> void:
 	# The caption stays while the page shifts: the next one takes its place.
 
 
+## The change to Hyde's sound, for a page shift to Hyde that comes `lead` seconds of the
+## queue's time after this beat: it starts so that its hit lands on the shift, or at once
+## when the lead is shorter. Nothing plays if Hyde has the table already.
+static func cue_to_hyde(t: ArenaTable, lead: float) -> void:
+	t.beats.add_call(func() -> void:
+		if t.hyde():
+			return
+		var delay := lead - TO_HYDE_HIT
+		if delay <= 0.0:
+			t.beats.sound("shift_to_hyde")
+			return
+		t.beats.wait(delay).connect(func() -> void: t.beats.sound("shift_to_hyde"), CONNECT_ONE_SHOT))
+
+
+## A sound as cards of his join the deck, before they appear: once, however many there are.
+static func hyde_joins(t: ArenaTable) -> void:
+	t.beats.add_call(func() -> void:
+		t.beats.sound(HYDE_CARD_SOUNDS.pick_random(), 1.0, HYDE_CARD_VOLUME))
+
+
 ## The page shifts to Hyde (`to_hyde`) or back to Jekyll.
 static func page(t: ArenaTable, to_hyde: bool) -> void:
 	t.beats.add(func() -> void:
+		if not to_hyde:
+			t.beats.sound("shift_to_jekyll")
 		t.shown.set_value("stance", "hyde" if to_hyde else "jekyll")
 		t.ink.is_jekyll = not to_hyde
 		t.numbers.is_jekyll = not to_hyde
@@ -69,10 +97,12 @@ static func joined(t: ArenaTable, e: Dictionary) -> void:
 	var cause: String = {"first": "arrival", "breakout": "breakout", "stain": "no_paper"}.get(e.why, "reward")
 	# They come out of his ink, at the right of the page.
 	var from := Vector2(t.arena.size.x - 60.0, t.arena.size.y * 0.42)
+	hyde_joins(t)
 	t.moments.join_deck(cards, ArenaCaptions.joins(cause, names), from)
 	t.beats.add(func() -> void:
 		# The line's marks are drawn while the table goes on.
 		var ink: int = t.shown.add("line/ink", cards.size())
+		t.line_sound(true)
 		t.play(t.symbols.set_line.bind(int(t.shown.value("line/paper", 0)), ink)))
 
 
@@ -100,6 +130,7 @@ static func stained(t: ArenaTable, e: Dictionary) -> void:
 	t.beats.add(func() -> void:
 		t.shown.add("line/paper", -1)
 		t.shown.add("line/ink", 1)
+		t.line_sound(true)
 		await t.play(t.symbols.line_across.bind(true)))
 
 

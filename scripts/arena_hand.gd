@@ -409,6 +409,8 @@ func _process(delta: float) -> void:
 	else:
 		_resting = under
 		_rest_time = 0.0
+		if under and enabled:
+			Sfx.play_sided("hover", Sfx.vary(), 0.35)
 	var changed := false
 	for card in _cards:
 		if _away(card):
@@ -445,29 +447,57 @@ func _unhandled_input(event: InputEvent) -> void:
 	if card == null:
 		return
 	get_viewport().set_input_as_handled()
-	toggle(card.card_id)
+	_sound(toggle(card.card_id))
 
 
 ## Chooses the card with this id, or lets it go if it is chosen. One more than `max_chosen`
-## is refused: the card shakes and nothing changes.
-func toggle(id: int) -> void:
+## is refused: the card shakes and nothing changes. Silent: says what came of it, "chosen",
+## "put_back" or "refused", or "" if the hand has no such card.
+func toggle(id: int) -> String:
 	for card in _cards:
 		if card.card_id != id or _away(card):
 			continue
 		if not card.chosen and chosen().size() >= max_chosen:
 			_shake(card)
-			return
+			return "refused"
 		card.chosen = not card.chosen
 		_fit_titles()
 		_move(card, RISE_TIME)
 		chosen_changed.emit(chosen())
-		return
+		return "chosen" if card.chosen else "put_back"
+	return ""
 
 
 ## Chooses the card at this place in the row (from 0), or lets it go: for the number keys.
 func toggle_at(place: int) -> void:
 	if enabled and place >= 0 and place < _cards.size():
 		toggle(_cards[place].card_id)
+
+
+## The player pressed the number key for this place in the row (from 0): as `toggle_at`, with
+## its sound, and refused when no card is there.
+func press_at(place: int) -> void:
+	if not enabled:
+		return
+	_sound(toggle(_cards[place].card_id) if place >= 0 and place < _cards.size() else "refused")
+
+
+## The player lets every chosen card go (Esc): as `clear_chosen`, put back with one sound.
+func put_back_all() -> void:
+	if enabled and not chosen().is_empty():
+		Sfx.play_sided("put_back", Sfx.vary(0.04), 0.7)
+	clear_chosen()
+
+
+# The sound of what a toggle by the player came to.
+func _sound(outcome: String) -> void:
+	match outcome:
+		"chosen":
+			Sfx.play_sided("choose", Sfx.vary(0.04), 0.7)
+		"put_back":
+			Sfx.play_sided("put_back", Sfx.vary(0.04), 0.7)
+		"refused", "":
+			Sfx.play("refuse")
 
 
 ## The card the pointer is on, or null: the topmost one whose place in the row holds the

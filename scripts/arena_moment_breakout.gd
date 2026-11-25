@@ -18,6 +18,8 @@ static func add(t: ArenaTable, _e: Dictionary) -> void:
 	t.beats.add_wait(HOLD)
 	t.beats.add(func() -> void:
 		t.stage.show_caption("He breaks out.")
+		# Its impact lands as the burst covers the page.
+		t.beats.sound("breakout")
 		var burst := ArenaBurst.new()
 		t.arena.add_child(burst)
 		t.arena.move_child(burst, t.numbers.get_index())
