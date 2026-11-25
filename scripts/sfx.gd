@@ -6,12 +6,13 @@ extends Node
 ##   Sfx.play_sided("chips", Sfx.semitones(step))  # chips_j or chips_h, by who has the table
 ##
 ## A sound is a file `res://audio/sfx/<name>.ogg`. `pitch` is a rate (1 as recorded, 2 an
-## octave up) and `volume` is linear (1 as recorded, 0 silent). A name with no file plays
-## nothing and is reported once. A sound the table plays during a move goes through
+## octave up) and `volume` is linear (1 as recorded, 0 silent). A name in NAMES that has no
+## file yet is silent: add the file and it plays. A name that is not in NAMES is reported once. A sound the table plays during a move goes through
 ## ArenaBeats.sound instead, which stays silent while the move is skipped.
 
 const DIR := "res://audio/sfx/"
-## Every sound there is: all are loaded with the game, so that none stalls its first play.
+## Every sound the game asks for: those that have a file are loaded with the game, so that
+## none stalls its first play. The second group is the key moments, which have no file yet.
 const NAMES: Array[String] = [
 	"hover_j", "hover_h", "choose_j", "choose_h", "put_back_j", "put_back_h",
 	"draw_1", "draw_2", "draw_3", "lay", "button", "refuse",
@@ -132,7 +133,7 @@ func semitones(steps: float) -> float:
 
 func _stream(sound: String) -> AudioStream:
 	var stream: AudioStream = _streams.get(sound)
-	if not stream and not _missing.has(sound):
+	if not stream and not sound in NAMES and not _missing.has(sound):
 		_missing[sound] = true
 		push_warning("Sfx: there is no sound \"%s\" in %s." % [sound, DIR])
 	return stream

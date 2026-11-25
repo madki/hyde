@@ -57,52 +57,27 @@ scan itself is not part of this repository.
 
 ### Sounds
 
-The sounds in `audio/sfx/` are made for this game out of the recordings below and out of tones
-and noise written as formulas: cut to length, pitched down, layered, dulled, given a room, set
-to one level and saved as mono Ogg Vorbis. None is a source file as it was published, and the
-source packs themselves are not part of this repository.
+The sounds in `audio/sfx/` are Kenney's, each mixed to mono, set to one level and saved as
+Ogg Vorbis; the `_h` files are the same sounds three semitones lower.
 
 | Source pack | Author | Source URL | Licence |
 |---|---|---|---|
-| Versilian Community Sample Library (upright piano, wine glasses, tubular bells, timpani, cymbal, gong, flexatone) | Versilian Studios | <https://github.com/sgossner/VCSL> | CC0 |
 | Casino Audio | Kenney | <https://kenney.nl/assets/casino-audio> | CC0 |
-| RPG Audio | Kenney | <https://kenney.nl/assets/rpg-audio> | CC0 |
-| Heartbeat sounds | bart | <https://opengameart.org/content/heartbeat-sounds> | CC0 |
-| Evil Laugh | AntumDeluge | <https://opengameart.org/content/evil-laugh> | CC0 |
-| Fantasy Sound Effects (Tinysized SFX) | Vehicle | <https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx> | CC0 |
-| Fantasy Accessory SFX Library | Vehicle | <https://opengameart.org/content/fantasy-accessory-sfx-library> | CC0 |
-| Essentials Series (male voice) | Nox Sound | <https://nox-sound-design.itch.io/essentials-series-sfx-nox-sound> | CC0 |
-| Four Voices Whispering - No Reverb (Four_Voices_Whispering_6) | geoneo0 | <https://freesound.org/people/geoneo0/sounds/193812/> | CC0 |
-| Horror Piano SFX (Piano Stinger 1a, 3a, 4a) | MathewHenry | <https://freesound.org/people/MathewHenry/packs/35292/> | CC0 |
-| Horror Sounds (Plucked Horror Stinger, Metallic Horror Stinger, Somber Piano Stinger, Dark Choir Stinger) | zombieallen | <https://freesound.org/people/zombieallen/packs/40495/> | CC0 |
-| Horror SFX Volume 1 (free sampler: `horror_01_stinger_piano_ring_mod_01`) | ObsydianX | <https://obsydianx.itch.io/horror-sfx-volume-1> | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
-
-Which sound is made from which pack:
+| Interface Sounds | Kenney | <https://kenney.nl/assets/interface-sounds> | CC0 |
+| UI Audio | Kenney | <https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks> | CC0 |
 
 | Sound (`audio/sfx/`) | Made from |
 |---|---|
-| `hover_j.ogg`, `hover_h.ogg`, `chips_j.ogg`, `chips_h.ogg` | VCSL piano |
-| `choose_j.ogg`, `choose_h.ogg`, `put_back_j.ogg`, `put_back_h.ogg`, `mult_j.ogg`, `mult_h.ogg` | VCSL wine glasses and piano |
-| `bloom_j.ogg`, `bloom_h.ogg` | VCSL piano, tubular bells and wine glasses |
-| `draw_1.ogg`, `draw_2.ogg`, `draw_3.ogg` | Casino Audio |
-| `lay.ogg` | Casino Audio and a tone |
-| `button.ogg` | RPG Audio and a tone |
-| `refuse.ogg` | VCSL piano and RPG Audio |
-| `heartbeat.ogg` | Heartbeat sounds |
-| `shift_to_hyde.ogg` | VCSL timpani, cymbal, piano and gong; Essentials Series; Heartbeat sounds; Fantasy Sound Effects (Tinysized SFX); a tone and noise |
-| `breakout.ogg` | Heartbeat sounds; Fantasy Accessory SFX Library; VCSL tubular bells, piano and gong; Evil Laugh; noise |
-| `hyde_card_whisper.ogg` | Four Voices Whispering; VCSL wine glasses and piano |
-| `hyde_card_wail.ogg` | VCSL flexatone, cymbal and piano |
-| `hand_j_1.ogg`, `hand_j_2.ogg`, `hand_j_3.ogg` | Horror Piano SFX: Piano Stinger 1a, 3a, 4a |
-| `hand_h_1.ogg`, `hand_h_2.ogg` | Horror Sounds: Plucked Horror Stinger, Metallic Horror Stinger |
-| `hand_h_3.ogg` | Horror SFX Volume 1 (CC BY 4.0) |
-| `round_won.ogg`, `run_lost.ogg` | Horror Sounds: Somber Piano Stinger, Dark Choir Stinger |
-
-The CC BY sound was changed for this project, and the changed sound stays under CC BY 4.0:
-
-- `horror_01_stinger_piano_ring_mod_01` by ObsydianX (`audio/sfx/hand_h_3.ogg`): the silence
-  before it removed, cut to its first 0.8 seconds with a fade out, mixed to mono, its level
-  changed, saved again as Ogg Vorbis.
+| `draw_1.ogg`, `draw_2.ogg`, `draw_3.ogg` | Casino Audio: `card-slide-1`, `-2`, `-3` |
+| `lay.ogg` | Casino Audio: `card-place-1` |
+| `chips_j.ogg`, `chips_h.ogg` | Casino Audio: `chip-lay-1` |
+| `mult_j.ogg`, `mult_h.ogg` | Casino Audio: `chips-stack-1` |
+| `bloom_j.ogg`, `bloom_h.ogg` | Casino Audio: `chips-handle-1` |
+| `choose_j.ogg`, `choose_h.ogg` | Interface Sounds: `select_001` |
+| `put_back_j.ogg`, `put_back_h.ogg` | Interface Sounds: `back_001` |
+| `button.ogg` | Interface Sounds: `click_001` |
+| `refuse.ogg` | Interface Sounds: `error_004` |
+| `hover_j.ogg`, `hover_h.ogg` | UI Audio: `rollover1` |
 
 ### Jekyll: a bought model
 
