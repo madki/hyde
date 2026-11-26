@@ -84,6 +84,7 @@ func _ready() -> void:
 			script.setup(t)
 	# The run's own furniture, before its first round is dealt.
 	var table := RulesView.table(_run)
+	_symbols.set_dials(_run.dials)
 	_symbols.show_table(table)
 	_means.show_table(table, _run.dials)
 	_start.call_deferred()

@@ -12,9 +12,9 @@ extends Control
 ## tallies to the right, both at one pitch so the longer side is the side ahead, with the two
 ## counts at the banner's ends.
 ##
-## Hovering a gauge opens its ledger to the right of the column: that symbol in numbers, its
-## three gauges, how many Paper and Ink Roots of it the deck holds, and what one of each is
-## worth now. When a gauge changes, what changed is written there too for a moment, by name
+## Resting the pointer on a gauge opens its ledger to the right of the column: what each of
+## its three gauges pays now (from the run's numbers, `set_dials`), how each is earned, how
+## many Paper and Ink Roots of it the deck holds, and what one of each is worth now. When a gauge changes, what changed is written there too for a moment, by name
 ## ("Craving 2"), level with the gauge; not while `show_numbers(true)` (a held key, whose own
 ## sheet gives every number) is on.
 ##
@@ -80,9 +80,18 @@ const LINE_GAP := 8.0
 const LINE_MARK_H := 8.0
 ## How much larger the line is drawn at the centre of the page.
 const GROW_SCALE := 1.6
-## The ledger's size, and how far right of the column it and a change's number stand.
-const LEDGER := Vector2(282.0, 76.0)
+## The ledger's width (its height is its lines'), how far right of the column it and a
+## change's number stand, the room inside its edge, the size of its words and of its head, the
+## room between two of its parts, and how long the pointer rests on a gauge before it opens.
+const LEDGER := Vector2(440.0, 0.0)
 const LEDGER_GAP := 8.0
+const LEDGER_PAD := 10.0
+const LEDGER_SIZE := 14
+const LEDGER_HEAD := 15
+const LEDGER_STEP := 6.0
+## The room between two lines of the ledger's words, over their size.
+const LEDGER_LEADING := 4.0
+const LEDGER_REST := 0.15
 ## The size a change's number is written at, and from one line of them to the next.
 const NOTE_SIZE := 15
 const NOTE_STEP := 17.0
@@ -132,6 +141,11 @@ var _flood := 0.0
 var _lock := 0.0
 var _numbers := false
 var _hover := ""
+## The gauge under the pointer whose ledger opens when the pointer has rested (LEDGER_REST).
+var _pending := ""
+var _rest := Timer.new()
+## The numbers the run plays by, for what each gauge pays: the game's own until set_dials.
+var _dials := RulesDials.new()
 ## The column as it is laid out now (see _measure): each gauge's places by its symbol (`y` is
 ## the height of its middle), and the tallies' pitch and group gap.
 var _g := {}
@@ -165,6 +179,10 @@ func _init() -> void:
 	for child: Control in [_back, _lines, _fills, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
+	_rest.one_shot = true
+	_rest.wait_time = LEDGER_REST
+	_rest.timeout.connect(_rested)
+	add_child(_rest)
 	_measure()
 
 
@@ -223,6 +241,12 @@ func set_roots(sym: String, paper: int, ink: int, paper_chips: int, ink_chips: i
 	s.ink = ink
 	s.paper_chips = paper_chips
 	s.ink_chips = ink_chips
+	_text.queue_redraw()
+
+
+## The numbers the run plays by (`run.dials`): the ledger says from them what each gauge pays.
+func set_dials(dials: RulesDials) -> void:
+	_dials = dials
 	_text.queue_redraw()
 
 
@@ -740,19 +764,36 @@ func _has_point(point: Vector2) -> bool:
 	return false
 
 
+## A gauge's ledger opens once the pointer has rested on it, so that crossing the column does
+## not flash one ledger after another; it closes as soon as the pointer leaves the gauge.
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var over := ""
 		for sym in SYMS:
 			if _gauge_rect(sym).has_point(event.position):
 				over = sym
-		if over != _hover:
-			hover_symbol(over)
+		if over == _hover and over != "":
+			return
+		if _hover != "":
+			hover_symbol("")
+		_pending = over
+		if over == "":
+			_rest.stop()
+		else:
+			_rest.start()
+
+
+func _rested() -> void:
+	if _pending != "":
+		hover_symbol(_pending)
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_MOUSE_EXIT and _hover != "":
-		hover_symbol("")
+	if what == NOTIFICATION_MOUSE_EXIT:
+		_pending = ""
+		_rest.stop()
+		if _hover != "":
+			hover_symbol("")
 
 
 # --- Drawing --------------------------------------------------------------------------------
@@ -1021,29 +1062,90 @@ func _draw_pay(sym: String, edge: Color) -> void:
 	_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, PAY_SIZE, Color(colour, a))
 
 
-## A symbol's ledger, to the right of the column and level with its gauge, but no higher
-## than the readout, so that it lies under the line's banner and not on it: its gauges in
-## numbers, and its two Roots in the deck with their worth.
+## A symbol's ledger, to the right of the column, its top at the readout's, so that it lies
+## under the line's banner and not on it, and above the hand: what its three
+## gauges pay now, how each is earned, and its two Roots in the deck with their worth.
 func _draw_ledger(sym: String) -> void:
-	var s: Dictionary = _s[sym]
-	var top := maxf(_gauge_rect(sym).position.y, ArenaLayout.readout(size).position.y)
-	var box := Rect2(Vector2(_beside_x(), top), LEDGER)
+	var parts := _ledger_parts(sym)
+	var inner := LEDGER.x - LEDGER_PAD * 2.0
+	var height := LEDGER_PAD * 2.0
+	for part: Dictionary in parts:
+		part.lines = _wrap(part.font, part.text, part.size, inner)
+		height += float(part.gap) + (part.lines as PackedStringArray).size() * (part.size + LEDGER_LEADING)
+	# At the readout's top whichever gauge is hovered: lower, the hand would cover its foot.
+	var top := ArenaLayout.readout(size).position.y
+	var box := Rect2(Vector2(_beside_x(), top), Vector2(LEDGER.x, height))
 	box.position = box.position.clamp(Vector2.ZERO, (size - box.size).max(Vector2.ZERO))
 	_text.draw_rect(box, SURFACE)
 	_text.draw_rect(box, Palette.RULE, false, 1.5)
-	var x := box.position.x + 10.0
-	var y := box.position.y + 19.0
-	var names: Array = [RulesConfig.ROOT[sym].paper, RulesConfig.ROOT[sym].ink]
-	# The gauges' line: Habit and Temper each in its own colour.
-	var at := Vector2(x, y)
-	for part: Array in [["Habit %d   " % s.habit, HABIT], ["Craving %d   " % s.craving, Palette.CHALK],
-			["Temper %d" % s.temper, TEMPER]]:
-		_text.draw_string(_heavy, at, part[0], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, part[1])
-		at.x += _heavy.get_string_size(part[0], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
-	_text.draw_string(_slanted, Vector2(x, y + 24.0), "%d %s in the deck, %d chips each" % [s.paper, names[0], s.paper_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
-	_text.draw_string(_slanted, Vector2(x, y + 46.0), "%d %s in the deck, %d chips each" % [s.ink, names[1], s.ink_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
+	var x := box.position.x + LEDGER_PAD
+	var y := box.position.y + LEDGER_PAD
+	for part: Dictionary in parts:
+		var gap: float = part.gap
+		y += gap
+		if part.rule:
+			var at := y - gap * 0.5
+			_text.draw_line(Vector2(x, at), Vector2(box.end.x - LEDGER_PAD, at), Palette.RULE, 1.0)
+		var font: Font = part.font
+		var px: int = part.size
+		for line in part.lines as PackedStringArray:
+			_text.draw_string(font, Vector2(x, y + font.get_ascent(px)), line, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px, part.colour)
+			y += px + LEDGER_LEADING
+
+
+## Words broken into lines no wider than `width`, at word ends.
+static func _wrap(font: Font, text: String, px: int, width: float) -> PackedStringArray:
+	var out := PackedStringArray()
+	var line := ""
+	for word in text.split(" ", false):
+		var next := word if line == "" else line + " " + word
+		if line != "" and font.get_string_size(next, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > width:
+			out.append(line)
+			line = word
+		else:
+			line = next
+	if line != "":
+		out.append(line)
+	return out
+
+
+## The ledger's words, from the top down, each {text, font, size, colour, gap (the room over
+## it), rule (a rule in that room)}. Every number is the run's: the gauges from the table,
+## what they pay from the dials.
+func _ledger_parts(sym: String) -> Array[Dictionary]:
+	var s: Dictionary = _s[sym]
+	var d := _dials
+	var root: Dictionary = RulesConfig.ROOT[sym]
+	var paper: String = root.paper
+	var ink: String = root.ink
+	var out: Array[Dictionary] = []
+	var add := func(text: String, font: Font, px: int, colour: Color, gap: float, rule: bool = false) -> void:
+		out.append({"text": text, "font": font, "size": px, "colour": colour, "gap": gap, "rule": rule})
+	add.call("%s: %s (Paper), %s (Ink)" % [root.label, paper, ink], _heavy, LEDGER_HEAD, Palette.CHALK, 0.0)
+	var habit := int(s.habit)
+	if habit > 0:
+		add.call("Habit %d, Hyde's. Each %s: +%d chips. +%d mult for each %s played." % [habit, ink,
+				d.habit_chips * habit, d.habit_mult * habit, ink], _heavy, LEDGER_SIZE, HABIT, LEDGER_STEP)
+	else:
+		add.call("Habit 0: pays nothing yet.", _heavy, LEDGER_SIZE, HABIT, LEDGER_STEP)
+	var craving := int(s.craving)
+	var pays := "Each %s: +%d chips." % [ink, d.craving_chips * craving] if craving > 0 else "Pays nothing yet."
+	add.call("Craving %d of %d. %s At %d it becomes a Habit, and a new %s joins the deck." % [craving, d.craving_cap,
+			pays, d.craving_cap, ink], _heavy, LEDGER_SIZE, Palette.CHALK, LEDGER_STEP)
+	var temper := int(s.temper)
+	if temper > 0:
+		add.call("Temper %d, Jekyll's. Each %s: +%d chips. +%d mult once a play." % [temper, paper,
+				d.temper_chips * temper, d.temper_mult * temper], _heavy, LEDGER_SIZE, TEMPER, LEDGER_STEP)
+	else:
+		add.call("Temper 0: pays nothing yet.", _heavy, LEDGER_SIZE, TEMPER, LEDGER_STEP)
+	var rise: String = RulesConfig.HANDS.hyde.stirring.name
+	var turn: String = RulesConfig.HANDS.jekyll.sublimation.name
+	add.call("Craving rises as Hyde plays %s in a %s or better. A %s (%s with %s) turns it into Temper." % [ink,
+			rise, turn, paper, ink], _slanted, LEDGER_SIZE, Palette.CHALK_2, LEDGER_STEP * 2.0, true)
+	add.call("%d %s in the deck, %d chips each" % [s.paper, paper, s.paper_chips], _slanted, LEDGER_SIZE, Palette.CHALK_2,
+			LEDGER_STEP * 2.0, true)
+	add.call("%d %s in the deck, %d chips each" % [s.ink, ink, s.ink_chips], _slanted, LEDGER_SIZE, Palette.CHALK_2, 0.0)
+	return out
 
 
 # --- Shapes ---------------------------------------------------------------------------------
