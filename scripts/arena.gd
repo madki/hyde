@@ -252,6 +252,7 @@ func _build() -> void:
 	t.stage = stage
 	t.moments = ArenaCardMoments.new(_beats, travel, piles, stage)
 	t.moments.notice = notice
+	t.moments.freshen = t.freshen
 	t.hand = _hand
 	t.numbers = _numbers
 	t.symbols = _symbols

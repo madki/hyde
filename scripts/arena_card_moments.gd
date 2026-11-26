@@ -32,6 +32,9 @@ var piles: ArenaPiles
 var stage: ArenaStage
 ## The sheet a joining group is shown on, set by the page that holds it; with none, the stage.
 var notice: ArenaNotice
+## Called before a notice shows, to put right what a skipped stretch left behind
+## (ArenaTable.freshen): set by the page with the notice.
+var freshen := Callable()
 
 
 func _init(queue: ArenaBeats, layer: ArenaTravel, the_piles: ArenaPiles, the_stage: ArenaStage) -> void:
@@ -58,6 +61,7 @@ func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool =
 			what.cards = cards
 			what.tone = "hyde"
 			notice.centres.clear()
+			if freshen.is_valid(): freshen.call()
 			await notice.show_notice(what)
 			# The notice's own cards left with it: travelling ones take their places. With no
 			# notice shown (passed at once) they start from `from`.
@@ -155,6 +159,7 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 			var what: Dictionary = said.call()
 			what.cards = [before]
 			what.tone = "hyde" if after.get("ink", false) else "jekyll"
+			if freshen.is_valid(): freshen.call()
 			await _crack_on_notice(what, after)
 			shown.assign(notice.centres))
 	beats.add(func() -> void:
