@@ -49,16 +49,29 @@ func _ready() -> void:
 ## "myself" (the rules' names).
 const ENDING_SCENE := "res://scenes/ending.tscn"
 var ending := ""
+## The run that ended, kept for the ending screen; null when no ending is showing. While it
+## is the table's run, the table begins no new run under the ending (see the table's `_go_on`).
+var ended: RulesRun
 
 
-## Hands a run's end over to the ending screen. False if there is no such screen yet: the
-## caller then shows the ending itself.
+## Hands a run's end over to the ending screen, which shows the run being played: it is kept
+## in `ended`, and the screen changes under the passage. False, and nothing changes, if there
+## is no such screen or the table is driven from the command line (it then plays on, as it
+## does at dawn): the caller then shows the ending itself.
 func show_ending(ending_key: String) -> bool:
 	ending = ending_key
-	if not ResourceLoader.exists(ENDING_SCENE):
+	if not ResourceLoader.exists(ENDING_SCENE) or _cuts():
 		return false
-	get_tree().change_scene_to_file(ENDING_SCENE)
+	ended = run
+	_change_to(ENDING_SCENE)
 	return true
+
+
+## From the ending: back to the table, which begins a new run.
+func new_run_from_ending() -> void:
+	ended = null
+	run = null
+	_change_to(TABLE_SCENE)
 
 
 func _unhandled_input(event: InputEvent) -> void:
