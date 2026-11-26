@@ -77,6 +77,8 @@ var is_jekyll := true:
 var max_chosen := 5
 ## False while clicks are not taken.
 var enabled := true
+## True while a notice lies over the table: no card rises under the pointer.
+var covered := false
 
 ## While true every card stands raised, as under the pointer: he is looking the hand over.
 var _lifted := false
@@ -387,7 +389,7 @@ func _notification(what: int) -> void:
 
 
 func _process(_delta: float) -> void:
-	var under := _card_under(get_local_mouse_position()) if _pointer_here else null
+	var under := _card_under(get_local_mouse_position()) if _pointer_here and not covered else null
 	if under != _resting:
 		_resting = under
 		if under and enabled:
