@@ -216,12 +216,13 @@ func _crack_on_notice(what: Dictionary, after: Dictionary) -> void:
 	leaves.call()
 	if not left[0]:
 		await notice.get_tree().create_timer(ArenaNotice.IN + 0.1).timeout
-		# The card the sheet lays out of `what.cards`: the only card it shows.
-		var cards := notice.find_children("*", "ArenaCard", true, false)
+		var cards := notice.shown_cards()
 		if notice.showing and not cards.is_empty():
 			beats.sound("crack_ink" if after.get("ink", false) else "crack_paper")
-			_crack_tween(cards[0] as ArenaCard, after, ArenaPace.CHANGE_SIDE)
-	while not left[0]:
+			_crack_tween(cards[0], after, ArenaPace.CHANGE_SIDE)
+	# Its card's crack runs on the card's own tweens: when the notice leaves, passed by a press
+	# or by itself, they end with the card and nothing waits on them.
+	while not left[0] and notice.showing:
 		await notice.dismissed
 
 
