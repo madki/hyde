@@ -37,6 +37,8 @@ extends Control
 ## While a notice is shown `showing` is true. After it, `centres` still holds where the middle
 ## of each card lay, in the page's coordinates (the `cards` first, then the `after`), for a
 ## card that is then to travel from there; `dismissed` is sent when it has left.
+## `shown_cards()` gives the card nodes on the sheet while it is shown (the `cards` first, then
+## the `after`), for a moment to play on; they are freed when it leaves.
 ##
 ## It comes in over IN seconds with the 'paper' sound. Presses in its first DEAF seconds do
 ## nothing, so that a click which was hurrying the move before it cannot dismiss it. A left
@@ -215,6 +217,12 @@ func dismiss() -> void:
 	_clear()
 	showing = false
 	dismissed.emit()
+
+
+## The card nodes on the sheet while a notice is shown: the `cards` first, then the `after`.
+## Empty when none is shown.
+func shown_cards() -> Array[ArenaCard]:
+	return _cards + _after
 
 
 ## The sheet's place on the page while a notice is shown, in the page's coordinates.
