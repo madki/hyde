@@ -459,7 +459,7 @@ func _shown_line_share() -> float:
 
 
 # The ink surges to `share`, past it and back, with the wet edge lit (brightest at `height`
-# down the page, or all along it when that is negative) and the sound of ink dropping.
+# down the page, or all along it when that is negative) and the sound of the pool rising.
 func _surge(share: float, height: float) -> void:
 	_stop_line()
 	_line_target = share
@@ -468,7 +468,7 @@ func _surge(share: float, height: float) -> void:
 		return
 	# Surges that begin together (the line's two marks, ink arriving as it grows) sound once.
 	if Time.get_ticks_msec() - _surge_sounded > 50:
-		_beats.sound("ink_drop", 0.85 * Sfx.vary(0.04), 0.8)
+		_beats.sound("ink_surge", Sfx.vary(0.04))
 	_surge_sounded = Time.get_ticks_msec()
 	_ink_tween = create_tween()
 	_ink_tween.tween_method(_surge_step.bind(ink_percent, share, height), 0.0, 1.0, LINE_SURGE)

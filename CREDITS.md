@@ -95,7 +95,7 @@ recordings in the Sonniss #GameAudioGDC Bundle, which is not under a Creative Co
 
 | Asset | Author | Source URL | Licence |
 |---|---|---|---|
-| The #GameAudioGDC Bundle, Part 9 (2026) | Sonniss, with recordings by 344 Audio, Alexander Kopeikin, Cinematic Sound Design, Epic Stock Media, Federico Soler, InMotionAudio, Sonic Bat, SoundBits and The Noisery | <https://sonniss.com/gameaudiogdc> | The Sonniss #GameAudioGDC Bundle Licensing Agreement (royalty-free; in the bundle as `License - GDC Game Audio.pdf`) |
+| The #GameAudioGDC Bundle, Part 9 (2026) | Sonniss, with recordings by 344 Audio, Alexander Kopeikin, Cinematic Sound Design, Epic Stock Media, Federico Soler, InMotionAudio, Just Sound Effects, Sonic Bat, SoundBits and The Noisery | <https://sonniss.com/gameaudiogdc> | The Sonniss #GameAudioGDC Bundle Licensing Agreement (royalty-free; in the bundle as `License - GDC Game Audio.pdf`) |
 
 That licence allows the sounds to be used and modified in personal and commercial projects,
 games among them, without attribution, and to be distributed as part of such a project. It

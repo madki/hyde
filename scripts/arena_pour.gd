@@ -140,6 +140,8 @@ func run(centres: Array[Vector2], first_lands: float = FLIGHT) -> void:
 	for i in count:
 		_blobs[i].starts = SPREAD * i / float(maxi(count - 1, 1))
 	_state = POURING
+	if _beats:
+		_beats.sound("pour", Sfx.vary(0.04))
 	_play(_lead + SPREAD + FLIGHT)
 
 
