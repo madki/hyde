@@ -9,7 +9,8 @@ const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only in a Sublimation. If 
 
 
 ## Why cards join the deck, for `joins`:
-## - "arrival": his first arrival (a group of four).
+## - "arrival": his first arrival (a group of four), by a drink.
+## - "first_breakout": his first arrival by a breakout, with no drink: the same four.
 ## - "breakout": a breakout's two.
 ## - "rollover": a copy of a Root whose Craving rolled over into a Habit.
 ## - "no_paper": a drink with no Paper Root left to stain.
@@ -17,7 +18,7 @@ const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only in a Sublimation. If 
 ## - "reward", "bought": a card taken after a won round, or bought.
 static func joins(cause: String, names: Array) -> String:
 	match cause:
-		"arrival":
+		"arrival", "first_breakout":
 			return "He arrives. Four of his Roots join the deck."
 		"breakout":
 			return "He breaks out. %s join the deck." % _capital(list(names))
@@ -43,6 +44,8 @@ static func joins_notice(cause: String, paper: int, ink: int,
 	match cause:
 		"arrival":
 			said = arrival()
+		"first_breakout":
+			said = first_breakout()
 		"breakout":
 			said = breakout()
 		"rollover":
@@ -57,6 +60,10 @@ static func joins_notice(cause: String, paper: int, ink: int,
 ## Each cause's title and why, for `joins_notice`.
 static func arrival() -> Array:
 	return ["Hyde arrives", "The first draught brings him, and four of his Roots come with him."]
+
+
+static func first_breakout() -> Array:
+	return ["Hyde arrives", "He breaks out without the draught, and four of his Roots come with him."]
 
 
 static func breakout() -> Array:
@@ -120,7 +127,7 @@ static func changes_notice(change: String, from: String, to: String, paper: int,
 			"%s is %s again." % [from, _a(to)], temper_line,
 			line_moves(paper, ink, paper + 1, ink - 1)]}
 	return {"title": "The draught stains a Root", "lines": [
-		"%s is %s now." % [from, _a(to)],
+		"He drank, so %s is %s now." % [from, _a(to)],
 		"He stains a Paper Root where it lies, and it becomes his.",
 		line_moves(paper, ink, paper - 1, ink + 1)]}
 
