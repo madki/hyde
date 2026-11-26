@@ -54,7 +54,9 @@ const PICTURE_WIDTH := 2.0
 ## How far the light around the disc reaches, in pixels.
 const DISC_GLOW := 3
 ## Height of a Factor's picture: what it does is written in the rest of the picture's box.
-const FACTOR_PICTURE := 38.0
+const FACTOR_PICTURE := 46.0
+## The widest a Factor's drawn picture gets: it stays clear of the chips' disc.
+const FACTOR_DRAWING_WIDTH := 42.0
 ## How dark a card that cannot be played now is printed.
 ## The time half of a change of face takes (the card closes, then opens), and the time a
 ## card takes to appear or to leave.
@@ -80,6 +82,12 @@ const INK_MATERIAL: ShaderMaterial = preload("res://shaders/card_ink_material.tr
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/card_line_material.tres")
 const GLOW_MATERIAL: ShaderMaterial = preload("res://shaders/card_picture_material.tres")
 const COPY_MATERIAL: ShaderMaterial = preload("res://shaders/card_copy_material.tres")
+## For a picture that is a drawing (ArenaCardPictures.DRAWN): printed, and as light.
+const DRAWING_MATERIAL: ShaderMaterial = preload("res://shaders/card_drawing_material.tres")
+const DRAWING_LIGHT_MATERIAL: ShaderMaterial = preload("res://shaders/card_drawing_light_material.tres")
+## A drawing's halo: how much of it is the lines themselves and how much their blur, and how
+## strong it is.
+const DRAWING_GLOW := Vector3(0.3, 1.1, 0.45)
 
 ## The engine's font drawn from distance fields, for `sharp`. Made once, for every card.
 static var _sharp_face: Font
@@ -160,6 +168,12 @@ var _apart := 0.0
 var _split_tween: Tween
 var _picture := Control.new()
 var _glow := Control.new()
+## The picture's and the glow's materials for a picture laid out as lines, and for a drawing.
+var _picture_lines: ShaderMaterial
+var _glow_lines: ShaderMaterial
+var _glow_drawing: ShaderMaterial
+## The reflection's copy of a drawing: a node of its own, for its own material.
+var _reflection_drawing := Node2D.new()
 var _lines := Control.new()
 var _title := Label.new()
 var _chips := Label.new()
@@ -229,21 +243,36 @@ func _init() -> void:
 	mirrored.set_shader_parameter("fade_from", SIZE.y)
 	mirrored.set_shader_parameter("fade_reach", REFLECTION_REACH)
 	_reflection.material = mirrored
+	var mirrored_drawing := DRAWING_LIGHT_MATERIAL.duplicate() as ShaderMaterial
+	mirrored_drawing.set_shader_parameter("lines", 0.6)
+	mirrored_drawing.set_shader_parameter("blur", 0.5)
+	mirrored_drawing.set_shader_parameter("strength", 0.0)
+	mirrored_drawing.set_shader_parameter("fade_from", SIZE.y)
+	mirrored_drawing.set_shader_parameter("fade_reach", REFLECTION_REACH)
+	_add_drawn_copy(_reflection, _reflection_drawing, mirrored_drawing, Color.TRANSPARENT)
 	add_child(_reflection)
 	_split.visible = false
 	for colour: Color in [Palette.SPLIT_JEKYLL, Palette.SPLIT_HYDE, Palette.SPLIT_THIRD]:
 		var copy := Node2D.new()
 		copy.material = COPY_MATERIAL
 		copy.draw.connect(_draw_copy.bind(copy, colour))
+		_add_drawn_copy(copy, Node2D.new(), DRAWING_LIGHT_MATERIAL, colour)
 		_split.add_child(copy)
 	_lines.draw.connect(_draw_lines)
 	_picture.draw.connect(_draw_picture)
 	_glow.draw.connect(_draw_glow)
 	# Each card has its own copies, for its own seed.
 	_lines.material = LINE_MATERIAL.duplicate()
-	_picture.material = LINE_MATERIAL.duplicate()
-	_glow.material = GLOW_MATERIAL.duplicate()
-	(_glow.material as ShaderMaterial).set_shader_parameter("ribbon_half", GLOW_RIBBON)
+	_picture_lines = LINE_MATERIAL.duplicate()
+	_glow_lines = GLOW_MATERIAL.duplicate()
+	_glow_lines.set_shader_parameter("ribbon_half", GLOW_RIBBON)
+	_glow_drawing = DRAWING_LIGHT_MATERIAL.duplicate()
+	_glow_drawing.set_shader_parameter("lines", DRAWING_GLOW.x)
+	_glow_drawing.set_shader_parameter("blur", DRAWING_GLOW.y)
+	_glow_drawing.set_shader_parameter("strength", DRAWING_GLOW.z)
+	# A drawing is much bigger than the picture it is printed as.
+	_picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_glow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	var inner := FRAME_INSET + FRAME_WIDTH * 0.5
 	_picture.position = Vector2(inner + 6.0, TITLE_BOTTOM + 6.0)
 	_picture.size = Vector2(SIZE.x - (inner + 6.0) * 2.0, FOOT_TOP - TITLE_BOTTOM - 12.0)
@@ -389,7 +418,10 @@ func _refresh() -> void:
 	for part: Control in [_title, _chips, _tag, _text]:
 		part.visible = not face_down
 	_show_lines()
-	(_glow.material as ShaderMaterial).set_shader_parameter("glow_colour", _light())
+	var drawn := _drawing() != null
+	_picture.material = DRAWING_MATERIAL if drawn else _picture_lines
+	_glow.material = _glow_drawing if drawn else _glow_lines
+	_glow_lines.set_shader_parameter("glow_colour", _light())
 	_disc.visible = not face_down
 	_disc.queue_redraw()
 	_text.visible = not face_down and text != ""
@@ -416,17 +448,19 @@ func _refresh() -> void:
 	_text.add_theme_font_size_override("font_size", text_size)
 	_refresh_tag()
 
-	for printed: Control in [_lines, _picture]:
-		var line_material := printed.material as ShaderMaterial
+	for line_material: ShaderMaterial in [_lines.material, _picture_lines]:
 		line_material.set_shader_parameter("texel", TEXEL)
 		line_material.set_shader_parameter("seed", float(rng_seed))
-		printed.queue_redraw()
+	_lines.queue_redraw()
+	_picture.queue_redraw()
 	_glow.queue_redraw()
 	_body.queue_redraw()
 	_set_rim(_rim)
 	_reflection.queue_redraw()
+	_reflection_drawing.queue_redraw()
 	for copy: Node2D in _split.get_children():
 		copy.queue_redraw()
+		(copy.get_child(0) as Node2D).queue_redraw()
 
 
 ## The title, in its whole box or in as much of it as `strip` leaves showing.
@@ -511,6 +545,7 @@ func _set_rim(value: float) -> void:
 	_set_body("rim_strength", _rim)
 	_reflection.visible = _rim > 0.0 and not face_down
 	(_reflection.material as ShaderMaterial).set_shader_parameter("strength", REFLECTION * _rim)
+	(_reflection_drawing.material as ShaderMaterial).set_shader_parameter("strength", REFLECTION * _rim)
 
 
 func _set_body(parameter: String, value: float) -> void:
@@ -628,6 +663,9 @@ func _draw_back(pencil: Pencil, rect: Rect2) -> void:
 
 ## The card's picture, from ArenaCardPictures. A Factor's is small, to leave room for its text.
 func _draw_picture() -> void:
+	if _drawing():
+		_draw_drawing(_picture, Vector2.ZERO, _light())
+		return
 	var pencil := Pencil.new(rng_seed + 5)
 	pencil.colour = _light()
 	_add_picture(pencil)
@@ -638,6 +676,9 @@ func _draw_picture() -> void:
 ## (shaders/card_picture.gdshader): once in place, and in rings of fainter copies around it
 ## (GLOW_RINGS), which add up to a smooth light.
 func _draw_glow() -> void:
+	if _drawing():
+		_draw_drawing(_glow, Vector2.ZERO, _light())
+		return
 	var item := _glow.get_canvas_item()
 	var rings: Array[Vector2] = [Vector2(0.0, 0.45)]
 	rings.append_array(GLOW_RINGS)
@@ -701,15 +742,48 @@ func _draw_copy(item: CanvasItem, colour: Color) -> void:
 	picture.draw(item)
 
 
-## Lays the card's picture out on `pencil`, its box's corner at `at`. A Factor's is small, to
-## leave room for its text.
+## Lays the card's picture out on `pencil`, its box's corner at `at`. Nothing for a picture
+## that is a drawing: `_draw_drawing` draws that.
 func _add_picture(pencil: Pencil, at: Vector2 = Vector2.ZERO) -> void:
+	# A Factor has one picture for both men: its look says whose it is.
+	pencil.steady = true
+	ArenaCardPictures.add(pencil, ArenaCardPictures.picture_of(key, ink), _picture_box(at), PICTURE_WIDTH)
+
+
+## The box the card's picture is fitted in, the picture's own box's corner at `at`. A Factor's
+## is small, to leave room for its text.
+func _picture_box(at: Vector2) -> Rect2:
 	var box := Rect2(at, _picture.size)
 	if text != "":
 		box.size.y = FACTOR_PICTURE
-	# A Factor has one picture for both men: its look says whose it is.
-	pencil.steady = true
-	ArenaCardPictures.add(pencil, ArenaCardPictures.picture_of(key, ink), box.grow(-2.0), PICTURE_WIDTH)
+	return box.grow(-2.0)
+
+
+## The card's picture if it is a drawing, or null.
+func _drawing() -> Texture2D:
+	return ArenaCardPictures.drawing(ArenaCardPictures.picture_of(key, ink))
+
+
+## Draws the card's picture on `item` in `colour` if it is a drawing and the card shows its
+## face, the picture's own box's corner at `at`.
+func _draw_drawing(item: CanvasItem, at: Vector2, colour: Color) -> void:
+	var drawing := _drawing()
+	if drawing and not face_down:
+		var box := _picture_box(at)
+		if text != "":
+			box = box.grow_individual((FACTOR_DRAWING_WIDTH - box.size.x) * 0.5, 0.0,
+					(FACTOR_DRAWING_WIDTH - box.size.x) * 0.5, 0.0)
+		item.draw_texture_rect(drawing, ArenaCardPictures.drawing_box(drawing, box), false, colour)
+
+
+## Gives `copy` (the reflection, or one of the split's copies) the node `drawn` to draw a
+## picture that is a drawing on, as light, in `colour`: the owner's light when it is clear.
+func _add_drawn_copy(copy: Node2D, drawn: Node2D, light: ShaderMaterial, colour: Color) -> void:
+	drawn.material = light
+	drawn.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	drawn.draw.connect(func() -> void:
+		_draw_drawing(drawn, _picture.position, _light() if colour.a == 0.0 else colour))
+	copy.add_child(drawn)
 
 
 ## One ruled line: a little off true and running a little past both ends, and gone over again
