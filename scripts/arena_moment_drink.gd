@@ -21,3 +21,4 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 		elif not ArenaMomentShift.add_event(t, e):
 			t.unhandled = true
 	ArenaMomentShift.means(t)
+	ArenaStory.add(t, ["first_draught"])
