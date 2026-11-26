@@ -392,6 +392,8 @@ const LINE_DRAW_BACK := 0.9
 var _ink_tween: Tween
 ## The share the ink is going to, or has: a surge runs past it for a moment.
 var _line_target := -1.0
+## When the last surge began, in milliseconds: one that begins with it is not sounded again.
+var _surge_sounded := -1000
 
 
 ## The ink's share for a line of `paper` Paper Roots against `ink` Ink Roots. With no Roots
@@ -463,7 +465,10 @@ func _surge(share: float, height: float) -> void:
 	if _beats.rate() >= ArenaPace.SKIP:
 		ink_percent = share
 		return
-	_beats.sound("ink_drop", 0.85 * Sfx.vary(0.04), 0.8)
+	# Surges that begin together (the line's two marks, ink arriving as it grows) sound once.
+	if Time.get_ticks_msec() - _surge_sounded > 50:
+		_beats.sound("ink_drop", 0.85 * Sfx.vary(0.04), 0.8)
+	_surge_sounded = Time.get_ticks_msec()
 	_ink_tween = create_tween()
 	_ink_tween.tween_method(_surge_step.bind(ink_percent, share, height), 0.0, 1.0, LINE_SURGE)
 	_ink_tween.tween_callback(_ink.light_edge.bind(0.0))
