@@ -8,12 +8,9 @@ extends Control
 ## of the others; a chosen card rises further. While Hyde has the table the row is a little
 ## out of true: each card is pushed and turned a little its own way.
 ##
-## While input is open, a card the pointer has rested on for ENLARGE_DELAY is shown larger
-## (ENLARGE), straight, on top of the row, its foot ENLARGED_FOOT over the zone's foot and
-## kept inside the zone at the row's ends; it shrinks at once when the pointer leaves. No
-## other card moves, and every card keeps the pointer by its place at rest, so the row does
-## not shift under the pointer: where the enlarged card lies over a neighbour's place, the
-## pointer is on the neighbour.
+## A card under the pointer keeps its size: it only rises and straightens, and no other card
+## moves. Every card keeps the pointer by its place at rest, so the row does not shift under
+## the pointer.
 ##
 ## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, when
 ## nothing is moving and after every change of the chosen cards. It keeps one card for each
@@ -54,11 +51,6 @@ const UNRULY_TIME := 0.25
 const RISE := 16.0
 const CHOSEN_RISE := 30.0
 const RISE_TIME := 0.12
-## The card under the pointer is shown this much larger, after the pointer has rested on it
-## this long (in seconds), with its foot this far over the zone's foot.
-const ENLARGE := 1.5
-const ENLARGE_DELAY := 0.15
-const ENLARGED_FOOT := 6.0
 ## How far a refused card turns each way, in degrees.
 const SHAKE := 4.0
 ## The time the row takes to close up or to make room.
@@ -83,12 +75,8 @@ var is_jekyll := true:
 			_move(card, UNRULY_TIME)
 ## How many cards can be chosen at once: the rules' dial `max_play`.
 var max_chosen := 5
-## False while clicks are not taken: then no card is enlarged.
-var enabled := true:
-	set(value):
-		enabled = value
-		if not enabled:
-			_enlarge(null)
+## False while clicks are not taken.
+var enabled := true
 
 ## While true every card stands raised, as under the pointer: he is looking the hand over.
 var _lifted := false
@@ -96,9 +84,8 @@ var _cards: Array[ArenaCard] = []
 var _rng := RandomNumberGenerator.new()
 ## False while the pointer is outside the window.
 var _pointer_here := true
-## The card the pointer is on, and how long it has rested there, in seconds.
+## The card the pointer is on.
 var _resting: ArenaCard
-var _rest_time := 0.0
 ## A screenshot must not depend on where the pointer happens to rest, nor catch a card midway.
 var _still := Shot.has_arg("shot")
 
@@ -191,8 +178,6 @@ func give(id: int) -> ArenaCard:
 	card.strip = 0.0
 	card.foot_strip = 0.0
 	card.set_meta("away", true)
-	card.set_meta("enlarged", false)
-	card.sharp = false
 	_fit_titles()
 	for other in _cards:
 		_move(other, SLIDE_TIME)
@@ -342,7 +327,6 @@ func _give_metas(card: ArenaCard) -> void:
 	card.set_meta("unruly", Vector3(_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0),
 			_rng.randf_range(-1.0, 1.0)) * UNRULY)
 	card.set_meta("raised", false)
-	card.set_meta("enlarged", false)
 	card.set_meta("away", false)
 
 
@@ -402,13 +386,10 @@ func _notification(what: int) -> void:
 		_pointer_here = false
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var under := _card_under(get_local_mouse_position()) if _pointer_here else null
-	if under == _resting:
-		_rest_time += delta
-	else:
+	if under != _resting:
 		_resting = under
-		_rest_time = 0.0
 		if under and enabled:
 			Sfx.play_sided("hover", Sfx.vary(), 0.35)
 	var changed := false
@@ -422,21 +403,6 @@ func _process(delta: float) -> void:
 	if changed:
 		_restack()
 		_fit_titles()
-	_enlarge(under if enabled and not _lifted and _rest_time >= ENLARGE_DELAY else null)
-
-
-## Shows this card enlarged, and every other at its own size: null for none.
-func _enlarge(which: ArenaCard) -> void:
-	for card in _cards:
-		if _away(card) or _enlarged(card) == (card == which):
-			continue
-		card.set_meta("enlarged", card == which)
-		card.sharp = card == which
-		_move(card, RISE_TIME)
-
-
-func _enlarged(card: ArenaCard) -> bool:
-	return card.get_meta("enlarged", false)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -502,8 +468,7 @@ func _sound(outcome: String) -> void:
 
 ## The card the pointer is on, or null: the topmost one whose place in the row holds the
 ## point. A card's place stays where it is, turned as the card lies, while the card rises, so
-## a card cannot rise away from the pointer and drop again. A raised, chosen or enlarged card
-## also keeps the pointer for as far as it has risen, where no card's place is.
+## a card cannot rise away from the pointer and drop again. A raised or chosen card also keeps the pointer for as far as it has risen, where no card's place is.
 func _card_under(point: Vector2) -> ArenaCard:
 	var half := ArenaCard.SIZE * CARD_SCALE * 0.5
 	# First the places at rest, the topmost first: they alone decide between two cards.
@@ -516,15 +481,12 @@ func _card_under(point: Vector2) -> ArenaCard:
 		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(card)))
 		if absf(seen.x) <= half.x and absf(seen.y) <= half.y:
 			return card
-	# Then the room a raised, chosen or enlarged card has risen into, over no card's place.
+	# Then the room a raised or chosen card has risen into, over no card's place.
 	for i in range(_cards.size() - 1, -1, -1):
 		var card := _cards[i]
 		if _away(card) or not (_raised(card) or card.chosen):
 			continue
-		var risen := _covers(_place(card))
-		if _enlarged(card):
-			risen = _enlarged_rect(card)
-		if _covers(_rest(card)).merge(risen).has_point(point):
+		if _covers(_rest(card)).merge(_covers(_place(card))).has_point(point):
 			return card
 	return null
 
@@ -565,26 +527,14 @@ func _outward(card: ArenaCard) -> float:
 
 ## Where a card's top left corner lies.
 func _place(card: ArenaCard) -> Vector2:
-	if _enlarged(card):
-		return _enlarged_rect(card).get_center() - ArenaCard.SIZE * 0.5
 	if card.chosen:
 		return _slot(card) - Vector2(0.0, CHOSEN_RISE + (RISE * 0.25 if _raised(card) else 0.0))
 	return _slot(card) - Vector2(0.0, RISE) if _raised(card) else _rest(card)
 
 
-## What an enlarged card covers: centred over its place in the row, its foot ENLARGED_FOOT
-## over the zone's foot, and inside the zone at the row's ends.
-func _enlarged_rect(card: ArenaCard) -> Rect2:
-	var zone := _zone()
-	var extent := ArenaCard.SIZE * CARD_SCALE * ENLARGE
-	var middle_x := _slot(card).x + ArenaCard.SIZE.x * 0.5
-	var left := clampf(middle_x - extent.x * 0.5, zone.position.x, zone.end.x - extent.x)
-	return Rect2(Vector2(left, zone.end.y - ENLARGED_FOOT - extent.y), extent)
-
-
 ## How large a card is drawn, against its own size.
 func _size(card: ArenaCard) -> float:
-	return CARD_SCALE * (ENLARGE if _enlarged(card) else 1.0)
+	return CARD_SCALE
 
 
 ## A card's place in a row that is level and true: its top, as it is drawn, along the zone's.
@@ -607,7 +557,7 @@ func _rest(card: ArenaCard) -> Vector2:
 
 
 func _turn(card: ArenaCard) -> float:
-	return 0.0 if _raised(card) or card.chosen or _enlarged(card) else _rest_turn(card)
+	return 0.0 if _raised(card) or card.chosen else _rest_turn(card)
 
 
 ## How far a card is turned while it is neither raised nor chosen, in degrees.
