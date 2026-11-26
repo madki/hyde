@@ -106,6 +106,40 @@ static func changes(change: String, from: String, to: String) -> String:
 	return "%s is turned to %s." % [from, to]
 
 
+## The notice shown when a Root changes side: {title, lines}. `change` is "stain" (a drink)
+## or "turn" (a Sublimation); `from` and `to` the card's name before and its twin's; the line
+## before (`paper`, `ink`) moves a mark across. For a turn, `symbol` is the label of the
+## symbol whose Craving was turned, `gain` the Temper it gained and `temper` what it is now.
+static func changes_notice(change: String, from: String, to: String, paper: int, ink: int,
+		symbol: String = "", gain: int = 0, temper: int = 0) -> Dictionary:
+	if change == "turn":
+		var temper_line := "The %s had no Craving to turn to Temper." % symbol
+		if gain > 0:
+			temper_line = "Its Craving is turned to Temper: the %s's Temper rises by %d, to %d." % [symbol, gain, temper]
+		return {"title": "Sublimation", "lines": [
+			"%s is %s again." % [from, _a(to)], temper_line,
+			line_moves(paper, ink, paper + 1, ink - 1)]}
+	return {"title": "The draught stains a Root", "lines": [
+		"%s is %s now." % [from, _a(to)],
+		"He stains a Paper Root where it lies, and it becomes his.",
+		line_moves(paper, ink, paper - 1, ink + 1)]}
+
+
+## The notice that sums up a rescue: {title, lines}. `names` are the Roots he took (by their
+## Paper names), `short` what the score lacked, and the line as it stands after (`paper`, `ink`).
+static func rescued_notice(names: Array, short: int, paper: int, ink: int) -> Dictionary:
+	var count := names.size()
+	return {"title": "Rescued", "lines": [
+		"He took %s, and covered the %s the score was short." % [list(names), ArenaMomentRound.thousands(short)],
+		"No pay, no card.",
+		line_moves(paper + count, ink - count, paper, ink)]}
+
+
+## The line moving from one standing to another, in the words of `line_stands`.
+static func line_moves(paper: int, ink: int, to_paper: int, to_ink: int) -> String:
+	return "%s to Paper %d, Ink %d." % [line_stands(paper, ink).trim_suffix("."), to_paper, to_ink]
+
+
 ## Names as a phrase: "a Fog", "two Fog", "a Composure and a Scruple", "two Fog and a Pride".
 static func list(names: Array) -> String:
 	var counts := {}

@@ -136,15 +136,28 @@ func bring_to_hand(man: String, cards: Array, pile: String, to_hand: Callable,
 ## `side_changed` is sent. In a pile it is drawn out face up and put back. When the hand may
 ## change before these beats play (cards leave it first), give `rest` instead: it is called
 ## as the card lifts and returns {centre, turn, size}, the place as it then is.
+##
+## With `said` (a Callable returning {title, lines}, called as its beat begins) the change is
+## shown on the notice instead and waits for the player: the card as it was, the crack played
+## on it there, and its twin; in his tone when it turns to Ink, else in Jekyll's. On Continue
+## the card goes back from where it lay on the sheet to its place. Without it (or with the
+## notice passed at once) the card lifts where it lies, cracks under `caption` and settles.
 func change_side(before: Dictionary, after: Dictionary, where: String, caption: String,
 		card: ArenaCard = null, rest_centre: Vector2 = Vector2.ZERO, rest_turn: float = 0.0,
-		rest: Callable = Callable()) -> void:
+		rest: Callable = Callable(), said: Callable = Callable()) -> void:
 	var held := [card]
 	var place := [rest_centre, rest_turn, 1.0]
+	# Where the card lay on the sheet; empty when no notice was shown.
+	var shown: Array[Vector2] = []
 	var time := ArenaPace.CHANGE_SIDE
+	if said.is_valid() and notice:
+		beats.add_choice(func() -> void:
+			var what: Dictionary = said.call()
+			what.cards = [before]
+			what.tone = "hyde" if after.get("ink", false) else "jekyll"
+			await _crack_on_notice(what, after)
+			shown.assign(notice.centres))
 	beats.add(func() -> void:
-		stage.show_caption(caption)
-		var lifted: Vector2
 		if where == "hand":
 			place[2] = held[0].scale.y
 			if rest.is_valid():
@@ -152,24 +165,38 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 				place[0] = now.centre
 				place[1] = now.turn
 				place[2] = now.get("size", place[2])
+		else:
+			held[0] = piles.take(where, before)
+		if not shown.is_empty():
+			# It has changed on the sheet: the card takes its twin's face where the sheet's lay.
+			held[0].show_data(after, held[0].rng_seed)
+			held[0].set_meta("data", after)
+			held[0].face_down = false
+			travel.place(held[0], shown[0], 0.0, ArenaNotice.CARD_SCALE)
+			return
+		stage.show_caption(caption)
+		var lifted: Vector2
+		if where == "hand":
 			# A card of the hand lifts well clear of the row; one laid on the stage is held up
 			# where it lies, to stay under the caption and over the lower rule.
 			lifted = place[0] + Vector2(0.0, 0.0 if stage.holds(place[0]) else -34.0)
 		else:
 			# Drawn out of the pile, face up, to the centre of the table.
-			held[0] = piles.take(where, before)
 			lifted = stage.slot(0, 1)
 		# It lifts: a fifth of the change. Drawn out of a pile, it travels at a card's pace.
 		await travel.fly(held[0], lifted, 0.0, 1.12 * (float(place[2]) if where == "hand" else ArenaStage.LAID_SCALE),
 				ArenaTravel.UP,
 				time * 0.19 if where == "hand" else ArenaPace.TRAVEL))
 	beats.add(func() -> void:
+		if not shown.is_empty():
+			return
 		beats.sound("crack_ink" if after.get("ink", false) else "crack_paper")
 		await _crack(held[0], after, time * 0.62))
 	beats.add(func() -> void:
-		# It settles back: the rest of the change.
+		# It settles back: the rest of the change. From the sheet, at a card's pace.
+		var back := time * 0.19 if shown.is_empty() else ArenaPace.TRAVEL
 		if where == "hand":
-			await travel.fly(held[0], place[0], place[1], place[2], ArenaTravel.KEEP, time * 0.19)
+			await travel.fly(held[0], place[0], place[1], place[2], ArenaTravel.KEEP, back)
 		else:
 			await piles.put(where, [held[0]], where == "draw"))
 	beats.add(func() -> void:
@@ -177,8 +204,38 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 		side_changed.emit(before, after, held[0] if where == "hand" else null))
 
 
+# Shows `what` on the notice and, once the sheet has come in, plays the crack on its card,
+# which becomes `after`. Returns when the notice has left. `notice.centres` then holds where
+# the card lay (empty when it was passed at once).
+func _crack_on_notice(what: Dictionary, after: Dictionary) -> void:
+	notice.centres.clear()
+	var left := [false]
+	var leaves := func() -> void:
+		await notice.show_notice(what)
+		left[0] = true
+	leaves.call()
+	if not left[0]:
+		await notice.get_tree().create_timer(ArenaNotice.IN + 0.1).timeout
+		# The card the sheet lays out of `what.cards`: the only card it shows.
+		var cards := notice.find_children("*", "ArenaCard", true, false)
+		if notice.showing and not cards.is_empty():
+			beats.sound("crack_ink" if after.get("ink", false) else "crack_paper")
+			_crack_tween(cards[0] as ArenaCard, after, ArenaPace.CHANGE_SIDE)
+	while not left[0]:
+		await notice.dismissed
+
+
 ## The crack runs across the card, the twin floods out from it, and the card becomes the twin.
 func _crack(card: ArenaCard, after: Dictionary, time: float) -> void:
+	await _crack_tween(card, after, time, beats.tween(), beats.tween()).finished
+
+
+# The crack's run on `card` over `time`: the tween that ends with it become `after`. The tweens
+# are the card's own unless given, so that they end with it when it leaves (a notice's card).
+func _crack_tween(card: ArenaCard, after: Dictionary, time: float, t: Tween = null,
+		shake: Tween = null) -> Tween:
+	if not t:
+		t = card.create_tween()
 	var twin := ArenaTravel.make_card(after)
 	twin.rng_seed = card.rng_seed
 	twin.show_data(after, card.rng_seed)
@@ -186,19 +243,22 @@ func _crack(card: ArenaCard, after: Dictionary, time: float) -> void:
 	twin.stain = 0.0
 	var crack := ArenaCrack.new(twin, card.rng_seed)
 	card.add_child(crack)
-	var t := beats.tween()
 	t.tween_property(crack, "run", 1.0, time * 0.35).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	t.parallel().tween_property(crack, "glow", 1.0, ArenaPace.FLARE_RISE)
 	if not ArenaPace.reduce_flashes:
 		# A short shake as it cracks.
+		if not shake:
+			shake = card.create_tween()
 		var turn := card.rotation_degrees
-		var shake := beats.tween()
 		for i in 4:
 			shake.tween_property(card, "rotation_degrees", turn + (2.0 if i % 2 == 0 else -2.0), time * 0.04)
 		shake.tween_property(card, "rotation_degrees", turn, time * 0.04)
+	elif shake:
+		shake.kill()
 	t.tween_property(crack, "flood", 1.0, time * 0.65).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	t.parallel().tween_property(crack, "glow", 0.0, maxf(ArenaPace.FLARE_FALL, time * 0.65))
-	await t.finished
-	card.show_data(after, card.rng_seed)
-	card.set_meta("data", after)
-	crack.queue_free()
+	t.tween_callback(func() -> void:
+		card.show_data(after, card.rng_seed)
+		card.set_meta("data", after)
+		crack.queue_free())
+	return t

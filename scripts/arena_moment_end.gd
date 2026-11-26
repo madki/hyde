@@ -51,13 +51,22 @@ static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
 	if e.was == "jekyll":
 		# The page shifts after the caption's time, at the least.
 		ArenaMomentShift.cue_to_hyde(t, ArenaPace.CAPTION_MIN + ArenaPace.CAPTION_FADE)
+	var took := ArenaMomentRescue.summary(t)
 	t.beats.add(func() -> void:
-		t.stage.show_caption("Rescued. No pay, no card.")
 		t.beats.sound("target_struck", 0.8)
 		t.hand.lift(false)
 		t.numbers.clear_readout()
-		await t.follow(t.numbers.strike_target()).finished
-		await t.stage.clear_caption())
+		await t.follow(t.numbers.strike_target()).finished)
+	# One notice sums the rescue up: what he took, the score he covered, and no pay.
+	t.beats.add_choice(func() -> void:
+		var what := ArenaCaptions.rescued_notice(
+				took.get("before", []).map(func(c: Dictionary) -> String: return c.name),
+				int(took.get("short", 0)),
+				int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)))
+		what.cards = took.get("before", [])
+		what.after = took.get("after", [])
+		what.tone = "hyde"
+		await t.moments.notice.show_notice(what))
 	if e.was == "jekyll":
 		ArenaMomentShift.page(t, true)
 	t.beats.add(func() -> void:

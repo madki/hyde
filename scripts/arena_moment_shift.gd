@@ -121,19 +121,23 @@ static func stained(t: ArenaTable, e: Dictionary) -> void:
 	before.name = RulesConfig.ROOT[e.sym].paper
 	before.chips = int(t.after.symbols[e.sym].paper_chips)
 	var words := ArenaCaptions.changes("stain", before.name, after.name)
+	var said := func() -> Dictionary:
+		return ArenaCaptions.changes_notice("stain", before.name, after.name,
+				int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)))
 	if e.from == "hand":
 		var card := t.hand.card_of(e.id)
 		var rest := func() -> Dictionary:
 			var at := t.hand.rest_of(e.id)
 			card.set_meta("away", true)
 			return at
-		t.moments.change_side(before, after, "hand", words, card, Vector2.ZERO, 0.0, rest)
+		t.moments.change_side(before, after, "hand", words, card, Vector2.ZERO, 0.0, rest, said)
 		t.beats.add_call(func() -> void:
 			card.card_id = e.id
 			card.dimmed = false
 			t.hand.settle(card))
 	else:
-		t.moments.change_side(before, after, "discards" if e.from == "discard" else "draw", words)
+		t.moments.change_side(before, after, "discards" if e.from == "discard" else "draw", words,
+				null, Vector2.ZERO, 0.0, Callable(), said)
 	t.beats.add(func() -> void:
 		t.shown.add("line/paper", -1)
 		t.shown.add("line/ink", 1)
