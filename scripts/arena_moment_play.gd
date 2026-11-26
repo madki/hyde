@@ -30,6 +30,15 @@ const HAND_TIERS := {
 }
 ## The most semitones the chips and mult of one play climb, so that a long play does not squeak.
 const RAMP_TOP := 12
+## As the ramp climbs to RAMP_TOP, how much larger a step's pop grows (and how much further it
+## rises) and how much higher its card hops, at the top. The readout's pulse grows with it
+## (ArenaNumbers.climb).
+const RAMP_POP := 1.5
+const RAMP_RISE := 1.35
+const RAMP_HOP := 1.6
+## From this step of the ramp on (0 the first), each tick hits the picture, very lightly.
+const RAMP_HIT_FROM := 7
+const RAMP_HIT := 0.1
 ## The beat of a gauge that pays, by how many times that symbol's gauge has paid in the play
 ## (the first, the second, the third and later), before its mult ticks; and the shares of it
 ## that the mark's flight, the gauge's pulse and the mult's flight take.
@@ -173,16 +182,28 @@ static func _stinger(key: String, hyde: bool) -> String:
 	return "hand_%s_%d" % [side, int(HAND_TIERS.get(key, 1))]
 
 
-# A step raised the chips (or the mult): their sound, a semitone above the last of the play.
+# A step raised the chips (or the mult): their sound, a semitone above the last of the play,
+# and late in a long play a very light hit.
 static func _ramp(t: ArenaTable, sound_name: String, ramp: Array) -> void:
 	t.beats.sound_sided(sound_name, Sfx.semitones(mini(ramp[0], RAMP_TOP)))
+	if ramp[0] >= RAMP_HIT_FROM:
+		_shake(t, RAMP_HIT)
 	ramp[0] += 1
 
 
-# One step: the card that acts hops, what it gives rises from it, and the readout ticks.
+# How far the ramp has climbed, 0 at the play's first step to 1 at RAMP_TOP.
+static func _climb(ramp: Array) -> float:
+	return float(mini(ramp[0], RAMP_TOP)) / RAMP_TOP
+
+
+# One step: the card that acts hops, what it gives rises from it, and the readout ticks; all
+# of it larger the further the play's ramp has climbed. A gauge that pays keeps its own sizes.
 static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eyes: Array, colour: Color,
 		ramp: Array, paid: Dictionary) -> void:
 	var card: ArenaCard = laid.get(step.id)
+	var climb := _climb(ramp)
+	var hop := ArenaPop.HOP * lerpf(1.0, RAMP_HOP, climb)
+	t.numbers.climb = climb
 	var at := _above(card) if card else Vector2.ZERO
 	var words := ""
 	if step.chips != 0:
@@ -192,8 +213,8 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 	var pays: bool = step.kind == "gauge" and step.gauge in ["temper", "habit"]
 	match step.kind:
 		"root", "factor":
-			ArenaPop.hop(t.beats, card)
-			if step.kind == "root" and _gauge_chips(t, step, card, colour):
+			ArenaPop.hop(t.beats, card, hop)
+			if step.kind == "root" and _gauge_chips(t, step, card, colour, climb):
 				words = ""
 		"gauge":
 			if pays:
@@ -203,13 +224,13 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 				words = "%s %s" % [str(step.label).capitalize(), words]
 		"again":
 			var again: ArenaCard = laid.get(step.of)
-			ArenaPop.hop(t.beats, card)
-			ArenaPop.hop(t.beats, again)
+			ArenaPop.hop(t.beats, card, hop)
+			ArenaPop.hop(t.beats, again, hop)
 			if again:
 				at = _above(again)
 		"effect":
 			if step.of >= 0:
-				ArenaPop.hop(t.beats, laid.get(step.of))
+				ArenaPop.hop(t.beats, laid.get(step.of), hop)
 			if step.chips == 0 and step.mult == 0:
 				words = step.label
 				if step.label == "no restraint":
@@ -234,7 +255,8 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			# What it gives rises from just over its emblem, not across it.
 			at = t.means.spot("hcane") + Vector2(0.0, -ArenaMeans.ROUND_R - 6.0)
 	if words != "" and at != Vector2.ZERO:
-		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)
+		ArenaPop.text(t.beats, t.travel, at, words, colour,
+				_pop_size(20 if step.chips != 0 or step.mult != 0 else 15, climb), _pop_rise(climb))
 	if step.chips != 0:
 		if step.chips > 0:
 			_ramp(t, "chips", ramp)
@@ -253,9 +275,19 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 				roundi(t.numbers.get("_mult")), (Time.get_ticks_msec() - _began_ms) / 1000.0])
 
 
+# A pop's size and how far it rises, by how far the ramp has climbed (`_climb`).
+static func _pop_size(size: int, climb: float) -> int:
+	return roundi(size * lerpf(1.0, RAMP_POP, climb))
+
+
+static func _pop_rise(climb: float) -> float:
+	return ArenaPop.RISE * lerpf(1.0, RAMP_RISE, climb)
+
+
 # A Root whose gauge gives some of its chips (15 a point, from the run's dials): its own chips
-# rise in the man's colour and, under them, the gauge's in the gauge's colour. True if it did.
-static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colour: Color) -> bool:
+# rise in the man's colour and, under them, the gauge's in the gauge's colour, both as large as
+# the ramp has climbed to (`climb`). True if it did.
+static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colour: Color, climb: float) -> bool:
 	if card == null or step.sym == "" or step.chips <= 0:
 		return false
 	var data: Dictionary = card.get_meta("data", {})
@@ -265,9 +297,10 @@ static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colou
 	if given <= 0 or given >= step.chips:
 		return false
 	var at := _above(card)
-	ArenaPop.text(t.beats, t.travel, at, "+%d" % (step.chips - given), colour, 20)
-	ArenaPop.text(t.beats, t.travel, at + Vector2(0.0, 20.0), "+%d %s" % [given, row.capitalize()],
-			_gauge_colour(row), 15)
+	var big := _pop_size(20, climb)
+	ArenaPop.text(t.beats, t.travel, at, "+%d" % (step.chips - given), colour, big, _pop_rise(climb))
+	ArenaPop.text(t.beats, t.travel, at + Vector2(0.0, big), "+%d %s" % [given, row.capitalize()],
+			_gauge_colour(row), _pop_size(15, climb), _pop_rise(climb))
 	return true
 
 
