@@ -68,6 +68,12 @@ func set_ink(new_percent: float, new_volatility: float, jekyll: bool) -> void:
 	is_jekyll = jekyll
 
 
+## Lights the ink's wet edge: `strength` from 0 (unlit) to 1, brightest at `height` (a share
+## of the page's height from its top), or along all of the edge alike when `height` is negative.
+func light_edge(strength: float, height: float = -1.0) -> void:
+	_page.set_shader_parameter("edge_lit", Vector2(clampf(strength, 0.0, 1.0), height))
+
+
 ## Puts the ink in the given stance's look at once, without the eased change.
 func snap_to_stance() -> void:
 	_hyde = 0.0 if is_jekyll else 1.0
