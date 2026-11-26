@@ -61,6 +61,9 @@ static var speed := 1.0
 ## With this on, a flare becomes a plain change of the hairline and nothing shakes. Every beat
 ## that flares or shakes reads it.
 static var reduce_flashes := false
+## With this on, a notice (ArenaNotice) stays on the table until the player acknowledges it.
+## Off, it holds for a moment and leaves by itself: for a player who has read them all before.
+static var wait_for_me := true
 
 
 ## The time of the n-th scoring tick of a play, counted from 0: slow for the first
