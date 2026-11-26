@@ -40,8 +40,10 @@ extends Control
 ## `shown_cards()` gives the card nodes on the sheet while it is shown (the `cards` first, then
 ## the `after`), for a moment to play on; they are freed when it leaves.
 ##
-## It comes in over IN seconds with the 'paper' sound. Presses in its first DEAF seconds do
-## nothing, so that a click which was hurrying the move before it cannot dismiss it. A left
+## It comes in over IN seconds with the 'paper' sound. Presses do nothing until it has been
+## drawn and for DEAF seconds after, so that a click which was hurrying the move before it
+## cannot dismiss it, however long its first frame takes. `shown_for` is how long the last
+## notice was there to be read. A left
 ## click anywhere (the button is there to say so), Space or Enter dismiss it; the look keys
 ## (ArenaBeats.LOOK_KEYS) and every other key do not. It leaves in OUT seconds.
 ##
@@ -71,8 +73,8 @@ const ARROW_ROOM_UNDER := 30.0
 ## No card is laid smaller than this, however many there are.
 const LEAST_SCALE := 0.6
 const BUTTON := Vector2(168.0, 40.0)
-## The times, in seconds: to come in, to leave, how long presses do nothing after it begins to
-## come in, and how long it holds when it leaves by itself.
+## The times, in seconds: to come in, to leave, how long presses do nothing after it has first
+## been drawn, and how long it holds when it leaves by itself.
 const IN := 0.2
 const OUT := 0.15
 const DEAF := 0.35
@@ -111,6 +113,9 @@ static var pass_at_once := false
 var showing := false
 ## Where the middle of each card of the last notice lay, in the page's coordinates.
 var centres: Array[Vector2] = []
+## How long the last notice was on the page, in seconds, from the frame after it was first
+## drawn until it was dismissed: 0 while one is shown, and for one that was never drawn.
+var shown_for := 0.0
 
 var _what: Dictionary = {}
 var _tone: Dictionary = TONES.plain
@@ -132,7 +137,10 @@ var _ring := Rect2()
 ## The box the cards lie in, on the sheet, and the arrow from the first row to the second.
 var _cards_box := Rect2()
 var _arrow := PackedVector2Array()
-var _began := 0
+## When the notice shown was first on the page, in ticks (ms): -1 until then. It is taken on
+## the frame after the sheet's first drawing, when that frame, however long, is over.
+var _began := -1
+var _drawn := false
 var _leaving := false
 var _move: Tween
 var _leave_alone: Tween
@@ -170,6 +178,13 @@ func _init() -> void:
 
 func _ready() -> void:
 	resized.connect(_lay_out)
+	set_process(false)
+
+
+func _process(_delta: float) -> void:
+	if _drawn:
+		_began = Time.get_ticks_msec()
+		set_process(false)
 
 
 ## Shows the notice `what` describes (see the top of this script) and returns when the player
@@ -184,8 +199,11 @@ func show_notice(what: Dictionary) -> void:
 	_leaving = false
 	_what = what
 	_build()
+	_began = -1
+	_drawn = false
+	shown_for = 0.0
+	set_process(true)
 	_lay_out()
-	_began = Time.get_ticks_msec()
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	Sfx.play("paper")
@@ -206,6 +224,9 @@ func dismiss() -> void:
 	if not showing or _leaving:
 		return
 	_leaving = true
+	set_process(false)
+	if _began >= 0:
+		shown_for = (Time.get_ticks_msec() - _began) / 1000.0
 	for tween: Tween in [_move, _leave_alone]:
 		if tween and tween.is_valid():
 			tween.kill()
@@ -253,7 +274,7 @@ func _input(event: InputEvent) -> void:
 	else:
 		return # the pointer may move: the button under it lights
 	get_viewport().set_input_as_handled()
-	if pressed and not _leaving and Time.get_ticks_msec() - _began >= int(DEAF * 1000.0):
+	if pressed and not _leaving and _began >= 0 and Time.get_ticks_msec() - _began >= int(DEAF * 1000.0):
 		Sfx.play("button", 1.0, 0.7)
 		dismiss()
 
@@ -479,6 +500,7 @@ func _ring_here() -> Rect2:
 
 # The shade over the table, open over the ringed part; the ring; the line from the sheet to it.
 func _draw() -> void:
+	_drawn = showing
 	var ring := _ring_here()
 	if not ring.has_area():
 		draw_rect(Rect2(Vector2.ZERO, size), SHADE)

@@ -22,7 +22,9 @@ extends Node
 ## - `beat(weight: float)`: sent on each beat of the heartbeat while `level()` is above 0,
 ##   with or without the file: weight 1.0 for the first beat of a pair, 0.75 for the second.
 ##   The beats lie at `BEATS` within a loop of `LENGTH` seconds, quicker by the pitch (1.12
-##   when Ink is ahead). The first is sent on the frame after the loop starts.
+##   when Ink is ahead). The first is sent on the frame after the loop starts. With the file,
+##   each loop's beats are counted from when the sound begins again (Sfx.loop_restarted), so
+##   that they stay with what is heard; without it, from `LENGTH`.
 ## - `changed()`: sent when `level()` or `cause()` changes.
 ##
 ## Two functions look at what is shown: `_read_line` when the line moves (once the frame is
@@ -87,6 +89,7 @@ static func setup(t: ArenaTable) -> void:
 	t.shown.changed.connect(sound._on_shown)
 	t.landed.connect(sound._on_landed)
 	t.beats.emptied.connect(sound._on_emptied)
+	Sfx.loop_restarted.connect(sound._on_loop_restarted)
 
 
 ## 0 for none, 1 for the line near or a last play, 2 for Ink ahead of Paper.
@@ -110,7 +113,8 @@ func _process(delta: float) -> void:
 	# Every beat passed is sent, however long the frame.
 	while true:
 		if _next_beat >= BEATS.size():
-			if _pos < LENGTH:
+			# While the sound loops, the next pair waits for it to begin again.
+			if _pos < LENGTH or Sfx.is_looping(LOOP):
 				return
 			_pos -= LENGTH
 			_next_beat = 0
@@ -118,6 +122,13 @@ func _process(delta: float) -> void:
 			return
 		beat.emit(BEAT_WEIGHTS[_next_beat])
 		_next_beat += 1
+
+
+# The heartbeat's sound has begun again: so does the count of its beats.
+func _on_loop_restarted(sound: String) -> void:
+	if sound == LOOP and _volume > 0.0:
+		_pos = 0.0
+		_next_beat = 0
 
 
 func _plays() -> int:

@@ -2,6 +2,8 @@ class_name ArenaFirsts
 ## The first night's notes: the first time each thing of the game happens, the table stops on
 ## a plain notice (ArenaNotice) that rings the thing and says in two lines what it is and what
 ## to do about it. Each is shown once to a player and kept in `path`; `clear` forgets them all.
+## A note counts as shown once it has been on the page for READ seconds: one dismissed sooner
+## (by a click meant to hurry the move before it) is owed again at its next occasion.
 ##
 ## The words are in NOTES, one entry for each note, in the order they are weighed:
 ##
@@ -32,6 +34,8 @@ class_name ArenaFirsts
 
 ## The most notes shown while one round is played.
 const MOST_A_ROUND := 3
+## A note dismissed before it has been on the page this long, in seconds, was not read.
+const READ := 1.0
 ## The events of a move that has stopped on a notice of its own.
 const STOPPING := ["breed", "stained", "converted", "turn"]
 
@@ -147,9 +151,13 @@ static var _in_round := 0
 ## `events` are those of the move that has just been played back on `t`. Await it.
 static func show_due(t: ArenaTable, events: Array) -> void:
 	var table := RulesView.table(t.run)
-	var note := take(table, events)
 	var notice := t.moments.notice
-	if note.is_empty() or notice == null or ArenaNotice.pass_at_once:
+	if notice == null or ArenaNotice.pass_at_once:
+		# No player is there to read it: it is passed, and remembered.
+		take(table, events)
+		return
+	var note := offer(table, events)
+	if note.is_empty():
 		return
 	if table.phase == "play":
 		# The table as the engine has it, so that the hand under the note shows what can be played.
@@ -157,19 +165,32 @@ static func show_due(t: ArenaTable, events: Array) -> void:
 	var what := sheet(note, table, t.run.dials, t.arena.size)
 	t.beats.add_choice(func() -> void: await notice.show_notice(what))
 	await t.beats.run()
+	dismissed(note.key, notice.shown_for)
 
 
 ## The note to show after a move with these `events` has left `table` as it is, or an empty
-## dictionary. It is remembered as shown from here on, and counted in its round.
-static func take(table: Dictionary, events: Array) -> Dictionary:
+## dictionary. It is counted in its round, and remembered as shown only by `dismissed`.
+static func offer(table: Dictionary, events: Array) -> Dictionary:
 	if _has(events, "shuffle"):
 		_in_round = 0
 	var note := pick(table, events, seen(), _in_round)
-	if note.is_empty():
-		return note
-	mark(note.key)
-	if table.phase == "play":
+	if not note.is_empty() and table.phase == "play":
 		_in_round += 1
+	return note
+
+
+## The note `key` has left after `shown` seconds on the page: it is remembered as shown if
+## that was long enough to read it (READ), else it stays owed.
+static func dismissed(key: String, shown: float) -> void:
+	if shown >= READ:
+		mark(key)
+
+
+## `offer`, with the note remembered as shown at once: for a table with no player.
+static func take(table: Dictionary, events: Array) -> Dictionary:
+	var note := offer(table, events)
+	if not note.is_empty():
+		mark(note.key)
 	return note
 
 

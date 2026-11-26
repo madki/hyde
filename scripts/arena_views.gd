@@ -158,9 +158,12 @@ func _process(delta: float) -> void:
 	if t == null or _table.is_empty():
 		return
 	var point := get_global_mouse_position()
-	var tab := "" if _deck.visible or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
+	# Under a notice nothing answers the pointer or the look keys: not the hand's cards either.
+	var covered := _notice_up()
+	t.hand.covered = covered
+	var tab := "" if _deck.visible or covered or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
 	_tabs.lit = tab
-	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible
+	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible and not covered
 	var under := {}
 	if not held and _quiet_ok() and _pointer_here:
 		under = _thing_at(point)
@@ -218,9 +221,14 @@ func _show_note() -> void:
 func _quiet_ok() -> bool:
 	if _deck.visible or t.waiting_press:
 		return false
-	if t.moments.notice != null and t.moments.notice.showing:
+	if _notice_up():
 		return false
 	return bool(t.arena.call("is_idle"))
+
+
+# True while a notice lies over the table.
+func _notice_up() -> bool:
+	return t.moments.notice != null and t.moments.notice.showing
 
 
 # The thing under the pointer: {name}, or empty for none.
