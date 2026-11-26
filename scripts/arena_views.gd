@@ -12,6 +12,8 @@ extends Control
 ## - Click the draw pile or the discards: one view of both piles (ArenaPileView), the
 ##   clicked one lit. Esc, a click, or any key that does not scroll it closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
+## - F1, or a click on the "?" under the tab at the edge: the help book (HelpBook), at the
+##   page that fits the moment. Only while the player may act and nothing else lies over the table.
 ## - On night 1 the small word "Hint", right of DISCARD, chooses the cards of the best hand the rules find.
 ##   It shows no score.
 ##
@@ -23,6 +25,9 @@ const PENCIL := Palette.OUTLINE
 const SMALL := 0.46
 ## The Notebook's first card, from the middle of the draw pile's zone.
 const NOTEBOOK_FROM_PILE := Vector2(-20.0, -104.0)
+## How long after the pointer has left a gauge the help book still opens at the gauges' page,
+## in milliseconds: long enough to cross the page to the "?".
+const GAUGE_FRESH := 8000
 
 var t: ArenaTable
 
@@ -33,6 +38,10 @@ var _deck := ArenaPileView.new()
 var _notebook := Control.new()
 var _hint := Button.new()
 var _tabs := ArenaTabs.new()
+var _book := HelpBook.new()
+## When the pointer was last on a gauge, in ticks: the book then opens at the gauges' page.
+## Below 0 when it has since rested on something else that has a note.
+var _gauge_at := -1
 var _table: Dictionary = {}
 var _open := true
 var _held := false
@@ -84,7 +93,8 @@ func _init() -> void:
 	_hint.visible = false
 	_hint.pressed.connect(_show_a_hand)
 	_tabs.right = "Hold Shift"
-	for child: Control in [_tabs, _notebook, _hint, _note, _deck]:
+	_book.closed.connect(set_process.bind(true))
+	for child: Control in [_tabs, _notebook, _hint, _note, _deck, _book]:
 		add_child(child)
 
 
@@ -167,12 +177,40 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A key held to look is no press: it must not reach the table, which may wait for one.
 	if key and key.keycode in ArenaBeats.LOOK_KEYS:
 		get_viewport().set_input_as_handled()
+	var on_help := button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT \
+			and _tabs.tab_at((_tabs.make_input_local(button) as InputEventMouseButton).position) == "help"
+	if on_help or (key and key.pressed and not key.echo and key.keycode == KEY_F1):
+		get_viewport().set_input_as_handled()
+		_open_help()
+		return
 	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
 		for which: String in ["draw", "discards"]:
 			if t.piles.pile(which).get_global_rect().has_point(get_global_mouse_position()):
 				get_viewport().set_input_as_handled()
 				_open_pile(which)
 				return
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		if ArenaLayout.symbols(size).has_point((make_input_local(event) as InputEventMouseMotion).position):
+			_gauge_at = Time.get_ticks_msec()
+		elif _hover != "":
+			_gauge_at = -1
+
+
+# Opens the help book at the page that fits the moment (HelpPages.page_for), in the colours
+# of the man at the table. Not while a move is played back, a notice or the piles' view is
+# up, or a key is held to look. Nothing here follows the pointer while the book is open.
+func _open_help() -> void:
+	if not _open or _held or _deck.visible or t.moments.notice.showing or t.beats.is_running():
+		return
+	set_process(false)
+	_note.visible = false
+	_hover = ""
+	_tabs.lit = ""
+	var gauge_last := _gauge_at >= 0 and Time.get_ticks_msec() - _gauge_at < GAUGE_FRESH
+	_book.open(HelpPages.page_for(_table, gauge_last), _table.stance == "hyde", t.run.dials)
 
 
 # The place, in the page's global coordinates, of the night's heading or of the twist's block
