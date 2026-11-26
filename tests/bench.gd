@@ -34,6 +34,10 @@ func _initialize() -> void:
 			calls = int(a.trim_prefix("calls="))
 		elif a == "check":
 			_check = true
+		else:
+			print("BENCH FAILED: no such argument: %s" % a)
+			quit(1)
+			return
 
 	var played := _play(runs, {}, 0)
 	print("BENCH hash %s" % played.hash)

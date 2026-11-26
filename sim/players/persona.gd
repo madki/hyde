@@ -46,6 +46,11 @@ func begin(run: RulesRun, run_seed: int) -> void:
 	_hyde_since = 0
 
 
+func on_copy(copy: RulesRun) -> void:
+	# How long Hyde has stayed is not known of a copy: his stay is counted from here.
+	_hyde_since = copy.stats.hyde_hands
+
+
 func choose(run: RulesRun) -> Dictionary:
 	var all := _plays(run)
 	var bare := _worths(run, all)

@@ -177,7 +177,7 @@ func test_batches_on_disk() -> void:
 	var back := SimStore.load(dir)
 	eq(back.runs, lines, "the runs read back as they were written")
 	eq(back.manifest, m, "and the manifest")
-	for k: String in ["rules_version", "rules_hash", "commit", "dirty", "player", "dials", "seeds", "runs", "started", "seconds", "godot"]:
+	for k: String in ["rules_version", "rules_hash", "player_hash", "commit", "dirty", "player", "dials", "seeds", "runs", "started", "seconds", "godot"]:
 		ok(back.manifest.has(k), "the manifest has %s" % k)
 	# Other runs are not the same batch.
 	eq(SimStore.find(SimStore.new_manifest("greedy", {"plays": 5}, [], 0, 3)), "", "other seeds")
@@ -187,6 +187,17 @@ func test_batches_on_disk() -> void:
 	var other := wanted.duplicate(true)
 	other.rules_hash = "0"
 	eq(SimStore.find(other), "", "other rules")
+	ok(not SimStore.is_stale(m, other), "which is not the same batch grown old")
+	var old := m.duplicate(true)
+	old.player_hash = "0"
+	ok(SimStore.write_manifest(dir, old), "a batch played by other scripts of the player")
+	eq(SimStore.find(wanted), "", "is not found")
+	ok(SimStore.is_stale(SimStore.manifest(dir), wanted), "and is known to be this batch grown old")
+	old.erase("player_hash")
+	ok(SimStore.is_stale(old, wanted) and not SimStore.same_runs(old, wanted), "so is one that names no scripts")
+	ok(not SimStore.is_stale(m, wanted) and not SimStore.is_stale({}, wanted), "the batch itself is not, nor is no batch")
+	eq(SimStore.player_hash("greedy"), SimStore.player_hash("persona.dance"), "one hash for the players of the scripts")
+	ok(SimStore.player_hash("persona.found-dance") != SimStore.player_hash("persona.dance"), "and another for a persona of the file of found ones")
 	eq(SimStore.rules_hash().length(), 16, "the rules' hash")
 	# Tidy up.
 	for f in DirAccess.get_files_at(dir):

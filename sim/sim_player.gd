@@ -69,6 +69,13 @@ func begin(run: RulesRun, run_seed: int) -> void:
 	rng.seed = hash([run_seed, name])
 
 
+## Before a search plays a copy on with this player: what it remembers of a run is of
+## another copy, and is set to what this one shows.
+@warning_ignore("unused_parameter")
+func on_copy(copy: RulesRun) -> void:
+	pass
+
+
 ## In phase "play": one move, {t: "play" | "discard" | "drink" | "salt" | "pass", ids: [...]}.
 ## It may add `options`: the moves it weighed, best first, each {t, ids, key, value} (`key`
 ## is the hand's key for a play).

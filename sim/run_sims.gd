@@ -87,7 +87,10 @@ func _plan() -> String:
 			print("SIM HAVE")
 			print(summary(SimStore.load(found), found) + " (on disk, not played again)")
 			return ""
-		if not SimStore.manifest(dir).is_empty():
+		var held := SimStore.manifest(dir)
+		if SimStore.is_stale(held, wanted):
+			print("SIM STALE %s was played before the player's scripts changed: played again" % batch)
+		elif not held.is_empty():
 			return "The batch %s holds other runs. Give another name, or force." % batch
 	SimStore.make_dir(dir)
 	for f in DirAccess.get_files_at(dir):

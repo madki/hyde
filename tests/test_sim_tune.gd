@@ -63,6 +63,24 @@ func test_moves() -> void:
 	eq(SimPersonas.numbers("dance"), SimPersonas.numbers("dance"), "the start is as it was")
 
 
+func test_the_file_of_found_personas_is_kept() -> void:
+	var path := "user://test_tune_found.json"
+	var whole_path := ProjectSettings.globalize_path(path)
+	DirAccess.remove_absolute(whole_path)
+	ok(Tune.write_found("found-a", {"based_on": "dance", "drink_at": 2}, path), "a persona is written to a new file")
+	ok(Tune.write_found("found-b", {"based_on": "edge", "w_turn": 0.5}, path), "and a second beside it")
+	eq(SimPersonas.read_found(path).keys(), ["found-a", "found-b"], "both are in the file")
+	eq(SimPersonas.numbers("found-a", path).drink_at, 2, "as they were written")
+	ok(not FileAccess.file_exists(path + ".tmp"), "nothing is left beside it")
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string("{\"found-a\": {\"based_on\": ")
+	f.close()
+	var broken := FileAccess.get_file_as_string(path)
+	ok(not Tune.write_found("found-c", {"based_on": "dance"}, path), "a file that cannot be read is not written over")
+	eq(FileAccess.get_file_as_string(path), broken, "and is left as it was")
+	DirAccess.remove_absolute(whole_path)
+
+
 func test_gain_and_noise() -> void:
 	var g := Tune.gain([3, 5, 4, 6], [2, 4, 4, 4])
 	eq(g.mean, 1.0, "the mean of the differences, seed by seed")
