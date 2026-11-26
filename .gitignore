@@ -53,3 +53,6 @@ Thumbs.db
 
 # Sounds built from licensed libraries: never committed.
 /audio/sfx_local/
+
+# What the sims write (tools/sim.sh): kept on the machine that played them.
+/sim_data/

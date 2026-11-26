@@ -67,6 +67,10 @@ var reward_factor_weight: int = 2
 var target_scale: float = 1.0
 
 
+# The names of the numbers, in order, and the game's own values by name: found once.
+static var _names: PackedStringArray = []
+static var _known := {}
+
 # Numbers that must be at least 1 for a round to be playable. The others must be 0 or more.
 const _AT_LEAST_ONE: Array[String] = ["plays", "hand_size", "max_play", "craving_cap", "restraint_limit"]
 
@@ -88,7 +92,9 @@ static func make(changes: Dictionary = {}) -> RulesDials:
 ## unknown name, a value that is not a number, a fraction for a whole number, a negative
 ## value, or one too small to play with.
 static func problems(changes: Dictionary) -> Dictionary:
-	var known := RulesDials.new().to_dict()
+	if _known.is_empty():
+		_known = RulesDials.new().to_dict()
+	var known := _known
 	var out := {}
 	for k: Variant in changes:
 		var value: Variant = changes[k]
@@ -103,8 +109,11 @@ static func problems(changes: Dictionary) -> Dictionary:
 
 ## Every number by name.
 func to_dict() -> Dictionary:
+	if _names.is_empty():
+		for p: Dictionary in get_property_list():
+			if p.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+				_names.append(p.name)
 	var out := {}
-	for p: Dictionary in get_property_list():
-		if p.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
-			out[p.name] = get(p.name)
+	for name: String in _names:
+		out[name] = get(name)
 	return out

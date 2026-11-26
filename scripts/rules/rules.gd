@@ -143,10 +143,7 @@ static func turn_cap(run: RulesRun) -> int:
 
 ## The card with this id, or null if the deck has none.
 static func card(run: RulesRun, id: int) -> RulesCard:
-	for c: RulesCard in run.cards:
-		if c.id == id:
-			return c
-	return null
+	return run.card_of(id)
 
 
 static func is_root(c: RulesCard) -> bool:
@@ -593,6 +590,17 @@ static func _to_discards(run: RulesRun, ids: Array, why: String) -> void:
 ## Plays these cards of the hand. Returns {ok, ev (the reading), events, stance (who played),
 ## phase (after the play)}.
 static func play(run: RulesRun, ids: Array) -> Dictionary:
+	return _play(run, ids, false)
+
+
+## Plays these cards as play does, for a search that plays many: the run, the events and
+## what is returned are the same, but `ev` is the bare reading of RulesHands.read, and a play
+## that is not allowed is refused with no reason given.
+static func play_fast(run: RulesRun, ids: Array) -> Dictionary:
+	return _play(run, ids, true)
+
+
+static func _play(run: RulesRun, ids: Array, bare: bool) -> Dictionary:
 	if run.phase != "play":
 		return {"ok": false, "reason": "Not now."}
 	if not _in_hand(run, ids):
@@ -600,9 +608,9 @@ static func play(run: RulesRun, ids: Array) -> Dictionary:
 	var cards: Array = []
 	for id: int in ids:
 		cards.append(card(run, id))
-	var ev := RulesHands.evaluate(run, cards)
+	var ev := RulesHands.read(run, cards) if bare else RulesHands.evaluate(run, cards)
 	if not ev.ok:
-		return {"ok": false, "reason": ev.reason}
+		return {"ok": false, "reason": ev.get("reason", "")}
 	var d := run.dials
 	var st: String = run.stance
 	var out := {"ok": true, "ev": ev, "events": _begin(run), "stance": st, "phase": ""}

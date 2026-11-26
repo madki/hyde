@@ -3,6 +3,9 @@ class_name RulesConfig
 ## or an instrument. Nothing here changes during a run. The numbers a tuning pass may want
 ## to change are in RulesDials.
 
+## The rules' version, kept by hand: change it whenever a rule or a number changes.
+const RULES_VERSION := "2026.11.26"
+
 ## The three symbols, in the order every tie between symbols is settled by.
 const ROOTS: Array[String] = ["lamp", "heart", "mirror"]
 ## A Root card has a symbol and a side: paper is Jekyll's, ink is Hyde's.
