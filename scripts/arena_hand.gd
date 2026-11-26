@@ -85,8 +85,14 @@ var is_jekyll := true:
 var max_chosen := 5
 ## False while clicks are not taken.
 var enabled := true
-## True while a notice lies over the table: no card rises under the pointer.
-var covered := false
+## True while a notice, the help book or the piles' view lies over the table: no card rises
+## under the pointer, and the card's note is closed.
+var covered := false:
+	set(value):
+		covered = value
+		if covered:
+			_note_wait = null
+			_close_note()
 
 ## While true every card stands raised, as under the pointer: he is looking the hand over.
 var _lifted := false
@@ -717,7 +723,7 @@ func _follow_note(under: ArenaCard, delta: float) -> void:
 # notice, piles' view or help book up, and no key held to look.
 func _note_ok() -> bool:
 	var arena := get_parent()
-	if not enabled or arena == null or not arena.has_method("run") or not bool(arena.call("is_idle")):
+	if covered or not enabled or arena == null or not arena.has_method("run") or not bool(arena.call("is_idle")):
 		return false
 	if _table.get("phase", "") != "play":
 		return false
@@ -727,12 +733,6 @@ func _note_ok() -> bool:
 	for key: Key in ArenaBeats.LOOK_KEYS:
 		if Input.is_key_pressed(key):
 			return false
-	# The help book lies over the whole page and takes the pointer while it is open.
-	var over := get_viewport().gui_get_hovered_control()
-	while over != null:
-		if over is HelpBook or over is ArenaPileView or over is ArenaNotice:
-			return false
-		over = over.get_parent() as Control
 	return true
 
 

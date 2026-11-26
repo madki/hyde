@@ -174,6 +174,7 @@ func test_a_note_dismissed_unread_is_owed_again() -> void:
 		ArenaFirsts.dismissed("goal", ArenaFirsts.READ - 0.4)
 		eq(ArenaFirsts.seen(), {}, "dismissed before it could be read: not remembered")
 		ok(not FileAccess.file_exists(ArenaFirsts.path), "and nothing is written down")
+		eq(ArenaFirsts.offer(table, []).key, "draught", "not at the very next move, where another is offered")
 		eq(ArenaFirsts.offer(table, []).key, "goal", "so it is offered again at its next occasion")
 		ArenaFirsts.dismissed("goal", ArenaFirsts.READ + 0.5)
 		eq(ArenaFirsts.seen(), {"goal": true}, "dismissed after it was read: remembered")
@@ -216,3 +217,59 @@ func test_a_first_round_stops_three_times_and_once_at_its_end() -> void:
 		eq(shown[-1], "won", "and its end, for the pay")
 		ok(shown.size() - shown.count("") <= ArenaFirsts.MOST_A_ROUND + 1, "no more stops than the slow round's")
 		print("     a first round played well stops at: %s" % ", ".join(shown)))
+
+
+func test_a_note_dismissed_unread_twice_is_kept_as_shown() -> void:
+	_with_own_file(func() -> void:
+		var run := _first_deal()
+		var table := RulesView.table(run)
+		# A player who clicks every note away in half a second.
+		var shown: Array = []
+		for move in 6:
+			var note := ArenaFirsts.offer(table, run.events if move == 0 else [])
+			shown.append(note.get("key", ""))
+			if not note.is_empty():
+				ArenaFirsts.dismissed(note.key, 0.5)
+		eq(shown, ["goal", "draught", "goal", "draught", "", ""], "each is shown twice, never on two moves running, and then no more")
+		eq(ArenaFirsts.seen(), {"goal": true, "draught": true}, "the second showing is kept, however soon it was dismissed")
+		ArenaFirsts.forget_loaded()
+		eq(ArenaFirsts.seen(), {"goal": true, "draught": true}, "and written down"))
+
+
+func test_an_unread_showing_is_not_counted_in_the_round() -> void:
+	_with_own_file(func() -> void:
+		var run := _first_deal()
+		var table := RulesView.table(run)
+		ArenaFirsts.dismissed(ArenaFirsts.offer(table, run.events).key, 0.3)
+		eq(ArenaFirsts._in_round, 0, "the goal, dismissed unread, uses up none of the round's three")
+		ArenaFirsts.dismissed(ArenaFirsts.offer(table, []).key, 0.3)
+		eq(ArenaFirsts._in_round, 0, "nor does the draught")
+		eq(ArenaFirsts.offer(table, []).key, "goal", "the goal comes back")
+		ArenaFirsts.dismissed("goal", 0.3)
+		eq(ArenaFirsts._in_round, 1, "its second showing is one of the three")
+		# The first play's own notes are still shown in this round.
+		var played: Dictionary = Rules.play(run, Rules.best(run).ids)
+		eq(run.phase, "play", "the first play does not end the round")
+		var after := RulesView.table(run)
+		var next := ArenaFirsts.offer(after, played.events)
+		eq(next.key, "score", "the first play's score is said, not the goal again")
+		ArenaFirsts.dismissed(next.key, 2.0)
+		eq(ArenaFirsts._in_round, 2, "a note that was read is counted"))
+
+
+func test_an_urgent_note_is_not_shown_on_two_moves_running() -> void:
+	_with_own_file(func() -> void:
+		var run := _first_deal()
+		var table := RulesView.table(run)
+		table.stance = "hyde"
+		eq(ArenaFirsts.pick(table, [], {}, 0, "hyde").get("key", ""), "goal", "the note of the move before is passed over, urgent or not")
+		for key: String in ["goal", "draught", "salt"]:
+			ArenaFirsts.mark(key)
+		var shown: Array = []
+		for move in 5:
+			var note := ArenaFirsts.offer(table, [])
+			shown.append(note.get("key", ""))
+			if not note.is_empty():
+				ArenaFirsts.dismissed(note.key, 0.2)
+		eq(shown, ["hyde", "", "hyde", "", ""], "Hyde's table, clicked away at once: said once more after a move without it, then no more")
+		ok(ArenaFirsts.seen().has("hyde"), "and kept as shown"))

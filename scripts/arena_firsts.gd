@@ -3,7 +3,8 @@ class_name ArenaFirsts
 ## a plain notice (ArenaNotice) that rings the thing and says in two lines what it is and what
 ## to do about it. Each is shown once to a player and kept in `path`; `clear` forgets them all.
 ## A note counts as shown once it has been on the page for READ seconds: one dismissed sooner
-## (by a click meant to hurry the move before it) is owed again at its next occasion.
+## (by a click meant to hurry the move before it) is owed once more, and is then kept as shown
+## however soon it is dismissed. It is not shown again at the very next move.
 ##
 ## The words are in NOTES, one entry for each note, in the order they are weighed:
 ##
@@ -21,10 +22,11 @@ class_name ArenaFirsts
 ## - At most one note a move. The others are owed again at the next move while their
 ##   condition holds.
 ## - At most MOST_A_ROUND while a round is played. The note at a round's end and the dawn's
-##   stand apart from that count.
+##   stand apart from that count, and so does a note dismissed before it could be read.
+## - Never the note of the move before, urgent or not.
 ## - None in a move that has already stopped on a notice of its own (Roots of his joining, a
 ##   Root changing side): it waits for the next move.
-## - An urgent note is shown first, and whatever the two rules above say.
+## - An urgent note is shown first, whatever the count and the move's own notice say.
 ##
 ## A table driven from the command line (ArenaBench) has no player: its notes are passed with
 ## its other notices, remembered for that run only, and nothing is read from or written to
@@ -145,6 +147,15 @@ static var path := "user://firsts.cfg"
 static var _seen: Variant = null
 ## How many notes have been shown while this round was played.
 static var _in_round := 0
+## The key of the note shown at the move before, or "".
+static var _last := ""
+## Whether the note last offered was counted in its round.
+static var _counted := false
+## The keys of the notes dismissed once before they could be read, each to true: for this
+## sitting only.
+static var _unread := {}
+## The key of the note last offered, when that was its second showing; else "".
+static var _again := ""
 
 
 ## Shows the note owed now, if there is one, and returns when the player has dismissed it.
@@ -170,20 +181,31 @@ static func show_due(t: ArenaTable, events: Array) -> void:
 
 ## The note to show after a move with these `events` has left `table` as it is, or an empty
 ## dictionary. It is counted in its round, and remembered as shown only by `dismissed`.
+## Call it once for each move: the note of one move is not offered at the next.
 static func offer(table: Dictionary, events: Array) -> Dictionary:
 	if _has(events, "shuffle"):
 		_in_round = 0
-	var note := pick(table, events, seen(), _in_round)
-	if not note.is_empty() and table.phase == "play":
+	var note := pick(table, events, seen(), _in_round, _last)
+	_last = note.get("key", "")
+	_again = _last if _unread.has(_last) else ""
+	_counted = not note.is_empty() and table.phase == "play"
+	if _counted:
 		_in_round += 1
 	return note
 
 
 ## The note `key` has left after `shown` seconds on the page: it is remembered as shown if
-## that was long enough to read it (READ), else it stays owed.
+## that was long enough to read it (READ), or if this was its second showing. Else it stays
+## owed once more, and its showing is not counted in the round.
 static func dismissed(key: String, shown: float) -> void:
-	if shown >= READ:
+	if shown >= READ or key == _again:
+		_unread.erase(key)
 		mark(key)
+		return
+	_unread[key] = true
+	if _counted and key == _last:
+		_counted = false
+		_in_round = maxi(0, _in_round - 1)
 
 
 ## `offer`, with the note remembered as shown at once: for a table with no player.
@@ -206,13 +228,14 @@ static func due(table: Dictionary, events: Array) -> Array:
 
 ## The one note to show now, or an empty dictionary: the first of `due` that is not in `seen`
 ## ({key: true}) and that the pacing lets through, an urgent one before the others.
-## `in_round` is how many have been shown while this round was played.
-static func pick(table: Dictionary, events: Array, seen_keys: Dictionary, in_round: int) -> Dictionary:
+## `in_round` is how many have been shown while this round was played, and `last` the key of
+## the note shown at the move before, which is passed over.
+static func pick(table: Dictionary, events: Array, seen_keys: Dictionary, in_round: int, last: String = "") -> Dictionary:
 	var playing: bool = table.phase == "play"
 	var held: bool = playing and (in_round >= MOST_A_ROUND or stops(events))
 	var first := {}
 	for note: Dictionary in due(table, events):
-		if seen_keys.has(note.key):
+		if seen_keys.has(note.key) or note.key == last:
 			continue
 		if note.get("urgent", false):
 			return note
@@ -297,14 +320,24 @@ static func mark(key: String) -> void:
 ## Forgets every note shown, so that each is shown again the next time its thing happens.
 static func clear() -> void:
 	_seen = {}
-	_in_round = 0
+	_forget_sitting()
 	_save()
 
 
 ## Reads what is kept again at the next question: for a test that has changed `path`.
 static func forget_loaded() -> void:
 	_seen = null
+	_forget_sitting()
+
+
+# Forgets what is kept for this sitting only: the round's count, the move before, and the
+# notes dismissed unread.
+static func _forget_sitting() -> void:
 	_in_round = 0
+	_last = ""
+	_counted = false
+	_unread = {}
+	_again = ""
 
 
 # Writes the keys shown to `path`. Not for a table driven from the command line.
