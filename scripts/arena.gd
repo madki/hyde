@@ -314,7 +314,8 @@ func _on_choice(ids: Array) -> void:
 # The round is over: the reward's choice is made in the rules and the next round begins. At
 # dawn the table stops and the run goes to the laboratory or the back alley: this table is
 # then done, and the one made when the place is left plays the next night (see `_take_run`).
-# After the run's end, which the round's last move has shown, a new run begins.
+# After the run's end, which the round's last move has shown, the table stops if the ending
+# screen has the run (SceneFlow.ended), and otherwise a new run begins.
 func _go_on() -> void:
 	var events: Array = []
 	while _run.phase != "play" and _run.phase != "end":
@@ -328,7 +329,10 @@ func _go_on() -> void:
 			return
 		events.append_array(result.events)
 	if _run.phase == "end":
-		# The table has shown the run's end: a new run begins on a clean page.
+		# The ending screen has the run: no new run begins under it.
+		if SceneFlow.ended == _run:
+			return
+		# No ending screen took it: a new run begins on a clean page.
 		_run = Rules.new_run()
 		SceneFlow.run = _run
 		t.run = _run
@@ -356,6 +360,7 @@ func _go_to_place(events: Array) -> void:
 		_beats.add_call(t.snap_shown)
 		await _beats.run()
 	await ArenaFirsts.show_due(t, events)
+	await ArenaStory.dawn(t)
 	SceneFlow.go_to_place()
 
 
@@ -459,7 +464,7 @@ func _shown_line_share() -> float:
 
 
 # The ink surges to `share`, past it and back, with the wet edge lit (brightest at `height`
-# down the page, or all along it when that is negative) and the sound of ink dropping.
+# down the page, or all along it when that is negative) and the sound of the pool rising.
 func _surge(share: float, height: float) -> void:
 	_stop_line()
 	_line_target = share
@@ -468,7 +473,7 @@ func _surge(share: float, height: float) -> void:
 		return
 	# Surges that begin together (the line's two marks, ink arriving as it grows) sound once.
 	if Time.get_ticks_msec() - _surge_sounded > 50:
-		_beats.sound("ink_drop", 0.85 * Sfx.vary(0.04), 0.8)
+		_beats.sound("ink_surge", Sfx.vary(0.04))
 	_surge_sounded = Time.get_ticks_msec()
 	_ink_tween = create_tween()
 	_ink_tween.tween_method(_surge_step.bind(ink_percent, share, height), 0.0, 1.0, LINE_SURGE)

@@ -2,12 +2,22 @@ class_name StoryLines
 extends RefCounted
 ## Every line of the story that is written as an entry, keyed by the moment it belongs to.
 ## Each line: `text`; `hand`, whose hand writes it ("jekyll" or "hyde"); `by`, whose words
-## they are ("stevenson" or "ours"); and `from`, the chapter of the book for Stevenson's.
-## Stevenson's lines are his words unchanged: a line may begin and end inside a sentence,
-## but nothing within it is altered. The dawn lines are ours.
+## they are (always "stevenson"); and `from`, the chapter of the book.
+## Every line is Stevenson's words unchanged: a line may begin and end inside a sentence,
+## but nothing within it is altered and nothing is added. A moment with no apt line has no key.
+##
+## LETTERS holds the letter shown at each of the four endings, as a list of parts in order:
+## `text`, `hand`, `by` and `from` as for a line, and `role` ("greeting", "body" or
+## "signature"). A part may be `struck` (a name with a stroke through it) or `broken` (the
+## line stops short, and the pen rests before the next part). Each part is its own cut from
+## the book; nothing is written between them.
 
 const STATEMENT := "Henry Jekyll’s Full Statement of the Case"
 const LANYON := "Dr. Lanyon’s Narrative"
+const SEARCH := "Search for Mr. Hyde"
+const LETTER := "Incident of the Letter"
+const INCIDENT_LANYON := "Incident of Dr. Lanyon"
+const LAST_NIGHT := "The Last Night"
 
 const LINES := {
 	# The run's first pages, and the draught.
@@ -50,36 +60,36 @@ const LINES := {
 	},
 	# Dawns: the laboratory's when Jekyll held the table, the back alley's when Hyde did.
 	"dawn.1.lab": {
-		"text": "I held the table until morning, and I spend the dawn in my laboratory, setting the glasses in order.",
-		"hand": "jekyll", "by": "ours", "from": "",
+		"text": "I awoke in the morning shaken, weakened, but refreshed.",
+		"hand": "jekyll", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.2.lab": {
-		"text": "The night was mine, though he was hunted through it, and I spend the dawn in my laboratory with the door locked.",
-		"hand": "jekyll", "by": "ours", "from": "",
+		"text": "I was stepping leisurely across the court after breakfast, drinking the chill of the air with pleasure",
+		"hand": "jekyll", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.3.lab": {
-		"text": "I kept the table through the worst of nights, and the dawn finds me in my laboratory, washing my hands.",
-		"hand": "jekyll", "by": "ours", "from": "",
+		"text": "I was once more at home, in my own house and close to my drugs",
+		"hand": "jekyll", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.4.lab": {
-		"text": "I held the table to the end, and I spend this grey dawn in my laboratory, counting what salt is left.",
-		"hand": "jekyll", "by": "ours", "from": "",
+		"text": "I still hated and feared the thought of the brute that slept within me",
+		"hand": "jekyll", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.1.alley": {
-		"text": "The table was mine, not the doctor’s, and I spend the dawn in the back alley, where nobody asks my name.",
-		"hand": "hyde", "by": "ours", "from": "",
+		"text": "The night however, was far gone into the morning—the morning, black as it was, was nearly ripe for the conception of the day",
+		"hand": "hyde", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.2.alley": {
-		"text": "They hunted me all night and still the table was mine, so I spend the dawn in the back alley, laughing.",
-		"hand": "hyde", "by": "ours", "from": "",
+		"text": "I stole through the corridors, a stranger in my own house",
+		"hand": "hyde", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.3.alley": {
-		"text": "The table was mine by the end of it, and the dawn finds me in the back alley with half a cane in my coat.",
-		"hand": "hyde", "by": "ours", "from": "",
+		"text": "the little room in Soho where I was accustomed to sleep in the body of Edward Hyde",
+		"hand": "hyde", "by": "stevenson", "from": STATEMENT,
 	},
 	"dawn.4.alley": {
-		"text": "I held the table and the doctor never woke, so I spend the dawn in the back alley, in clothes too large for me.",
-		"hand": "hyde", "by": "ours", "from": "",
+		"text": "thence I set out through the lamplit streets, in the same divided ecstasy of mind, gloating on my crime, light-headedly devising others in the future",
+		"hand": "hyde", "by": "stevenson", "from": STATEMENT,
 	},
 	# The large moments.
 	"arrival": {
@@ -114,6 +124,43 @@ const LINES := {
 }
 
 
+const LETTERS := {
+	# He lives, and shuts his door.
+	"jekyll": [
+		{"text": "My dear Utterson,", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "greeting"},
+		{"text": "I mean from henceforth to lead a life of extreme seclusion;", "hand": "jekyll", "by": "stevenson", "from": INCIDENT_LANYON, "role": "body"},
+		{"text": "You must suffer me to go my own dark way.", "hand": "jekyll", "by": "stevenson", "from": INCIDENT_LANYON, "role": "body"},
+		{"text": "you can do but one thing, Utterson, to lighten this destiny, and that is to respect my silence.", "hand": "jekyll", "by": "stevenson", "from": INCIDENT_LANYON, "role": "body"},
+		{"text": "HENRY JEKYLL.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "signature"},
+	],
+	# Hyde, safe in his mantle, writes to the man who saw him change.
+	"hyde": [
+		{"text": "Dear Lanyon,", "hand": "hyde", "by": "stevenson", "from": LANYON, "role": "greeting"},
+		{"text": "I was the first that ever did so for his pleasures.", "hand": "hyde", "by": "stevenson", "from": STATEMENT, "role": "body"},
+		{"text": "But for me, in my impenetrable mantle, the safety was complete.", "hand": "hyde", "by": "stevenson", "from": STATEMENT, "role": "body"},
+		{"text": "Think of it—I did not even exist!", "hand": "hyde", "by": "stevenson", "from": STATEMENT, "role": "body"},
+		{"text": "Edward Hyde", "hand": "hyde", "by": "stevenson", "from": LETTER, "role": "signature"},
+	],
+	# Jekyll's last note, broken off; Hyde steps into his shoes and signs over his name.
+	"succumbed": [
+		{"text": "My dear Utterson,", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "greeting"},
+		{"text": "When this shall fall into your hands, I shall have disappeared", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "body", "broken": true},
+		{"text": "the said Edward Hyde should step into the said Henry Jekyll’s shoes without further delay", "hand": "hyde", "by": "stevenson", "from": SEARCH, "role": "body"},
+		{"text": "HENRY JEKYLL.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "signature", "struck": true},
+		{"text": "Edward Hyde", "hand": "hyde", "by": "stevenson", "from": LETTER, "role": "signature"},
+	],
+	# A composed order for the old salt that loses its composure.
+	"unmet": [
+		{"text": "Dr. Jekyll presents his compliments to Messrs. Maw.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "greeting"},
+		{"text": "He assures them that their last sample is impure and quite useless for his present purpose.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "body"},
+		{"text": "Expense is no consideration.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "body"},
+		{"text": "For God’s sake,", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "body", "broken": true},
+		{"text": "find me some of the old.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "body"},
+		{"text": "HENRY JEKYLL.", "hand": "jekyll", "by": "stevenson", "from": LAST_NIGHT, "role": "signature"},
+	],
+}
+
+
 ## The line for `key`, or an empty Dictionary if there is none.
 static func line(key: String) -> Dictionary:
 	return LINES.get(key, {})
@@ -132,3 +179,9 @@ static func dawn(no: int, place: String) -> Dictionary:
 ## Every key in the table.
 static func keys() -> Array:
 	return LINES.keys()
+
+
+## The letter for ending `id` ("jekyll", "hyde", "succumbed" or "unmet"), as its parts in
+## order, or an empty Array if there is none.
+static func letter(id: String) -> Array:
+	return LETTERS.get(id, [])

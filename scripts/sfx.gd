@@ -29,6 +29,8 @@ const NAMES: Array[String] = [
 	"card_flip", "lock", "eye", "ink_drop", "rollover", "temper", "cork", "paper", "salt",
 	"low_note", "warn", "rescue", "double", "line_holds", "line_floods", "run_end",
 	"passage", "dawn_j", "dawn_h", "buy", "take", "amb_title",
+	"crack_ink_2", "crack_ink_3", "breakout_build", "notice", "notice_go",
+	"impact_1", "impact_2", "impact_3", "ink_surge", "pour",
 ]
 ## How many sounds can be heard at once; one more cuts the oldest short.
 const VOICES := 16
@@ -45,6 +47,8 @@ var _voices: Array[AudioStreamPlayer] = []
 var _next := 0
 var _loops: Dictionary[String, AudioStreamPlayer] = {}
 var _across: AudioStreamPlayer
+# For `take`: by sound, which take was given last and when (milliseconds).
+var _takes: Dictionary[String, Vector2i] = {}
 
 
 func _ready() -> void:
@@ -143,6 +147,20 @@ func stop_all() -> void:
 func hush() -> void:
 	for voice in _voices:
 		voice.stop()
+
+
+## The name of the take of `sound` to play now, of its `count` takes (`<sound>`, `<sound>_2`,
+## `<sound>_3`...): the first, or the one after the last given when that was no more than
+## `within` seconds ago, so that the same sound several times in a row is not one sound
+## repeated. After the last take comes the first again.
+func take(sound: String, count: int, within: float = 4.0) -> String:
+	var now := Time.get_ticks_msec()
+	var last: Vector2i = _takes.get(sound, Vector2i(-1, 0))
+	var index := 0
+	if last.x >= 0 and now - last.y <= int(within * 1000.0):
+		index = (last.x + 1) % maxi(count, 1)
+	_takes[sound] = Vector2i(index, now)
+	return sound if index == 0 else "%s_%d" % [sound, index + 1]
 
 
 ## A rate a little off 1, at most `amount` either way: a sound heard many times in a row

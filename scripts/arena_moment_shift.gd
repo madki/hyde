@@ -224,6 +224,8 @@ static func joined(t: ArenaTable, e: Dictionary) -> void:
 		var ink: int = t.shown.add("line/ink", cards.size())
 		t.line_sound(true)
 		t.play(t.symbols.set_line.bind(int(t.shown.value("line/paper", 0)), ink)))
+	if e.why == "first":
+		ArenaStory.add(t, ["arrival"])
 
 
 ## The notice's words for `count` of his Roots joining by `cause`, with the line as it will

@@ -21,11 +21,13 @@ const HOLD := 0.45
 
 static func add(t: ArenaTable, _e: Dictionary) -> void:
 	t.beats.add(func() -> void:
+		# The track strains under the hold.
+		t.beats.sound("breakout_build")
 		if ArenaMomentShift.staged(t) and not ArenaPace.reduce_flashes:
 			t.follow(t.numbers.restraint.tremble_over(HOLD))
 		await t.beats.wait(HOLD))
 	t.beats.add(func() -> void:
-		# Its impact lands as the burst covers the page.
+		# It shatters as the burst begins, and its blow lands as the burst covers the page.
 		t.beats.sound("breakout")
 		var burst := ArenaBurst.new()
 		t.arena.add_child(burst)
@@ -43,3 +45,4 @@ static func add(t: ArenaTable, _e: Dictionary) -> void:
 		burst.queue_free())
 	# The words stay while the ink thins away, and a little longer.
 	t.beats.add_wait(ArenaMomentShift.NAME_TIME + ArenaMomentShift.NAME_FADE_WAIT - ArenaBurst.THIN_TIME)
+	ArenaStory.add(t, ["breakout"])

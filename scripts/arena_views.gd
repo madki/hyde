@@ -243,9 +243,9 @@ func _quiet_ok() -> bool:
 	return bool(t.arena.call("is_idle"))
 
 
-# True while a notice lies over the table.
+# True while a notice or a page of the story lies over the table.
 func _notice_up() -> bool:
-	return t.moments.notice != null and t.moments.notice.showing
+	return t.story_up or (t.moments.notice != null and t.moments.notice.showing)
 
 
 # True while something lies over the hand: a notice, the help book or the piles' view.

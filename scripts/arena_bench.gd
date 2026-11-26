@@ -29,7 +29,8 @@ class_name ArenaBench
 ##
 ## A notice (ArenaNotice) waits for a player, and none is here: every notice is passed at once,
 ## with any of these arguments. Only `--at` lets one be shown, in the move the still is taken
-## in, so that the still can be of it.
+## in, so that the still can be of it. A page of the story (`--story`, see ArenaStory) is
+## pressed on in the same way, wherever the bench waits for a move to be over.
 ##
 ##   godot --headless --path . res://scenes/arena.tscn -- --selftest --seed=5
 
@@ -146,7 +147,12 @@ static func _change(run: RulesRun, name: String, value: String) -> void:
 static func _idle(arena: Node, at_choice: bool = false) -> void:
 	var reward: ArenaReward = arena.t.reward
 	while not arena.is_idle():
-		if reward.waiting:
+		if arena.t.story_up:
+			# No player is here to read it: the page is pressed on, a press a frame.
+			for child in arena.get_children():
+				if child is StoryPage:
+					child.press()
+		elif reward.waiting:
 			if at_choice:
 				return
 			reward.pick(0)
