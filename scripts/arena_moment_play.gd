@@ -30,6 +30,15 @@ const HAND_TIERS := {
 }
 ## The most semitones the chips and mult of one play climb, so that a long play does not squeak.
 const RAMP_TOP := 12
+## As the ramp climbs to RAMP_TOP, how much larger a step's pop grows (and how much further it
+## rises) and how much higher its card hops, at the top. The readout's pulse grows with it
+## (ArenaNumbers.climb).
+const RAMP_POP := 1.5
+const RAMP_RISE := 1.35
+const RAMP_HOP := 1.6
+## From this step of the ramp on (0 the first), each tick hits the picture, very lightly.
+const RAMP_HIT_FROM := 7
+const RAMP_HIT := 0.1
 ## The beat of a gauge that pays, by how many times that symbol's gauge has paid in the play
 ## (the first, the second, the third and later), before its mult ticks; and the shares of it
 ## that the mark's flight, the gauge's pulse and the mult's flight take.
@@ -39,6 +48,14 @@ const PAY_PULSE := 0.15 / 0.60
 const PAY_FLIGHT := 0.25 / 0.60
 ## The words of a gauge that pays fade this long once its mult has ticked.
 const PAY_FADE := 0.15
+
+## How hard the picture is hit as a total lands, by the play's weight (`_weight`), and the
+## sound of each blow. A sound plays once Sfx knows its name and has its file.
+const LAND_HITS: Array[float] = [0.0, 0.3, 0.6, 1.0]
+const LAND_SOUNDS: Array[String] = ["", "impact_1", "impact_2", "impact_3"]
+## The hit as a target is struck through, and when one play took the whole of it.
+const STRIKE_HIT := 0.3
+const STRIKE_HIT_ALONE := 0.6
 
 ## For `--trace`: when the play's score began to be shown, in milliseconds.
 static var _began_ms := 0
@@ -165,16 +182,28 @@ static func _stinger(key: String, hyde: bool) -> String:
 	return "hand_%s_%d" % [side, int(HAND_TIERS.get(key, 1))]
 
 
-# A step raised the chips (or the mult): their sound, a semitone above the last of the play.
+# A step raised the chips (or the mult): their sound, a semitone above the last of the play,
+# and late in a long play a very light hit.
 static func _ramp(t: ArenaTable, sound_name: String, ramp: Array) -> void:
 	t.beats.sound_sided(sound_name, Sfx.semitones(mini(ramp[0], RAMP_TOP)))
+	if ramp[0] >= RAMP_HIT_FROM:
+		_shake(t, RAMP_HIT)
 	ramp[0] += 1
 
 
-# One step: the card that acts hops, what it gives rises from it, and the readout ticks.
+# How far the ramp has climbed, 0 at the play's first step to 1 at RAMP_TOP.
+static func _climb(ramp: Array) -> float:
+	return float(mini(ramp[0], RAMP_TOP)) / RAMP_TOP
+
+
+# One step: the card that acts hops, what it gives rises from it, and the readout ticks; all
+# of it larger the further the play's ramp has climbed. A gauge that pays keeps its own sizes.
 static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eyes: Array, colour: Color,
 		ramp: Array, paid: Dictionary) -> void:
 	var card: ArenaCard = laid.get(step.id)
+	var climb := _climb(ramp)
+	var hop := ArenaPop.HOP * lerpf(1.0, RAMP_HOP, climb)
+	t.numbers.climb = climb
 	var at := _above(card) if card else Vector2.ZERO
 	var words := ""
 	if step.chips != 0:
@@ -184,8 +213,8 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 	var pays: bool = step.kind == "gauge" and step.gauge in ["temper", "habit"]
 	match step.kind:
 		"root", "factor":
-			ArenaPop.hop(t.beats, card)
-			if step.kind == "root" and _gauge_chips(t, step, card, colour):
+			ArenaPop.hop(t.beats, card, hop)
+			if step.kind == "root" and _gauge_chips(t, step, card, colour, climb):
 				words = ""
 		"gauge":
 			if pays:
@@ -195,13 +224,13 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 				words = "%s %s" % [str(step.label).capitalize(), words]
 		"again":
 			var again: ArenaCard = laid.get(step.of)
-			ArenaPop.hop(t.beats, card)
-			ArenaPop.hop(t.beats, again)
+			ArenaPop.hop(t.beats, card, hop)
+			ArenaPop.hop(t.beats, again, hop)
 			if again:
 				at = _above(again)
 		"effect":
 			if step.of >= 0:
-				ArenaPop.hop(t.beats, laid.get(step.of))
+				ArenaPop.hop(t.beats, laid.get(step.of), hop)
 			if step.chips == 0 and step.mult == 0:
 				words = step.label
 				if step.label == "no restraint":
@@ -226,7 +255,8 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 			# What it gives rises from just over its emblem, not across it.
 			at = t.means.spot("hcane") + Vector2(0.0, -ArenaMeans.ROUND_R - 6.0)
 	if words != "" and at != Vector2.ZERO:
-		ArenaPop.text(t.beats, t.travel, at, words, colour, 20 if step.chips != 0 or step.mult != 0 else 15)
+		ArenaPop.text(t.beats, t.travel, at, words, colour,
+				_pop_size(20 if step.chips != 0 or step.mult != 0 else 15, climb), _pop_rise(climb))
 	if step.chips != 0:
 		if step.chips > 0:
 			_ramp(t, "chips", ramp)
@@ -245,9 +275,19 @@ static func _step(t: ArenaTable, step: Dictionary, n: int, laid: Dictionary, eye
 				roundi(t.numbers.get("_mult")), (Time.get_ticks_msec() - _began_ms) / 1000.0])
 
 
+# A pop's size and how far it rises, by how far the ramp has climbed (`_climb`).
+static func _pop_size(size: int, climb: float) -> int:
+	return roundi(size * lerpf(1.0, RAMP_POP, climb))
+
+
+static func _pop_rise(climb: float) -> float:
+	return ArenaPop.RISE * lerpf(1.0, RAMP_RISE, climb)
+
+
 # A Root whose gauge gives some of its chips (15 a point, from the run's dials): its own chips
-# rise in the man's colour and, under them, the gauge's in the gauge's colour. True if it did.
-static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colour: Color) -> bool:
+# rise in the man's colour and, under them, the gauge's in the gauge's colour, both as large as
+# the ramp has climbed to (`climb`). True if it did.
+static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colour: Color, climb: float) -> bool:
 	if card == null or step.sym == "" or step.chips <= 0:
 		return false
 	var data: Dictionary = card.get_meta("data", {})
@@ -257,9 +297,10 @@ static func _gauge_chips(t: ArenaTable, step: Dictionary, card: ArenaCard, colou
 	if given <= 0 or given >= step.chips:
 		return false
 	var at := _above(card)
-	ArenaPop.text(t.beats, t.travel, at, "+%d" % (step.chips - given), colour, 20)
-	ArenaPop.text(t.beats, t.travel, at + Vector2(0.0, 20.0), "+%d %s" % [given, row.capitalize()],
-			_gauge_colour(row), 15)
+	var big := _pop_size(20, climb)
+	ArenaPop.text(t.beats, t.travel, at, "+%d" % (step.chips - given), colour, big, _pop_rise(climb))
+	ArenaPop.text(t.beats, t.travel, at + Vector2(0.0, big), "+%d %s" % [given, row.capitalize()],
+			_gauge_colour(row), _pop_size(15, climb), _pop_rise(climb))
 	return true
 
 
@@ -290,13 +331,27 @@ static func _gauge_colour(row: String) -> Color:
 
 
 # Beats 6 and 7: the total lands, travels to the round's score, and may strike the target.
+# The more of the target the play takes alone, the harder it lands (`_weight`).
 static func _total(t: ArenaTable, score_to: int) -> void:
+	var play := {"weight": 0}
 	t.beats.add(func() -> void:
+		var weight := _weight(score_to - int(t.shown.value("score", 0)), int(t.after.target))
+		play.weight = weight
 		# The ticks gather into one landing; Hyde's is lower and heavier.
 		t.beats.sound("total", 0.84 if t.hyde() else 1.0)
-		await t.follow(t.numbers.land_total()).finished
+		var land := t.follow(t.numbers.land_total(weight))
+		if weight > 0:
+			# The blow falls as the total is at its fullest.
+			var blow := t.beats.tween()
+			blow.tween_interval(ArenaNumbers.land_peak(weight))
+			blow.tween_callback(func() -> void:
+				_shake(t, LAND_HITS[weight])
+				if LAND_SOUNDS[weight] in Sfx.NAMES:
+					t.beats.sound(LAND_SOUNDS[weight]))
+		await land.finished
 		if Shot.has_arg("trace"):
-			print("  total     %d, the round's score to %d" % [t.numbers.get("_total"), score_to]))
+			print("  total     %d, the round's score to %d   %.2f s" % [t.numbers.get("_total"), score_to,
+					(Time.get_ticks_msec() - _began_ms) / 1000.0]))
 	t.beats.add(func() -> void:
 		t.shown.set_value("score", score_to)
 		var send := t.follow(t.numbers.send_total(score_to))
@@ -310,7 +365,27 @@ static func _total(t: ArenaTable, score_to: int) -> void:
 	if score_to >= int(t.after.target):
 		t.beats.add(func() -> void:
 			t.beats.sound("target_struck")
+			# A play that took the whole target alone: the score bleeds ink, or flares in light.
+			var alone: bool = play.weight >= 3
+			_shake(t, STRIKE_HIT_ALONE if alone else STRIKE_HIT)
+			if alone:
+				t.follow(t.numbers.spill_score())
 			await t.follow(t.numbers.strike_target()).finished)
+
+
+# How hard a play lands, 0 to 3, by how much of the round's target its total is: under a
+# quarter, under a half, under the whole, and the whole target or more.
+static func _weight(total: int, target: int) -> int:
+	if target <= 0:
+		return 0
+	var share := float(total) / target
+	return 3 if share >= 1.0 else 2 if share >= 0.5 else 1 if share >= 0.25 else 0
+
+
+# The picture shakes, unless the move is being skipped.
+static func _shake(t: ArenaTable, strength: float) -> void:
+	if not t.beats.is_skipping():
+		ArenaShake.hit(strength)
 
 
 # The laid cards go to the discards.

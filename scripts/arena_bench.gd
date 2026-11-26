@@ -5,7 +5,8 @@ class_name ArenaBench
 ##   over: 1 to 9 and 0 choose the card at that place, P plays, D discards, N passes, Q drinks,
 ##   S takes salt, X lets the chosen cards go, B plays the best hand the rules find, and Z
 ##   leaves nothing to play (the cards that can be played go to the discards, and no discard
-##   is left), so that N can pass. T holds Tab down (every number, as Shift does), K opens the draw pile's view and L the discards',
+##   is left), so that N can pass. T holds Tab down (every number, as Shift does), K opens the piles' view at the draw pile's
+##   section and L at the discards',
 ##   H presses the hint. At a reward 1 to 3 take that card and 0 none.
 ## - `--set=<name>:<value>,...`: numbers and names of the run to change before its first
 ##   round is shown, for looking at a moment that is far into a run: `restraint`, `stored`,
@@ -26,6 +27,10 @@ class_name ArenaBench
 ##   once, and checks after each that the table shows what the engine holds. Prints
 ##   SELFTEST PASS or FAIL and quits.
 ##
+## A notice (ArenaNotice) waits for a player, and none is here: every notice is passed at once,
+## with any of these arguments. Only `--at` lets one be shown, in the move the still is taken
+## in, so that the still can be of it.
+##
 ##   godot --headless --path . res://scenes/arena.tscn -- --selftest --seed=5
 
 
@@ -33,12 +38,15 @@ static func run_if_requested(arena: Node) -> void:
 	if Shot.has_arg("calm"):
 		ArenaPace.reduce_flashes = true
 	if Shot.has_arg("selftest"):
+		ArenaNotice.pass_at_once = true
 		await _selftest(arena)
 		return
 	if not Shot.has_arg("shot") and not Shot.has_arg("keys") and not Shot.has_arg("quit"):
 		return
 	var at := float(Shot.arg("at")) if Shot.has_arg("at") else -1.0
 	var keys := Shot.arg("keys")
+	# No player is here to acknowledge a notice; the move a still is taken in shows its own.
+	ArenaNotice.pass_at_once = at < 0.0 or keys != ""
 	if Shot.has_arg("fast") or (Shot.has_arg("shot") and at < 0.0):
 		ArenaPace.speed = ArenaPace.SKIP
 	var tree := arena.get_tree()
@@ -47,6 +55,7 @@ static func run_if_requested(arena: Node) -> void:
 		await _idle(arena, true)
 		if (at >= 0.0 or Shot.has_arg("time")) and i == keys.length() - 1:
 			ArenaPace.speed = 1.0
+			ArenaNotice.pass_at_once = at < 0.0
 		began = Time.get_ticks_msec()
 		_press(arena, keys[i])
 		await tree.process_frame

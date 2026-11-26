@@ -7,8 +7,9 @@ extends Control
 ## over to the older change, in which Shift turns one man into the other through the dark,
 ## and back. A visit starts from Jekyll: while Hyde stands there, Shift turns him back through
 ## the dark whichever change is chosen. The panel on the dark side of the street holds one
-## row: Press SHIFT at first, and Begin (as Enter) once Shift has shown Hyde. Until then Enter
-## and a click on the row do what Shift does. `--begun` starts with Begin showing.
+## row to go on by: Press SHIFT at first, and Begin (as Enter) once Shift has shown Hyde. Until
+## then Enter and a click on the row do what Shift does. Under it a second row, How to play,
+## opens the help book (HelpBook) over the street. `--begun` starts with Begin showing.
 ## For screenshots: `--apart=0.5` shows a moment of Jekyll coming apart, `--hyde=1` (with
 ## `--apart=1`) the magenta ghost turned into Hyde, `--glitch=0.3` a moment of the split of
 ## the screen, `--shift=1` starts on Hyde, and `--lamps=0.3` and `--dark=0.5` show a moment
@@ -34,6 +35,9 @@ const SHAKE := 0.006
 const GAME_NAME := "Versura"
 const ROW_SHIFT := "Press SHIFT"
 const ROW_BEGIN := "Begin"
+const ROW_HELP := "How to play"
+## The place of the help's row on the panel, under the row that goes on.
+const HELP_ROW := 1
 const RAIN := "amb_title" ## the street's loop
 
 var _visit: Tween
@@ -43,6 +47,8 @@ var _begun := false
 @onready var _bg: TitleBackground = $Background
 @onready var _split: SplitTransition = $SplitTransition
 @onready var _panel: PlacePanel = $Panel
+## The help book, laid over the street while it is open. It takes every key and click then.
+var _help := HelpBook.new()
 
 
 func _ready() -> void:
@@ -52,8 +58,9 @@ func _ready() -> void:
 	tree_exiting.connect(Sfx.stop_loop.bind(RAIN, 0.0))
 	_panel.accent = Palette.JEKYLL
 	_panel.set_heading(GAME_NAME)
-	_panel.set_rows([{text = ROW_SHIFT}])
+	_panel.set_rows([{text = ROW_SHIFT}, {text = ROW_HELP}])
 	_panel.row_chosen.connect(_on_row_chosen)
+	add_child(_help)
 	if Shot.has_arg("begun"):
 		_offer_begin()
 	if Shot.has_arg("shift"):
@@ -87,8 +94,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_shift()
 
 
-func _on_row_chosen(_index: int) -> void:
-	if _begun:
+func _on_row_chosen(index: int) -> void:
+	if index == HELP_ROW:
+		Sfx.play("button")
+		_help.open()
+	elif _begun:
 		Sfx.play("button")
 		Sfx.stop_loop(RAIN, 0.5)
 		SceneFlow.next() # as Enter does anywhere
@@ -102,7 +112,7 @@ func _offer_begin() -> void:
 	if _begun:
 		return
 	_begun = true
-	_panel.set_rows([{text = ROW_BEGIN}])
+	_panel.set_rows([{text = ROW_BEGIN}, {text = ROW_HELP}])
 
 
 func _is_busy() -> bool:

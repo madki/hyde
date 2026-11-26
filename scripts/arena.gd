@@ -84,6 +84,7 @@ func _ready() -> void:
 			script.setup(t)
 	# The run's own furniture, before its first round is dealt.
 	var table := RulesView.table(_run)
+	_symbols.set_dials(_run.dials)
 	_symbols.show_table(table)
 	_means.show_table(table, _run.dials)
 	_start.call_deferred()
@@ -154,6 +155,7 @@ func do_move(move: String, result: Dictionary) -> void:
 	if t.unhandled:
 		_beats.add_call(t.catch_up)
 	await _beats.run()
+	await ArenaFirsts.show_due(t, result.events)
 	if _run.phase != "play":
 		# The round is over: the table stays as its end left it, and goes on.
 		t.freshen()
@@ -233,7 +235,10 @@ func _build() -> void:
 	add_child(piles)
 	move_child(piles, _hand.get_index())
 	add_child(travel)
+	var notice := ArenaNotice.new()
+	add_child(notice)
 	add_child(_beats)
+	add_child(ArenaDanger.new())
 	_beats.source = func() -> Dictionary: return RulesView.table(_run)
 	travel.beats = _beats
 	stage.beats = _beats
@@ -246,6 +251,8 @@ func _build() -> void:
 	t.piles = piles
 	t.stage = stage
 	t.moments = ArenaCardMoments.new(_beats, travel, piles, stage)
+	t.moments.notice = notice
+	t.moments.freshen = t.freshen
 	t.hand = _hand
 	t.numbers = _numbers
 	t.symbols = _symbols
@@ -348,6 +355,7 @@ func _go_to_place(events: Array) -> void:
 		# His Roots that joined count on the line from here on.
 		_beats.add_call(t.snap_shown)
 		await _beats.run()
+	await ArenaFirsts.show_due(t, events)
 	SceneFlow.go_to_place()
 
 
@@ -368,14 +376,25 @@ func _script(path: String) -> GDScript:
 
 # --- The ink follows the line ---------------------------------------------------------------
 
-## The ink's share of the page with no Ink Roots, how much more it takes as they become all of
-## the Roots, the most it takes before the run's end, and how long it eases to a new share.
-const LINE_SHARE_BASE := 35.0
-const LINE_SHARE_SPAN := 50.0
+## The ink covers the Ink Roots' share of the page, from the right: at an even line its edge
+## stands on the page's fold. It never covers less than his margin, nor more than the most it
+## takes before the run's end.
+const LINE_SHARE_MIN := 4.0
 const LINE_SHARE_MAX := 75.0
-const LINE_EASE := 1.0
+## A gain is a surge: the cover runs past its new share by this much and settles, in this long.
+const LINE_OVERSHOOT := 4.0
+const LINE_SURGE := 0.7
+## How far into the surge the cover is furthest out, and the wet edge brightest.
+const LINE_SURGE_PEAK := 0.4
+const LINE_SURGE_LIT := 0.15
+## A loss draws the ink back in this long, without running past.
+const LINE_DRAW_BACK := 0.9
 
 var _ink_tween: Tween
+## The share the ink is going to, or has: a surge runs past it for a moment.
+var _line_target := -1.0
+## When the last surge began, in milliseconds: one that begins with it is not sounded again.
+var _surge_sounded := -1000
 
 
 ## The ink's share for a line of `paper` Paper Roots against `ink` Ink Roots. With no Roots
@@ -383,37 +402,95 @@ var _ink_tween: Tween
 static func line_share(paper: int, ink: int, held: float) -> float:
 	if paper + ink <= 0:
 		return held
-	return minf(LINE_SHARE_BASE + LINE_SHARE_SPAN * ink / float(paper + ink), LINE_SHARE_MAX)
+	return clampf(100.0 * ink / float(paper + ink), LINE_SHARE_MIN, LINE_SHARE_MAX)
+
+
+## Ink arriving from `point` (in global canvas coordinates) reaches the pool: the ink surges
+## to the line's share as it is shown, past it and back, with its wet edge lit most at the
+## point's height. Plays the surge even when the cover is already at that share.
+func surge_from(point: Vector2) -> void:
+	if Shot.has_arg("ink") or _run.phase == "end":
+		return
+	var page := _ink.paper.get_global_rect()
+	var height := clampf((point.y - page.position.y) / maxf(page.size.y, 1.0), 0.0, 1.0)
+	_surge(_shown_line_share(), height)
 
 
 # A new run: the ink takes the line's share at once, unless `--ink` pins it.
 func _follow_line_from(table: Dictionary) -> void:
-	if _ink_tween:
-		_ink_tween.kill()
+	_stop_line()
 	if not Shot.has_arg("ink"):
 		ink_percent = line_share(int(table.line.paper), int(table.line.ink), ink_percent)
+	_line_target = ink_percent
 
 
 # A move is about to be played back. If it ends the run, the ink stops following the line
 # for the rest of it: the ending has the page. A new run follows it again.
 func _follow_line_until_end(_move: String) -> void:
-	if _run.phase == "end" and _ink_tween:
-		_ink_tween.kill()
+	if _run.phase == "end":
+		_stop_line()
 
 
-# A shown value changed. When it is the line, as the ribbon shows it, the ink eases to its
-# share; at once when the move is being played back at once. Not in the move that ends the run.
+# A shown value changed. When it is the line, as the ribbon shows it, the ink surges to a
+# greater share and draws back to a smaller one; at once when the move is being played back
+# at once. Not in the move that ends the run.
 func _follow_line(key: String, _value: Variant) -> void:
 	if not key.begins_with("line/") or Shot.has_arg("ink") or _run.phase == "end":
 		return
-	var share := line_share(int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)), ink_percent)
-	if _ink_tween:
-		_ink_tween.kill()
-	if is_equal_approx(share, ink_percent):
+	var share := _shown_line_share()
+	if is_equal_approx(share, _line_target):
 		return
+	if share > _line_target:
+		_surge(share, -1.0)
+		return
+	_stop_line()
+	_line_target = share
 	if _beats.rate() >= ArenaPace.SKIP:
 		ink_percent = share
 		return
 	_ink_tween = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	_ink_tween.tween_property(self, "ink_percent", share, LINE_EASE)
+	_ink_tween.tween_property(self, "ink_percent", share, LINE_DRAW_BACK)
 	t.follow(_ink_tween)
+
+
+# The line's share as the ribbon shows it.
+func _shown_line_share() -> float:
+	return line_share(int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)), ink_percent)
+
+
+# The ink surges to `share`, past it and back, with the wet edge lit (brightest at `height`
+# down the page, or all along it when that is negative) and the sound of ink dropping.
+func _surge(share: float, height: float) -> void:
+	_stop_line()
+	_line_target = share
+	if _beats.rate() >= ArenaPace.SKIP:
+		ink_percent = share
+		return
+	# Surges that begin together (the line's two marks, ink arriving as it grows) sound once.
+	if Time.get_ticks_msec() - _surge_sounded > 50:
+		_beats.sound("ink_drop", 0.85 * Sfx.vary(0.04), 0.8)
+	_surge_sounded = Time.get_ticks_msec()
+	_ink_tween = create_tween()
+	_ink_tween.tween_method(_surge_step.bind(ink_percent, share, height), 0.0, 1.0, LINE_SURGE)
+	_ink_tween.tween_callback(_ink.light_edge.bind(0.0))
+	t.follow(_ink_tween)
+
+
+# One step of a surge, `done` of the way through it, from `from` to `share`.
+func _surge_step(done: float, from: float, share: float, height: float) -> void:
+	var peak := share + LINE_OVERSHOOT
+	if done < LINE_SURGE_PEAK:
+		ink_percent = lerpf(from, peak, ease(done / LINE_SURGE_PEAK, 0.4))
+	else:
+		ink_percent = lerpf(peak, share, smoothstep(LINE_SURGE_PEAK, 1.0, done))
+	if ArenaPace.reduce_flashes:
+		return
+	var lit := smoothstep(0.0, LINE_SURGE_LIT, done) * (1.0 - smoothstep(LINE_SURGE_LIT * 2.0, 1.0, done))
+	_ink.light_edge(lit, height)
+
+
+# Stops the ink where it is, with its edge unlit.
+func _stop_line() -> void:
+	if _ink_tween:
+		_ink_tween.kill()
+	_ink.light_edge(0.0)

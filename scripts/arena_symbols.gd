@@ -12,9 +12,9 @@ extends Control
 ## tallies to the right, both at one pitch so the longer side is the side ahead, with the two
 ## counts at the banner's ends.
 ##
-## Hovering a gauge opens its ledger to the right of the column: that symbol in numbers, its
-## three gauges, how many Paper and Ink Roots of it the deck holds, and what one of each is
-## worth now. When a gauge changes, what changed is written there too for a moment, by name
+## Resting the pointer on a gauge opens its ledger to the right of the column: what each of
+## its three gauges pays now (from the run's numbers, `set_dials`), how each is earned, how
+## many Paper and Ink Roots of it the deck holds, and what one of each is worth now. When a gauge changes, what changed is written there too for a moment, by name
 ## ("Craving 2"), level with the gauge; not while `show_numbers(true)` (a held key, whose own
 ## sheet gives every number) is on.
 ##
@@ -32,8 +32,8 @@ extends Control
 ##   pulse by `pulse` and "Temper 2" stands beside it, as strong as `words` (each 0 to 1). The
 ##   beat that pays drives both, through the beat queue. `pay_place(sym, row)` is where its
 ##   mark lands, `pay_from(sym)` where its mult leaves from.
-## - `set_line(paper, ink)`: the line moves one mark across, or gains or loses marks.
-##   `line_across(to_ink)` and `line_gain(ink)` are the two moves named.
+## - `set_line(paper, ink)`: the line's bar is shared out again: one slot changes side, or
+##   slots are gained or lost. `line_across(to_ink)` and `line_gain(ink)` are the two moves named.
 ## - `line_check(centre)`: the line grows to `centre` (in this control's coordinates) and,
 ##   if it holds, the larger side is underlined and the line shrinks back; returns true. If
 ##   ink is ahead, the ink floods across the paper side and stays; returns false.
@@ -70,19 +70,31 @@ const TALLY_ROW := 10
 const TALLY_H := 15.0
 const TALLY_H_TWO := 11.0
 const TALLY_MAX := 20
-## The line's banner: half its length and height, the room a count takes at each end, and
-## the gap at the centre.
+## The line's banner: half its length and height, and the room a count takes at each end.
+## Between the counts is the bar, one slot to a Root: Paper's from the left, Ink's from the
+## right. A slot narrower than LINE_SLOT_MIN keeps no tally of its own; only every so many do.
+## The middle is marked: Ink past it is Ink ahead. Ink within LINE_NEAR of Paper is marked too.
 const LINE_HALF := 180.0
 const LINE_H := 15.0
-const LINE_COUNT := 76.0
+const LINE_COUNT := 88.0
 const LINE_NOTCH := 11.0
-const LINE_GAP := 8.0
 const LINE_MARK_H := 8.0
+const LINE_SLOT_MIN := 5.0
+const LINE_NEAR := 2
 ## How much larger the line is drawn at the centre of the page.
 const GROW_SCALE := 1.6
-## The ledger's size, and how far right of the column it and a change's number stand.
-const LEDGER := Vector2(282.0, 76.0)
+## The ledger's width (its height is its lines'), how far right of the column it and a
+## change's number stand, the room inside its edge, the size of its words and of its head, the
+## room between two of its parts, and how long the pointer rests on a gauge before it opens.
+const LEDGER := Vector2(440.0, 0.0)
 const LEDGER_GAP := 8.0
+const LEDGER_PAD := 10.0
+const LEDGER_SIZE := 14
+const LEDGER_HEAD := 15
+const LEDGER_STEP := 6.0
+## The room between two lines of the ledger's words, over their size.
+const LEDGER_LEADING := 4.0
+const LEDGER_REST := 0.15
 ## The size a change's number is written at, and from one line of them to the next.
 const NOTE_SIZE := 15
 const NOTE_STEP := 17.0
@@ -123,7 +135,7 @@ var _ink := 0
 var _paper_shown := 0.0
 var _ink_shown := 0.0
 ## The line's counts are lit for a moment when they change.
-var _line_note := {"paper": 0.0, "ink": 0.0}
+var _line_note := {"paper": 0.0, "ink": 0.0, "edge": 0.0}
 var _note_fade := {} # "lamp/craving": the Tween that fades that note
 var _grow := 0.0
 var _centre := Vector2.ZERO
@@ -132,6 +144,11 @@ var _flood := 0.0
 var _lock := 0.0
 var _numbers := false
 var _hover := ""
+## The gauge under the pointer whose ledger opens when the pointer has rested (LEDGER_REST).
+var _pending := ""
+var _rest := Timer.new()
+## The numbers the run plays by, for what each gauge pays: the game's own until set_dials.
+var _dials := RulesDials.new()
 ## The column as it is laid out now (see _measure): each gauge's places by its symbol (`y` is
 ## the height of its middle), and the tallies' pitch and group gap.
 var _g := {}
@@ -165,6 +182,10 @@ func _init() -> void:
 	for child: Control in [_back, _lines, _fills, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
+	_rest.one_shot = true
+	_rest.wait_time = LEDGER_REST
+	_rest.timeout.connect(_rested)
+	add_child(_rest)
 	_measure()
 
 
@@ -223,6 +244,12 @@ func set_roots(sym: String, paper: int, ink: int, paper_chips: int, ink_chips: i
 	s.ink = ink
 	s.paper_chips = paper_chips
 	s.ink_chips = ink_chips
+	_text.queue_redraw()
+
+
+## The numbers the run plays by (`run.dials`): the ledger says from them what each gauge pays.
+func set_dials(dials: RulesDials) -> void:
+	_dials = dials
 	_text.queue_redraw()
 
 
@@ -470,56 +497,38 @@ func _end_note(sym: String, row: String) -> void:
 # --- The line's movements -------------------------------------------------------------------
 
 
-## Moves the line to `paper` against `ink`: one mark across when one side loses one and the
-## other gains it, else each side gains or loses its marks.
+## Shares the bar out again as `paper` against `ink`: one slot changes side when one side
+## loses one and the other gains it, else the slots are re-divided, each narrowing or widening
+## while the new ones arrive (or the lost ones leave) at the side's end, by the meeting edge.
 func set_line(paper: int, ink: int) -> void:
 	if paper == _paper - 1 and ink == _ink + 1:
 		await line_across(true)
 	elif paper == _paper + 1 and ink == _ink - 1:
 		await line_across(false)
 	else:
-		var p0 := _paper_shown
-		var i0 := _ink_shown
-		_paper = paper
-		_ink = ink
-		_line_lit(p0 != paper, i0 != ink)
-		var steps := maxf(1.0, maxf(absf(paper - p0), absf(ink - i0)))
-		await _tween(TALLY_TIME * minf(steps, 4.0), func(t: float) -> void:
-			_paper_shown = lerpf(p0, float(paper), t)
-			_ink_shown = lerpf(i0, float(ink), t))
+		await _share(paper, ink)
 
 
-## One mark leaves one side's end and crosses the centre to the other side's end: a paper
-## mark to the ink side (a stain), or with `to_ink` false an ink mark to the paper side (a turn).
+## The slot at the meeting edge changes side: a paper Root to ink (a stain), or with `to_ink`
+## false an ink Root to paper (a turn). Its colour and tally change as the edge moves one slot.
 func line_across(to_ink: bool) -> void:
-	var from_n := _paper - 1 if to_ink else _ink - 1
-	if from_n < 0:
+	if (_paper if to_ink else _ink) < 1:
 		return
-	var from := _line_mark(from_n, not to_ink)
-	var to := _line_mark(_ink if to_ink else _paper, to_ink)
-	var mover := _traveller(from, to, MARK if to_ink else INK, INK if to_ink else MARK, true)
-	if to_ink:
-		_paper -= 1
-		_paper_shown = float(_paper)
-	else:
-		_ink -= 1
-		_ink_shown = float(_ink)
-	_line_lit(true, true)
-	await _tween(TRAVEL_TIME, func(t: float) -> void: mover.t = t)
-	_travel.erase(mover)
-	if to_ink:
-		_ink += 1
-	else:
-		_paper += 1
-	var shown := (_ink if to_ink else _paper) - 1.0
-	await _tween(TALLY_TIME, func(t: float) -> void:
-		if to_ink:
-			_ink_shown = shown + t
-		else:
-			_paper_shown = shown + t)
+	await _share(_paper - 1 if to_ink else _paper + 1, _ink + 1 if to_ink else _ink - 1)
 
 
-## One side gains a mark at its end.
+func _share(paper: int, ink: int) -> void:
+	var p0 := _paper_shown
+	var i0 := _ink_shown
+	_paper = paper
+	_ink = ink
+	_line_lit(p0 != paper, i0 != ink)
+	await _tween(TRAVEL_TIME, func(t: float) -> void:
+		_paper_shown = lerpf(p0, float(paper), t)
+		_ink_shown = lerpf(i0, float(ink), t))
+
+
+## One side gains a Root: a slot at its end, by the meeting edge.
 func line_gain(ink: bool) -> void:
 	await set_line(_paper + (0 if ink else 1), _ink + (1 if ink else 0))
 
@@ -553,12 +562,20 @@ func _line_lit(paper: bool, ink: bool) -> void:
 	for side: String in ["paper", "ink"]:
 		if (side == "paper" and not paper) or (side == "ink" and not ink):
 			continue
-		_line_note[side] = 1.0
-		var tw := create_tween()
-		tw.tween_interval(NOTE_TIME)
-		tw.tween_method(func(a: float) -> void:
-			_line_note[side] = a
-			_text.queue_redraw(), 1.0, 0.0, 0.4)
+		_light(side)
+	if paper or ink:
+		_light("edge")
+
+
+## A part of the line lit for a moment: a side's count, or the meeting edge.
+func _light(part: String) -> void:
+	_line_note[part] = 1.0
+	var tw := create_tween()
+	tw.tween_interval(NOTE_TIME)
+	tw.tween_method(func(a: float) -> void:
+		_line_note[part] = a
+		_back.queue_redraw()
+		_text.queue_redraw(), 1.0, 0.0, 0.4)
 
 
 # --- Time -----------------------------------------------------------------------------------
@@ -700,23 +717,41 @@ func _tally_at(sym: String, row: String, n: int) -> Vector2:
 	return _tally_top(sym, row, mini(n, TALLY_MAX - 1)) + Vector2(0.0, _tally_h(sym, row) * 0.5)
 
 
-## The line's pitch: one for both sides, so that the longer side is the side ahead.
+## Half the bar between the two counts.
+static func _bar_half() -> float:
+	return LINE_HALF - LINE_COUNT
+
+
+## One Root's slot on the bar, as wide as the bar shared between all the Roots shown.
 func _line_pitch() -> float:
-	var most := maxi(maxi(_paper, _ink), 1)
-	var room := LINE_HALF - LINE_COUNT - LINE_GAP - 4.0
-	return minf(8.0, room / (ceili(most / 5.0) * 5.6))
+	return _bar_half() * 2.0 / maxf(_paper_shown + _ink_shown, 1.0)
 
 
-## The middle of the line's n-th mark on a side, in the line's own coordinates.
+## Where Paper's share meets Ink's, in the line's own coordinates.
+func _line_edge() -> float:
+	return -_bar_half() + _line_pitch() * _paper_shown
+
+
+## The middle of a side's n-th slot, counted from that side's end of the bar, in the line's
+## own coordinates.
 func _line_mark(n: int, ink: bool) -> Vector2:
-	var p := _line_pitch()
-	var x := LINE_GAP + p + _tally_x(n, p, p * 1.6)
-	return Vector2(x if ink else -x, 0.0)
+	var x := -_bar_half() + (n + 0.5) * _line_pitch()
+	return Vector2(-x if ink else x, 0.0)
+
+
+## Ink is near: within LINE_NEAR of Paper, or ahead.
+func _line_near() -> bool:
+	return _paper - _ink <= LINE_NEAR and _paper + _ink > 0
 
 
 ## The banner's middle at home: its zone's middle.
 func _line_home() -> Vector2:
 	return ArenaLayout.balance(size).get_center()
+
+
+## The line's banner at home, on the page: where a hover on it is caught.
+func line_rect() -> Rect2:
+	return get_global_transform() * Rect2(_line_home() - Vector2(LINE_HALF, LINE_H), Vector2(LINE_HALF, LINE_H) * 2.0)
 
 
 ## The line's banner, in the line's own coordinates: a strip whose two ends are cut to a notch.
@@ -740,19 +775,36 @@ func _has_point(point: Vector2) -> bool:
 	return false
 
 
+## A gauge's ledger opens once the pointer has rested on it, so that crossing the column does
+## not flash one ledger after another; it closes as soon as the pointer leaves the gauge.
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var over := ""
 		for sym in SYMS:
 			if _gauge_rect(sym).has_point(event.position):
 				over = sym
-		if over != _hover:
-			hover_symbol(over)
+		if over == _hover and over != "":
+			return
+		if _hover != "":
+			hover_symbol("")
+		_pending = over
+		if over == "":
+			_rest.stop()
+		else:
+			_rest.start()
+
+
+func _rested() -> void:
+	if _pending != "":
+		hover_symbol(_pending)
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_MOUSE_EXIT and _hover != "":
-		hover_symbol("")
+	if what == NOTIFICATION_MOUSE_EXIT:
+		_pending = ""
+		_rest.stop()
+		if _hover != "":
+			hover_symbol("")
 
 
 # --- Drawing --------------------------------------------------------------------------------
@@ -770,12 +822,30 @@ func _draw_back() -> void:
 	_back.draw_set_transform_matrix(_line_xform())
 	var banner := _banner()
 	_back.draw_colored_polygon(banner, SURFACE)
-	# Each man's share of the banner, either side of the line.
-	var share := LINE_HALF - LINE_COUNT
-	_back.draw_rect(Rect2(-share, -LINE_H + 2.0, share, LINE_H * 2.0 - 4.0), Palette.JEKYLL_DEEP)
-	_back.draw_rect(Rect2(0.0, -LINE_H + 2.0, share, LINE_H * 2.0 - 4.0), Palette.HYDE_DEEP)
+	# The bar: Paper's share from the left, Ink's from the right, meeting at the edge.
+	var h := _bar_half()
+	var edge := _line_edge()
+	var top := -LINE_H + 2.0
+	var tall := LINE_H * 2.0 - 4.0
+	if _paper_shown > 0.0:
+		_back.draw_rect(Rect2(-h, top, edge + h, tall), Palette.JEKYLL_DEEP)
+	if _ink_shown > 0.0:
+		_back.draw_rect(Rect2(edge, top, h - edge, tall), Palette.HYDE_DEEP)
+	# The edge lit for a moment when the share changes.
+	var lit: float = _line_note.edge
+	if lit > 0.01 and _paper_shown + _ink_shown > 0.0:
+		_back.draw_rect(Rect2(edge - 1.5, top - 1.0, 3.0, tall + 2.0), Color(Palette.CHALK, 0.9 * lit))
 	banner.append(banner[0])
 	_back.draw_polyline(banner, Palette.RULE, 1.5)
+	# The middle's notches, above and below the bar: Ink past them is Ink ahead. Heavier
+	# while Ink is near.
+	var near := _line_near()
+	var notch := 6.0 if near else 4.0
+	var colour := Palette.CHALK if near else Color(Palette.CHALK, 0.7)
+	for side: float in [-1.0, 1.0]:
+		var tip := Vector2(0.0, side * (LINE_H - 2.0))
+		var out := side * (LINE_H + notch + 1.0)
+		_back.draw_colored_polygon(PackedVector2Array([tip, Vector2(notch * 0.8, out), Vector2(-notch * 0.8, out)]), colour)
 	_back.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
@@ -863,23 +933,25 @@ func _draw_lines() -> void:
 			_lock_path(ghosts, _pip_at(sym, 2) + Vector2(0.0, -3.0), _lock)
 		ghosts.draw(_lines)
 	_lines.draw_set_transform_matrix(_line_xform())
-	var line := Pencil.new(rng_seed * 1000 + 900)
-	line.colour = MARK
-	line.stroke(PackedVector2Array([Vector2(0.0, -LINE_H - 3.0), Vector2(0.5, LINE_H + 3.0)]), 2.2, 0.4)
-	line.draw(_lines)
+	if _line_near():
+		var line := Pencil.new(rng_seed * 1000 + 900)
+		line.colour = MARK
+		line.stroke(PackedVector2Array([Vector2(0.0, -LINE_H + 2.0), Vector2(0.3, LINE_H - 2.0)]), 2.4, 0.3)
+		line.draw(_lines)
 	_draw_line_side(false, _paper_shown, rng_seed * 1000 + 1000)
 	_draw_line_side(true, _ink_shown, rng_seed * 1000 + 3000)
 	if _lead > 0.01:
 		var under := Pencil.new(rng_seed * 1000 + 950)
 		under.colour = MARK
 		var y := LINE_H + 6.0
+		var edge := _line_edge()
 		for ink: bool in [false, true]:
 			var count := _ink if ink else _paper
 			if count < maxi(_paper, _ink):
 				continue
-			var end := _line_mark(maxi(count - 1, 0), ink).x
-			end = lerpf(0.0, end + (4.0 if ink else -4.0), _lead)
-			under.stroke(PackedVector2Array([Vector2(0.0, y), Vector2(end, y + 0.5)]), 3.2, 0.5)
+			# From the meeting edge out along the side's share.
+			var end := lerpf(edge, _bar_half() if ink else -_bar_half(), _lead)
+			under.stroke(PackedVector2Array([Vector2(edge, y), Vector2(end, y + 0.5)]), 3.2, 0.5)
 		under.draw(_lines)
 	_lines.draw_set_transform_matrix(Transform2D.IDENTITY)
 
@@ -900,18 +972,24 @@ func _draw_tallies(sym: String, row: String, pencil_seed: int, colour: Color) ->
 		pencil.draw(_lines)
 
 
-## One side of the line: pencil marks to the left for paper, ink marks to the right.
+## One side's tallies on the bar, one in the middle of each of its slots; the newest partly
+## drawn while its slot arrives or leaves. Where the slots are too narrow for one each, only
+## every so many keep theirs, and the count at the end says the number.
 func _draw_line_side(ink: bool, shown: float, pencil_seed: int) -> void:
 	var p := _line_pitch()
+	var every := maxi(1, ceili(LINE_SLOT_MIN / p))
 	var whole := floori(shown)
 	for n in ceili(shown):
+		if (n + 1) % every != 0:
+			continue
 		var pencil := Pencil.new(pencil_seed + n)
 		pencil.colour = MARK
-		var x := LINE_GAP + p
-		var top := Vector2(x if ink else -x, -LINE_MARK_H)
-		var path := _tally_path_at(top, n, p, p * 1.6, LINE_MARK_H * 2.0, 1.0 if ink else -1.0,
-				1.0 if n < whole else shown - whole)
-		pencil.stroke(path, 1.8, 0.25)
+		var x := _line_mark(n, ink).x
+		var part := 1.0 if n < whole else shown - whole
+		var from := Vector2(x, -LINE_MARK_H)
+		var to := Vector2(x + 0.4, LINE_MARK_H)
+		pencil.stroke(PackedVector2Array([from, from.lerp(to, clampf(part, 0.05, 1.0))]),
+				minf(1.8, p * every * 0.3), 0.25)
 		pencil.draw(_lines)
 
 
@@ -1001,8 +1079,9 @@ func _draw_text() -> void:
 	# Once the ink has flooded the paper's side, the paper's count is read through it.
 	_text.draw_string(_heavy, xf * Vector2(-LINE_HALF + LINE_NOTCH + 5.0, 0.0) + Vector2(0.0, drop), paper_text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1.0, paper_px, Palette.CHALK)
+	# Ink's count in Hyde's light while Ink is near.
 	_text.draw_string(_heavy, xf * Vector2(LINE_HALF - LINE_NOTCH - 5.0, 0.0) + Vector2(-ink_w, drop), ink_text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px, Palette.CHALK)
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, ink_px, INK if _line_near() else Palette.CHALK)
 	if _hover != "" and not _numbers:
 		_draw_ledger(_hover)
 
@@ -1021,29 +1100,90 @@ func _draw_pay(sym: String, edge: Color) -> void:
 	_text.draw_string(_heavy, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, PAY_SIZE, Color(colour, a))
 
 
-## A symbol's ledger, to the right of the column and level with its gauge, but no higher
-## than the readout, so that it lies under the line's banner and not on it: its gauges in
-## numbers, and its two Roots in the deck with their worth.
+## A symbol's ledger, to the right of the column, its top at the readout's, so that it lies
+## under the line's banner and not on it, and above the hand: what its three
+## gauges pay now, how each is earned, and its two Roots in the deck with their worth.
 func _draw_ledger(sym: String) -> void:
-	var s: Dictionary = _s[sym]
-	var top := maxf(_gauge_rect(sym).position.y, ArenaLayout.readout(size).position.y)
-	var box := Rect2(Vector2(_beside_x(), top), LEDGER)
+	var parts := _ledger_parts(sym)
+	var inner := LEDGER.x - LEDGER_PAD * 2.0
+	var height := LEDGER_PAD * 2.0
+	for part: Dictionary in parts:
+		part.lines = _wrap(part.font, part.text, part.size, inner)
+		height += float(part.gap) + (part.lines as PackedStringArray).size() * (part.size + LEDGER_LEADING)
+	# At the readout's top whichever gauge is hovered: lower, the hand would cover its foot.
+	var top := ArenaLayout.readout(size).position.y
+	var box := Rect2(Vector2(_beside_x(), top), Vector2(LEDGER.x, height))
 	box.position = box.position.clamp(Vector2.ZERO, (size - box.size).max(Vector2.ZERO))
 	_text.draw_rect(box, SURFACE)
 	_text.draw_rect(box, Palette.RULE, false, 1.5)
-	var x := box.position.x + 10.0
-	var y := box.position.y + 19.0
-	var names: Array = [RulesConfig.ROOT[sym].paper, RulesConfig.ROOT[sym].ink]
-	# The gauges' line: Habit and Temper each in its own colour.
-	var at := Vector2(x, y)
-	for part: Array in [["Habit %d   " % s.habit, HABIT], ["Craving %d   " % s.craving, Palette.CHALK],
-			["Temper %d" % s.temper, TEMPER]]:
-		_text.draw_string(_heavy, at, part[0], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, part[1])
-		at.x += _heavy.get_string_size(part[0], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
-	_text.draw_string(_slanted, Vector2(x, y + 24.0), "%d %s in the deck, %d chips each" % [s.paper, names[0], s.paper_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
-	_text.draw_string(_slanted, Vector2(x, y + 46.0), "%d %s in the deck, %d chips each" % [s.ink, names[1], s.ink_chips],
-			HORIZONTAL_ALIGNMENT_LEFT, box.size.x - 16.0, 12, Palette.CHALK_2)
+	var x := box.position.x + LEDGER_PAD
+	var y := box.position.y + LEDGER_PAD
+	for part: Dictionary in parts:
+		var gap: float = part.gap
+		y += gap
+		if part.rule:
+			var at := y - gap * 0.5
+			_text.draw_line(Vector2(x, at), Vector2(box.end.x - LEDGER_PAD, at), Palette.RULE, 1.0)
+		var font: Font = part.font
+		var px: int = part.size
+		for line in part.lines as PackedStringArray:
+			_text.draw_string(font, Vector2(x, y + font.get_ascent(px)), line, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px, part.colour)
+			y += px + LEDGER_LEADING
+
+
+## Words broken into lines no wider than `width`, at word ends.
+static func _wrap(font: Font, text: String, px: int, width: float) -> PackedStringArray:
+	var out := PackedStringArray()
+	var line := ""
+	for word in text.split(" ", false):
+		var next := word if line == "" else line + " " + word
+		if line != "" and font.get_string_size(next, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > width:
+			out.append(line)
+			line = word
+		else:
+			line = next
+	if line != "":
+		out.append(line)
+	return out
+
+
+## The ledger's words, from the top down, each {text, font, size, colour, gap (the room over
+## it), rule (a rule in that room)}. Every number is the run's: the gauges from the table,
+## what they pay from the dials.
+func _ledger_parts(sym: String) -> Array[Dictionary]:
+	var s: Dictionary = _s[sym]
+	var d := _dials
+	var root: Dictionary = RulesConfig.ROOT[sym]
+	var paper: String = root.paper
+	var ink: String = root.ink
+	var out: Array[Dictionary] = []
+	var add := func(text: String, font: Font, px: int, colour: Color, gap: float, rule: bool = false) -> void:
+		out.append({"text": text, "font": font, "size": px, "colour": colour, "gap": gap, "rule": rule})
+	add.call("%s: %s (Paper), %s (Ink)" % [root.label, paper, ink], _heavy, LEDGER_HEAD, Palette.CHALK, 0.0)
+	var habit := int(s.habit)
+	if habit > 0:
+		add.call("Habit %d, Hyde's. Each %s: +%d chips. +%d mult for each %s played." % [habit, ink,
+				d.habit_chips * habit, d.habit_mult * habit, ink], _heavy, LEDGER_SIZE, HABIT, LEDGER_STEP)
+	else:
+		add.call("Habit 0: pays nothing yet.", _heavy, LEDGER_SIZE, HABIT, LEDGER_STEP)
+	var craving := int(s.craving)
+	var pays := "Each %s: +%d chips." % [ink, d.craving_chips * craving] if craving > 0 else "Pays nothing yet."
+	add.call("Craving %d of %d. %s At %d it becomes a Habit, and a new %s joins the deck." % [craving, d.craving_cap,
+			pays, d.craving_cap, ink], _heavy, LEDGER_SIZE, Palette.CHALK, LEDGER_STEP)
+	var temper := int(s.temper)
+	if temper > 0:
+		add.call("Temper %d, Jekyll's. Each %s: +%d chips. +%d mult once a play." % [temper, paper,
+				d.temper_chips * temper, d.temper_mult * temper], _heavy, LEDGER_SIZE, TEMPER, LEDGER_STEP)
+	else:
+		add.call("Temper 0: pays nothing yet.", _heavy, LEDGER_SIZE, TEMPER, LEDGER_STEP)
+	var rise: String = RulesConfig.HANDS.hyde.stirring.name
+	var turn: String = RulesConfig.HANDS.jekyll.sublimation.name
+	add.call("Craving rises as Hyde plays %s in a %s or better. A %s (%s with %s) turns it into Temper." % [ink,
+			rise, turn, paper, ink], _slanted, LEDGER_SIZE, Palette.CHALK_2, LEDGER_STEP * 2.0, true)
+	add.call("%d %s in the deck, %d chips each" % [s.paper, paper, s.paper_chips], _slanted, LEDGER_SIZE, Palette.CHALK_2,
+			LEDGER_STEP * 2.0, true)
+	add.call("%d %s in the deck, %d chips each" % [s.ink, ink, s.ink_chips], _slanted, LEDGER_SIZE, Palette.CHALK_2, 0.0)
+	return out
 
 
 # --- Shapes ---------------------------------------------------------------------------------

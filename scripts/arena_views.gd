@@ -7,11 +7,20 @@ extends Control
 ##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and
 ##   why, what the next drink costs, the scene's twist, what the dawn brings, and both men's
 ##   hands with their base chips and mult.
-## - Rest the pointer on the twist's block or on the night's heading: the night, its twist
-##   and what the dawn brings. On the restraint track: its limit and why.
-## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
-##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
+## - Rest the pointer (REST seconds, while no move plays) on a thing for its note: on the
+##   twist's block or on the night's heading, the night, its twist and what the dawn brings
+##   (on the heading, the road under it too); on the restraint track, its limit and why; on
+##   the line's bar, the Roots on each side and what Ink ahead costs; on the score and target,
+##   what is left to reach and, on the last play, the rescue; on a tally of PLAY or DISCARD,
+##   what is left of it; on the sovereigns, how they are won and spent; on a pile, its count.
+##   None opens over a notice, the piles' view, or while a key is held.
+##   `--hover=<name>` (a name of `_THINGS`, or "night", "twist", "restraint") holds one open
+##   as though the pointer rested on it, for a still, while a note may open.
+## - Click the draw pile or the discards: one view of both piles (ArenaPileView), the
+##   clicked one lit. Esc, a click, or any key that does not scroll it closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
+## - F1, or a click on the "?" under the tab at the edge: the help book (HelpBook), at the
+##   page that fits the moment. Only while the player may act and nothing else lies over the table.
 ## - On night 1 the small word "Hint", right of DISCARD, chooses the cards of the best hand the rules find.
 ##   It shows no score.
 ##
@@ -21,22 +30,45 @@ extends Control
 const CREAM := Palette.CHALK
 const PENCIL := Palette.OUTLINE
 const SMALL := 0.46
+## How long the pointer rests on a thing, still, before its note opens.
+const REST := 0.25
+## The words of a hover's note, and of the held sheet.
+const NOTE_SIZE := 14
+const SHEET_SIZE := 13
+## The things a note is about besides the night and the restraint, in the order the pointer
+## finds them.
+const _THINGS: Array[String] = ["line", "goal", "purse", "plays", "discards", "draw_pile", "discard_pile"]
 ## The Notebook's first card, from the middle of the draw pile's zone.
 const NOTEBOOK_FROM_PILE := Vector2(-20.0, -104.0)
+## How long after the pointer has left a gauge the help book still opens at the gauges' page,
+## in milliseconds: long enough to cross the page to the "?".
+const GAUGE_FRESH := 8000
 
 var t: ArenaTable
 
 var _note := PanelContainer.new()
 var _words := Label.new()
-var _deck := Control.new()
-var _deck_title := Label.new()
+## The view of the two piles.
+var _deck := ArenaPileView.new()
 var _notebook := Control.new()
 var _hint := Button.new()
 var _tabs := ArenaTabs.new()
+var _book := HelpBook.new()
+## When the pointer was last on a gauge, in ticks: the book then opens at the gauges' page.
+## Below 0 when it has since rested on something else that has a note.
+var _gauge_at := -1
 var _table: Dictionary = {}
 var _open := true
+## True from the piles' view's opening until it begins to close.
+var _deck_up := false
 var _held := false
 var _hover := ""
+## The thing under the pointer whose note waits for it to rest, and for how much longer.
+var _resting := ""
+var _rest_left := 0.0
+var _last_point := Vector2.INF
+## The note held open by `--hover`, for a still.
+var _forced := ""
 ## False while the pointer is outside the window.
 var _pointer_here := true
 
@@ -59,22 +91,16 @@ func _init() -> void:
 	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_note.visible = false
 	_words.add_theme_font_override("font", font)
-	_words.add_theme_font_size_override("font_size", 13)
+	_words.add_theme_font_size_override("font_size", NOTE_SIZE)
 	_words.add_theme_color_override("font_color", PENCIL)
 	_note.add_child(_words)
-	# The deck's page: it takes every click while it is open.
-	_deck.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_deck.mouse_filter = Control.MOUSE_FILTER_STOP
-	_deck.visible = false
-	_deck.gui_input.connect(func(event: InputEvent) -> void:
-		var button := event as InputEventMouseButton
-		if button and button.pressed:
-			_close_deck())
-	_deck_title.add_theme_font_override("font", font)
-	_deck_title.add_theme_font_size_override("font_size", 17)
-	_deck_title.add_theme_color_override("font_color", CREAM)
-	_deck_title.add_theme_color_override("font_outline_color", Color(Palette.OUTLINE, 0.9))
-	_deck_title.add_theme_constant_override("outline_size", 6)
+	_forced = Shot.arg("hover")
+	# The piles' view takes every click and the wheel while it is open.
+	_deck.closed.connect(func() -> void:
+		# The hand takes the pointer again, unless a move has begun meanwhile.
+		_deck_up = false
+		t.hand.covered = _covering()
+		t.hand.enabled = _open)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
 	_hint.text = "Hint"
@@ -93,14 +119,20 @@ func _init() -> void:
 	_hint.visible = false
 	_hint.pressed.connect(_show_a_hand)
 	_tabs.right = "Hold Shift"
-	for child: Control in [_tabs, _notebook, _hint, _note, _deck]:
+	_book.closed.connect(func() -> void:
+		# The pointer is followed again; what it lies on must be rested on before its note opens.
+		_resting = "")
+	for child: Control in [_tabs, _notebook, _hint, _note, _deck, _book]:
 		add_child(child)
 
 
 ## Ties the views to the table. Call once.
 func bind(table: ArenaTable) -> void:
 	t = table
+	_deck.t = table
 	t.synced.connect(_on_synced)
+	if t.arena.has_signal("settled"):
+		t.arena.connect("settled", _on_settled)
 	resized.connect(_place_hint)
 	t.move_begun.connect(func(_move: String) -> void:
 		_open = false
@@ -111,10 +143,21 @@ func bind(table: ArenaTable) -> void:
 
 func _on_synced(table: Dictionary) -> void:
 	_table = table
-	_open = table.phase == "play"
+	# The table is also synced inside a move (before a notice of it): the views stay shut
+	# until the move is over.
+	_open = table.phase == "play" and not _notice_up() and bool(t.arena.call("is_idle"))
 	_hint.visible = _open and int(table.night.no) == 1
 	_place_hint()
 	_show_notebook()
+	# An open note says what the table holds now.
+	if _hover != "" and not _held:
+		_show_note()
+
+
+# The move is over and the player may act: the views open on the table as it was last synced.
+func _on_settled() -> void:
+	if not _table.is_empty():
+		_on_synced(_table)
 
 
 ## The word "Hint" stands in its zone, right of DISCARD, wherever the page's size puts it.
@@ -124,21 +167,41 @@ func _place_hint() -> void:
 	_hint.size = zone.size
 
 
-func _process(_delta: float) -> void:
-	if t == null or _table.is_empty():
+func _process(delta: float) -> void:
+	if t == null:
+		return
+	# Under a notice, the help book or the piles' view no card of the hand answers the pointer.
+	t.hand.covered = _covering()
+	# Nothing here follows the pointer while the book is open.
+	if _table.is_empty() or _book.is_open():
 		return
 	var point := get_global_mouse_position()
-	var tab := "" if _deck.visible or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
+	# Under a notice nothing answers the pointer or the look keys.
+	var covered := _notice_up()
+	var tab := "" if _deck.visible or covered or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
 	_tabs.lit = tab
-	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible
+	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible and not covered
+	var under := {}
+	if not held and _quiet_ok() and _pointer_here:
+		under = _thing_at(point)
+	var name: String = under.get("name", "")
 	var hover := ""
-	var night_at := Rect2()
-	if not held and not _deck.visible and _pointer_here:
-		night_at = _night_rect_at(point)
-		if night_at.has_area():
-			hover = "night"
-		elif t.numbers.restraint.get_global_rect().has_point(point):
-			hover = "restraint"
+	if _forced != "" and not held and _quiet_ok():
+		hover = _forced
+	elif name == "":
+		_resting = ""
+	elif name == _hover:
+		hover = _hover
+	else:
+		# Its note waits for the pointer to rest on it, so that crossing the page does not
+		# flash one note after another.
+		if name != _resting or point.distance_squared_to(_last_point) > 0.25:
+			_resting = name
+			_rest_left = REST
+		_rest_left -= delta
+		if _rest_left <= 0.0:
+			hover = name
+	_last_point = point
 	if held == _held and hover == _hover:
 		return
 	if held != _held:
@@ -149,30 +212,120 @@ func _process(_delta: float) -> void:
 	_held = held
 	_hover = hover
 	t.symbols.show_numbers(held)
-	if held:
+	_show_note()
+
+
+# Shows the held sheet, the note `_hover` names, or nothing.
+func _show_note() -> void:
+	var hover := _hover
+	if _held:
 		# In the middle of the page.
-		_say(_every_number(), Vector2(0.0, ArenaLayout.note_top(size)), true)
-	elif hover == "night":
-		# Under what the pointer rests on.
-		var at := get_global_transform().affine_inverse() * night_at
-		_say(_night_words(), Vector2(at.position.x, at.end.y + 8.0))
+		_say(_every_number(), Vector2(0.0, ArenaLayout.note_top(size)), true, SHEET_SIZE)
+	elif hover == "":
+		_note.visible = false
 	elif hover == "restraint":
 		_say(_restraint_words(), ArenaLayout.stage(size).position + Vector2(0.0, 6.0))
 	else:
-		_note.visible = false
+		var at := _rect_of(hover)
+		if at.has_area():
+			_say_by(_words_of(hover), get_global_transform().affine_inverse() * at)
+		else:
+			_note.visible = false
+
+
+# True while a note may open: no move plays, and no notice or piles' view is up. (A gauge's
+# ledger opens only while the pointer rests on its gauge, where none of these things lies.)
+func _quiet_ok() -> bool:
+	if _deck.visible or t.waiting_press:
+		return false
+	if _notice_up():
+		return false
+	return bool(t.arena.call("is_idle"))
+
+
+# True while a notice lies over the table.
+func _notice_up() -> bool:
+	return t.moments.notice != null and t.moments.notice.showing
+
+
+# True while something lies over the hand: a notice, the help book or the piles' view.
+func _covering() -> bool:
+	return _notice_up() or _book.is_open() or _deck_up
+
+
+# The thing under the pointer: {name}, or empty for none.
+func _thing_at(point: Vector2) -> Dictionary:
+	var heading := t.numbers.heading_rect()
+	if heading.has_point(point):
+		return {"name": "night"}
+	if String(_table.night.twist) != "" and (get_global_transform() * ArenaLayout.twist(size)).has_point(point):
+		return {"name": "twist"}
+	if t.numbers.restraint.get_global_rect().has_point(point):
+		return {"name": "restraint"}
+	for name in _THINGS:
+		if _rect_of(name).has_point(point):
+			return {"name": name}
+	return {}
+
+
+# Where a thing a note is about lies, on the page.
+func _rect_of(name: String) -> Rect2:
+	match name:
+		"night":
+			return t.numbers.heading_rect()
+		"twist":
+			return get_global_transform() * ArenaLayout.twist(size) if String(_table.night.twist) != "" else Rect2()
+		"restraint":
+			return t.numbers.restraint.get_global_rect()
+		"line":
+			return t.symbols.line_rect()
+		"goal", "purse", "plays", "discards":
+			return t.numbers.note_rect(name)
+		"draw_pile":
+			return t.piles.pile("draw").get_global_rect()
+		"discard_pile":
+			return t.piles.pile("discards").get_global_rect()
+	return Rect2()
+
+
+func _words_of(name: String) -> String:
+	match name:
+		"night":
+			return _night_words() + "\n" + _road_words()
+		"twist":
+			return _night_words()
+		"line":
+			return _line_words()
+		"goal":
+			return _goal_words()
+		"purse":
+			return _purse_words()
+		"plays", "discards":
+			return _tally_words(name)
+		"draw_pile", "discard_pile":
+			return _pile_words(name)
+	return ""
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	var button := event as InputEventMouseButton
 	if _deck.visible:
-		if key and key.pressed and not key.echo:
-			get_viewport().set_input_as_handled()
+		# The scroll keys scroll it; any other key closes it.
+		if key and not _deck.scroll_key(key) and key.pressed and not key.echo:
 			_close_deck()
+		if key:
+			get_viewport().set_input_as_handled()
 		return
 	# A key held to look is no press: it must not reach the table, which may wait for one.
 	if key and key.keycode in ArenaBeats.LOOK_KEYS:
 		get_viewport().set_input_as_handled()
+	var on_help := button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT \
+			and _tabs.tab_at((_tabs.make_input_local(button) as InputEventMouseButton).position) == "help"
+	if on_help or (key and key.pressed and not key.echo and key.keycode == KEY_F1):
+		get_viewport().set_input_as_handled()
+		_open_help()
+		return
 	if _open and button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
 		for which: String in ["draw", "discards"]:
 			if t.piles.pile(which).get_global_rect().has_point(get_global_mouse_position()):
@@ -181,23 +334,34 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 
 
-# The place, in the page's global coordinates, of the night's heading or of the twist's block
-# if the pointer rests on it; an empty rect if it rests on neither. A night with no twist has
-# no block.
-func _night_rect_at(point: Vector2) -> Rect2:
-	var heading := t.numbers.heading_rect()
-	if heading.has_point(point):
-		return heading
-	if String(_table.night.twist) != "":
-		var block := get_global_transform() * ArenaLayout.twist(size)
-		if block.has_point(point):
-			return block
-	return Rect2()
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		if ArenaLayout.symbols(size).has_point((make_input_local(event) as InputEventMouseMotion).position):
+			_gauge_at = Time.get_ticks_msec()
+		elif _hover != "":
+			_gauge_at = -1
+
+
+# Opens the help book at the page that fits the moment (HelpPages.page_for), in the colours
+# of the man at the table. Not while a move is played back, a notice or the piles' view is
+# up, or a key is held to look. Nothing here follows the pointer while the book is open: no
+# note opens under it, and when it closes a note waits for the pointer's rest anew.
+func _open_help() -> void:
+	if not _open or _held or not _quiet_ok() or t.beats.is_running():
+		return
+	_note.visible = false
+	_hover = ""
+	_resting = ""
+	_tabs.lit = ""
+	var gauge_last := _gauge_at >= 0 and Time.get_ticks_msec() - _gauge_at < GAUGE_FRESH
+	_book.open(HelpPages.page_for(_table, gauge_last), _table.stance == "hyde", t.run.dials)
+	t.hand.covered = true
 
 
 # Shows the note with these words, its top left corner at `at`, or `centred` across the page
 # at that height.
-func _say(words: String, at: Vector2, centred: bool = false) -> void:
+func _say(words: String, at: Vector2, centred: bool = false, font_size: int = NOTE_SIZE) -> void:
+	_words.add_theme_font_size_override("font_size", font_size)
 	_words.text = words
 	_note.size = Vector2.ZERO
 	_note.reset_size()
@@ -206,6 +370,17 @@ func _say(words: String, at: Vector2, centred: bool = false) -> void:
 	# Kept on the page, whatever its words' length.
 	_note.position = Vector2(clampf(at.x, 8.0, maxf(8.0, size.x - _note.size.x - 44.0)), minf(at.y, size.y - _note.size.y - 44.0))
 	_note.visible = true
+
+
+# Shows the note with these words by `rect` (in this control's coordinates): under it, its
+# middle under the rect's, or above it where there is no room under it.
+func _say_by(words: String, rect: Rect2) -> void:
+	_say(words, Vector2.ZERO)
+	var extent := _note.size
+	var at := Vector2(rect.get_center().x - extent.x * 0.5, rect.end.y + 8.0)
+	if at.y + extent.y > size.y - 44.0:
+		at.y = rect.position.y - 8.0 - extent.y
+	_say(words, at)
 
 
 func _notification(what: int) -> void:
@@ -232,6 +407,84 @@ func _night_words() -> String:
 		lines.append(brings)
 		lines.append("The dawn is spent in %s." % ("the back alley" if dawn.place == "alley" else "the laboratory"))
 	return "\n".join(lines)
+
+
+# The night's road, under its heading: where on it the table stands.
+func _road_words() -> String:
+	var night: Dictionary = _table.night
+	var after := "the run's end" if night.dawn.ends else "the dawn"
+	if night.scene:
+		return "The road: both rounds are behind; this is the night's scene, then %s." % after
+	return "The road: round %d of 2, then the night's scene, then %s." % [night.round, after]
+
+
+func _line_words() -> String:
+	var line: Dictionary = _table.line
+	var paper := int(line.paper)
+	var ink := int(line.ink)
+	var lines: Array[String] = [
+		"%d Paper Root%s against %d Ink Root%s, in the whole deck." % [paper, "" if paper == 1 else "s", ink, "" if ink == 1 else "s"],
+		"The bar is shared between them, Paper from the left, Ink from the right.",
+		"Past the mark at its middle, Ink is ahead.",
+	]
+	if bool(line.over):
+		lines.append("Ink is ahead now. If it still is when this round ends, the run is lost.")
+	else:
+		lines.append("If Ink is ahead when a round ends, the run is lost.")
+		if paper == ink:
+			lines.append("They are level: one more Ink Root puts it ahead.")
+	return "\n".join(lines)
+
+
+func _goal_words() -> String:
+	var plays := int(_table.plays)
+	var target := _grouped(int(_table.target))
+	var lines: Array[String] = ["Score %s of %s." % [_grouped(int(_table.score)), target]]
+	lines.append("Reach %s with the plays you have. %d play%s left." % [target, plays, "" if plays == 1 else "s"])
+	if plays == 1:
+		lines.append("This is the last play. If it falls short, the Paper Roots still in your hand")
+		lines.append("turn to Ink one by one, each doubling what the play scored, until the target")
+		lines.append("is reached; the round then pays nothing. If even all of them fall short, the run is lost.")
+	return "\n".join(lines)
+
+
+# 1000 as "1,000", as the goal writes it.
+static func _grouped(n: int) -> String:
+	var digits := str(absi(n))
+	var out := ""
+	while digits.length() > 3:
+		out = "," + digits.right(3) + out
+		digits = digits.left(digits.length() - 3)
+	return ("-" if n < 0 else "") + digits + out
+
+
+func _purse_words() -> String:
+	var sov := int(_table.sov)
+	var dials := t.run.dials
+	return "\n".join([
+		"%d sovereign%s." % [sov, "" if sov == 1 else "s"],
+		"A round won pays %d, and %d more for each play left. A rescued round pays nothing." % [dials.round_pay, dials.unused_play_pay],
+		"They are spent at dawn. Jekyll's dawn is in the laboratory: cards, instruments,",
+		"salt, and a card struck from the deck. Hyde's is in the back alley: only salt, dearer.",
+	])
+
+
+func _tally_words(which: String) -> String:
+	var n := int(_table[which])
+	if which == "plays":
+		return "%d play%s left this round.\nA round won pays %d sovereign more for each play left." % [
+			n, "" if n == 1 else "s", t.run.dials.unused_play_pay]
+	if n == 0:
+		return "No discards left this round."
+	return "%d discard%s left: a discard draws new cards and scores nothing." % [n, "" if n == 1 else "s"]
+
+
+func _pile_words(which: String) -> String:
+	var n := int(_table.draw_count if which == "draw_pile" else _table.discard_count)
+	var words := "%s, %d card%s." % ["Draw pile" if which == "draw_pile" else "Discards", n, "" if n == 1 else "s"]
+	if _open:
+		words += "\nClick to look through both piles."
+	return words
 
 
 func _restraint_words() -> String:
@@ -279,65 +532,21 @@ func _every_number() -> String:
 
 # ---------- the deck ----------
 
+## Opens the view of both piles, the section of `which` ("draw" or "discards") lit. Only
+## while the player may act.
 func _open_pile(which: String) -> void:
-	_clear(_deck)
-	var run := t.run
-	# Only the cards that lie in this pile, shuffled anew each time it is looked at: the
-	# pile's own order is never shown. The shuffle is the view's, not the run's.
-	var ids: Array = (run.discard if which == "discards" else run.draw).duplicate()
-	ids.shuffle()
-	var entries: Array = []
-	for id: int in ids:
-		entries.append(t.entry(id))
-	var shade := ColorRect.new()
-	shade.color = Color(Palette.NIGHT_1, 0.78)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_deck.add_child(shade)
-	# A few cards are shown nearly full size, many small.
-	var card_scale := 0.85 if entries.size() <= 8 else (0.62 if entries.size() <= 14 else SMALL)
-	var pitch := Vector2(ArenaCard.SIZE.x * card_scale + 8.0, ArenaCard.SIZE.y * card_scale + 10.0)
-	var a_row := maxi(1, int((size.x - 160.0) / pitch.x))
-	var rows := ceili(entries.size() / float(a_row))
-	var top := (size.y - rows * pitch.y) * 0.5 + 16.0
-	for i in entries.size():
-		var entry: Dictionary = entries[i]
-		var card := ArenaCard.new()
-		card.show_entry(entry, t.hyde())
-		card.scale = Vector2(card_scale, card_scale)
-		@warning_ignore("integer_division")
-		var in_row := mini(a_row, entries.size() - (i / a_row) * a_row)
-		@warning_ignore("integer_division")
-		var middle := Vector2((size.x - in_row * pitch.x) * 0.5 + (i % a_row + 0.5) * pitch.x, top + (i / a_row + 0.5) * pitch.y)
-		card.position = middle - card.pivot_offset
-		_deck.add_child(card)
-	var pile_name := "discards" if which == "discards" else "draw pile"
-	if entries.is_empty():
-		_deck_title.text = "The %s is empty. Click to close." % pile_name
-	else:
-		_deck_title.text = "The %s: %d card%s, in no order. Click to close." % [pile_name, entries.size(),
-				"" if entries.size() == 1 else "s"]
-	_deck_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_deck_title.position = Vector2(0.0, top - 44.0)
-	_deck_title.size = Vector2(size.x, 26.0)
-	_deck.add_child(_deck_title)
-	_deck.visible = true
-	Sfx.play("riffle", 1.15, 0.8) # the pile fanned out
+	if not _open:
+		return
+	_deck.open(which)
+	_deck_up = true
+	t.hand.covered = true
 	_note.visible = false
-	# The hand lies under the view: no card of it grows there while the view is open.
+	# The hand lies under the view: no card of it takes the pointer while the view is open.
 	t.hand.enabled = false
 
 
 func _close_deck() -> void:
-	if not _deck.visible:
-		return
-	_deck.visible = false
-	Sfx.play("riffle", 0.9, 0.5)
-	if _deck_title.get_parent() == _deck:
-		_deck.remove_child(_deck_title)
-	_clear(_deck)
-	# The hand takes the pointer again, unless a move has begun meanwhile.
-	t.hand.enabled = _open
+	_deck.close()
 
 
 # ---------- the Notebook ----------
@@ -373,5 +582,4 @@ func _show_a_hand() -> void:
 
 func _clear(holder: Control) -> void:
 	for child in holder.get_children():
-		if child != _deck_title:
-			child.queue_free()
+		child.queue_free()

@@ -8,12 +8,9 @@ extends Control
 ## of the others; a chosen card rises further. While Hyde has the table the row is a little
 ## out of true: each card is pushed and turned a little its own way.
 ##
-## While input is open, a card the pointer has rested on for ENLARGE_DELAY is shown larger
-## (ENLARGE), straight, on top of the row, its foot ENLARGED_FOOT over the zone's foot and
-## kept inside the zone at the row's ends; it shrinks at once when the pointer leaves. No
-## other card moves, and every card keeps the pointer by its place at rest, so the row does
-## not shift under the pointer: where the enlarged card lies over a neighbour's place, the
-## pointer is on the neighbour.
+## A card under the pointer keeps its size: it only rises and straightens, and no other card
+## moves. Every card keeps the pointer by its place at rest, so the row does not shift under
+## the pointer.
 ##
 ## The hand is drawn from the rules: give `show_table` what RulesView.table() returns, when
 ## nothing is moving and after every change of the chosen cards. It keeps one card for each
@@ -35,6 +32,14 @@ extends Control
 ## node over and the row closes up; `take_in` makes room for a card on its way and says where
 ## it is to land, and `settle` puts it in the row when it has arrived. A place in the row is
 ## {centre (on the page), turn (degrees), size (the card's scale there)}.
+##
+## On the arena's page, a card the pointer rests on (ArenaViews.REST seconds, still) has a
+## note above the row, in the look of the page's other notes: what the card is and, for a Root,
+## how its chips are made up and what it is worth now; for a Factor, the other man's reading of
+## it; for a card printed dark, the rules' answer to playing it. None opens while a move
+## plays, a notice or the help book is up, the piles' view is open or a key is held to look.
+## `--card_note=<place>` (from 0) raises that card of the first hand and holds its note open,
+## for a still.
 
 ## The chosen cards changed: their ids, in the hand's order.
 signal chosen_changed(ids: Array)
@@ -54,11 +59,6 @@ const UNRULY_TIME := 0.25
 const RISE := 16.0
 const CHOSEN_RISE := 30.0
 const RISE_TIME := 0.12
-## The card under the pointer is shown this much larger, after the pointer has rested on it
-## this long (in seconds), with its foot this far over the zone's foot.
-const ENLARGE := 1.5
-const ENLARGE_DELAY := 0.15
-const ENLARGED_FOOT := 6.0
 ## How far a refused card turns each way, in degrees.
 const SHAKE := 4.0
 ## The time the row takes to close up or to make room.
@@ -83,12 +83,16 @@ var is_jekyll := true:
 			_move(card, UNRULY_TIME)
 ## How many cards can be chosen at once: the rules' dial `max_play`.
 var max_chosen := 5
-## False while clicks are not taken: then no card is enlarged.
-var enabled := true:
+## False while clicks are not taken.
+var enabled := true
+## True while a notice, the help book or the piles' view lies over the table: no card rises
+## under the pointer, and the card's note is closed.
+var covered := false:
 	set(value):
-		enabled = value
-		if not enabled:
-			_enlarge(null)
+		covered = value
+		if covered:
+			_note_wait = null
+			_close_note()
 
 ## While true every card stands raised, as under the pointer: he is looking the hand over.
 var _lifted := false
@@ -96,17 +100,32 @@ var _cards: Array[ArenaCard] = []
 var _rng := RandomNumberGenerator.new()
 ## False while the pointer is outside the window.
 var _pointer_here := true
-## The card the pointer is on, and how long it has rested there, in seconds.
+## The card the pointer is on.
 var _resting: ArenaCard
-var _rest_time := 0.0
 ## A screenshot must not depend on where the pointer happens to rest, nor catch a card midway.
 var _still := Shot.has_arg("shot")
+
+## The note of the card the pointer rests on, and its words.
+var _note := PanelContainer.new()
+var _note_words := Label.new()
+var _note_font := FontVariation.new()
+## The card the note is about (null while it is closed); the card whose note waits for the
+## pointer to rest, how much longer it waits, and where the pointer was.
+var _noted: ArenaCard
+var _note_wait: ArenaCard
+var _note_left := 0.0
+var _note_point := Vector2.INF
+## The table the hand shows, for the note's words.
+var _table: Dictionary = {}
+## The place of the card whose note `--card_note` holds open, or -1.
+var _forced_note := int(Shot.arg("card_note")) if Shot.has_arg("card_note") else -1
 
 
 func _ready() -> void:
 	_rng.seed = 11
 	resized.connect(snap)
 	set_process(not _still)
+	_build_note()
 
 
 ## Shows the hand of RulesView.table(): see the top of this script.
@@ -150,6 +169,8 @@ func show_table(table: Dictionary) -> void:
 			_move(card, UNRULY_TIME)
 	if let_go:
 		chosen_changed.emit(chosen())
+	_table = table
+	_renew_note()
 
 
 ## The ids of the cards in the hand, in the row's order.
@@ -191,8 +212,6 @@ func give(id: int) -> ArenaCard:
 	card.strip = 0.0
 	card.foot_strip = 0.0
 	card.set_meta("away", true)
-	card.set_meta("enlarged", false)
-	card.sharp = false
 	_fit_titles()
 	for other in _cards:
 		_move(other, SLIDE_TIME)
@@ -243,16 +262,38 @@ func settle(card: ArenaCard) -> void:
 ## The table changes hands while the cards lie in the row: each takes the face `entry_of`
 ## (called with a card's id, returning its entry of RulesView.table().hand) gives it, a
 ## Factor turning over to the other man's, and the cards he cannot play are printed dark.
-func turn_to(entry_of: Callable, hyde_has_table: bool) -> void:
+##
+## With a `gap` the cards turn one after another, that many seconds apart: from the left for
+## Hyde, from the right for Jekyll. The tween that does it is returned, for the beat queue to
+## keep at its rate. Without one they all turn at once, and nothing is returned.
+func turn_to(entry_of: Callable, hyde_has_table: bool, gap: float = 0.0) -> Tween:
 	is_jekyll = not hyde_has_table
-	for card in _cards:
-		var entry: Dictionary = entry_of.call(card.card_id)
-		if card.ink != (entry.ink or (entry.t == "factor" and hyde_has_table)):
-			card.change_face(card.show_entry.bind(entry, hyde_has_table), not _still)
-		else:
-			card.show_entry(entry, hyde_has_table)
-		card.dimmed = not entry.get("playable", true)
-		card.set_tag("")
+	var order := _cards.duplicate()
+	if not hyde_has_table:
+		order.reverse()
+	var turns: Tween = create_tween() if gap > 0.0 and order.size() > 1 else null
+	for i in order.size():
+		var card: ArenaCard = order[i]
+		var turn := _turn_card.bind(card, entry_of.call(card.card_id), hyde_has_table)
+		if turns == null:
+			turn.call()
+			continue
+		turns.tween_callback(turn)
+		if i < order.size() - 1:
+			turns.tween_interval(gap)
+	return turns
+
+
+# One card of the row takes the face of `entry`, if it is still in the row.
+func _turn_card(card: ArenaCard, entry: Dictionary, hyde_has_table: bool) -> void:
+	if not is_instance_valid(card) or not card in _cards:
+		return
+	if card.ink != (entry.ink or (entry.t == "factor" and hyde_has_table)):
+		card.change_face(card.show_entry.bind(entry, hyde_has_table), not _still)
+	else:
+		card.show_entry(entry, hyde_has_table)
+	card.dimmed = not entry.get("playable", true)
+	card.set_tag("")
 
 
 ## Raises every card of the hand, or lets them down again.
@@ -264,6 +305,7 @@ func lift(on: bool) -> void:
 
 ## Empties the hand at once.
 func clear() -> void:
+	_close_note()
 	_lifted = false
 	for card in _cards:
 		_stop(card)
@@ -342,7 +384,6 @@ func _give_metas(card: ArenaCard) -> void:
 	card.set_meta("unruly", Vector3(_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0),
 			_rng.randf_range(-1.0, 1.0)) * UNRULY)
 	card.set_meta("raised", false)
-	card.set_meta("enlarged", false)
 	card.set_meta("away", false)
 
 
@@ -391,8 +432,8 @@ func _fit_titles() -> void:
 		var shows := (next - i) * a_card - 2.0
 		var whole: bool = next >= _cards.size() or card.get_meta("raised") or shows >= ArenaCard.SIZE.x
 		card.strip = 0.0 if whole else shows
-		var covered: bool = i < _cards.size() - 1 and not card.get_meta("raised") and a_card < ArenaCard.SIZE.x
-		card.foot_strip = a_card - 2.0 if covered else 0.0
+		var tucked: bool = i < _cards.size() - 1 and not card.get_meta("raised") and a_card < ArenaCard.SIZE.x
+		card.foot_strip = a_card - 2.0 if tucked else 0.0
 
 
 func _notification(what: int) -> void:
@@ -402,13 +443,10 @@ func _notification(what: int) -> void:
 		_pointer_here = false
 
 
-func _process(delta: float) -> void:
-	var under := _card_under(get_local_mouse_position()) if _pointer_here else null
-	if under == _resting:
-		_rest_time += delta
-	else:
+func _process(_delta: float) -> void:
+	var under := _card_under(get_local_mouse_position()) if _pointer_here and not covered else null
+	if under != _resting:
 		_resting = under
-		_rest_time = 0.0
 		if under and enabled:
 			Sfx.play_sided("hover", Sfx.vary(), 0.35)
 	var changed := false
@@ -422,21 +460,7 @@ func _process(delta: float) -> void:
 	if changed:
 		_restack()
 		_fit_titles()
-	_enlarge(under if enabled and not _lifted and _rest_time >= ENLARGE_DELAY else null)
-
-
-## Shows this card enlarged, and every other at its own size: null for none.
-func _enlarge(which: ArenaCard) -> void:
-	for card in _cards:
-		if _away(card) or _enlarged(card) == (card == which):
-			continue
-		card.set_meta("enlarged", card == which)
-		card.sharp = card == which
-		_move(card, RISE_TIME)
-
-
-func _enlarged(card: ArenaCard) -> bool:
-	return card.get_meta("enlarged", false)
+	_follow_note(under, _delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -502,8 +526,7 @@ func _sound(outcome: String) -> void:
 
 ## The card the pointer is on, or null: the topmost one whose place in the row holds the
 ## point. A card's place stays where it is, turned as the card lies, while the card rises, so
-## a card cannot rise away from the pointer and drop again. A raised, chosen or enlarged card
-## also keeps the pointer for as far as it has risen, where no card's place is.
+## a card cannot rise away from the pointer and drop again. A raised or chosen card also keeps the pointer for as far as it has risen, where no card's place is.
 func _card_under(point: Vector2) -> ArenaCard:
 	var half := ArenaCard.SIZE * CARD_SCALE * 0.5
 	# First the places at rest, the topmost first: they alone decide between two cards.
@@ -516,15 +539,12 @@ func _card_under(point: Vector2) -> ArenaCard:
 		var seen := (point - rest.get_center()).rotated(-deg_to_rad(_rest_turn(card)))
 		if absf(seen.x) <= half.x and absf(seen.y) <= half.y:
 			return card
-	# Then the room a raised, chosen or enlarged card has risen into, over no card's place.
+	# Then the room a raised or chosen card has risen into, over no card's place.
 	for i in range(_cards.size() - 1, -1, -1):
 		var card := _cards[i]
 		if _away(card) or not (_raised(card) or card.chosen):
 			continue
-		var risen := _covers(_place(card))
-		if _enlarged(card):
-			risen = _enlarged_rect(card)
-		if _covers(_rest(card)).merge(risen).has_point(point):
+		if _covers(_rest(card)).merge(_covers(_place(card))).has_point(point):
 			return card
 	return null
 
@@ -565,26 +585,14 @@ func _outward(card: ArenaCard) -> float:
 
 ## Where a card's top left corner lies.
 func _place(card: ArenaCard) -> Vector2:
-	if _enlarged(card):
-		return _enlarged_rect(card).get_center() - ArenaCard.SIZE * 0.5
 	if card.chosen:
 		return _slot(card) - Vector2(0.0, CHOSEN_RISE + (RISE * 0.25 if _raised(card) else 0.0))
 	return _slot(card) - Vector2(0.0, RISE) if _raised(card) else _rest(card)
 
 
-## What an enlarged card covers: centred over its place in the row, its foot ENLARGED_FOOT
-## over the zone's foot, and inside the zone at the row's ends.
-func _enlarged_rect(card: ArenaCard) -> Rect2:
-	var zone := _zone()
-	var extent := ArenaCard.SIZE * CARD_SCALE * ENLARGE
-	var middle_x := _slot(card).x + ArenaCard.SIZE.x * 0.5
-	var left := clampf(middle_x - extent.x * 0.5, zone.position.x, zone.end.x - extent.x)
-	return Rect2(Vector2(left, zone.end.y - ENLARGED_FOOT - extent.y), extent)
-
-
 ## How large a card is drawn, against its own size.
 func _size(card: ArenaCard) -> float:
-	return CARD_SCALE * (ENLARGE if _enlarged(card) else 1.0)
+	return CARD_SCALE
 
 
 ## A card's place in a row that is level and true: its top, as it is drawn, along the zone's.
@@ -607,7 +615,7 @@ func _rest(card: ArenaCard) -> Vector2:
 
 
 func _turn(card: ArenaCard) -> float:
-	return 0.0 if _raised(card) or card.chosen or _enlarged(card) else _rest_turn(card)
+	return 0.0 if _raised(card) or card.chosen else _rest_turn(card)
 
 
 ## How far a card is turned while it is neither raised nor chosen, in degrees.
@@ -654,3 +662,190 @@ func _shake(card: ArenaCard) -> void:
 	for way: float in [1.0, -1.0, 0.5, 0.0]:
 		move.tween_property(card, "rotation_degrees", turn + SHAKE * way, 0.05)
 	card.set_meta("move", move)
+
+
+# ---------- the note of the card the pointer rests on ----------
+
+## The note's words are broken into lines no wider than this, in pixels.
+const NOTE_WIDTH := 330.0
+## The gap between the note and the highest card of the row, and the room a card turned a
+## little lifts its corner by.
+const NOTE_GAP := 8.0
+const NOTE_TILT_ROOM := 6.0
+
+
+# The note, in the look of the page's other notes (ArenaViews): cream, pencilled, 14 px.
+func _build_note() -> void:
+	_note_font.base_font = ThemeDB.fallback_font
+	_note_font.variation_embolden = 0.5
+	var box := StyleBoxFlat.new()
+	box.bg_color = ArenaViews.CREAM
+	box.border_color = ArenaViews.PENCIL
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(3)
+	box.set_content_margin_all(12)
+	box.shadow_color = Color(Palette.OUTLINE, 0.3)
+	box.shadow_size = 5
+	_note.add_theme_stylebox_override("panel", box)
+	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note.visible = false
+	_note_words.add_theme_font_override("font", _note_font)
+	_note_words.add_theme_font_size_override("font_size", ArenaViews.NOTE_SIZE)
+	_note_words.add_theme_color_override("font_color", ArenaViews.PENCIL)
+	_note.add_child(_note_words)
+	add_child(_note)
+	if _still and _forced_note >= 0:
+		get_tree().process_frame.connect(_force_note)
+
+
+# Each frame: the note of the card under the pointer opens once the pointer has rested on it,
+# and closes when the pointer leaves it or the table is no longer quiet.
+func _follow_note(under: ArenaCard, delta: float) -> void:
+	var point := get_local_mouse_position()
+	if under == null or not _note_ok():
+		_note_wait = null
+		_close_note()
+	elif under == _noted:
+		# It follows the card as it rises or is chosen.
+		_place_note()
+	else:
+		_close_note()
+		if under != _note_wait or point.distance_squared_to(_note_point) > 0.25:
+			_note_wait = under
+			_note_left = ArenaViews.REST
+		_note_left -= delta
+		if _note_left <= 0.0:
+			_open_note(under)
+	_note_point = point
+
+
+# True while a note may open: on the arena's page, in play, with no move played back, no
+# notice, piles' view or help book up, and no key held to look.
+func _note_ok() -> bool:
+	var arena := get_parent()
+	if covered or not enabled or arena == null or not arena.has_method("run") or not bool(arena.call("is_idle")):
+		return false
+	if _table.get("phase", "") != "play":
+		return false
+	var t: Variant = arena.get("t")
+	if t is ArenaTable and (t.waiting_press or (t.moments != null and t.moments.notice != null and t.moments.notice.showing)):
+		return false
+	for key: Key in ArenaBeats.LOOK_KEYS:
+		if Input.is_key_pressed(key):
+			return false
+	return true
+
+
+func _open_note(card: ArenaCard) -> void:
+	var words := _note_words_of(card)
+	if words == "":
+		_close_note()
+		return
+	_noted = card
+	_set_note_words(words)
+	move_child(_note, get_child_count() - 1)
+	_note.visible = true
+	_place_note()
+
+
+func _close_note() -> void:
+	_noted = null
+	_note.visible = false
+
+
+# The table has changed: an open note says what it holds now, or closes if its card has gone.
+func _renew_note() -> void:
+	if _noted == null:
+		return
+	if not _noted in _cards or _away(_noted):
+		_close_note()
+	else:
+		_open_note(_noted)
+
+
+# For a still: the card at `--card_note`'s place rises as under the pointer, and its note
+# opens, once the table is quiet.
+func _force_note() -> void:
+	if _forced_note >= _cards.size() or not _note_ok():
+		return
+	get_tree().process_frame.disconnect(_force_note)
+	var card := _cards[_forced_note]
+	card.set_meta("raised", true)
+	_move(card, 0.0)
+	_restack()
+	_fit_titles()
+	_open_note(card)
+
+
+# Puts the note's words in, broken into lines no wider than NOTE_WIDTH.
+func _set_note_words(words: String) -> void:
+	var px := ArenaViews.NOTE_SIZE
+	var lines := PackedStringArray()
+	for said in words.split("\n"):
+		var line := ""
+		for word in said.split(" ", false):
+			var next := word if line == "" else line + " " + word
+			if line != "" and _note_font.get_string_size(next, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > NOTE_WIDTH:
+				lines.append(line)
+				line = word
+			else:
+				line = next
+		lines.append(line)
+	_note_words.text = "\n".join(lines)
+	_note.size = Vector2.ZERO
+	_note.reset_size()
+
+
+# Above the row, clear of every card's title, its middle over the card's where the page has
+# the room; kept on the page at either end of the row.
+func _place_note() -> void:
+	if _noted == null:
+		return
+	var top := INF
+	for card in _cards:
+		if not _away(card):
+			top = minf(top, _place(card).y)
+	var extent := _note.size
+	var x := _place(_noted).x + ArenaCard.SIZE.x * CARD_SCALE * 0.5 - extent.x * 0.5
+	# The same margins as the page's other notes: the tab at the right edge stays clear.
+	x = clampf(x, 8.0, maxf(8.0, size.x - extent.x - 44.0))
+	_note.position = Vector2(x, maxf(8.0, top - NOTE_TILT_ROOM - NOTE_GAP - extent.y))
+
+
+# The note's words for this card: what it is and, printed dark, why it cannot be played. The
+# numbers are the run's dials and the table's; the reason is the rules' answer to playing it.
+func _note_words_of(card: ArenaCard) -> String:
+	var entry := {}
+	for e: Dictionary in _table.get("hand", []):
+		if int(e.id) == card.card_id:
+			entry = e
+	var arena := get_parent()
+	if entry.is_empty() or arena == null or not arena.has_method("run"):
+		return ""
+	var run: RulesRun = arena.call("run")
+	var d := run.dials
+	var hyde: bool = _table.stance == "hyde"
+	var key: String = entry.key
+	var out := ""
+	if entry.t == "factor":
+		var faces: Dictionary = RulesConfig.FACTOR[key]
+		var other := "jekyll" if hyde else "hyde"
+		var does := RulesConfig.factor_text(key, other, d)
+		# The faces turn at a shift: the other man's reading, and what it does for him.
+		out = "Factor, %s's face: %s. %s reads it as %s, after a shift: %s" % [
+				"Hyde" if hyde else "Jekyll", faces.ink if hyde else faces.paper,
+				other.capitalize(), faces.paper if hyde else faces.ink, does.left(1).to_lower() + does.substr(1)]
+	else:
+		var root: Dictionary = RulesConfig.ROOT[key]
+		var s: Dictionary = _table.symbols[key]
+		if entry.ink:
+			out = "Ink Root of the %s, Hyde's. %d chips, +%d for each Craving (%d), +%d for each Habit (%d): %d now." % [
+					root.label, d.root_chips, d.craving_chips, s.craving, d.habit_chips, s.habit, entry.chips]
+		else:
+			out = "Paper Root of the %s, Jekyll's. %d chips, +%d for each Temper (%d): %d now." % [
+					root.label, d.root_chips, d.temper_chips, s.temper, entry.chips]
+	if not entry.playable:
+		var answer := RulesView.preview(run, [card.card_id])
+		if not answer.ok and String(answer.reason) != "":
+			out += "\n" + String(answer.reason)
+	return out

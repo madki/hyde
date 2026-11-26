@@ -39,6 +39,8 @@ static func add(t: ArenaTable, e: Dictionary, first: Dictionary = {}) -> void:
 		t.add_caption("He takes no card.")
 
 
+## The size of "Round won.", the one caption written larger than the rest.
+const WON_SIZE := 27
 ## The names of the run's three endings.
 const ENDINGS := {"hyde": "Mr Hyde", "double": "The Double Life", "myself": "This, Too, Was Myself"}
 
@@ -46,17 +48,28 @@ const ENDINGS := {"hyde": "Mr Hyde", "double": "The Double Life", "myself": "Thi
 # The round is covered by him: the target is struck in his ink, he has the table, the track
 # is wiped with nothing stored, and on his first arrival his four Roots join the deck.
 static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
-	if e.was == "jekyll":
-		# The page shifts after the caption's time, at the least.
-		ArenaMomentShift.cue_to_hyde(t, ArenaPace.CAPTION_MIN + ArenaPace.CAPTION_FADE)
+	var took := ArenaMomentRescue.summary(t)
 	t.beats.add(func() -> void:
-		t.stage.show_caption("Rescued. No pay, no card.")
 		t.beats.sound("target_struck", 0.8)
 		t.hand.lift(false)
 		t.numbers.clear_readout()
-		await t.follow(t.numbers.strike_target()).finished
-		await t.stage.clear_caption())
+		await t.follow(t.numbers.strike_target()).finished)
+	# One notice sums the rescue up: what he took, the score he covered, and no pay.
+	t.beats.add_choice(func() -> void:
+		var what := ArenaCaptions.rescued_notice(
+				took.get("before", []).map(func(c: Dictionary) -> String: return c.name),
+				int(took.get("short", 0)),
+				int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)))
+		what.cards = took.get("before", [])
+		what.after = took.get("after", [])
+		what.tone = "hyde"
+		t.freshen()
+		await t.moments.notice.show_notice(what))
 	if e.was == "jekyll":
+		# The shift's sound starts when the notice has left, and the page shifts as it lands.
+		var lead := ArenaPace.CAPTION_MIN + ArenaPace.CAPTION_FADE
+		ArenaMomentShift.cue_to_hyde(t, lead)
+		t.beats.add_wait(lead)
 		ArenaMomentShift.page(t, true)
 	t.beats.add(func() -> void:
 		if int(t.shown.value("restraint/meter", 0)) != 0:
@@ -139,7 +152,7 @@ static func _pay(t: ArenaTable, e: Dictionary) -> void:
 	var unused: int = e.plays_left
 	var for_round: int = int(e.pay) - unused * dials.unused_play_pay
 	t.beats.add_call(func() -> void:
-		t.stage.show_caption("Round won.")
+		t.stage.show_caption("Round won.", WON_SIZE)
 		t.beats.sound("round_won"))
 	for i in for_round:
 		t.beats.add(func() -> void:
