@@ -426,8 +426,8 @@ func _fit_titles() -> void:
 		var shows := (next - i) * a_card - 2.0
 		var whole: bool = next >= _cards.size() or card.get_meta("raised") or shows >= ArenaCard.SIZE.x
 		card.strip = 0.0 if whole else shows
-		var covered: bool = i < _cards.size() - 1 and not card.get_meta("raised") and a_card < ArenaCard.SIZE.x
-		card.foot_strip = a_card - 2.0 if covered else 0.0
+		var tucked: bool = i < _cards.size() - 1 and not card.get_meta("raised") and a_card < ArenaCard.SIZE.x
+		card.foot_strip = a_card - 2.0 if tucked else 0.0
 
 
 func _notification(what: int) -> void:
