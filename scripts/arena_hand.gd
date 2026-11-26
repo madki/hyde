@@ -32,6 +32,14 @@ extends Control
 ## node over and the row closes up; `take_in` makes room for a card on its way and says where
 ## it is to land, and `settle` puts it in the row when it has arrived. A place in the row is
 ## {centre (on the page), turn (degrees), size (the card's scale there)}.
+##
+## On the arena's page, a card the pointer rests on (ArenaViews.REST seconds, still) has a
+## note above the row, in the look of the page's other notes: what the card is and, for a Root,
+## how its chips are made up and what it is worth now; for a Factor, the other man's reading of
+## it; for a card printed dark, the rules' answer to playing it. None opens while a move
+## plays, a notice or the help book is up, the piles' view is open or a key is held to look.
+## `--card_note=<place>` (from 0) raises that card of the first hand and holds its note open,
+## for a still.
 
 ## The chosen cards changed: their ids, in the hand's order.
 signal chosen_changed(ids: Array)
@@ -89,11 +97,27 @@ var _resting: ArenaCard
 ## A screenshot must not depend on where the pointer happens to rest, nor catch a card midway.
 var _still := Shot.has_arg("shot")
 
+## The note of the card the pointer rests on, and its words.
+var _note := PanelContainer.new()
+var _note_words := Label.new()
+var _note_font := FontVariation.new()
+## The card the note is about (null while it is closed); the card whose note waits for the
+## pointer to rest, how much longer it waits, and where the pointer was.
+var _noted: ArenaCard
+var _note_wait: ArenaCard
+var _note_left := 0.0
+var _note_point := Vector2.INF
+## The table the hand shows, for the note's words.
+var _table: Dictionary = {}
+## The place of the card whose note `--card_note` holds open, or -1.
+var _forced_note := int(Shot.arg("card_note")) if Shot.has_arg("card_note") else -1
+
 
 func _ready() -> void:
 	_rng.seed = 11
 	resized.connect(snap)
 	set_process(not _still)
+	_build_note()
 
 
 ## Shows the hand of RulesView.table(): see the top of this script.
@@ -137,6 +161,8 @@ func show_table(table: Dictionary) -> void:
 			_move(card, UNRULY_TIME)
 	if let_go:
 		chosen_changed.emit(chosen())
+	_table = table
+	_renew_note()
 
 
 ## The ids of the cards in the hand, in the row's order.
@@ -271,6 +297,7 @@ func lift(on: bool) -> void:
 
 ## Empties the hand at once.
 func clear() -> void:
+	_close_note()
 	_lifted = false
 	for card in _cards:
 		_stop(card)
@@ -425,6 +452,7 @@ func _process(_delta: float) -> void:
 	if changed:
 		_restack()
 		_fit_titles()
+	_follow_note(under, _delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -626,3 +654,196 @@ func _shake(card: ArenaCard) -> void:
 	for way: float in [1.0, -1.0, 0.5, 0.0]:
 		move.tween_property(card, "rotation_degrees", turn + SHAKE * way, 0.05)
 	card.set_meta("move", move)
+
+
+# ---------- the note of the card the pointer rests on ----------
+
+## The note's words are broken into lines no wider than this, in pixels.
+const NOTE_WIDTH := 330.0
+## The gap between the note and the highest card of the row, and the room a card turned a
+## little lifts its corner by.
+const NOTE_GAP := 8.0
+const NOTE_TILT_ROOM := 6.0
+
+
+# The note, in the look of the page's other notes (ArenaViews): cream, pencilled, 14 px.
+func _build_note() -> void:
+	_note_font.base_font = ThemeDB.fallback_font
+	_note_font.variation_embolden = 0.5
+	var box := StyleBoxFlat.new()
+	box.bg_color = ArenaViews.CREAM
+	box.border_color = ArenaViews.PENCIL
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(3)
+	box.set_content_margin_all(12)
+	box.shadow_color = Color(Palette.OUTLINE, 0.3)
+	box.shadow_size = 5
+	_note.add_theme_stylebox_override("panel", box)
+	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note.visible = false
+	_note_words.add_theme_font_override("font", _note_font)
+	_note_words.add_theme_font_size_override("font_size", ArenaViews.NOTE_SIZE)
+	_note_words.add_theme_color_override("font_color", ArenaViews.PENCIL)
+	_note.add_child(_note_words)
+	add_child(_note)
+	if _still and _forced_note >= 0:
+		get_tree().process_frame.connect(_force_note)
+
+
+# Each frame: the note of the card under the pointer opens once the pointer has rested on it,
+# and closes when the pointer leaves it or the table is no longer quiet.
+func _follow_note(under: ArenaCard, delta: float) -> void:
+	var point := get_local_mouse_position()
+	if under == null or not _note_ok():
+		_note_wait = null
+		_close_note()
+	elif under == _noted:
+		# It follows the card as it rises or is chosen.
+		_place_note()
+	else:
+		_close_note()
+		if under != _note_wait or point.distance_squared_to(_note_point) > 0.25:
+			_note_wait = under
+			_note_left = ArenaViews.REST
+		_note_left -= delta
+		if _note_left <= 0.0:
+			_open_note(under)
+	_note_point = point
+
+
+# True while a note may open: on the arena's page, in play, with no move played back, no
+# notice, piles' view or help book up, and no key held to look.
+func _note_ok() -> bool:
+	var arena := get_parent()
+	if not enabled or arena == null or not arena.has_method("run") or not bool(arena.call("is_idle")):
+		return false
+	if _table.get("phase", "") != "play":
+		return false
+	var t: Variant = arena.get("t")
+	if t is ArenaTable and (t.waiting_press or (t.moments != null and t.moments.notice != null and t.moments.notice.showing)):
+		return false
+	for key: Key in ArenaBeats.LOOK_KEYS:
+		if Input.is_key_pressed(key):
+			return false
+	# The help book lies over the whole page and takes the pointer while it is open.
+	var over := get_viewport().gui_get_hovered_control()
+	while over != null:
+		if over is HelpBook or over is ArenaPileView or over is ArenaNotice:
+			return false
+		over = over.get_parent() as Control
+	return true
+
+
+func _open_note(card: ArenaCard) -> void:
+	var words := _note_words_of(card)
+	if words == "":
+		_close_note()
+		return
+	_noted = card
+	_set_note_words(words)
+	move_child(_note, get_child_count() - 1)
+	_note.visible = true
+	_place_note()
+
+
+func _close_note() -> void:
+	_noted = null
+	_note.visible = false
+
+
+# The table has changed: an open note says what it holds now, or closes if its card has gone.
+func _renew_note() -> void:
+	if _noted == null:
+		return
+	if not _noted in _cards or _away(_noted):
+		_close_note()
+	else:
+		_open_note(_noted)
+
+
+# For a still: the card at `--card_note`'s place rises as under the pointer, and its note
+# opens, once the table is quiet.
+func _force_note() -> void:
+	if _forced_note >= _cards.size() or not _note_ok():
+		return
+	get_tree().process_frame.disconnect(_force_note)
+	var card := _cards[_forced_note]
+	card.set_meta("raised", true)
+	_move(card, 0.0)
+	_restack()
+	_fit_titles()
+	_open_note(card)
+
+
+# Puts the note's words in, broken into lines no wider than NOTE_WIDTH.
+func _set_note_words(words: String) -> void:
+	var px := ArenaViews.NOTE_SIZE
+	var lines := PackedStringArray()
+	for said in words.split("\n"):
+		var line := ""
+		for word in said.split(" ", false):
+			var next := word if line == "" else line + " " + word
+			if line != "" and _note_font.get_string_size(next, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > NOTE_WIDTH:
+				lines.append(line)
+				line = word
+			else:
+				line = next
+		lines.append(line)
+	_note_words.text = "\n".join(lines)
+	_note.size = Vector2.ZERO
+	_note.reset_size()
+
+
+# Above the row, clear of every card's title, its middle over the card's where the page has
+# the room; kept on the page at either end of the row.
+func _place_note() -> void:
+	if _noted == null:
+		return
+	var top := INF
+	for card in _cards:
+		if not _away(card):
+			top = minf(top, _place(card).y)
+	var extent := _note.size
+	var x := _place(_noted).x + ArenaCard.SIZE.x * CARD_SCALE * 0.5 - extent.x * 0.5
+	# The same margins as the page's other notes: the tab at the right edge stays clear.
+	x = clampf(x, 8.0, maxf(8.0, size.x - extent.x - 44.0))
+	_note.position = Vector2(x, maxf(8.0, top - NOTE_TILT_ROOM - NOTE_GAP - extent.y))
+
+
+# The note's words for this card: what it is and, printed dark, why it cannot be played. The
+# numbers are the run's dials and the table's; the reason is the rules' answer to playing it.
+func _note_words_of(card: ArenaCard) -> String:
+	var entry := {}
+	for e: Dictionary in _table.get("hand", []):
+		if int(e.id) == card.card_id:
+			entry = e
+	var arena := get_parent()
+	if entry.is_empty() or arena == null or not arena.has_method("run"):
+		return ""
+	var run: RulesRun = arena.call("run")
+	var d := run.dials
+	var hyde: bool = _table.stance == "hyde"
+	var key: String = entry.key
+	var out := ""
+	if entry.t == "factor":
+		var faces: Dictionary = RulesConfig.FACTOR[key]
+		var other := "jekyll" if hyde else "hyde"
+		var does := RulesConfig.factor_text(key, other, d)
+		# The faces turn at a shift: the other man's reading, and what it does for him.
+		out = "Factor, %s's face: %s. %s reads it as %s, after a shift: %s" % [
+				"Hyde" if hyde else "Jekyll", faces.ink if hyde else faces.paper,
+				other.capitalize(), faces.paper if hyde else faces.ink, does.left(1).to_lower() + does.substr(1)]
+	else:
+		var root: Dictionary = RulesConfig.ROOT[key]
+		var s: Dictionary = _table.symbols[key]
+		if entry.ink:
+			out = "Ink Root of the %s, Hyde's. %d chips, +%d for each Craving (%d), +%d for each Habit (%d): %d now." % [
+					root.label, d.root_chips, d.craving_chips, s.craving, d.habit_chips, s.habit, entry.chips]
+		else:
+			out = "Paper Root of the %s, Jekyll's. %d chips, +%d for each Temper (%d): %d now." % [
+					root.label, d.root_chips, d.temper_chips, s.temper, entry.chips]
+	if not entry.playable:
+		var answer := RulesView.preview(run, [card.card_id])
+		if not answer.ok and String(answer.reason) != "":
+			out += "\n" + String(answer.reason)
+	return out
