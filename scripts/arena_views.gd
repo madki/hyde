@@ -14,8 +14,8 @@ extends Control
 ##   what is left to reach and, on the last play, the rescue; on a tally of PLAY or DISCARD,
 ##   what is left of it; on the sovereigns, how they are won and spent; on a pile, its count.
 ##   None opens over a notice, the piles' view, or while a key is held.
-##   `--note=<name>` (a name of `_THINGS`, or "night", "twist", "restraint") holds one open
-##   as though the pointer rested on it, for a still.
+##   `--hover=<name>` (a name of `_THINGS`, or "night", "twist", "restraint") holds one open
+##   as though the pointer rested on it, for a still, while a note may open.
 ## - Click the draw pile or the discards: one view of both piles (ArenaPileView), the
 ##   clicked one lit. Esc, a click, or any key that does not scroll it closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
@@ -59,13 +59,15 @@ var _book := HelpBook.new()
 var _gauge_at := -1
 var _table: Dictionary = {}
 var _open := true
+## True from the piles' view's opening until it begins to close.
+var _deck_up := false
 var _held := false
 var _hover := ""
 ## The thing under the pointer whose note waits for it to rest, and for how much longer.
 var _resting := ""
 var _rest_left := 0.0
 var _last_point := Vector2.INF
-## The note held open by `--note`, for a still.
+## The note held open by `--hover`, for a still.
 var _forced := ""
 ## False while the pointer is outside the window.
 var _pointer_here := true
@@ -92,10 +94,12 @@ func _init() -> void:
 	_words.add_theme_font_size_override("font_size", NOTE_SIZE)
 	_words.add_theme_color_override("font_color", PENCIL)
 	_note.add_child(_words)
-	_forced = Shot.arg("note")
+	_forced = Shot.arg("hover")
 	# The piles' view takes every click and the wheel while it is open.
 	_deck.closed.connect(func() -> void:
 		# The hand takes the pointer again, unless a move has begun meanwhile.
+		_deck_up = false
+		t.hand.covered = _covering()
 		t.hand.enabled = _open)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
@@ -117,8 +121,7 @@ func _init() -> void:
 	_tabs.right = "Hold Shift"
 	_book.closed.connect(func() -> void:
 		# The pointer is followed again; what it lies on must be rested on before its note opens.
-		_resting = ""
-		set_process(true))
+		_resting = "")
 	for child: Control in [_tabs, _notebook, _hint, _note, _deck, _book]:
 		add_child(child)
 
@@ -128,6 +131,8 @@ func bind(table: ArenaTable) -> void:
 	t = table
 	_deck.t = table
 	t.synced.connect(_on_synced)
+	if t.arena.has_signal("settled"):
+		t.arena.connect("settled", _on_settled)
 	resized.connect(_place_hint)
 	t.move_begun.connect(func(_move: String) -> void:
 		_open = false
@@ -138,13 +143,21 @@ func bind(table: ArenaTable) -> void:
 
 func _on_synced(table: Dictionary) -> void:
 	_table = table
-	_open = table.phase == "play"
+	# The table is also synced inside a move (before a notice of it): the views stay shut
+	# until the move is over.
+	_open = table.phase == "play" and not _notice_up() and bool(t.arena.call("is_idle"))
 	_hint.visible = _open and int(table.night.no) == 1
 	_place_hint()
 	_show_notebook()
 	# An open note says what the table holds now.
 	if _hover != "" and not _held:
 		_show_note()
+
+
+# The move is over and the player may act: the views open on the table as it was last synced.
+func _on_settled() -> void:
+	if not _table.is_empty():
+		_on_synced(_table)
 
 
 ## The word "Hint" stands in its zone, right of DISCARD, wherever the page's size puts it.
@@ -155,12 +168,16 @@ func _place_hint() -> void:
 
 
 func _process(delta: float) -> void:
-	if t == null or _table.is_empty():
+	if t == null:
+		return
+	# Under a notice, the help book or the piles' view no card of the hand answers the pointer.
+	t.hand.covered = _covering()
+	# Nothing here follows the pointer while the book is open.
+	if _table.is_empty() or _book.is_open():
 		return
 	var point := get_global_mouse_position()
-	# Under a notice nothing answers the pointer or the look keys: not the hand's cards either.
+	# Under a notice nothing answers the pointer or the look keys.
 	var covered := _notice_up()
-	t.hand.covered = covered
 	var tab := "" if _deck.visible or covered or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
 	_tabs.lit = tab
 	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible and not covered
@@ -169,7 +186,7 @@ func _process(delta: float) -> void:
 		under = _thing_at(point)
 	var name: String = under.get("name", "")
 	var hover := ""
-	if _forced != "" and not held:
+	if _forced != "" and not held and _quiet_ok():
 		hover = _forced
 	elif name == "":
 		_resting = ""
@@ -229,6 +246,11 @@ func _quiet_ok() -> bool:
 # True while a notice lies over the table.
 func _notice_up() -> bool:
 	return t.moments.notice != null and t.moments.notice.showing
+
+
+# True while something lies over the hand: a notice, the help book or the piles' view.
+func _covering() -> bool:
+	return _notice_up() or _book.is_open() or _deck_up
 
 
 # The thing under the pointer: {name}, or empty for none.
@@ -327,13 +349,13 @@ func _input(event: InputEvent) -> void:
 func _open_help() -> void:
 	if not _open or _held or not _quiet_ok() or t.beats.is_running():
 		return
-	set_process(false)
 	_note.visible = false
 	_hover = ""
 	_resting = ""
 	_tabs.lit = ""
 	var gauge_last := _gauge_at >= 0 and Time.get_ticks_msec() - _gauge_at < GAUGE_FRESH
 	_book.open(HelpPages.page_for(_table, gauge_last), _table.stance == "hyde", t.run.dials)
+	t.hand.covered = true
 
 
 # Shows the note with these words, its top left corner at `at`, or `centred` across the page
@@ -516,6 +538,8 @@ func _open_pile(which: String) -> void:
 	if not _open:
 		return
 	_deck.open(which)
+	_deck_up = true
+	t.hand.covered = true
 	_note.visible = false
 	# The hand lies under the view: no card of it takes the pointer while the view is open.
 	t.hand.enabled = false
