@@ -98,12 +98,19 @@ static func joined(t: ArenaTable, e: Dictionary) -> void:
 	# They come out of his ink, at the right of the page.
 	var from := Vector2(t.arena.size.x - 60.0, t.arena.size.y * 0.42)
 	hyde_joins(t)
-	t.moments.join_deck(cards, ArenaCaptions.joins(cause, names), from)
+	t.moments.join_deck(cards, ArenaCaptions.joins(cause, names), from, true, joins_notice.bind(t, cause, cards.size()))
 	t.beats.add(func() -> void:
 		# The line's marks are drawn while the table goes on.
 		var ink: int = t.shown.add("line/ink", cards.size())
 		t.line_sound(true)
 		t.play(t.symbols.set_line.bind(int(t.shown.value("line/paper", 0)), ink)))
+
+
+## The notice's words for `count` of his Roots joining by `cause`, with the line as it will
+## stand once they have joined. `symbol` is the rolled-over symbol's label, for "rollover".
+static func joins_notice(t: ArenaTable, cause: String, count: int, symbol: String = "") -> Dictionary:
+	return ArenaCaptions.joins_notice(cause, int(t.shown.value("line/paper", 0)),
+			int(t.shown.value("line/ink", 0)) + count, symbol)
 
 
 ## A Paper Root is stained where it lies: in the draw pile, the discards or the hand.

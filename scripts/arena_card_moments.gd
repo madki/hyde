@@ -3,8 +3,9 @@ extends RefCounted
 ## The three card moments the rest of the flow uses each a run of beats
 ## added to the queue from card data and a caption:
 ##
-## - `join_deck`: a card or a group joins the deck. It appears face up in the centre from where
-##   it belongs, the caption names it, it is held still, turns face down and goes into the draw
+## - `join_deck`: a card or a group joins the deck. By a rule, it is shown on the notice and
+##   waits for the player; else it appears face up in the centre from where it belongs, the
+##   caption names it and it is held still. Then it turns face down and goes into the draw
 ##   pile (into its middle during a round), whose count rises a card at a time.
 ## - `bring_to_hand`: a man brings Roots. The cards come out of the pile they were found in,
 ##   turn face up in the centre under a caption, are held, then go to the hand. With none
@@ -29,6 +30,8 @@ var beats: ArenaBeats
 var travel: ArenaTravel
 var piles: ArenaPiles
 var stage: ArenaStage
+## The sheet a joining group is shown on, set by the page that holds it; with none, the stage.
+var notice: ArenaNotice
 
 
 func _init(queue: ArenaBeats, layer: ArenaTravel, the_piles: ArenaPiles, the_stage: ArenaStage) -> void:
@@ -41,19 +44,33 @@ func _init(queue: ArenaBeats, layer: ArenaTravel, the_piles: ArenaPiles, the_sta
 ## 6.1. `cards` join the deck, shown as one group (up to five), coming from `from` (a point on
 ## the page: the ink for his Roots, a sketch for a bred copy, the reward). `into_middle` during
 ## a round; between rounds, with the piles in deck mode, they go onto the deck.
-func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool = true) -> void:
+##
+## With `said` (a Callable returning {title, lines}, called as its beat begins so that it can
+## read the table as it then stands) the group is shown on the notice instead, in his tone, and
+## waits for the player; on Continue the cards turn face down where they lay on it and go to
+## the pile. Without it, they are laid on the stage under `caption` and held.
+func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool = true,
+		said: Callable = Callable()) -> void:
 	var nodes: Array = []
-	beats.add(func() -> void:
-		for data: Dictionary in cards:
-			var card := ArenaTravel.make_card(data)
-			travel.place(card, from, 0.0, 0.5)
-			card.modulate.a = 0.0
-			nodes.append(card)
-			var fade := beats.tween()
-			fade.tween_property(card, "modulate:a", 1.0, ArenaPace.TRAVEL * 0.5)
-		stage.show_caption(caption)
-		await stage.lay(travel, nodes))
-	beats.add_wait(ArenaPace.HOLD)
+	if said.is_valid() and notice:
+		beats.add_choice(func() -> void:
+			var what: Dictionary = said.call()
+			what.cards = cards
+			what.tone = "hyde"
+			notice.centres.clear()
+			await notice.show_notice(what)
+			# The notice's own cards left with it: travelling ones take their places. With no
+			# notice shown (passed at once) they start from `from`.
+			var shown := notice.centres.size() == cards.size()
+			for i in cards.size():
+				var card := ArenaTravel.make_card(cards[i])
+				if shown:
+					travel.place(card, notice.centres[i], 0.0, ArenaNotice.CARD_SCALE)
+				else:
+					travel.place(card, from, 0.0, 0.5)
+				nodes.append(card))
+	else:
+		_lay_joining(cards, caption, from, nodes)
 	beats.add(func() -> void:
 		var last: Signal
 		beats.sound("card_flip", Sfx.vary() * 0.9)
@@ -65,6 +82,21 @@ func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool =
 	beats.add(func() -> void:
 		await stage.clear_caption()
 		joined.emit(cards))
+
+
+# The stage's way of showing a joining group: laid face up in the centre under `caption`, held.
+func _lay_joining(cards: Array, caption: String, from: Vector2, nodes: Array) -> void:
+	beats.add(func() -> void:
+		for data: Dictionary in cards:
+			var card := ArenaTravel.make_card(data)
+			travel.place(card, from, 0.0, 0.5)
+			card.modulate.a = 0.0
+			nodes.append(card)
+			var fade := beats.tween()
+			fade.tween_property(card, "modulate:a", 1.0, ArenaPace.TRAVEL * 0.5)
+		stage.show_caption(caption)
+		await stage.lay(travel, nodes))
+	beats.add_wait(ArenaPace.HOLD)
 
 
 ## 6.2. `man` ("Jekyll" or "Hyde") brings `cards`, found in `pile` ("draw" or "discards").
