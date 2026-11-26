@@ -77,8 +77,27 @@ func test_config() -> void:
 	var scenes: Array = []
 	for n in 5:
 		scenes.append(RulesConfig.targets(d, n)[2])
-	eq(scenes, [2200, 5500, 13000, 26000, 40000], "the scenes' targets")
-	eq(RulesConfig.targets(d, 0), [1000, 1500, 2200], "night 1")
+	eq(scenes, [3300, 5500, 13000, 26000, 40000], "the scenes' targets")
+	eq(RulesConfig.targets(d, 0), [1500, 2250, 3300], "night 1")
+	eq([d.temper_mult, d.draught_from, d.salt_from, d.max_discard], [3, 0, 0, 5], "Temper's pay, the draught and the salt from the first round, a discard's size")
+
+
+func test_the_games_own_opening() -> void:
+	# On the game's own numbers, not the ones the other tests were written to.
+	var run := Rules.new_run({}, 3)
+	eq([run.night, run.round, Rules.target(run)], [0, 0, 1500], "the first round of night 1")
+	ok(Rules.can_drink(run).ok, "the draught can be drunk in the first round")
+	ok(Rules.drink(run).ok, "and is")
+	ok(Rules.can_salt(run).ok, "the salt can be taken in the first round")
+	ok(Rules.take_salt(run).ok, "and is")
+	eq(run.stance, "jekyll", "which brings Jekyll back")
+
+
+func test_a_discards_size_is_its_own_number() -> void:
+	var run := fresh({"max_discard": 2})
+	var hand: Array = run.hand
+	eq(Rules.discard(run, hand.slice(0, 3)).reason, "Discard up to 2 cards.", "three cards are too many for a discard of two")
+	ok(Rules.discard(run, hand.slice(0, 2)).ok, "two are thrown away, though a hand may be of %d" % run.dials.max_play)
 
 
 func test_json_round_trip() -> void:
@@ -217,3 +236,21 @@ func test_saves_that_cannot_be_played() -> void:
 			"end":
 				break
 	eq(seen.size(), Rules.PHASES.size(), "a run saves and loads in every phase")
+
+
+func test_a_fast_copy_holds_everything_saved() -> void:
+	# Every saved variable is given a value that is not its first one, so that a variable
+	# the fast copy leaves out shows.
+	var run := fresh({}, 4)
+	for key: String in run.to_dict():
+		var v: Variant = run.get(key)
+		match typeof(v):
+			TYPE_NIL: run.set(key, {"marked": 1})
+			TYPE_INT: run.set(key, int(v) + 7)
+			TYPE_FLOAT: run.set(key, float(v) + 0.5)
+			TYPE_BOOL: run.set(key, not v)
+			TYPE_STRING: run.set(key, str(v) + "x")
+			TYPE_DICTIONARY: (v as Dictionary)["marked"] = 1
+	var quick := run.copy_fast()
+	eq(JSON.stringify(quick.to_dict()), JSON.stringify(run.to_dict()), "a fast copy is the run, variable for variable")
+	eq(JSON.stringify(quick.to_dict()), JSON.stringify(run.copy().to_dict()), "and is what a copy is")

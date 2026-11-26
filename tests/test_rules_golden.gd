@@ -151,7 +151,7 @@ func _invariants(run: RulesRun, where: String) -> void:
 
 
 func _random_run(seed_value: int, dials: Dictionary, start_night: int, check: bool = true) -> RulesRun:
-	var run := Rules.new_run(dials, seed_value)
+	var run := Rules.new_run(written_to(dials), seed_value)
 	if start_night > 0:
 		Golden.start_on(run, start_night, seed_value % 3)
 	_r = seed_value * 7919 + 13

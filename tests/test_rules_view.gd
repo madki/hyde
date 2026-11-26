@@ -324,7 +324,7 @@ func test_preview_matches_the_play_that_follows() -> void:
 
 
 func test_texts_follow_the_numbers() -> void:
-	var run := as_hyde(at(fresh({"max_play": 3, "glee_chips": 30, "tight_drop": 1, "hcane_mult": 6, "balance_bonus": 2}, 5), 2, 0))
+	var run := as_hyde(at(fresh({"max_play": 3, "max_discard": 3, "glee_chips": 30, "tight_drop": 1, "hcane_mult": 6, "balance_bonus": 2}, 5), 2, 0))
 	var h := deal(run, "F:cup I:lamp I:lamp I:lamp I:lamp P:heart P:mirror P:lamp")
 	eq(_hand_card(RulesView.table(run), h[0].id).text, "Adds 30 chips.", "Glee's text names the run's number")
 	eq(RulesView.table(run).night.twist_text, "Restraint holds 1 fewer.", "so does the twist's")
@@ -341,7 +341,7 @@ func test_texts_follow_the_numbers() -> void:
 	# The targets handed out are the table's own to change.
 	var targets: Array = RulesView.table(fresh()).night.targets
 	targets.append(1)
-	eq(RulesConfig.targets(RulesDials.new(), 0), [1000, 1500, 2200], "changing the targets handed out leaves the game's alone")
+	eq(RulesConfig.targets(RulesDials.new(), 0), [1500, 2250, 3300], "changing the targets handed out leaves the game's alone")
 
 
 func test_no_reward_cards() -> void:

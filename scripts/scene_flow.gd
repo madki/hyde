@@ -115,10 +115,11 @@ func run_for_place(where: String) -> RulesRun:
 ## none), ending at `where`: "lab" (Jekyll has the table) or "alley" (Hyde has it). The run's
 ## seed is `seed_value`, or the first after it whose run gets there: one that ends before
 ## that dawn, or comes to it at the other place, is left for the next seed. Null, with a
-## warning, when none of DAWN_TRIES seeds does.
+## warning, when none of DAWN_TRIES seeds does. The first night asks its plain targets here:
+## the plain play below seldom clears what the game asks of a player.
 static func run_at_dawn(where: String, seed_value: int, dawn: int = 1) -> RulesRun:
 	for attempt in DAWN_TRIES:
-		var made := Rules.new_run({}, seed_value + attempt)
+		var made := Rules.new_run({"first_night_scale": 1.0}, seed_value + attempt)
 		if _play_to_dawn(made, where, dawn):
 			return made
 	push_warning("No run from seed %d on came to dawn %d at the %s." % [seed_value, dawn, where])
@@ -164,7 +165,7 @@ static func _play_on(made: RulesRun, where: String) -> Dictionary:
 		var c := Rules.card(made, id)
 		if not c.is_factor() and c.ink != ink:
 			dead.append(id)
-	return Rules.discard(made, dead.slice(0, made.dials.max_play))
+	return Rules.discard(made, dead.slice(0, made.dials.max_discard))
 
 
 # Every change of screen between the title, the table and a place is made here, under the
