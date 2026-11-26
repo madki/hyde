@@ -69,6 +69,10 @@ uniform float edge_soft : hint_range(0.005, 0.15) = 0.025;
 uniform float uneven : hint_range(0.0, 0.4) = 0.12;
 /** Softness of the ink's outer edge, in rank. */
 uniform float limit_soft : hint_range(0.001, 0.05) = 0.004;
+/** The ink's wet edge, lit for a moment as the ink surges (set by arena_ink.gd): x is how
+ * strongly, 0 to 1, and y the height on the page (0 top, 1 bottom) it is brightest at, or
+ * negative for all of the edge alike. */
+uniform vec2 edge_lit = vec2(0.0, -1.0);
 
 group_uniforms hatch;
 /** The strokes' colour (Palette.OUTLINE) and how strongly they darken the page. */
@@ -113,6 +117,7 @@ void fragment() {
 	// All of the ink lies inside presence's limit.
 	vec2 drifted = ink_drifted(page_uv);
 	float inside = ink_reach(page_uv) - ink_rank(drifted);
+	float to_limit = inside;
 	// A full page is inked to its last corner: the rank goes a little over 1 near the left
 	// border, which would leave those places bare, or with the drying line all over them.
 	inside = max(inside, step(0.999, presence));
@@ -154,6 +159,13 @@ void fragment() {
 		float rim = dark * (1.0 - smoothstep(dark_at, dark_at + rim_width, paint));
 		rim = max(rim, deeper * (1.0 - smoothstep(deep_at, deep_at + rim_width, paint)) * 0.7);
 		col = mix(col, ink_deep * sheet, rim * rim_dark * mix(0.4, 1.0, vary));
+	}
+
+	// The wet edge, lit as the ink surges: a band of Hyde's pink along the ink's limit.
+	if (edge_lit.x > 0.0) {
+		float band = smoothstep(-0.004, 0.0, to_limit) * (1.0 - smoothstep(0.0, 0.035, to_limit));
+		float near = edge_lit.y < 0.0 ? 1.0 : 1.0 - smoothstep(0.1, 0.5, abs(page_uv.y - edge_lit.y));
+		col = mix(col, lamp_hyde, band * near * edge_lit.x * 0.75 * step(0.0005, presence));
 	}
 
 	// The lamps: soft washes that fade out from a point just off the page.
