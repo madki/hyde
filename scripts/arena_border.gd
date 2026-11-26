@@ -4,6 +4,8 @@ extends Control
 ## side is its own stroke, a little off true and running past the corner, fading where the
 ## pencil lifted, and gone over again for part of the way. More ruled lines can cross the
 ## page (`rules`): the arena has one under its top band and one over the hand.
+##
+## `flare` lights the outer ruling once in a man's light, as the table changes hands.
 
 ## Distance of the two rulings from the edge of the page, in pixels.
 @export var insets := PackedFloat32Array([28.0, 36.0])
@@ -17,6 +19,10 @@ extends Control
 ## Changes every line a little while keeping the look.
 @export var rng_seed := 7
 
+## A flare's glow about the outer ruling: each band's width in pixels and its share of the
+## flare's strength, the widest and faintest first.
+const FLARE_BANDS: Array[Vector2] = [Vector2(26.0, 0.12), Vector2(12.0, 0.28), Vector2(4.0, 0.9)]
+
 ## The ruled lines that cross the page, each as its two ends, one after the other.
 var rules := PackedVector2Array():
 	set(value):
@@ -24,8 +30,50 @@ var rules := PackedVector2Array():
 		queue_redraw()
 
 
+var _glow := Control.new()
+var _flare_tint := Color.WHITE
+var _flare := 0.0:
+	set(value):
+		_flare = value
+		_glow.visible = value > 0.0
+		_glow.queue_redraw()
+var _flare_tween: Tween
+
+
 func _ready() -> void:
 	resized.connect(queue_redraw)
+	# The glow is drawn on a layer of its own: the hand-drawn lines are not drawn again for it.
+	_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_glow.visible = false
+	_glow.draw.connect(_draw_glow)
+	add_child(_glow)
+
+
+## Lights the outer ruling once in `tint`, to `strength` (0 to 1): it rises in `rise` seconds
+## and falls in `fall`, never quicker than a flare may (ArenaPace.FLARE_RISE, FLARE_FALL).
+## Returns the tween doing it, for the beat queue to keep at its rate. The caller leaves it
+## out with "reduce flashes" on.
+func flare(tint: Color, strength: float = 1.0, rise: float = ArenaPace.FLARE_RISE,
+		fall: float = ArenaPace.FLARE_FALL) -> Tween:
+	if _flare_tween:
+		_flare_tween.kill()
+	_flare_tint = tint
+	_flare_tween = create_tween()
+	_flare_tween.tween_property(self, "_flare", clampf(strength, 0.0, 1.0), maxf(rise, ArenaPace.FLARE_RISE)) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_flare_tween.tween_property(self, "_flare", 0.0, maxf(fall, ArenaPace.FLARE_FALL)) \
+			.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	return _flare_tween
+
+
+func _draw_glow() -> void:
+	if _flare <= 0.0 or insets.is_empty():
+		return
+	var inset := Vector2(insets[0], insets[0])
+	var rect := Rect2(inset, size - inset * 2.0)
+	for band in FLARE_BANDS:
+		_glow.draw_rect(rect, Color(_flare_tint, _flare * band.y), false, band.x)
 
 
 func _draw() -> void:

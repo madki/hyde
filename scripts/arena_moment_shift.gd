@@ -5,14 +5,44 @@ class_name ArenaMomentShift
 ## - `store`: the ink on the restraint track lifts off step by step and settles as stored
 ##   drops beside the mult, under a caption of what they will pay.
 ## - `page`: the page shifts to the other man. The Factors in the hand turn to his faces, and
-##   the Roots he cannot play are printed dark.
+##   the Roots he cannot play are printed dark. To Hyde it is a blow: a short stop as the
+##   sound's hit lands, then the picture shakes, the border flares in his light, the cards
+##   turn one after another from the left and his name crosses the page in his hand. To
+##   Jekyll it is the calm reverse: the ink draws back first and the lamp's light rises, then
+##   the cards turn from the right under his name. With "reduce flashes" on nothing shakes or
+##   flares; a move played back at once shows none of the staging.
 ## - `joined`: his Roots join the deck, shown first (his first four, a breakout's two, or
 ##   one when a drink finds nothing left to stain). The line gains their marks.
 ## - `stained`: the draught stains a Paper Root where it lies, and the line moves a mark.
 ## - `brought`: whoever arrived brings up to two of his Roots to the hand.
 
-## How long the page's shift is waited for before the next beat: the ink goes on moving.
-const PAGE_WAIT := 0.6
+## The shift to Hyde: how long the table stops as the sound's hit lands, and how hard the
+## picture is then shaken (ArenaShake).
+const HIT_STOP := 0.12
+const HIT := 0.6
+## The shift to Jekyll: how long the ink draws back before the cards turn, and how brightly
+## and slowly the border takes his light.
+const DRAW_BACK := 0.3
+const LAMP_LIGHT := 0.5
+const LAMP_RISE := 0.4
+const LAMP_FALL := 0.7
+## The cards of the hand turn this long one after another.
+const TURN_GAP := 0.05
+## The name that crosses the page: its size, how long it stays before it fades, how long the
+## fade takes and how much of it the next beat waits for, how far it travels meanwhile (from
+## the ink's side for Hyde, and half as far the other way for Jekyll), and how much too large
+## his lands before it settles.
+const NAME_SIZE := 104
+const NAME_TIME := 0.8
+const NAME_FADE := 0.2
+const NAME_FADE_WAIT := 0.1
+const NAME_DRIFT := 44.0
+const NAME_PUNCH := 1.18
+## The widest a line in the name's hand may be, as a share of the page: a longer one is
+## written smaller.
+const NAME_WIDTH := 0.54
+## How far down the page the name's middle lies: a little over the page's own, clear of the hand.
+const NAME_HEIGHT := 0.46
 ## The time one step of the track takes to lift off and settle as a stored drop.
 const STORE_STEP := 0.22
 ## How far into the change to Hyde's sound its hit comes: started this long before the page
@@ -77,14 +107,95 @@ static func hyde_joins(t: ArenaTable) -> void:
 
 ## The page shifts to Hyde (`to_hyde`) or back to Jekyll.
 static func page(t: ArenaTable, to_hyde: bool) -> void:
+	if to_hyde:
+		t.beats.add(func() -> void:
+			# The stop: nothing moves while the sound's hit lands.
+			if staged(t):
+				await t.beats.wait(HIT_STOP)
+			t.shown.set_value("stance", "hyde")
+			t.ink.is_jekyll = false
+			t.numbers.is_jekyll = false
+			if staged(t) and not ArenaPace.reduce_flashes:
+				ArenaShake.hit(HIT)
+				t.follow(_border(t).flare(Palette.HYDE))
+			t.follow(t.hand.turn_to(t.entry, true, TURN_GAP if staged(t) else 0.0))
+			name_across(t, "Hyde", true)
+			await t.beats.wait(NAME_TIME + NAME_FADE_WAIT))
+		return
 	t.beats.add(func() -> void:
-		if not to_hyde:
-			t.beats.sound("shift_to_jekyll")
-		t.shown.set_value("stance", "hyde" if to_hyde else "jekyll")
-		t.ink.is_jekyll = not to_hyde
-		t.numbers.is_jekyll = not to_hyde
-		t.hand.turn_to(t.entry, to_hyde)
-		await t.beats.wait(PAGE_WAIT))
+		t.beats.sound("shift_to_jekyll")
+		# The ink draws back first and the lamp's light rises; then the table is his.
+		t.ink.is_jekyll = true
+		if staged(t):
+			if not ArenaPace.reduce_flashes:
+				t.follow(_border(t).flare(Palette.JEKYLL, LAMP_LIGHT, LAMP_RISE, LAMP_FALL))
+			await t.beats.wait(DRAW_BACK)
+		t.shown.set_value("stance", "jekyll")
+		t.numbers.is_jekyll = true
+		t.follow(t.hand.turn_to(t.entry, false, TURN_GAP if staged(t) else 0.0))
+		name_across(t, "Jekyll", false)
+		await t.beats.wait(NAME_TIME + NAME_FADE_WAIT))
+
+
+## False while the move is played back at once (skipped, or the speed of a still or a check):
+## a change of hands then has no staging.
+static func staged(t: ArenaTable) -> bool:
+	return t.beats.rate() < ArenaPace.SKIP
+
+
+## Writes `words` large across the middle of the page, in Hyde's backward-sloped hand
+## (`hyde`) or Jekyll's upright one: they stay for NAME_TIME, drifting, and fade. Nothing is
+## waited for, and nothing is written in a move played back at once.
+static func name_across(t: ArenaTable, words: String, hyde: bool) -> void:
+	if not staged(t):
+		return
+	var font := FontVariation.new()
+	var plain := StoryEntry.easy_read
+	font.base_font = ThemeDB.fallback_font if plain else StoryEntry.FACE
+	var slope := 0.0
+	if hyde:
+		slope = StoryEntry.PLAIN_SLOPE if plain else StoryEntry.HYDE_SLOPE
+	if not plain:
+		font.variation_embolden = StoryEntry.HYDE_WEIGHT if hyde else StoryEntry.JEKYLL_WEIGHT
+	font.variation_transform = Transform2D(Vector2(1.0, -slope), Vector2(0.0, 1.0), Vector2.ZERO)
+	var page := t.arena.size
+	var font_size := NAME_SIZE
+	var width := font.get_string_size(words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
+	if width > page.x * NAME_WIDTH:
+		font_size = int(font_size * page.x * NAME_WIDTH / width)
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = words
+	label.add_theme_font_override("font", font)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", Palette.HYDE if hyde else Palette.JEKYLL.lerp(Palette.CHALK, 0.35))
+	label.add_theme_color_override("font_outline_color", Color(Palette.OUTLINE, 0.92))
+	label.add_theme_constant_override("outline_size", 16)
+	label.size = label.get_minimum_size()
+	label.pivot_offset = label.size * 0.5
+	# Under the notice's sheet, over everything else of the table.
+	t.arena.add_child(label)
+	t.arena.move_child(label, t.moments.notice.get_index())
+	var drift := NAME_DRIFT if hyde else -NAME_DRIFT * 0.5
+	var rest := Vector2(page.x * 0.5, page.y * NAME_HEIGHT) - label.size * 0.5
+	label.position = rest + Vector2(drift * 0.5, 0.0)
+	label.modulate.a = 0.0
+	var cross := t.beats.tween()
+	cross.tween_property(label, "position:x", rest.x - drift * 0.5, NAME_TIME + NAME_FADE)
+	var show := t.beats.tween()
+	show.tween_property(label, "modulate:a", 1.0, 0.08 if hyde else 0.3)
+	show.tween_interval(NAME_TIME - (0.08 if hyde else 0.3))
+	show.tween_property(label, "modulate:a", 0.0, NAME_FADE)
+	show.tween_callback(label.queue_free)
+	if hyde:
+		# His lands: too large for a moment, as the blow does.
+		label.scale = Vector2.ONE * NAME_PUNCH
+		t.beats.tween().tween_property(label, "scale", Vector2.ONE, 0.16) \
+				.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+
+
+static func _border(t: ArenaTable) -> ArenaBorder:
+	return t.arena.get_node("Border") as ArenaBorder
 
 
 ## His Roots join the deck.

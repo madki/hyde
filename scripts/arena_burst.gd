@@ -5,6 +5,9 @@ extends Control
 ## Its leading edge is the round's one full-strength flare, cyan-white at its front and
 ## magenta behind: it rises quickly and falls slowly (ArenaPace.FLARE_RISE, FLARE_FALL). With
 ## "reduce flashes" on there is no flare: the ink alone crosses, a little slower.
+##
+## As the ink covers the page the blow lands: the picture is shaken hard (ArenaShake), unless
+## "reduce flashes" is on or the move is played back at once.
 
 const INK := Palette.INK_BODY
 const FLARE := Palette.HYDE
@@ -12,6 +15,8 @@ const FRONT := Palette.SALT
 const CROSS_TIME := 0.45
 const CROSS_TIME_CALM := 0.8
 const THIN_TIME := 0.6
+## How hard the picture is shaken as the ink covers the page.
+const HIT := 1.0
 
 var _from := Vector2.ZERO
 var _reach := 0.0:
@@ -52,6 +57,8 @@ func play(beats: ArenaBeats, from: Vector2, changed: Callable) -> void:
 		flare.tween_property(self, "_flare", 1.0, ArenaPace.FLARE_RISE)
 		flare.tween_property(self, "_flare", 0.0, ArenaPace.FLARE_FALL + 0.1)
 	await cross.finished
+	if not calm and beats.rate() < ArenaPace.SKIP:
+		ArenaShake.hit(HIT)
 	changed.call()
 	var thin := beats.tween()
 	thin.tween_property(self, "_cover", 0.0, THIN_TIME).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
