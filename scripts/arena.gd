@@ -234,6 +234,7 @@ func _build() -> void:
 	move_child(piles, _hand.get_index())
 	add_child(travel)
 	add_child(_beats)
+	add_child(ArenaDanger.new())
 	_beats.source = func() -> Dictionary: return RulesView.table(_run)
 	travel.beats = _beats
 	stage.beats = _beats
