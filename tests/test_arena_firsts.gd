@@ -164,6 +164,24 @@ func test_a_note_is_shown_once_kept_and_can_be_cleared() -> void:
 		eq(ArenaFirsts.take(table, run.events).key, "goal", "and the goal is shown again"))
 
 
+func test_a_note_dismissed_unread_is_owed_again() -> void:
+	_with_own_file(func() -> void:
+		var run := _first_deal()
+		var table := RulesView.table(run)
+		eq(ArenaFirsts.offer(table, run.events).key, "goal", "the goal is offered")
+		eq(ArenaFirsts.seen(), {}, "offered is not yet shown")
+		ArenaFirsts.dismissed("goal", 0.0)
+		ArenaFirsts.dismissed("goal", ArenaFirsts.READ - 0.4)
+		eq(ArenaFirsts.seen(), {}, "dismissed before it could be read: not remembered")
+		ok(not FileAccess.file_exists(ArenaFirsts.path), "and nothing is written down")
+		eq(ArenaFirsts.offer(table, []).key, "goal", "so it is offered again at its next occasion")
+		ArenaFirsts.dismissed("goal", ArenaFirsts.READ + 0.5)
+		eq(ArenaFirsts.seen(), {"goal": true}, "dismissed after it was read: remembered")
+		ArenaFirsts.forget_loaded()
+		eq(ArenaFirsts.seen(), {"goal": true}, "and kept for a later run")
+		eq(ArenaFirsts.offer(table, []).key, "draught", "the next is offered in its place"))
+
+
 # Plays a new player's first round and returns the key of the note shown at the deal and
 # after each play ("" for none). `best`: the best hand each time; else one card at a time for
 # three plays, and the round is won by the fourth.
