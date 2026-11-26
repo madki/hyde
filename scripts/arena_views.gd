@@ -9,8 +9,8 @@ extends Control
 ##   hands with their base chips and mult.
 ## - Rest the pointer on the twist's block or on the night's heading: the night, its twist
 ##   and what the dawn brings. On the restraint track: its limit and why.
-## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
-##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
+## - Click the draw pile or the discards: one view of both piles (ArenaPileView), the
+##   clicked one lit. Esc, a click, or any key that does not scroll it closes it.
 ## - With the Notebook held, the next three cards of the draw pile lie face up over it.
 ## - On night 1 the small word "Hint", right of DISCARD, chooses the cards of the best hand the rules find.
 ##   It shows no score.
@@ -28,8 +28,8 @@ var t: ArenaTable
 
 var _note := PanelContainer.new()
 var _words := Label.new()
-var _deck := Control.new()
-var _deck_title := Label.new()
+## The view of the two piles.
+var _deck := ArenaPileView.new()
 var _notebook := Control.new()
 var _hint := Button.new()
 var _tabs := ArenaTabs.new()
@@ -62,19 +62,10 @@ func _init() -> void:
 	_words.add_theme_font_size_override("font_size", 13)
 	_words.add_theme_color_override("font_color", PENCIL)
 	_note.add_child(_words)
-	# The deck's page: it takes every click while it is open.
-	_deck.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_deck.mouse_filter = Control.MOUSE_FILTER_STOP
-	_deck.visible = false
-	_deck.gui_input.connect(func(event: InputEvent) -> void:
-		var button := event as InputEventMouseButton
-		if button and button.pressed:
-			_close_deck())
-	_deck_title.add_theme_font_override("font", font)
-	_deck_title.add_theme_font_size_override("font_size", 17)
-	_deck_title.add_theme_color_override("font_color", CREAM)
-	_deck_title.add_theme_color_override("font_outline_color", Color(Palette.OUTLINE, 0.9))
-	_deck_title.add_theme_constant_override("outline_size", 6)
+	# The piles' view takes every click and the wheel while it is open.
+	_deck.closed.connect(func() -> void:
+		# The hand takes the pointer again, unless a move has begun meanwhile.
+		t.hand.enabled = _open)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
 	_hint.text = "Hint"
@@ -100,6 +91,7 @@ func _init() -> void:
 ## Ties the views to the table. Call once.
 func bind(table: ArenaTable) -> void:
 	t = table
+	_deck.t = table
 	t.synced.connect(_on_synced)
 	resized.connect(_place_hint)
 	t.move_begun.connect(func(_move: String) -> void:
@@ -166,9 +158,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	var button := event as InputEventMouseButton
 	if _deck.visible:
-		if key and key.pressed and not key.echo:
-			get_viewport().set_input_as_handled()
+		# The scroll keys scroll it; any other key closes it.
+		if key and not _deck.scroll_key(key) and key.pressed and not key.echo:
 			_close_deck()
+		if key:
+			get_viewport().set_input_as_handled()
 		return
 	# A key held to look is no press: it must not reach the table, which may wait for one.
 	if key and key.keycode in ArenaBeats.LOOK_KEYS:
@@ -279,65 +273,19 @@ func _every_number() -> String:
 
 # ---------- the deck ----------
 
+## Opens the view of both piles, the section of `which` ("draw" or "discards") lit. Only
+## while the player may act.
 func _open_pile(which: String) -> void:
-	_clear(_deck)
-	var run := t.run
-	# Only the cards that lie in this pile, shuffled anew each time it is looked at: the
-	# pile's own order is never shown. The shuffle is the view's, not the run's.
-	var ids: Array = (run.discard if which == "discards" else run.draw).duplicate()
-	ids.shuffle()
-	var entries: Array = []
-	for id: int in ids:
-		entries.append(t.entry(id))
-	var shade := ColorRect.new()
-	shade.color = Color(Palette.NIGHT_1, 0.78)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_deck.add_child(shade)
-	# A few cards are shown nearly full size, many small.
-	var card_scale := 0.85 if entries.size() <= 8 else (0.62 if entries.size() <= 14 else SMALL)
-	var pitch := Vector2(ArenaCard.SIZE.x * card_scale + 8.0, ArenaCard.SIZE.y * card_scale + 10.0)
-	var a_row := maxi(1, int((size.x - 160.0) / pitch.x))
-	var rows := ceili(entries.size() / float(a_row))
-	var top := (size.y - rows * pitch.y) * 0.5 + 16.0
-	for i in entries.size():
-		var entry: Dictionary = entries[i]
-		var card := ArenaCard.new()
-		card.show_entry(entry, t.hyde())
-		card.scale = Vector2(card_scale, card_scale)
-		@warning_ignore("integer_division")
-		var in_row := mini(a_row, entries.size() - (i / a_row) * a_row)
-		@warning_ignore("integer_division")
-		var middle := Vector2((size.x - in_row * pitch.x) * 0.5 + (i % a_row + 0.5) * pitch.x, top + (i / a_row + 0.5) * pitch.y)
-		card.position = middle - card.pivot_offset
-		_deck.add_child(card)
-	var pile_name := "discards" if which == "discards" else "draw pile"
-	if entries.is_empty():
-		_deck_title.text = "The %s is empty. Click to close." % pile_name
-	else:
-		_deck_title.text = "The %s: %d card%s, in no order. Click to close." % [pile_name, entries.size(),
-				"" if entries.size() == 1 else "s"]
-	_deck_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_deck_title.position = Vector2(0.0, top - 44.0)
-	_deck_title.size = Vector2(size.x, 26.0)
-	_deck.add_child(_deck_title)
-	_deck.visible = true
-	Sfx.play("riffle", 1.15, 0.8) # the pile fanned out
+	if not _open:
+		return
+	_deck.open(which)
 	_note.visible = false
-	# The hand lies under the view: no card of it grows there while the view is open.
+	# The hand lies under the view: no card of it takes the pointer while the view is open.
 	t.hand.enabled = false
 
 
 func _close_deck() -> void:
-	if not _deck.visible:
-		return
-	_deck.visible = false
-	Sfx.play("riffle", 0.9, 0.5)
-	if _deck_title.get_parent() == _deck:
-		_deck.remove_child(_deck_title)
-	_clear(_deck)
-	# The hand takes the pointer again, unless a move has begun meanwhile.
-	t.hand.enabled = _open
+	_deck.close()
 
 
 # ---------- the Notebook ----------
@@ -373,5 +321,4 @@ func _show_a_hand() -> void:
 
 func _clear(holder: Control) -> void:
 	for child in holder.get_children():
-		if child != _deck_title:
-			child.queue_free()
+		child.queue_free()
