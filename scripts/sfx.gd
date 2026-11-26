@@ -33,6 +33,9 @@ const NAMES: Array[String] = [
 ## How many sounds can be heard at once; one more cuts the oldest short.
 const VOICES := 16
 
+## A loop has begun again from its start: `sound` is its name. For what must keep time with it.
+signal loop_restarted(sound: String)
+
 ## Who has the table, for `play_sided`: Hyde (the `_h` sounds) or Jekyll (the `_j` ones).
 var hyde := false
 
@@ -102,7 +105,7 @@ func loop(sound: String, pitch: float = 1.0, volume: float = 1.0) -> void:
 	if not voice:
 		voice = AudioStreamPlayer.new()
 		add_child(voice)
-		voice.finished.connect(voice.play) # the file itself need not be set to loop
+		voice.finished.connect(_restart.bind(sound, voice)) # the file itself need not be set to loop
 		_loops[sound] = voice
 		_tune(voice, stream, pitch, volume)
 		voice.play()
@@ -120,8 +123,7 @@ func stop_loop(sound: String, fade: float = 0.3) -> void:
 	var voice: AudioStreamPlayer = _loops.get(sound)
 	if not voice:
 		return
-	_loops.erase(sound)
-	voice.finished.disconnect(voice.play)
+	_loops.erase(sound) # so it is not begun again: see `_restart`
 	if fade <= 0.0:
 		voice.queue_free()
 		return
@@ -162,8 +164,18 @@ func _stream(sound: String) -> AudioStream:
 	return stream
 
 
+# Begins a loop's voice again when it has reached its end, unless the loop has been stopped.
+func _restart(sound: String, voice: AudioStreamPlayer) -> void:
+	if _loops.get(sound) != voice:
+		return
+	voice.play()
+	loop_restarted.emit(sound)
+
+
 func _tune(voice: AudioStreamPlayer, stream: AudioStream, pitch: float, volume: float) -> void:
-	voice.stream = stream
+	# A player given its stream again stops: a loop tuned while it plays keeps the one it has.
+	if voice.stream != stream:
+		voice.stream = stream
 	voice.pitch_scale = clampf(pitch, 0.1, 4.0)
 	voice.volume_db = linear_to_db(clampf(volume, 0.0001, 2.0))
 
