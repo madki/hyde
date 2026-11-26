@@ -39,6 +39,10 @@ signal twist_acted
 const TICK_TIMES: Array[float] = [0.30, 0.20, 0.14] ## a tick: the first five of a play, the next five, the rest
 const MARK_TIME := 0.35 ## a tally mark, a drop, the strike
 const LAND_TIME := 0.6 ## chips and mult become one total
+const LAND_STOP := 0.08 ## a total of weight 2 or more holds still this long before it lands
+const LAND_SWELL: Array[float] = [0.2, 0.2, 0.4, 0.5] ## how far a total swells as it lands, by its weight
+const LAND_LARGER := 0.18 ## how much larger a total of weight 2 or more stands once it has landed
+const SPILL_TIME := 0.8 ## the score's ink or light, after a play that took the whole target
 const TRAVEL_TIME := 0.2 ## the total travels to the score...
 const COUNT_IN_TIME := 0.3 ## ...and the score counts it in
 const COUNT_TIME := 0.6 ## a number counts from one value to another
@@ -65,6 +69,7 @@ const GOAL_BASE := 32.0
 const GOAL_LINE := 5.0
 const GOAL_STROKE := 5.0
 const GOAL_TICK := 10.0
+const STRIKE_STROKE := 3.4 ## the stroke through a target that is reached
 ## How strongly the goal's thin line is drawn, under the heavy stroke of the score's share.
 const TRACK_INK := 0.35
 ## The sovereigns' coin: its radius, and where it stands in its zone.
@@ -108,6 +113,10 @@ var tallies := Control.new()
 ## as a whole (a pencil stroke's own alpha is its pressure, not its strength).
 var _tally_items: Array[Control] = [Control.new(), Control.new()]
 var _marks := Control.new()
+## Under everything else of the goal: the score's ink or light (`spill_score`).
+var _under := Control.new()
+## Over the figures: the stroke through a target that is reached.
+var _over := Control.new()
 ## The goal's thin line, on an item of its own: it is faint as a whole (TRACK_INK), which a
 ## pencil stroke cannot be by its colour.
 var _track := Control.new()
@@ -146,6 +155,9 @@ var _chips_pop := 0.0
 var _mult_pop := 0.0
 var _merge := 0.0
 var _total := 0
+var _weight := 0 ## how hard the total lands, 0 to 3 (`land_total`)
+var _spill := -1.0 ## 0 to 1 through the score's ink or light, -1 while there is none
+var _spill_shape: Array[float] = [] ## what makes one spill unlike the last
 var _travel := -1.0 ## -1 while the total is not on its way
 var _fly := -1.0 ## -1 while no drop is flying
 var _ticks := 0
@@ -183,6 +195,9 @@ func _init() -> void:
 	_text.draw.connect(_draw_text)
 	_flight.draw.connect(_draw_flight)
 	_flight.z_index = 1
+	_under.draw.connect(_draw_spill)
+	_over.material = LINE_MATERIAL
+	_over.draw.connect(_draw_strike)
 	for i in 2:
 		_tally_items[i].material = LINE_MATERIAL
 		_tally_items[i].mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -190,7 +205,7 @@ func _init() -> void:
 		tallies.add_child(_tally_items[i])
 	restraint.name = "Restraint"
 	road.name = "Road"
-	for child: Control in [_track, _marks, restraint, road, _text, tallies, _flight]:
+	for child: Control in [_under, _track, _marks, restraint, road, _text, _over, tallies, _flight]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -313,10 +328,30 @@ func count_score(to: int) -> Tween:
 	return _count("_score", to, COUNT_TIME)
 
 
-## The target is struck through (or the stroke rubbed out, with false).
+## The target is struck through, in one heavy stroke that starts fast (or the stroke is rubbed
+## out, with false).
 func strike_target(struck: bool = true) -> Tween:
 	var t := _tween()
-	t.tween_property(self, "_strike", 1.0 if struck else 0.0, MARK_TIME)
+	var stroke := t.tween_property(self, "_strike", 1.0 if struck else 0.0, MARK_TIME)
+	if struck:
+		stroke.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUART)
+	return t
+
+
+## The score bleeds ink while Hyde has the table, or flares in lamp light while Jekyll has it,
+## for SPILL_TIME: for a play that took the whole target alone, with the target's strike. With
+## "reduce flashes" on the ink only spreads and fades, and the light is left out: the score
+## leans to his colour and back.
+func spill_score() -> Tween:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = rng_seed + roundi(_score)
+	_spill_shape.clear()
+	for i in 40:
+		_spill_shape.append(rng.randf())
+	_spill = 0.0
+	var t := _tween()
+	t.tween_property(self, "_spill", 1.0, SPILL_TIME)
+	t.tween_property(self, "_spill", -1.0, 0.0)
 	return t
 
 
@@ -411,12 +446,22 @@ func fly_drop(by: int) -> Tween:
 	return t
 
 
-## The total is written after chips × mult, in the scorer's colour.
-func land_total() -> Tween:
+## The total is written after chips × mult, in the scorer's colour. `weight` is how hard it
+## lands, 0 to 3: from 2 the numbers hold still for LAND_STOP first, and the total swells
+## further and stands a size larger. It is at its fullest `land_peak(weight)` after the call.
+func land_total(weight: int = 0) -> Tween:
 	_total = roundi(_chips) * roundi(_mult)
+	_weight = clampi(weight, 0, LAND_SWELL.size() - 1)
 	var t := _tween()
+	if _weight >= 2:
+		t.tween_interval(LAND_STOP)
 	t.tween_property(self, "_merge", 1.0, LAND_TIME).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	return t
+
+
+## How long after `land_total(weight)` the total is at its fullest: when its blow falls.
+static func land_peak(weight: int) -> float:
+	return (LAND_STOP if weight >= 2 else 0.0) + LAND_TIME * 0.5
 
 
 ## The total travels to the round's score, which then counts up to `score_to`. The readout
@@ -425,6 +470,7 @@ func send_total(score_to: int) -> Tween:
 	if _merge < 1.0:
 		_total = roundi(_chips) * roundi(_mult)
 		_merge = 1.0
+		_weight = 0
 	_travel = 0.0
 	var t := _tween()
 	t.tween_property(self, "_travel", 1.0, TRAVEL_TIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
@@ -548,6 +594,7 @@ func _stop() -> void:
 	_mult_pop = 0.0
 	_fly = -1.0
 	_bloom = 0.0
+	_spill = -1.0
 
 
 func _stop_readout() -> void:
@@ -558,6 +605,8 @@ func _stop_readout() -> void:
 
 
 func _redraw() -> void:
+	_under.queue_redraw()
+	_over.queue_redraw()
 	_marks.queue_redraw()
 	_track.queue_redraw()
 	_text.queue_redraw()
@@ -567,7 +616,7 @@ func _redraw() -> void:
 
 
 func _lay_out() -> void:
-	for child: Control in [_marks, _track, _text, tallies, _flight] + _tally_items:
+	for child: Control in [_under, _over, _marks, _track, _text, tallies, _flight] + _tally_items:
 		child.size = size
 	var gauge := ArenaLayout.restraint(size)
 	restraint.position = gauge.position
@@ -728,8 +777,7 @@ func set_tally_look(i: int, colour: Color, drop: float) -> void:
 # --- Drawing -----------------------------------------------------------------------------
 
 ## The pencil and the chalk of the goal, in chalk: the stroke "/" between score and target,
-## the line under them that fills to score / target with its tick, and the target struck
-## through once it is reached.
+## and the line under them that fills to score / target with its tick.
 func _draw_marks() -> void:
 	var pencil := Pencil.new(rng_seed)
 	pencil.colour = Color(Palette.CHALK, 0.85)
@@ -746,13 +794,21 @@ func _draw_marks() -> void:
 	if end > goal.position.x + 1.0:
 		pencil.stroke(PackedVector2Array([Vector2(goal.position.x, y), Vector2(end, y)]), GOAL_STROKE, 0.5)
 	pencil.stroke(PackedVector2Array([Vector2(end, y - GOAL_TICK * 0.5), Vector2(end, y + GOAL_TICK * 0.5)]), 2.0, 0.3)
-	# The target struck through.
-	if _strike > 0.0:
-		var target_at := _target_at()
-		var width := _heavy.get_string_size(_thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
-		var from := target_at + Vector2(-4.0, -6.0)
-		pencil.stroke(PackedVector2Array([from, from.lerp(target_at + Vector2(width + 4.0, -9.0), _strike)]), 2.2, 0.5)
 	pencil.draw(_marks)
+
+
+## The target struck through, over its figures, which are still to be read under it.
+func _draw_strike() -> void:
+	if _strike <= 0.0:
+		return
+	var pencil := Pencil.new(rng_seed + 3)
+	pencil.colour = Palette.CHALK
+	var target_at := _target_at()
+	var width := _heavy.get_string_size(_thousands(roundi(_target)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, NUMBER_SIZE).x
+	var from := target_at + Vector2(-7.0, -5.0)
+	var to := from.lerp(target_at + Vector2(width + 7.0, -10.0), _strike)
+	pencil.stroke(PackedVector2Array([from, to]), STRIKE_STROKE, 0.5)
+	pencil.draw(_over)
 
 
 ## The goal's thin line, the zone's whole width: drawn in chalk and made faint by its item.
@@ -810,7 +866,8 @@ func _draw_text() -> void:
 	var score := _thousands(roundi(_score))
 	var score_at := _score_at()
 	var score_w := _heavy.get_string_size(score, HORIZONTAL_ALIGNMENT_LEFT, -1.0, SCORE_SIZE).x
-	ArenaPop.draw_bloom(_text, _heavy, score_at - Vector2(score_w, 0.0), score, SCORE_SIZE, OUTLINE_SIZE, _man(), _bloom)
+	ArenaPop.draw_bloom(_text, _heavy, score_at - Vector2(score_w, 0.0), score, SCORE_SIZE, OUTLINE_SIZE, _man(),
+			maxf(_bloom, _spill_glow()))
 	var target := _thousands(roundi(_target))
 	var target_at := _target_at()
 	_outlined(target_at, target, NUMBER_SIZE, Palette.CHALK.lerp(Palette.CHALK_3, _strike))
@@ -902,7 +959,11 @@ func _draw_readout() -> void:
 		var a := clampf(_merge * 2.0, 0.0, 1.0)
 		c.draw_string(_heavy, Vector2(left + line.equals, base - 3.0), "=", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22,
 				Color(Palette.CHALK_2, a))
-		_number(c, _thousands(_total), Vector2(left + line.total, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + 0.2 * sin(_merge * PI),
+		# A heavy total swells and stands larger from its left end, so that it keeps off the = sign.
+		var total := _thousands(_total)
+		var grown := 1.0 + _larger() * _merge + LAND_SWELL[_weight] * sin(_merge * PI)
+		var aside := _number_width(total) * (grown - 1.0) * 0.5 if _weight >= 2 else 0.0
+		_number(c, total, Vector2(left + line.total + aside, base), HORIZONTAL_ALIGNMENT_LEFT, grown,
 				Color(Palette.CHALK.lerp(_man(), 0.85), a))
 
 
@@ -914,10 +975,150 @@ func _draw_flight() -> void:
 	var total := _thousands(_total)
 	var w := _number_width(total)
 	var size_there := float(SCORE_SIZE) / READOUT_SIZE
-	var from := Vector2(_line_left() + _line().total + w * 0.5, _baseline())
+	var size_here := 1.0 + _larger()
+	var from := Vector2(_line_left() + _line().total + w * size_here * 0.5, _baseline())
 	var to := _score_at() - Vector2(w * size_there * 0.5, 0.0)
 	var at := from.lerp(to, _travel) - Vector2(w * 0.5, 0.0)
-	_number(_flight, total, at, HORIZONTAL_ALIGNMENT_LEFT, lerpf(1.0, size_there, _travel), Palette.CHALK.lerp(_man(), 0.85))
+	_number(_flight, total, at, HORIZONTAL_ALIGNMENT_LEFT, lerpf(size_here, size_there, _travel), Palette.CHALK.lerp(_man(), 0.85))
+
+
+# How much larger than the readout's size the landed total stands.
+func _larger() -> float:
+	return LAND_LARGER if _weight >= 2 else 0.0
+
+
+# --- The score's ink and light ------------------------------------------------------------
+
+# The strength of the spill's flare, 0 to 1: up in ArenaPace.FLARE_RISE and down over `fall`
+# seconds. With "reduce flashes" on it is a slow rise and fall the whole way through.
+func _spill_flare(fall: float) -> float:
+	if _spill < 0.0:
+		return 0.0
+	if ArenaPace.reduce_flashes:
+		return sin(_spill * PI)
+	var at := _spill * SPILL_TIME
+	if at < ArenaPace.FLARE_RISE:
+		return at / ArenaPace.FLARE_RISE
+	return clampf(1.0 - (at - ArenaPace.FLARE_RISE) / fall, 0.0, 1.0) ** 1.5
+
+
+# How far the score's own figures bloom with the spill: with his light, and a little with his ink.
+func _spill_glow() -> float:
+	if _spill < 0.0:
+		return 0.0
+	if is_jekyll:
+		return _spill_flare(SPILL_TIME - ArenaPace.FLARE_RISE)
+	return 0.0 if ArenaPace.reduce_flashes else 0.6 * _spill_flare(ArenaPace.FLARE_FALL)
+
+
+func _draw_spill() -> void:
+	if _spill < 0.0 or _spill_shape.is_empty():
+		return
+	var score_w := _heavy.get_string_size(_thousands(roundi(_score)), HORIZONTAL_ALIGNMENT_LEFT, -1.0, SCORE_SIZE).x
+	var middle := _score_at() + Vector2(-score_w * 0.5, -SCORE_SIZE * 0.36)
+	var reach := Vector2(maxf(score_w * 0.5 + 30.0, 58.0), 31.0)
+	if is_jekyll:
+		if not ArenaPace.reduce_flashes:
+			_draw_light(middle, reach)
+	else:
+		_draw_ink(middle, reach)
+
+
+# Hyde's ink: a blot spreads from under the score, fast, flecks thrown clear of it and runs
+# creeping down from it; its edge flares as it spreads, pale at the front and his colour
+# behind; then it thins away.
+func _draw_ink(middle: Vector2, reach: Vector2) -> void:
+	var c := _under
+	var s := _spill_shape
+	var spread := 1.0 - (1.0 - clampf(_spill / 0.4, 0.0, 1.0)) ** 3.0
+	var cover := 0.92 * (1.0 - smoothstep(0.68, 1.0, _spill))
+	var flare := 0.0 if ArenaPace.reduce_flashes else _spill_flare(ArenaPace.FLARE_FALL)
+	if cover <= 0.0 or spread <= 0.0:
+		return
+	# The blot's edge: an oval pulled in and out by three waves of its own.
+	var edge := PackedVector2Array()
+	var wash := PackedVector2Array()
+	var behind := PackedVector2Array()
+	var deep := PackedVector2Array()
+	for k in 56:
+		var a := TAU * k / 56.0
+		var r := 1.0 + 0.15 * sin(3.0 * a + s[0] * TAU) + 0.09 * sin(5.0 * a + s[1] * TAU) \
+				+ 0.05 * sin(11.0 * a + s[2] * TAU)
+		var out := Vector2(cos(a) * reach.x, sin(a) * reach.y) * r * spread
+		edge.append(middle + out)
+		wash.append(middle + out * 1.1 + out.normalized() * 4.0)
+		behind.append(middle + out - out.normalized() * 2.5)
+		deep.append(middle + out * 0.68)
+	# The runs, from the blot's lower edge: each a line with a bead at its end.
+	for i in 4:
+		var x := lerpf(-0.8, 0.8, (i + 0.15 + s[4 + i] * 0.7) / 4.0) * reach.x * spread
+		var top := middle + Vector2(x, reach.y * 0.5 * spread)
+		var long := (14.0 + 26.0 * s[8 + i]) * smoothstep(0.05 + 0.1 * s[12 + i], 0.75, _spill)
+		var wide := 3.0 + 2.6 * s[16 + i]
+		if long > 1.0:
+			var tip := top + Vector2(0.0, reach.y * 0.55 * spread + long)
+			c.draw_line(top, tip, Color(Palette.INK_BODY, cover), wide, true)
+			c.draw_circle(tip, wide * 0.5 + 1.1, Color(Palette.INK_BODY, cover), true, -1.0, true)
+	# The flecks, thrown clear of it.
+	for i in 6:
+		var a := s[20 + i] * TAU
+		var far := (1.25 + 0.5 * s[26 + i]) * spread
+		var at := middle + Vector2(cos(a) * reach.x, sin(a) * reach.y) * far
+		c.draw_circle(at, 1.4 + 2.4 * s[32 + i], Color(Palette.INK_BODY, cover), true, -1.0, true)
+	c.draw_colored_polygon(wash, Color(Palette.INK_BODY, cover * 0.4))
+	c.draw_colored_polygon(edge, Color(Palette.INK_BODY, cover))
+	c.draw_colored_polygon(deep, Color(Palette.INK_DEEP, cover * 0.55))
+	edge.append(edge[0])
+	c.draw_polyline(edge, Color(Palette.INK_BODY, cover), 1.5, true)
+	if flare > 0.0:
+		behind.append(behind[0])
+		c.draw_polyline(behind, Color(Palette.HYDE, flare * 0.7), 3.0, true)
+		c.draw_polyline(edge, Color(Palette.SALT, flare * 0.9), 1.4, true)
+
+
+# Jekyll's light: the lamp's glow swells round the score, with a bright streak across it and
+# rays thrown out from it, up quickly and down slowly.
+func _draw_light(middle: Vector2, reach: Vector2) -> void:
+	var c := _under
+	var s := _spill_shape
+	var flare := _spill_flare(SPILL_TIME - ArenaPace.FLARE_RISE)
+	if flare <= 0.0:
+		return
+	var grown := 0.7 + 0.3 * smoothstep(0.0, 0.5, _spill) + 0.1 * _spill
+	# The glow: his colour, wide and faint, and paler close round the figures.
+	_glow(c, middle, Vector2(reach.x * 2.3, reach.y * 2.6) * grown, Color(Palette.JEKYLL, 0.5 * flare))
+	_glow(c, middle, Vector2(reach.x * 1.15, reach.y * 1.3) * grown, Color(Palette.SALT, 0.45 * flare))
+	# The rays: thin, each its own length, none straight up into the page's edge.
+	for i in 14:
+		var a := TAU * (i + 0.7 * s[i]) / 14.0
+		var out := Vector2(cos(a), sin(a) * 0.72)
+		var from := middle + Vector2(out.x * reach.x, out.y * reach.y * 1.4) * 0.8
+		var long := (30.0 + 56.0 * s[14 + i]) * grown * (0.5 + 0.5 * absf(cos(a)))
+		var side := out.orthogonal().normalized() * (1.5 + 1.8 * s[i])
+		c.draw_polygon(PackedVector2Array([from - side, from + side, from + out.normalized() * long]),
+				PackedColorArray([Color(Palette.SALT, 0.7 * flare), Color(Palette.SALT, 0.7 * flare), Color(Palette.JEKYLL, 0.0)]))
+	# The streak across the figures.
+	var half := reach.x * 2.3 * grown
+	for sign: float in [-1.0, 1.0]:
+		c.draw_polygon(PackedVector2Array([middle + Vector2(0.0, -2.2), middle + Vector2(0.0, 2.2), middle + Vector2(half * sign, 0.0)]),
+				PackedColorArray([Color(Palette.SALT, 0.9 * flare), Color(Palette.SALT, 0.9 * flare), Color(Palette.JEKYLL, 0.0)]))
+
+
+# A soft oval of light on `c`: `colour` at `middle`, fading to nothing at `reach`.
+func _glow(c: CanvasItem, middle: Vector2, reach: Vector2, colour: Color) -> void:
+	var clear := Color(colour, 0.0)
+	var half := Color(colour, colour.a * 0.38)
+	var last_in := middle + Vector2(reach.x * 0.5, 0.0)
+	var last_out := middle + Vector2(reach.x, 0.0)
+	for k in range(1, 33):
+		var a := TAU * k / 32.0
+		var dir := Vector2(cos(a) * reach.x, sin(a) * reach.y)
+		var next_in := middle + dir * 0.5
+		var next_out := middle + dir
+		c.draw_polygon(PackedVector2Array([middle, last_in, next_in]), PackedColorArray([colour, half, half]))
+		c.draw_polygon(PackedVector2Array([last_in, last_out, next_out, next_in]), PackedColorArray([half, clear, clear, half]))
+		last_in = next_in
+		last_out = next_out
 
 
 ## A readout number drawn on `c`, its baseline at `at`, aligned at `at` (right edge, left edge or

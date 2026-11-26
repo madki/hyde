@@ -19,6 +19,7 @@ const REWARD_SCALE := 1.25
 const REWARD_GAP := 20.0
 ## The caption's box: it may run to a second line, which then spreads above and below its zone.
 const CAPTION_SIZE := Vector2(600.0, 48.0)
+const CAPTION_FONT_SIZE := 19
 const CAPTION_COLOUR := Palette.CHALK
 const CAPTION_OUTLINE := Color(Palette.OUTLINE, 0.9)
 
@@ -39,7 +40,7 @@ func _init() -> void:
 	_caption.add_theme_color_override("font_color", CAPTION_COLOUR)
 	_caption.add_theme_color_override("font_outline_color", CAPTION_OUTLINE)
 	_caption.add_theme_constant_override("outline_size", 7)
-	_caption.add_theme_font_size_override("font_size", 19)
+	_caption.add_theme_font_size_override("font_size", CAPTION_FONT_SIZE)
 	_caption.add_theme_constant_override("line_spacing", -2)
 	_caption.modulate.a = 0.0
 	add_child(_caption)
@@ -80,8 +81,10 @@ func holds(point: Vector2) -> bool:
 
 
 ## Puts a caption over the row. It replaces the one there, which is then cut short.
-func show_caption(text: String) -> void:
+## `font_size` is for the one line that is written larger than the rest.
+func show_caption(text: String, font_size: int = CAPTION_FONT_SIZE) -> void:
 	_caption.text = text
+	_caption.add_theme_font_size_override("font_size", font_size)
 	_caption_age = 0.0
 	set_process(true)
 	if _fade and _fade.is_valid():
