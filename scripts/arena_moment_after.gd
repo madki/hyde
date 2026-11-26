@@ -142,8 +142,12 @@ static func _turn(t: ArenaTable, e: Dictionary, order: Array) -> void:
 	if card:
 		before.chips = card.chips
 	var slot := t.stage.slot(maxi(order.find(e.id), 0), maxi(order.size(), 1))
+	var said := func() -> Dictionary:
+		return ArenaCaptions.changes_notice("turn", before.name, after.name,
+				int(t.shown.value("line/paper", 0)), int(t.shown.value("line/ink", 0)),
+				RulesConfig.ROOT[sym].label, int(e.gain), int(e.temper))
 	t.moments.change_side(before, after, "hand", ArenaCaptions.changes("turn", before.name, after.name),
-			card, slot, 0.0)
+			card, slot, 0.0, Callable(), said)
 	t.beats.add(func() -> void:
 		t.shown.add("line/ink", -1)
 		t.shown.add("line/paper", 1)

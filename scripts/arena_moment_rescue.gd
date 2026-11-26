@@ -10,7 +10,20 @@ class_name ArenaMomentRescue
 ##    doubles in the readout, the round's score counts to its new value, and the line moves
 ##    a mark across.
 ##
-## Whether that covered the round is the `round_end` event's to show (ArenaMomentEnd).
+## Whether that covered the round is the `round_end` event's to show (ArenaMomentEnd), which
+## sums the rescue up on the notice.
+
+
+## The table's meta holding what the rescue of this move took, for the round end's notice:
+## {short, before, after}, the cards as data. Taken off by `summary`.
+const SUMMARY := &"rescue_summary"
+
+
+## What the last rescue took ({short, before, after}), taken off the table; empty with none.
+static func summary(t: ArenaTable) -> Dictionary:
+	var said: Dictionary = t.get_meta(SUMMARY, {})
+	t.remove_meta(SUMMARY)
+	return said
 
 
 ## Adds the beats of a `rescue` or `converted` event. False for any other. `state` is kept
@@ -30,6 +43,8 @@ static func _steps_in(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 	state.last = int(e.last)
 	state.taken = 0
 	var gap: int = int(e.target) - int(e.prior) - int(e.last)
+	# What the round end's notice sums up: the gap he covers and the Roots he takes.
+	t.set_meta(SUMMARY, {"short": gap, "before": [], "after": []})
 	t.beats.add(func() -> void:
 		t.stage.show_caption("%s short." % ArenaMomentRound.thousands(gap))
 		t.beats.sound("low_note")
@@ -56,6 +71,10 @@ static func _takes(t: ArenaTable, e: Dictionary, state: Dictionary) -> void:
 	if card:
 		before.chips = card.chips
 	state.taken += 1
+	var summary: Dictionary = t.get_meta(SUMMARY, {"short": 0, "before": [], "after": []})
+	summary.before.append(before)
+	summary.after.append(after)
+	t.set_meta(SUMMARY, summary)
 	var doubled: int = 1 << int(state.taken)
 	# Where the card lies is asked for as it lifts: the played cards have left the row by then.
 	var rest := func() -> Dictionary:
