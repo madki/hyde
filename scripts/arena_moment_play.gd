@@ -40,6 +40,14 @@ const PAY_FLIGHT := 0.25 / 0.60
 ## The words of a gauge that pays fade this long once its mult has ticked.
 const PAY_FADE := 0.15
 
+## How hard the picture is hit as a total lands, by the play's weight (`_weight`), and the
+## sound of each blow. A sound plays once Sfx knows its name and has its file.
+const LAND_HITS: Array[float] = [0.0, 0.3, 0.6, 1.0]
+const LAND_SOUNDS: Array[String] = ["", "impact_1", "impact_2", "impact_3"]
+## The hit as a target is struck through, and when one play took the whole of it.
+const STRIKE_HIT := 0.3
+const STRIKE_HIT_ALONE := 0.6
+
 ## For `--trace`: when the play's score began to be shown, in milliseconds.
 static var _began_ms := 0
 
@@ -290,13 +298,27 @@ static func _gauge_colour(row: String) -> Color:
 
 
 # Beats 6 and 7: the total lands, travels to the round's score, and may strike the target.
+# The more of the target the play takes alone, the harder it lands (`_weight`).
 static func _total(t: ArenaTable, score_to: int) -> void:
+	var play := {"weight": 0}
 	t.beats.add(func() -> void:
+		var weight := _weight(score_to - int(t.shown.value("score", 0)), int(t.after.target))
+		play.weight = weight
 		# The ticks gather into one landing; Hyde's is lower and heavier.
 		t.beats.sound("total", 0.84 if t.hyde() else 1.0)
-		await t.follow(t.numbers.land_total()).finished
+		var land := t.follow(t.numbers.land_total(weight))
+		if weight > 0:
+			# The blow falls as the total is at its fullest.
+			var blow := t.beats.tween()
+			blow.tween_interval(ArenaNumbers.land_peak(weight))
+			blow.tween_callback(func() -> void:
+				_shake(t, LAND_HITS[weight])
+				if LAND_SOUNDS[weight] in Sfx.NAMES:
+					t.beats.sound(LAND_SOUNDS[weight]))
+		await land.finished
 		if Shot.has_arg("trace"):
-			print("  total     %d, the round's score to %d" % [t.numbers.get("_total"), score_to]))
+			print("  total     %d, the round's score to %d   %.2f s" % [t.numbers.get("_total"), score_to,
+					(Time.get_ticks_msec() - _began_ms) / 1000.0]))
 	t.beats.add(func() -> void:
 		t.shown.set_value("score", score_to)
 		var send := t.follow(t.numbers.send_total(score_to))
@@ -310,7 +332,27 @@ static func _total(t: ArenaTable, score_to: int) -> void:
 	if score_to >= int(t.after.target):
 		t.beats.add(func() -> void:
 			t.beats.sound("target_struck")
+			# A play that took the whole target alone: the score bleeds ink, or flares in light.
+			var alone: bool = play.weight >= 3
+			_shake(t, STRIKE_HIT_ALONE if alone else STRIKE_HIT)
+			if alone:
+				t.follow(t.numbers.spill_score())
 			await t.follow(t.numbers.strike_target()).finished)
+
+
+# How hard a play lands, 0 to 3, by how much of the round's target its total is: under a
+# quarter, under a half, under the whole, and the whole target or more.
+static func _weight(total: int, target: int) -> int:
+	if target <= 0:
+		return 0
+	var share := float(total) / target
+	return 3 if share >= 1.0 else 2 if share >= 0.5 else 1 if share >= 0.25 else 0
+
+
+# The picture shakes, unless the move is being skipped.
+static func _shake(t: ArenaTable, strength: float) -> void:
+	if not t.beats.is_skipping():
+		ArenaShake.hit(strength)
 
 
 # The laid cards go to the discards.

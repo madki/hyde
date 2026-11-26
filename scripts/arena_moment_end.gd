@@ -39,6 +39,8 @@ static func add(t: ArenaTable, e: Dictionary, first: Dictionary = {}) -> void:
 		t.add_caption("He takes no card.")
 
 
+## The size of "Round won.", the one caption written larger than the rest.
+const WON_SIZE := 27
 ## The names of the run's three endings.
 const ENDINGS := {"hyde": "Mr Hyde", "double": "The Double Life", "myself": "This, Too, Was Myself"}
 
@@ -139,7 +141,7 @@ static func _pay(t: ArenaTable, e: Dictionary) -> void:
 	var unused: int = e.plays_left
 	var for_round: int = int(e.pay) - unused * dials.unused_play_pay
 	t.beats.add_call(func() -> void:
-		t.stage.show_caption("Round won.")
+		t.stage.show_caption("Round won.", WON_SIZE)
 		t.beats.sound("round_won"))
 	for i in for_round:
 		t.beats.add(func() -> void:
