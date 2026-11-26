@@ -1,17 +1,27 @@
 class_name SimStore
 ## What the sims keep on disk. A batch is a folder `<root>/<RULES_VERSION>/<batch>/` with
-## `manifest.json` ({rules_version, rules_hash, commit, dirty, player, dials, give,
+## `manifest.json` ({rules_version, rules_hash, player_hash, commit, dirty, player, dials, give,
 ## seeds: [from, to], runs, started, seconds, godot}; `dials` is the changed numbers only,
 ## `to` is the first seed not played) and `runs.jsonl`, one run a line (SimGame.play_run).
 
 const RULES_DIR := "res://scripts/rules"
 ## What makes two batches the same runs.
-const SAME: Array[String] = ["player", "dials", "give", "seeds", "rules_hash"]
+const SAME: Array[String] = ["player", "dials", "give", "seeds", "rules_hash", "player_hash"]
+## The scripts a run is played by, beside the rules: every player, and what players and the
+## run loop are made of. The reports are not among them: they play nothing.
+const PLAYERS_DIR := "res://sim/players"
+const PLAY_SCRIPTS: Array[String] = [
+	"res://sim/personas.gd", "res://sim/sim_game.gd", "res://sim/sim_moves.gd",
+	"res://sim/sim_player.gd", "res://sim/sim_value.gd",
+]
+## A player whose name holds this plays numbers of the file of found personas.
+const FOUND_MARK := "found-"
 
 ## Where batches are kept. A test points it somewhere else.
 static var root := "res://sim_data"
 
 static var _hash := ""
+static var _play_hash := ""
 
 
 ## A hash of the text of every script of the rules, by file name.
@@ -31,6 +41,42 @@ static func rules_hash() -> String:
 		ctx.update("\n".to_utf8_buffer())
 	_hash = ctx.finish().hex_encode().substr(0, 16)
 	return _hash
+
+
+## A hash of the text of every script a player's runs are played by, and, for a player of
+## the file of found personas, of that file: a batch played before one of them changed is
+## not the runs the player would play now.
+static func player_hash(player: String) -> String:
+	if _play_hash == "":
+		var paths: Array[String] = PLAY_SCRIPTS.duplicate()
+		for f in DirAccess.get_files_at(PLAYERS_DIR):
+			if f.ends_with(".gd"):
+				paths.append(PLAYERS_DIR + "/" + f)
+		paths.sort()
+		_play_hash = _hash_of(paths)
+	if not player.contains(FOUND_MARK):
+		return _play_hash
+	return (_play_hash + _hash_of([SimPersonas.FOUND_PATH])).sha256_text().substr(0, 16)
+
+
+static func _hash_of(paths: Array[String]) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	for path in paths:
+		ctx.update((path + "\n").to_utf8_buffer())
+		ctx.update(FileAccess.get_file_as_bytes(path))
+		ctx.update("\n".to_utf8_buffer())
+	return ctx.finish().hex_encode().substr(0, 16)
+
+
+## Whether a batch on disk is this one played before the player's scripts (or the found
+## personas) changed: the same runs but for the player's hash.
+static func is_stale(on_disk: Dictionary, wanted: Dictionary) -> bool:
+	if on_disk.is_empty() or same_runs(on_disk, wanted):
+		return false
+	var as_now := on_disk.duplicate()
+	as_now["player_hash"] = wanted.get("player_hash")
+	return same_runs(as_now, wanted)
 
 
 ## The folder of the batch of this name, under the rules' version of now.
@@ -55,12 +101,27 @@ static func batch_name(player: String, dials: Dictionary, give: Array, from: int
 
 
 ## The folder of a batch on disk whose manifest is the same runs as this one (player, dials,
-## give, seeds and the rules' hash), under any version, or "" if there is none.
+## give, seeds, and the hashes of the rules and of the player), under any version, or "" if
+## there is none. A batch that lacks some of its runs is not found.
 static func find(manifest_wanted: Dictionary) -> String:
 	for dir: String in batches():
-		if same_runs(manifest(dir), manifest_wanted):
+		if same_runs(manifest(dir), manifest_wanted) and is_whole(dir):
 			return dir
 	return ""
+
+
+## Whether a batch on disk holds every run its manifest names: one for each seed, in order.
+static func is_whole(dir: String) -> bool:
+	var seeds: Array = manifest(dir).get("seeds", [])
+	if seeds.size() != 2:
+		return false
+	var runs := read_lines(dir + "/runs.jsonl")
+	if runs.size() != int(seeds[1]) - int(seeds[0]):
+		return false
+	for i in runs.size():
+		if not runs[i] is Dictionary or runs[i].get("seed") != int(seeds[0]) + i:
+			return false
+	return true
 
 
 ## Whether two manifests are the same runs.
@@ -112,7 +173,7 @@ static func batches(rules_version: String = "") -> Array[String]:
 ## The manifest of a batch about to be played, without what is known only afterwards.
 static func new_manifest(player: String, dials: Dictionary, give: Array, from: int, to: int) -> Dictionary:
 	return {
-		"rules_version": RulesConfig.RULES_VERSION, "rules_hash": rules_hash(),
+		"rules_version": RulesConfig.RULES_VERSION, "rules_hash": rules_hash(), "player_hash": player_hash(player),
 		"commit": "", "dirty": false, "player": player, "dials": dials, "give": give,
 		"seeds": [from, to], "runs": 0, "started": "", "seconds": 0.0,
 		"godot": Engine.get_version_info().string,

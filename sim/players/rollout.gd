@@ -37,6 +37,15 @@ func setup(variant_name: String, with_params: Dictionary) -> void:
 		if given is int or given is float:
 			weights[key] = float(given)
 	cheap = cheap_player(variant_name)
+	unknown_params(with_params, ["samples", "top"] + weights.keys())
+
+
+## Says, as the runner's failure, each parameter a searching player was given and has not.
+static func unknown_params(given: Dictionary, known: Array) -> void:
+	for key: Variant in given:
+		if not known.has(key):
+			# The runner stops a batch at this line.
+			print("SIM FAILED: No such number of this player: %s" % key)
 
 
 func begin(run: RulesRun, run_seed: int) -> void:
@@ -152,6 +161,7 @@ static func play_out(copy: RulesRun, with: SimPlayer) -> void:
 	var night: int = copy.night
 	var round_no: int = copy.round
 	var made := 0
+	with.on_copy(copy)
 	while copy.phase == "play" and copy.night == night and copy.round == round_no and made < ROUND_GUARD:
 		made += 1
 		var move := plain_move(copy) if plainest else with.choose(copy)

@@ -236,3 +236,21 @@ func test_saves_that_cannot_be_played() -> void:
 			"end":
 				break
 	eq(seen.size(), Rules.PHASES.size(), "a run saves and loads in every phase")
+
+
+func test_a_fast_copy_holds_everything_saved() -> void:
+	# Every saved variable is given a value that is not its first one, so that a variable
+	# the fast copy leaves out shows.
+	var run := fresh({}, 4)
+	for key: String in run.to_dict():
+		var v: Variant = run.get(key)
+		match typeof(v):
+			TYPE_NIL: run.set(key, {"marked": 1})
+			TYPE_INT: run.set(key, int(v) + 7)
+			TYPE_FLOAT: run.set(key, float(v) + 0.5)
+			TYPE_BOOL: run.set(key, not v)
+			TYPE_STRING: run.set(key, str(v) + "x")
+			TYPE_DICTIONARY: (v as Dictionary)["marked"] = 1
+	var quick := run.copy_fast()
+	eq(JSON.stringify(quick.to_dict()), JSON.stringify(run.to_dict()), "a fast copy is the run, variable for variable")
+	eq(JSON.stringify(quick.to_dict()), JSON.stringify(run.copy().to_dict()), "and is what a copy is")

@@ -74,6 +74,7 @@ if grep -q '^SIM HAVE' "$tmp/log"; then
 	grep '^SIM ' "$tmp/log" | grep -v '^SIM HAVE'
 	exit 0
 fi
+grep '^SIM STALE' "$tmp/log" || true
 name="$(sed -n 's/^SIM NAME //p' "$tmp/log")"
 seeds="$(sed -n 's/^SIM SEEDS //p' "$tmp/log")"
 started="$(sed -n 's/^SIM START //p' "$tmp/log")"

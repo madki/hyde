@@ -139,6 +139,10 @@ static func numbers(name: String, found_path: String = FOUND_PATH) -> Dictionary
 		if not found.get(name) is Dictionary:
 			return {}
 		changes = found[name]
+		var wrong := faults(changes)
+		if not wrong.is_empty():
+			push_error("The persona %s of %s cannot be read: %s" % [name, found_path, "; ".join(wrong)])
+			return {}
 	var base := str(changes.get("based_on", ""))
 	if base != "" and NAMED.has(base) and base != name:
 		change(out, NAMED[base])
@@ -168,6 +172,33 @@ static func change(into: Dictionary, changes: Dictionary) -> Array:
 				else:
 					into[key] = Array(str(v).split("+", false))
 	return unknown
+
+
+## What is wrong with a persona of a file, one line each: a number no persona has, a value
+## that is not of its number's kind, a start that is no persona of NAMED. A file is checked,
+## where a number given by hand is read as its kind: a file that is out of date must not
+## play as if it were not.
+static func faults(entry: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	for key: Variant in entry:
+		var v: Variant = entry[key]
+		if key == "based_on":
+			if not (v is String and NAMED.has(v)):
+				out.append("based_on is no persona: %s" % str(v))
+			continue
+		if not DEFAULTS.has(key):
+			out.append("no such number: %s" % str(key))
+			continue
+		var fits := false
+		match typeof(DEFAULTS[key]):
+			TYPE_INT: fits = v is int or (v is float and v == floor(v))
+			TYPE_FLOAT: fits = v is int or v is float
+			TYPE_BOOL: fits = v is bool
+			TYPE_STRING: fits = v is String
+			TYPE_ARRAY: fits = v is Array
+		if not fits:
+			out.append("%s is not of its kind: %s" % [key, str(v)])
+	return out
 
 
 ## The personas of a JSON file, name to changed numbers. {} if the file is absent or is not

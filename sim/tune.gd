@@ -100,6 +100,10 @@ func _read_args() -> String:
 		var eq := a.find("=")
 		var key := a if eq < 0 else a.substr(0, eq)
 		var value := "" if eq < 0 else a.substr(eq + 1)
+		if key in ["rounds", "tries", "seeds", "from", "seed"] and not value.is_valid_int():
+			return "%s is a whole number: %s" % [key, value]
+		if key in ["z", "z2"] and not value.is_valid_float():
+			return "%s is a number: %s" % [key, value]
 		match key:
 			"start": start = value
 			"rounds": rounds = int(value)
@@ -194,7 +198,7 @@ func _show(base: Dictionary, held: Dictionary, kept: int) -> String:
 	var before := _scores("%s.%s" % [PERSONA, start], show_from, show_to)
 	var after := {}
 	if not none:
-		if not _write_found(found_name, entry):
+		if not write_found(found_name, entry):
 			return "Cannot write %s" % SimPersonas.FOUND_PATH
 		# The batch of a found persona is known by its numbers as well as its name: the name
 		# stays when a later search finds other numbers.
@@ -202,7 +206,7 @@ func _show(base: Dictionary, held: Dictionary, kept: int) -> String:
 		var dir := SimStore.batch_dir(batch)
 		var player := "%s.%s" % [PERSONA, found_name]
 		var m := SimStore.manifest(dir)
-		if m.get("player", "") == player and m.get("rules_hash", "") == SimStore.rules_hash() and m.get("seeds", []) == [show_from, show_to]:
+		if m.get("player", "") == player and m.get("rules_hash", "") == SimStore.rules_hash() and m.get("player_hash", "") == SimStore.player_hash(player) and m.get("seeds", []) == [show_from, show_to]:
 			after = _read_scores(dir)
 		else:
 			_wanted.append("TUNE PLAY|%s|%d|%d|%s|force" % [batch, show_from, show_to, player])
@@ -213,8 +217,9 @@ func _show(base: Dictionary, held: Dictionary, kept: int) -> String:
 	var n: int = before.cleared.size()
 	var searched := "searched on seeds %d-%d with %d rounds of %d, seed %d" % [from, from + 2 * seeds, rounds, tries, search_seed]
 	if none:
-		_write_found(found_name, {})
 		print("TUNE %s: none found that clears more rounds (%s)" % [start, searched])
+		if SimPersonas.read_found().has(found_name):
+			print("  %s is kept in %s as it was" % [found_name, SimPersonas.FOUND_PATH])
 		print("  seeds %d-%d  %s  %d wins of %d (%.1f%%), %.2f rounds cleared a run" % [
 			show_from, show_to, start, total(before.won), n, 100.0 * total(before.won) / n, mean(before.cleared),
 		])
@@ -253,14 +258,13 @@ static func moves() -> Dictionary:
 		out[key] = true
 	for key: String in WEIGHTS:
 		out[key] = WEIGHTS[key]
-	var kinds: Array = []
 	for key: String in SimPersonas.DEFAULTS:
 		if key.begins_with("card_"):
 			out[key] = CARD_WEIGHT
-			kinds.append(key.trim_prefix("card_"))
 	out["inst_pref"] = Array(RulesConfig.LAB_INSTRUMENTS)
 	out["alley_inst"] = Array(RulesConfig.HIS_INSTRUMENTS)
-	out["strike_kinds"] = kinds
+	# Only a Factor is struck by its kind.
+	out["strike_kinds"] = Array(RulesConfig.FACTORS)
 	return out
 
 
@@ -418,7 +422,7 @@ func _read_index() -> void:
 	var now := SimStore.rules_hash()
 	for dir: String in SimStore.batches(RulesConfig.RULES_VERSION):
 		var m := SimStore.manifest(dir)
-		if m.get("rules_hash", "") != now or not (m.get("dials", {}) as Dictionary).is_empty() or not (m.get("give", []) as Array).is_empty():
+		if m.get("rules_hash", "") != now or m.get("player_hash", "") != SimStore.player_hash(str(m.get("player", ""))) or not (m.get("dials", {}) as Dictionary).is_empty() or not (m.get("give", []) as Array).is_empty():
 			continue
 		var s: Array = m.get("seeds", [0, 0])
 		_index[_key(str(m.get("player", "")), int(s[0]), int(s[1]))] = dir
@@ -462,26 +466,27 @@ func _read_scores(dir: String) -> Dictionary:
 	return out
 
 
-# Puts a persona into the file of found ones (or takes it out, given {}). Returns whether
-# the file is as wanted.
-func _write_found(found_name: String, entry: Dictionary) -> bool:
+# Puts a persona into the file of found ones. Returns whether the file is as wanted. A file
+# that is there and cannot be read is left alone: writing over it would lose every other
+# persona in it.
+static func write_found(found_name: String, entry: Dictionary, path: String = SimPersonas.FOUND_PATH) -> bool:
+	if FileAccess.file_exists(path) and not JSON.parse_string(FileAccess.get_file_as_string(path)) is Dictionary:
+		return false
 	# Read with its whole numbers whole, so that they are written back as they were.
-	var all: Dictionary = SimStore.whole(SimPersonas.read_found())
-	if entry.is_empty():
-		if not all.has(found_name):
-			return true
-		all.erase(found_name)
-	else:
-		if JSON.stringify(all.get(found_name)) == JSON.stringify(entry):
-			return true
-		all[found_name] = entry
-	return _write_json(SimPersonas.FOUND_PATH, all, "\t")
+	var all: Dictionary = SimStore.whole(SimPersonas.read_found(path))
+	if JSON.stringify(all.get(found_name)) == JSON.stringify(entry):
+		return true
+	all[found_name] = entry
+	return _write_json(path, all, "\t")
 
 
-func _write_json(path: String, data: Dictionary, indent: String) -> bool:
-	var f := FileAccess.open(path, FileAccess.WRITE)
+# Written whole beside the file and then put in its place, so that a search stopped while it
+# writes leaves the file as it was.
+static func _write_json(path: String, data: Dictionary, indent: String) -> bool:
+	var beside := path + ".tmp"
+	var f := FileAccess.open(beside, FileAccess.WRITE)
 	if f == null:
 		return false
 	f.store_string(JSON.stringify(data, indent, true) + "\n")
 	f.close()
-	return true
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(beside), ProjectSettings.globalize_path(path)) == OK

@@ -75,6 +75,7 @@ func setup(variant_name: String, with_params: Dictionary) -> void:
 	dawns = SimRollout.cheap_player(variant_name)
 	# A player of its own below the tree: what it remembers of the copies is not the run's.
 	below = SimRollout.cheap_player(variant_name if str(with_params.get("below", "")) == "persona" else "")
+	SimRollout.unknown_params(with_params, ["visits", "top", "explore", "widen", "least", "below"] + weights.keys())
 
 
 func begin(run: RulesRun, run_seed: int) -> void:

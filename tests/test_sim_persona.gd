@@ -57,6 +57,14 @@ func test_found_file() -> void:
 	eq(SimPersonas.numbers("dance", path).drink_at, 4, "a name of the script is the script's")
 	eq(SimPersonas.numbers("other", path), {}, "a name the file lacks: nothing")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	eq(SimPersonas.faults({"based_on": "dance", "drink_at": 2.0, "w_habit": 1, "strike_ink": false, "inst_pref": []}), [], "an entry of the right kinds has no fault")
+	eq(SimPersonas.faults({"based_on": "gone", "drink_att": 1, "drink_at": "soon", "w_turn": "lots", "inst_pref": 7}).size(), 5,
+			"a start that is no persona, a number no persona has and a value of the wrong kind are each a fault")
+	var kept: Dictionary = SimPersonas.read_found()
+	ok(not kept.is_empty(), "the file of found personas is read")
+	for name: String in kept:
+		eq(SimPersonas.faults(kept[name]), [], "%s of the file of found personas has no fault" % name)
+		ok(not SimPersonas.numbers(name).is_empty(), "%s is a persona" % name)
 
 
 func test_every_persona_plays_a_run() -> void:
