@@ -155,6 +155,7 @@ func do_move(move: String, result: Dictionary) -> void:
 	if t.unhandled:
 		_beats.add_call(t.catch_up)
 	await _beats.run()
+	await ArenaFirsts.show_due(t, result.events)
 	if _run.phase != "play":
 		# The round is over: the table stays as its end left it, and goes on.
 		t.freshen()
@@ -353,6 +354,7 @@ func _go_to_place(events: Array) -> void:
 		# His Roots that joined count on the line from here on.
 		_beats.add_call(t.snap_shown)
 		await _beats.run()
+	await ArenaFirsts.show_due(t, events)
 	SceneFlow.go_to_place()
 
 
