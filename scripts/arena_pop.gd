@@ -45,12 +45,13 @@ static func man(hyde: bool) -> Color:
 	return MAGENTA if hyde else CYAN
 
 
-## `text` rises from `at` (a point on the page) on `layer` and fades.
+## `text` rises from `at` (a point on the page) on `layer` and fades: `font_size` tall, `rise`
+## pixels in the same time, so that a larger one rises further.
 static func text(beats: ArenaBeats, layer: Control, at: Vector2, words: String, colour: Color,
-		font_size: int = 20) -> void:
+		font_size: int = 20, rise: float = RISE) -> void:
 	var label := _label(layer, at, words, colour, font_size)
 	var t := beats.tween()
-	t.tween_property(label, "position:y", label.position.y - RISE, TIME) \
+	t.tween_property(label, "position:y", label.position.y - rise, TIME) \
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	t.parallel().tween_property(label, "modulate", Color(CREAM, 0.0), TIME) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
@@ -89,15 +90,15 @@ static func _label(layer: Control, at: Vector2, words: String, colour: Color, fo
 	return label
 
 
-## A card hops where it lies, as it scores.
-static func hop(beats: ArenaBeats, card: Control) -> void:
+## A card hops where it lies, as it scores: `height` pixels, in the same time however high.
+static func hop(beats: ArenaBeats, card: Control, height: float = HOP) -> void:
 	if not is_instance_valid(card):
 		return
 	var rest: float = card.get_meta("hop_rest") if card.has_meta("hop_rest") else card.position.y
 	card.set_meta("hop_rest", rest)
 	card.position.y = rest
 	var t := beats.tween()
-	t.tween_property(card, "position:y", rest - HOP, HOP_TIME * 0.4) \
+	t.tween_property(card, "position:y", rest - height, HOP_TIME * 0.4) \
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	t.tween_property(card, "position:y", rest, HOP_TIME * 0.6) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)

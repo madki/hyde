@@ -47,6 +47,8 @@ const TRAVEL_TIME := 0.2 ## the total travels to the score...
 const COUNT_IN_TIME := 0.3 ## ...and the score counts it in
 const COUNT_TIME := 0.6 ## a number counts from one value to another
 const PULSE_TIME := 0.3
+const PULSE_MOST := 1.5 ## how much larger a pulse is at the top of a play's climb (`climb`)
+const MULT_LIGHT := 0.45 ## how much of its man's light the mult keeps at the top of the climb
 const DROP_TIME := 0.45 ## a drop flies into the mult
 
 ## Text sizes.
@@ -153,6 +155,10 @@ var _chips_glow := 0.0
 var _mult_glow := 0.0
 var _chips_pop := 0.0
 var _mult_pop := 0.0
+## How far the play has climbed, 0 at its first step to 1 at the top of its ramp: the chips'
+## and mult's pulse grow with it, and the mult keeps more of its man's light. Set by the play,
+## back to 0 as a hand is named.
+var climb := 0.0
 var _merge := 0.0
 var _total := 0
 var _weight := 0 ## how hard the total lands, 0 to 3 (`land_total`)
@@ -284,6 +290,7 @@ func show_hand(hand_name: String, chips: int, mult: int, note: String = "") -> v
 	# The hunted twist halves the base mult: said in the twist's colour, and the mult is marked
 	# in it until it first ticks.
 	_hunted_mult = mult if note == "(hunted)" else -1
+	climb = 0.0
 	_note = HUNTED_NOTE if note == "(hunted)" else note
 	_reason = ""
 	_numbers = true
@@ -302,6 +309,7 @@ func clear_readout() -> void:
 	_note = ""
 	_reason = ""
 	_numbers = false
+	climb = 0.0
 	_merge = 0.0
 	_travel = -1.0
 	_ticks = 0
@@ -572,15 +580,22 @@ func _tick_into(t: Tween, property: String, by: int) -> void:
 	var to: float = roundf(get(property)) + by
 	t.tween_callback(func() -> void:
 		set(glow, 1.0)
-		set(pop, 0.18))
+		set(pop, 0.18 * _swell()))
 	t.tween_property(self, property, to, time * 0.6).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	t.parallel().tween_property(self, pop, 0.0, time).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	t.parallel().tween_property(self, glow, 0.0, time).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
-## A number swells a little and settles, alongside whatever `t` is doing at that step.
+## A number swells a little and settles, alongside whatever `t` is doing at that step: more,
+## the further the play has climbed.
 func _pulse(t: Tween, pop: String) -> void:
-	t.parallel().tween_method(func(v: float) -> void: set(pop, 0.25 * sin(v * PI)), 0.0, 1.0, PULSE_TIME)
+	var most := 0.25 * _swell()
+	t.parallel().tween_method(func(v: float) -> void: set(pop, most * sin(v * PI)), 0.0, 1.0, PULSE_TIME)
+
+
+## How much larger a pulse is, by how far the play has climbed.
+func _swell() -> float:
+	return lerpf(1.0, PULSE_MOST, clampf(climb, 0.0, 1.0))
 
 
 func _stop() -> void:
@@ -949,7 +964,7 @@ func _draw_readout() -> void:
 	# the mult first ticks.
 	var halved := hunted and roundi(_mult) == _hunted_mult
 	_number(c, str(roundi(_mult)), Vector2(left + line.mult, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
-			Palette.TWIST if halved else Palette.CHALK.lerp(_man(), _mult_glow))
+			Palette.TWIST if halved else Palette.CHALK.lerp(_man(), maxf(_mult_glow, MULT_LIGHT * climb)))
 	if halved:
 		c.draw_string(_heavy, Vector2(left + line.mult + line.mult_w + 2.0, base - READOUT_SIZE * 0.55), "½",
 				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, Palette.TWIST)
