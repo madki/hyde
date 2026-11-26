@@ -7,6 +7,8 @@ var plays: int = 4
 var discards: int = 3
 var hand_size: int = 8
 var max_play: int = 5
+## The most cards one discard takes.
+var max_discard: int = 5
 
 # Chips.
 var root_chips: int = 15
@@ -27,7 +29,7 @@ var cane_mult: int = 2
 ## A point of Habit, for every Ink Root of the symbol in the play.
 var habit_mult: int = 1
 ## A point of Temper, once for a symbol in the play.
-var temper_mult: int = 2
+var temper_mult: int = 3
 ## A Sublimation's burst for a turned Root, and for each point of Craving it carries.
 var burst_mult: int = 2
 var burst_craving_mult: int = 2
@@ -53,7 +55,9 @@ var salt_price: int = 3
 ## The rise in price for every dose bought so far in the run.
 var salt_rise: int = 1
 ## The round, counted from 0 across the run, when salt first works.
-var salt_from: int = 2
+var salt_from: int = 0
+## The round, counted from 0 across the run, when the draught first exists.
+var draught_from: int = 0
 var alley_markup: int = 2
 var round_pay: int = 3
 var unused_play_pay: int = 1
@@ -65,6 +69,8 @@ var reward_factor_weight: int = 2
 
 ## Applied to the targets of nights 2 and later, for tuning.
 var target_scale: float = 1.0
+## Applied to the targets of night 1.
+var first_night_scale: float = 1.5
 
 
 # The names of the numbers, in order, and the game's own values by name: found once.
@@ -72,7 +78,7 @@ static var _names: PackedStringArray = []
 static var _known := {}
 
 # Numbers that must be at least 1 for a round to be playable. The others must be 0 or more.
-const _AT_LEAST_ONE: Array[String] = ["plays", "hand_size", "max_play", "craving_cap", "restraint_limit"]
+const _AT_LEAST_ONE: Array[String] = ["plays", "hand_size", "max_play", "max_discard", "craving_cap", "restraint_limit"]
 
 
 ## The game's numbers with the given changes. A change that cannot be used (see problems)
@@ -102,7 +108,7 @@ static func problems(changes: Dictionary) -> Dictionary:
 			out[k] = "Unknown rules number: %s" % k
 		elif not (value is int or value is float) or is_nan(value) or is_inf(value) or (known[k] is int and value != floor(value)):
 			out[k] = "The rules number %s cannot be %s" % [k, value]
-		elif value < (1 if _AT_LEAST_ONE.has(k) else 0) or (k == "target_scale" and value <= 0):
+		elif value < (1 if _AT_LEAST_ONE.has(k) else 0) or ((k == "target_scale" or k == "first_night_scale") and value <= 0):
 			out[k] = "The rules number %s is too small: %s" % [k, value]
 	return out
 

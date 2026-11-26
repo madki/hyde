@@ -106,8 +106,20 @@ static func _fits(c: RulesCard, spec: String) -> bool:
 	return c.t == "root" and c.sym == key and c.ink == (spec[0] == "I")
 
 
+## The numbers the tests of the rules were written to: the tests check how the rules work, and
+## these keep their worked sums and recorded runs standing when the game's own numbers are tuned.
+const WRITTEN_TO := {"temper_mult": 2, "salt_from": 2, "draught_from": 1, "first_night_scale": 1.0}
+
+
+## `dials` over the numbers the tests were written to.
+static func written_to(dials: Dictionary = {}) -> Dictionary:
+	var out := WRITTEN_TO.duplicate()
+	out.merge(dials, true)
+	return out
+
+
 func fresh(dials: Dictionary = {}, seed_value: int = 1) -> RulesRun:
-	return Rules.new_run(dials, seed_value)
+	return Rules.new_run(written_to(dials), seed_value)
 
 
 ## Puts a new card straight into the deck (not into any pile).

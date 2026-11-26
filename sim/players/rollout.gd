@@ -115,7 +115,7 @@ static func moves(run: RulesRun, best: int = TOP) -> Array:
 			out.append({"t": "play", "ids": p.ids, "key": p.key, "score": p.score})
 		seen[p.key] = true
 	if run.discards > 0 and not run.hand.is_empty():
-		var most: int = run.dials.max_play
+		var most: int = run.dials.max_discard
 		# The cards in the way: all of the hand when nothing can be played.
 		var dead: Array = SimMoves.dead(run) if not plays.is_empty() else run.hand.duplicate()
 		dead = dead.slice(0, most)
@@ -176,7 +176,7 @@ static func plain_move(run: RulesRun) -> Dictionary:
 	var score: int = 0 if best.is_empty() else int(best.ev.score)
 	if run.discards > 0 and run.score + score < Rules.target(run):
 		var away: Array = SimMoves.dead(run) if not best.is_empty() else run.hand.duplicate()
-		away = away.slice(0, run.dials.max_play)
+		away = away.slice(0, run.dials.max_discard)
 		if not away.is_empty():
 			return {"t": "discard", "ids": away}
 	if best.is_empty():

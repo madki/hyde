@@ -14,7 +14,7 @@ func choose(run: RulesRun) -> Dictionary:
 	if run.discards > 0 and run.score + top < Rules.target(run):
 		# With nothing to play the whole hand is in the way.
 		var away: Array = SimMoves.dead(run) if not plays.is_empty() else run.hand.duplicate()
-		away = away.slice(0, run.dials.max_play)
+		away = away.slice(0, run.dials.max_discard)
 		if not away.is_empty():
 			options.push_front({"t": "discard", "ids": away, "key": "", "value": top})
 			return {"t": "discard", "ids": away, "options": options}

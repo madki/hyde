@@ -291,7 +291,7 @@ static func _has_fodder(run: RulesRun) -> bool:
 # The discards worth trying beside a play of the cards `keep`: the dead Roots, and the
 # cards the play leaves, the dead ones first, then Roots, then Factors.
 func _discards(run: RulesRun, keep: Array) -> Array:
-	var most: int = run.dials.max_play
+	var most: int = run.dials.max_discard
 	var dead := SimMoves.dead(run)
 	var out: Array = []
 	if not dead.is_empty():

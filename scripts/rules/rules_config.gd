@@ -4,7 +4,7 @@ class_name RulesConfig
 ## to change are in RulesDials.
 
 ## The rules' version, kept by hand: change it whenever a rule or a number changes.
-const RULES_VERSION := "2026.11.26"
+const RULES_VERSION := "2026.11.26.2"
 
 ## The three symbols, in the order every tie between symbols is settled by.
 const ROOTS: Array[String] = ["lamp", "heart", "mirror"]
@@ -99,12 +99,14 @@ const STRIKE_PAPER := 4
 const STRIKE_INK := 8
 
 ## The five nights: two ordinary rounds, then a scene that bends one rule (`twist`).
+## `targets` are a night's plain targets: what a round asks is these by the numbers' scale
+## (see `targets()`), the first night by `first_night_scale`.
 ## `brings` is the Ink Root two copies of which join at that night's dawn ("habit": his
 ## highest-Habit Root, "": none). `unlocks` is the Factor that joins the pool at that dawn.
 const NIGHTS := [
 	{
 		"title": "Story of the Door", "targets": [1000, 1500, 2200], "twist": "", "brings": "heart", "unlocks": "pen",
-		"twist_text": "None. Round 1 is played before the draught exists, and salt first works in the scene.",
+		"twist_text": "None.",
 	},
 	{
 		"title": "Search for Mr Hyde", "targets": [3000, 4200, 5500], "twist": "hunted", "brings": "mirror", "unlocks": "cane",
@@ -127,8 +129,8 @@ const NIGHTS := [
 ## The score targets of a night's three rounds, for these numbers.
 static func targets(dials: RulesDials, night: int) -> Array:
 	var base: Array = NIGHTS[night].targets
-	var scale := dials.target_scale
-	if night == 0 or scale == 1.0:
+	var scale := dials.first_night_scale if night == 0 else dials.target_scale
+	if scale == 1.0:
 		return base.duplicate()
 	var out: Array = []
 	for t: int in base:

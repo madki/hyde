@@ -32,7 +32,7 @@ func test_one_seed_one_run() -> void:
 
 
 func test_dials_change_the_run() -> void:
-	var line := _line(7, {"target_scale": 0.2, "plays": 6})
+	var line := _line(7, {"target_scale": 0.2, "first_night_scale": 0.2, "plays": 6})
 	ok(SimGame.cleared(line) > SimGame.cleared(_line(7)), "lower targets and more plays clear more rounds")
 
 
