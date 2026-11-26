@@ -10,11 +10,15 @@ extends Control
 ## - Right, the ending's name in the light of the man who is left, the book's line for it,
 ##   and once the letter is whole the run's facts, counted out one line at a time; under them
 ##   the road, a mark for each round played in the colour of the man who held it; and last a
-##   button that begins a new run.
+##   button that closes the journal: the game goes back to its title.
 ##
-## The first press while anything is still being written or counted puts all of it on the
-## screen. Only the button begins a new run (a click on it, or Enter or Space once it shows),
-## and never within the screen's first second.
+## The letter begins when the passage that brought the screen has lifted. The first press
+## while anything is still being written or counted puts all of it on the screen, and begins
+## nothing more. Only the button leaves the screen (a click on it, or Enter or Space), for the
+## title, and only once it has been showing for BUTTON_CALM seconds and the screen has been
+## seen for CALM: a press that was hurrying the screen never leaves it.
+##
+## The music is the piece of the man who is left, with no dread under it.
 ##
 ## It shows the run SceneFlow kept when the table handed it over (`SceneFlow.ended`). Run on
 ## its own it plays a run of the ending asked for by the rules alone:
@@ -58,14 +62,16 @@ const NAME_SIZE := 40
 const LINE_SIZE := 16
 const FACT_SIZE := 17
 const BUTTON_SIZE := 18
-const BUTTON_TEXT := "A new night's journal"
+const BUTTON_TEXT := "Close the journal"
 
 ## The facts: how long after the letter is whole the first comes, and the time between two.
 const FACTS_AFTER := 0.4
 const FACT_GAP := 0.25
 const FADE := 0.2
-## No new run begins before the screen has been up this long, in seconds.
+## The screen is not left before it has been seen this long, in seconds, nor before the
+## button has been showing this long.
 const CALM := 1.0
+const BUTTON_CALM := 0.6
 
 ## How many seeds are tried for a run of the ending asked for, when run on its own, and the
 ## share of the game's targets a run that is to reach the last night plays to.
@@ -76,7 +82,12 @@ const EASED := 0.05
 var run: RulesRun
 var id := "jekyll"
 
+## How long the screen has been seen, in seconds: counted from when the passage has lifted.
 var _age := 0.0
+## False until the passage has lifted and the letter has begun.
+var _begun := false
+## The screen's age when the button came out; -1 before.
+var _button_at := -1.0
 ## Counting the facts out: the time since it began, and how many are out; -1 before.
 var _count_clock := 0.0
 var _out := -1
@@ -111,15 +122,23 @@ func _ready() -> void:
 		id = asked
 	if run != null and run.ending != null:
 		id = ending_of(run)
+	Music.enter("ending_hyde" if SURVIVOR[id] == Palette.HYDE else "ending_jekyll")
 	_build()
+	resized.connect(_lay_out)
 	var presses := Presses.new()
 	presses.on_press = _on_press
 	add_child(presses)
 	_letter.completed.connect(_on_letter_whole)
-	_letter.write(id)
 	if Shot.has_arg("shot"):
+		_begin()
 		_set_up_still()
 	Shot.run_if_requested(self)
+
+
+# The passage has lifted: the letter is written, and the screen's time begins.
+func _begin() -> void:
+	_begun = true
+	_letter.write(id)
 
 
 ## The four-way id of a finished run's ending, from the rules' name and what ended it.
@@ -128,6 +147,10 @@ static func ending_of(ended: RulesRun) -> String:
 
 
 func _process(delta: float) -> void:
+	if not _begun:
+		if SceneFlow.is_changing():
+			return
+		_begin()
 	_age += delta
 	if _out < 0 or _out >= _reveals.size() + 1:
 		return
@@ -147,6 +170,8 @@ func _on_press(event: InputEvent) -> bool:
 	var click := mouse != null and mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT
 	if not key and not click:
 		return false
+	if not _begun:
+		return true
 	if not _letter.is_complete():
 		_hurry = true
 		return false
@@ -154,7 +179,7 @@ func _on_press(event: InputEvent) -> bool:
 		_show_all()
 		return true
 	if key:
-		_new_run()
+		_close()
 		return true
 	return false # a click goes on to the button, if it is on it
 
@@ -182,6 +207,8 @@ func _show_all() -> void:
 # Brings out the `i`th of the facts and the road; one past them is the button.
 func _reveal(i: int, fade: bool) -> void:
 	var item: CanvasItem = _reveals[i] if i < _reveals.size() else _button
+	if item == _button and _button_at < 0.0:
+		_button_at = _age
 	item.visible = true
 	if fade:
 		item.modulate.a = 0.0
@@ -190,18 +217,18 @@ func _reveal(i: int, fade: bool) -> void:
 		item.modulate.a = 1.0
 
 
-func _new_run() -> void:
-	if _leaving or not _button.visible or _age < CALM:
+# Closes the journal: on to the title, where the next run begins.
+func _close() -> void:
+	if _leaving or _button_at < 0.0 or _age < CALM or _age - _button_at < BUTTON_CALM:
 		return
 	_leaving = true
-	SceneFlow.new_run_from_ending()
+	SceneFlow.close_ending()
 
 
 # ---------- the screen ----------
 
 func _build() -> void:
 	_background()
-	var page := get_viewport_rect().size
 	var light: Color = SURVIVOR[id]
 	var won := id == "jekyll" or id == "hyde"
 
@@ -213,7 +240,6 @@ func _build() -> void:
 	_sheet.add_child(_letter)
 	var h := _letter.height_of(id)
 	_sheet.size = Vector2(EndingLetter.WIDTH, h) + Vector2.ONE * SHEET_PAD * 2.0
-	_sheet.position = Vector2(MARGIN, ((page.y - _sheet.size.y) * 0.5)).round()
 	_sheet.pivot_offset = _sheet.size * 0.5
 	_sheet.rotation_degrees = SHEET_TURN
 	_letter.position = Vector2.ONE * SHEET_PAD
@@ -229,13 +255,8 @@ func _build() -> void:
 		_sheet.draw_polyline(corners, edge, 2.0 if won else 1.5, true))
 
 	# The column on the right: the name, the book's line, the facts and the road.
-	var left := _sheet.position.x + _sheet.size.x + GUTTER
-	var column_h := maxf(_sheet.size.y, COLUMN_MIN)
-	var top := ((page.y - column_h) * 0.5)
 	_column = VBoxContainer.new()
 	_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_column.position = Vector2(left, top).round()
-	_column.size = Vector2(page.x - MARGIN - left, 0.0)
 	_column.add_theme_constant_override("separation", 6)
 	add_child(_column)
 
@@ -274,9 +295,24 @@ func _build() -> void:
 	_button.add_theme_stylebox_override("normal", _box(Color(Palette.NIGHT_2, 0.92), Color(light, 0.7)))
 	_button.add_theme_stylebox_override("hover", _box(Palette.NIGHT_3, light))
 	_button.add_theme_stylebox_override("pressed", _box(Palette.NIGHT_1, light))
-	_button.pressed.connect(_new_run)
+	_button.pressed.connect(_close)
 	add_child(_button)
 	_button.reset_size()
+	_lay_out()
+
+
+# Places the sheet, the column and the button on a page of the screen's size: when the screen
+# is built, and again whenever its size changes.
+func _lay_out() -> void:
+	if _button == null:
+		return
+	var page := get_viewport_rect().size
+	_sheet.position = Vector2(MARGIN, ((page.y - _sheet.size.y) * 0.5)).round()
+	var left := _sheet.position.x + _sheet.size.x + GUTTER
+	var column_h := maxf(_sheet.size.y, COLUMN_MIN)
+	var top := ((page.y - column_h) * 0.5)
+	_column.position = Vector2(left, top).round()
+	_column.size = Vector2(page.x - MARGIN - left, 0.0)
 	_button.position = (Vector2(page.x - MARGIN, top + column_h) - _button.size).round()
 
 
@@ -424,7 +460,7 @@ func _set_up_still() -> void:
 		_letter.pass_time(EndingLetter.STRIKE_DELAY + EndingLetter.STRIKE_TIME + StoryInk.APPEAR + StoryInk.DRY)
 		_show_all()
 	_letter.set_process(false)
-	_age = CALM
+	_age = CALM + BUTTON_CALM
 	Sfx.stop_all()
 
 

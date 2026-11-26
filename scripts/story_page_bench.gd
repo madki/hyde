@@ -69,7 +69,8 @@ func _selftest() -> void:
 	add_child(under)
 	var done := [false]
 	var tell := func() -> void:
-		await StoryPage.tell_over(self, ["opening.1", "no.such.key", "opening.2"])
+		# The long line first: it is still being written when the deaf time is over.
+		await StoryPage.tell_over(self, ["opening.2", "no.such.key", "opening.1"])
 		done[0] = true
 	tell.call()
 	var page: StoryPage = get_child(get_child_count() - 1)
@@ -78,6 +79,12 @@ func _selftest() -> void:
 	_press(KEY_A)
 	await _frames(2)
 	_expect(under.seen == 0, "a key under the page is not seen")
+	# A press while the page is still deaf is swallowed: the line goes on being written.
+	_press(KEY_SPACE)
+	await _frames(2)
+	_expect(not page.is_waiting(), "a press in the deaf time writes nothing")
+	_expect(under.seen == 0, "a press in the deaf time is not seen under the page")
+	await get_tree().create_timer(StoryPage.FADE + StoryPage.DEAF).timeout
 	# One press writes the rest of the first line, the next moves on to the second; two more
 	# for the second, and the missing key is passed over without a page.
 	_press(KEY_SPACE)

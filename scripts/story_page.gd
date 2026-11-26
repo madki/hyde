@@ -8,12 +8,18 @@ extends Control
 ## Each key's line is taken from `StoryLines` and written in that line's hand by a `StoryEntry`,
 ## each taking the place of the last; a key with no line is passed over. The presses are the
 ## entry's own: the first writes the rest of a line, the next moves on. While the page is up
-## nothing under it sees a press or a key.
+## nothing under it sees a press, a key or a touch going down; one let go is let through, so
+## that what was held before the page is not left held.
+##
+## The page is deaf while it comes up and for DEAF seconds after: a press that was hurrying
+## what came before it is swallowed, and loses no line.
 
 ## What is under the page dims to this.
 const DIM := Color(Palette.NIGHT_1, 0.6)
 ## How long the page takes to come and to go, in seconds.
 const FADE := 0.2
+## How long after the page is up a press is not yet heard, in seconds.
+const DEAF := 0.5
 const SHEET := Vector2(640.0, 360.0)
 ## From the sheet's edge to the entry.
 const MARGIN := 40.0
@@ -24,6 +30,8 @@ var _entry := StoryEntry.new()
 var _tween: Tween
 ## True while a line is being written or waits: its presses are left to the entry.
 var _writing := false
+## What is left of the deaf time, in seconds; the entry hears no press until it is over.
+var _deaf := 0.0
 
 
 func _init() -> void:
@@ -69,6 +77,8 @@ func tell(keys: Array) -> void:
 	if lines.is_empty():
 		return
 	visible = true
+	_deaf = DEAF
+	_entry.set_process_input(false)
 	await _fade(1.0)
 	for line in lines:
 		_writing = true
@@ -83,12 +93,34 @@ func tell(keys: Array) -> void:
 func pass_time(seconds: float) -> void:
 	if _tween and _tween.is_valid() and _tween.is_running():
 		_tween.custom_step(FADE)
+	_hear_after(seconds)
 	_entry.pass_time(seconds)
 
 
 ## True while a whole line is on the page and waits for a press.
 func is_waiting() -> bool:
 	return _entry.is_waiting()
+
+
+## A press made for the player, deaf time or not: writes the rest of the line, or moves on
+## from a whole one. For a page with no player before it.
+func press() -> void:
+	_entry.press()
+
+
+func _process(delta: float) -> void:
+	# The deaf time is counted from when the page is up.
+	if visible and modulate.a >= 1.0:
+		_hear_after(delta)
+
+
+# Counts `seconds` off the deaf time; when it is over the entry hears its presses.
+func _hear_after(seconds: float) -> void:
+	if _deaf <= 0.0:
+		return
+	_deaf -= seconds
+	if _deaf <= 0.0:
+		_entry.set_process_input(true)
 
 
 func _fade(to: float) -> void:
@@ -102,11 +134,14 @@ func _fade(to: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if not (event is InputEventKey or event is InputEventMouseButton
+	if not (event is InputEventKey or event is InputEventMouseButton or event is InputEventScreenTouch
 			or event is InputEventJoypadButton or event is InputEventAction):
 		return
-	# The entry's own presses are its to take.
-	if _writing and _is_press(event):
+	# What is let go is let through: a key held before the page is not left held under it.
+	if not event.is_pressed():
+		return
+	# The entry's own presses are its to take, once it hears them.
+	if _writing and _deaf <= 0.0 and _is_press(event):
 		return
 	get_viewport().set_input_as_handled()
 

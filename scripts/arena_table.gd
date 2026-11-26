@@ -60,6 +60,8 @@ var reward: ArenaReward
 ## card taken (-1 or null for none), and the nodes of the cards that were offered.
 ## True while a beat waits for any key or click (the run's end).
 var waiting_press := false
+## True while a page of the story lies over the table (ArenaStory).
+var story_up := false
 var picked: Variant = null
 var offered: Array = []
 

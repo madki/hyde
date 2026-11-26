@@ -49,8 +49,8 @@ const ENDINGS := {
 	"succumbed": "Succumbed to Hyde",
 	"unmet": "Unmet Desires",
 }
-## How far the page and the cards go toward the night's colour when the lamps go out: the
-## page can still be made out.
+## How far the table goes toward the night's colour when the lamps go out: it can still be
+## made out.
 const LAMPS_OUT := 0.6
 ## The name of the sheet that darkens the page.
 const NIGHT_SHEET := "LampsOut"
@@ -105,6 +105,8 @@ static func ending_of(e: Dictionary) -> String:
 static func _ending(t: ArenaTable, e: Dictionary) -> void:
 	var ending: String = e.ending
 	var id := ending_of(e)
+	# The parts of the table the lamps' going out has darkened, each to the colour it had.
+	var lit := {}
 	t.beats.add(func() -> void:
 		t.hand.lift(false)
 		t.numbers.clear_readout()
@@ -119,7 +121,8 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 					flood.tween_property(card, "modulate", Color(Palette.INK_WASH, 0.0), 1.6)
 				await flood.finished
 			"unmet":
-				# The ink stays where it is; the page and the cards go dark, as lamps going out.
+				# The ink stays where it is; the whole table goes dark, as lamps going out: every
+				# part of it but the caption's (the stage).
 				t.beats.sound("run_lost")
 				# The page's shader takes no modulate: the night is a sheet laid over it.
 				var night := ColorRect.new()
@@ -131,8 +134,13 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 				var dark := Color.WHITE.lerp(Palette.NIGHT_1, LAMPS_OUT)
 				var out := t.beats.tween().set_parallel()
 				out.tween_property(night, "color:a", LAMPS_OUT, 1.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-				for card: ArenaCard in _cards(t):
-					out.tween_property(card, "modulate", dark, 1.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+				for node: Node in t.arena.get_children():
+					var part := node as CanvasItem
+					if part == null or part == t.stage or part == t.ink.paper or part is StoryPage:
+						continue
+					lit[part] = part.modulate
+					# Its own alpha is kept: a part that is hidden stays hidden.
+					out.tween_property(part, "modulate", Color(dark * part.modulate, part.modulate.a), 1.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 				await out.finished
 			"jekyll":
 				# The ink draws back off the page, and the page stills.
@@ -160,7 +168,10 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 		# The next run begins on this table: the lamps come up again.
 		var night := t.ink.paper.get_node_or_null(NIGHT_SHEET)
 		if night:
-			night.free())
+			night.free()
+		for part: CanvasItem in lit:
+			if is_instance_valid(part):
+				part.modulate = lit[part])
 
 
 # The cards on the table: in the hand and on their way.
