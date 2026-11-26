@@ -56,6 +56,12 @@ const THREAT_TIME := 1.2
 ## coming back) does not make the ink jump.
 const MAX_FRAME := 0.1
 
+## The tremble before a breakout: how far the last step and his mark are thrown at its
+## strongest, in pixels, how often they are thrown anew, and how much larger his mark grows.
+const TREMBLE_REACH := 3.5
+const TREMBLE_EVERY := 1.0 / 30.0
+const TREMBLE_GROWTH := 0.3
+
 ## A pip's ring: its width, and how many dashes a spent pip's ring is broken into.
 const RING := 1.5
 const DASHES := 10
@@ -86,8 +92,20 @@ var _threat := 0.0:
 	set(value):
 		_threat = value
 		_ink_material.set_shader_parameter("threat", value)
-		set_process(value > 0.0)
+		set_process(value > 0.0 or tremble > 0.0)
 var _clock := 0.0
+## How hard the track's last step and his mark tremble, 0 (still) to 1: see `tremble_over`.
+var tremble := 0.0:
+	set(value):
+		tremble = clampf(value, 0.0, 1.0)
+		if tremble <= 0.0:
+			_thrown = Vector2.ZERO
+		set_process(_threat > 0.0 or tremble > 0.0)
+		_text.queue_redraw()
+## Where the tremble has thrown them now, and how long ago.
+var _thrown := Vector2.ZERO
+var _thrown_for := 0.0
+var _tremble_tween: Tween
 ## The lock of a play that adds no restraint: how present it is, and how far it has fallen.
 var _lock := 0.0:
 	set(value):
@@ -144,6 +162,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_clock += minf(delta, MAX_FRAME)
 	_ink_material.set_shader_parameter("clock", _clock)
+	if tremble > 0.0:
+		_thrown_for += delta
+		if _thrown_for >= TREMBLE_EVERY:
+			_thrown_for = 0.0
+			_thrown = Vector2.from_angle(randf() * TAU) * TREMBLE_REACH * tremble * randf_range(0.5, 1.0)
+			_text.queue_redraw()
 
 
 ## Shows the restraint of a table, as RulesView.table() gives it.
@@ -204,8 +228,28 @@ func end_place() -> Vector2:
 	return get_global_transform() * _step(limit)
 
 
+## The track's last step and his mark begin to tremble, harder and harder over `seconds`:
+## he is about to break out. They go on until `tremble` is set to 0. Returns the tween doing
+## it, for the beat queue to keep at its rate. The caller leaves it out with "reduce flashes" on.
+func tremble_over(seconds: float) -> Tween:
+	if _tremble_tween:
+		_tremble_tween.kill()
+	tremble = 0.0
+	_tremble_tween = create_tween()
+	_tremble_tween.tween_property(self, "tremble", 1.0, seconds).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	return _tremble_tween
+
+
+## The tremble stops at once.
+func still() -> void:
+	if _tremble_tween:
+		_tremble_tween.kill()
+	tremble = 0.0
+
+
 ## Puts the ink where it belongs at once, without the change there.
 func snap() -> void:
+	still()
 	if _lock_move:
 		_lock_move.kill()
 	_lock = 0.0
@@ -290,6 +334,8 @@ func _draw_text() -> void:
 	var pip := minf(BEAD, _pitch() * 0.5) - RING
 	for i in range(1, limit + 1):
 		var at := _step(i)
+		if i == limit:
+			at += _thrown
 		if _level >= i - 0.5:
 			_text.draw_circle(at, pip, Palette.INK_DEEP)
 			_draw_dashed_ring(at, pip, Palette.HYDE)
@@ -306,18 +352,22 @@ func _draw_text() -> void:
 	var width := _slanted.get_string_size(whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12).x
 	var tight := tight_drop > 0 and tight_scene
 	var track_end := _pitch() * limit
+	# Trembling, his mark is thrown the other way from the step, grows, and takes his light.
+	var grown := Vector2.ONE * (1.0 + TREMBLE_GROWTH * tremble)
 	if limit >= MARK_OVER_FROM:
 		var mark_x := _step(limit).x - width * 0.5 + 6.0
 		if tight:
 			# The mark ends short of the tick, not across its top.
 			mark_x = minf(mark_x, track_end - TIGHT_CLEAR - width)
-		_text.draw_set_transform(Vector2(mark_x, _track_y() - TRACK_HALF - TICK_LONG + 2.0), deg_to_rad(-9.0))
+		_text.draw_set_transform(Vector2(mark_x, _track_y() - TRACK_HALF - TICK_LONG + 2.0) - _thrown,
+				deg_to_rad(-9.0), grown)
 	else:
 		var mark_drop := (_slanted.get_ascent(12) - _slanted.get_descent(12)) * 0.5
 		var gap := MARK_GAP + (TIGHT_CLEAR if tight else 0.0)
-		_text.draw_set_transform(Vector2(track_end + gap, _track_y() + mark_drop), 0.0)
+		_text.draw_set_transform(Vector2(track_end + gap, _track_y() + mark_drop) - _thrown, 0.0, grown)
 	_text.draw_string_outline(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, 4, Color(Palette.OUTLINE, 0.7))
-	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Palette.CHALK_2)
+	_text.draw_string(_slanted, Vector2.ZERO, whose, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12,
+			Palette.CHALK_2.lerp(Palette.HYDE, tremble))
 	_text.draw_set_transform(Vector2.ZERO, 0.0)
 	if tight:
 		# The tight scene's track ends short: a tick in the twist's colour, and what it took.

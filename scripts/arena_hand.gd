@@ -230,16 +230,38 @@ func settle(card: ArenaCard) -> void:
 ## The table changes hands while the cards lie in the row: each takes the face `entry_of`
 ## (called with a card's id, returning its entry of RulesView.table().hand) gives it, a
 ## Factor turning over to the other man's, and the cards he cannot play are printed dark.
-func turn_to(entry_of: Callable, hyde_has_table: bool) -> void:
+##
+## With a `gap` the cards turn one after another, that many seconds apart: from the left for
+## Hyde, from the right for Jekyll. The tween that does it is returned, for the beat queue to
+## keep at its rate. Without one they all turn at once, and nothing is returned.
+func turn_to(entry_of: Callable, hyde_has_table: bool, gap: float = 0.0) -> Tween:
 	is_jekyll = not hyde_has_table
-	for card in _cards:
-		var entry: Dictionary = entry_of.call(card.card_id)
-		if card.ink != (entry.ink or (entry.t == "factor" and hyde_has_table)):
-			card.change_face(card.show_entry.bind(entry, hyde_has_table), not _still)
-		else:
-			card.show_entry(entry, hyde_has_table)
-		card.dimmed = not entry.get("playable", true)
-		card.set_tag("")
+	var order := _cards.duplicate()
+	if not hyde_has_table:
+		order.reverse()
+	var turns: Tween = create_tween() if gap > 0.0 and order.size() > 1 else null
+	for i in order.size():
+		var card: ArenaCard = order[i]
+		var turn := _turn_card.bind(card, entry_of.call(card.card_id), hyde_has_table)
+		if turns == null:
+			turn.call()
+			continue
+		turns.tween_callback(turn)
+		if i < order.size() - 1:
+			turns.tween_interval(gap)
+	return turns
+
+
+# One card of the row takes the face of `entry`, if it is still in the row.
+func _turn_card(card: ArenaCard, entry: Dictionary, hyde_has_table: bool) -> void:
+	if not is_instance_valid(card) or not card in _cards:
+		return
+	if card.ink != (entry.ink or (entry.t == "factor" and hyde_has_table)):
+		card.change_face(card.show_entry.bind(entry, hyde_has_table), not _still)
+	else:
+		card.show_entry(entry, hyde_has_table)
+	card.dimmed = not entry.get("playable", true)
+	card.set_tag("")
 
 
 ## Raises every card of the hand, or lets them down again.
