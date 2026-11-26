@@ -234,6 +234,8 @@ func _build() -> void:
 	add_child(piles)
 	move_child(piles, _hand.get_index())
 	add_child(travel)
+	var notice := ArenaNotice.new()
+	add_child(notice)
 	add_child(_beats)
 	_beats.source = func() -> Dictionary: return RulesView.table(_run)
 	travel.beats = _beats
@@ -247,6 +249,7 @@ func _build() -> void:
 	t.piles = piles
 	t.stage = stage
 	t.moments = ArenaCardMoments.new(_beats, travel, piles, stage)
+	t.moments.notice = notice
 	t.hand = _hand
 	t.numbers = _numbers
 	t.symbols = _symbols

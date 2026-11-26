@@ -89,7 +89,8 @@ static func _dawn(t: ArenaTable, e: Dictionary) -> void:
 		names.append(cards[-1].name)
 	ArenaMomentShift.hyde_joins(t)
 	t.moments.join_deck(cards, ArenaCaptions.joins("dawn", names),
-			Vector2(t.arena.size.x - 80.0, t.arena.size.y * 0.45), false)
+			Vector2(t.arena.size.x - 80.0, t.arena.size.y * 0.45), false,
+			ArenaMomentShift.joins_notice.bind(t, "dawn", cards.size()))
 
 
 # Everything up to the deal: `deck` is how many cards the deck holds.

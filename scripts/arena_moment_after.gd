@@ -117,7 +117,8 @@ static func _breed(t: ArenaTable, e: Dictionary) -> void:
 	grown(t, sym, "habit", ArenaCaptions.grows("rollover", RulesConfig.ROOT[sym].label))
 	var copy := t.card_data(e.id)
 	ArenaMomentShift.hyde_joins(t)
-	t.moments.join_deck([copy], ArenaCaptions.joins("rollover", [copy.name]), t.symbols.sketch_place(sym))
+	t.moments.join_deck([copy], ArenaCaptions.joins("rollover", [copy.name]), t.symbols.sketch_place(sym), true,
+			ArenaMomentShift.joins_notice.bind(t, "rollover", 1, RulesConfig.ROOT[sym].label))
 	t.beats.add(func() -> void:
 		t.shown.add("line/ink", 1)
 		t.line_sound(true)

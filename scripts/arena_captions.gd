@@ -4,6 +4,8 @@ class_name ArenaCaptions
 ## (in the stance the table is in) and writes the line; it works out no rule.
 
 const NUMBERS := ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"]
+## What an Ink Root in the deck means, in the rules' words.
+const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only in a Sublimation. If Ink Roots outnumber Paper Roots when a round ends, the run is lost."
 
 
 ## Why cards join the deck, for `joins`:
@@ -29,6 +31,53 @@ static func joins(cause: String, names: Array) -> String:
 	if names.size() == 1:
 		return "%s joins the deck." % _first(names)
 	return "%s join the deck." % _capital(list(names))
+
+
+## The notice shown when Roots of his join the deck by a rule: {title, lines}, the lines being
+## why they join, what it means, and the line as it will stand (`paper` and `ink` Roots once
+## they have joined). `cause` is one of those of `joins` but "reward" and "bought", which show
+## no notice; `symbol` is the label of the symbol whose Craving rolled over, for "rollover".
+static func joins_notice(cause: String, paper: int, ink: int,
+		symbol: String = "") -> Dictionary:
+	var said: Array
+	match cause:
+		"arrival":
+			said = arrival()
+		"breakout":
+			said = breakout()
+		"rollover":
+			said = rollover(symbol)
+		"no_paper":
+			said = no_paper()
+		_:
+			said = dawn()
+	return {"title": said[0], "lines": [said[1], INK_MEANS, line_stands(paper, ink)]}
+
+
+## Each cause's title and why, for `joins_notice`.
+static func arrival() -> Array:
+	return ["Hyde arrives", "The first draught brings him, and four of his Roots come with him."]
+
+
+static func breakout() -> Array:
+	return ["He breaks out", "Restraint gave way, and two of his Roots come with him."]
+
+
+static func rollover(symbol: String) -> Array:
+	return ["A Habit forms", "Craving for the %s reached 3, and the Habit breeds a copy." % symbol]
+
+
+static func no_paper() -> Array:
+	return ["Nothing left to stain", "The draught found no Paper Root to stain, so an Ink Root joins."]
+
+
+static func dawn() -> Array:
+	return ["Dawn", "The night is over, and it leaves two of his Roots in the deck."]
+
+
+## The line as it will stand.
+static func line_stands(paper: int, ink: int) -> String:
+	return "The line: Paper %d, Ink %d." % [paper, ink]
 
 
 ## Why a gauge grew, said while its new value stands beside it: `cause` is "rollover" (a
