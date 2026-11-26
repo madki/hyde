@@ -206,7 +206,8 @@ func show_notice(what: Dictionary) -> void:
 	_lay_out()
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	Sfx.play("paper")
+	if not Sfx.play("notice"):
+		Sfx.play("paper")
 	modulate.a = 0.0
 	_holder.position = _rest.position + Vector2(0.0, RISE)
 	_move = create_tween().set_parallel()
@@ -275,7 +276,8 @@ func _input(event: InputEvent) -> void:
 		return # the pointer may move: the button under it lights
 	get_viewport().set_input_as_handled()
 	if pressed and not _leaving and _began >= 0 and Time.get_ticks_msec() - _began >= int(DEAF * 1000.0):
-		Sfx.play("button", 1.0, 0.7)
+		if not Sfx.play("notice_go"):
+			Sfx.play("button", 1.0, 0.7)
 		dismiss()
 
 

@@ -212,7 +212,7 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 	beats.add(func() -> void:
 		if not shown.is_empty():
 			return
-		beats.sound("crack_ink" if after.get("ink", false) else "crack_paper")
+		beats.sound(Sfx.take("crack_ink", 3) if after.get("ink", false) else "crack_paper")
 		await _crack(held[0], after, time * 0.62))
 	beats.add(func() -> void:
 		# It settles back: the rest of the change. From the sheet, at a card's pace.
@@ -284,7 +284,7 @@ func _crack_on_notice(what: Dictionary, after: Dictionary) -> void:
 		await notice.get_tree().create_timer(ArenaNotice.IN + 0.1).timeout
 		var cards := notice.shown_cards()
 		if notice.showing and not cards.is_empty():
-			beats.sound("crack_ink" if after.get("ink", false) else "crack_paper")
+			beats.sound(Sfx.take("crack_ink", 3) if after.get("ink", false) else "crack_paper")
 			_crack_tween(cards[0], after, ArenaPace.CHANGE_SIDE)
 	# Its card's crack runs on the card's own tweens: when the notice leaves, passed by a press
 	# or by itself, they end with the card and nothing waits on them.
