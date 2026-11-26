@@ -33,6 +33,10 @@ var stage: ArenaStage
 ## The sheet a joining group is shown on, set by the page that holds it; with none, the stage.
 var notice: ArenaNotice
 
+## A pour's first blob lands this long after the last joining card is in its pile, so that the
+## moment's last beat is there to meet it.
+const POUR_AFTER := 0.04
+
 
 func _init(queue: ArenaBeats, layer: ArenaTravel, the_piles: ArenaPiles, the_stage: ArenaStage) -> void:
 	beats = queue
@@ -52,13 +56,20 @@ func _init(queue: ArenaBeats, layer: ArenaTravel, the_piles: ArenaPiles, the_sta
 func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool = true,
 		said: Callable = Callable()) -> void:
 	var nodes: Array = []
+	# The ink that runs from the notice's blot to the pool, when there is one.
+	var pour: Array[ArenaPour] = [null]
 	if said.is_valid() and notice:
 		beats.add_choice(func() -> void:
 			var what: Dictionary = said.call()
 			what.cards = cards
 			what.tone = "hyde"
 			notice.centres.clear()
+			var stream := _pour_watching()
 			await notice.show_notice(what)
+			# Continue: the blot runs to the pool, its first blob landing as the last card is in.
+			var middle := into_middle and not piles.deck_mode
+			pour[0] = _pour_runs(stream, ArenaPace.TRAVEL * 2.0 + ArenaPace.travel_start(cards.size() - 1)
+					+ (ArenaPace.SLIDE_IN if middle else 0.0) + POUR_AFTER)
 			# The notice's own cards left with it: travelling ones take their places. With no
 			# notice shown (passed at once) they start from `from`.
 			var shown := notice.centres.size() == cards.size()
@@ -81,6 +92,7 @@ func join_deck(cards: Array, caption: String, from: Vector2, into_middle: bool =
 		await piles.put("draw", nodes, into_middle and not piles.deck_mode))
 	beats.add(func() -> void:
 		await stage.clear_caption()
+		await _pour_lands(pour[0])
 		joined.emit(cards))
 
 
@@ -150,13 +162,18 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 	# Where the card lay on the sheet; empty when no notice was shown.
 	var shown: Array[Vector2] = []
 	var time := ArenaPace.CHANGE_SIDE
+	# The ink that runs from the notice's blot to the pool, when the Root turns to Ink.
+	var pour: Array[ArenaPour] = [null]
 	if said.is_valid() and notice:
 		beats.add_choice(func() -> void:
 			var what: Dictionary = said.call()
 			what.cards = [before]
 			what.tone = "hyde" if after.get("ink", false) else "jekyll"
+			var stream := _pour_watching() if what.tone == "hyde" else null
 			await _crack_on_notice(what, after)
-			shown.assign(notice.centres))
+			shown.assign(notice.centres)
+			# Continue: the blot runs to the pool.
+			pour[0] = _pour_runs(stream, ArenaPour.FLIGHT))
 	beats.add(func() -> void:
 		if where == "hand":
 			place[2] = held[0].scale.y
@@ -201,7 +218,51 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 			await piles.put(where, [held[0]], where == "draw"))
 	beats.add(func() -> void:
 		await stage.clear_caption()
+		await _pour_lands(pour[0])
+		if not shown.is_empty() and not after.get("ink", false) and _pours():
+			# Turned to Paper on the sheet: a pale wash leaves the pool for it as the pool draws back.
+			ArenaPour.under(travel, beats).wash(
+					ArenaTravel.centre_of(held[0]) if where == "hand" else piles.pile(where).top_centre())
 		side_changed.emit(before, after, held[0] if where == "hand" else null))
+
+
+# True when ink may be seen to run: not with "reduce flashes" on, nor in a move that is skipped.
+func _pours() -> bool:
+	return not ArenaPace.reduce_flashes and beats.rate() < ArenaPace.SKIP
+
+
+# A pour that watches the notice about to be shown in his tone, so that its blot stays on the
+# page as the sheet leaves; none when no ink is to run, or no notice will be shown.
+func _pour_watching() -> ArenaPour:
+	if not _pours() or ArenaNotice.pass_at_once:
+		return null
+	var stream := ArenaPour.under(travel, beats)
+	stream.watch(notice)
+	return stream
+
+
+# At the notice's Continue: `stream` runs from where the notice's cards lay, its first blob
+# landing in `first_lands` seconds. Returns it, or null when nothing runs (no notice was
+# shown, or the move is now skipped).
+func _pour_runs(stream: ArenaPour, first_lands: float) -> ArenaPour:
+	if not stream:
+		return null
+	if notice.centres.is_empty() or not _pours():
+		stream.drop()
+		return null
+	stream.run(notice.centres, first_lands)
+	return stream
+
+
+# Waits for the first blob of `stream` to reach the pool, then has the page surge there. The
+# beat this ends is the moment's last: the line's marks are given in the beat after it, in the
+# same frame, so that the blob, the surge and the marks come together.
+func _pour_lands(stream: ArenaPour) -> void:
+	if not is_instance_valid(stream):
+		return
+	if not stream.has_landed:
+		await stream.landed
+	stream.reach_pool()
 
 
 # Shows `what` on the notice and, once the sheet has come in, plays the crack on its card,
