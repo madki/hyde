@@ -749,6 +749,11 @@ func _line_home() -> Vector2:
 	return ArenaLayout.balance(size).get_center()
 
 
+## The line's banner at home, on the page: where a hover on it is caught.
+func line_rect() -> Rect2:
+	return get_global_transform() * Rect2(_line_home() - Vector2(LINE_HALF, LINE_H), Vector2(LINE_HALF, LINE_H) * 2.0)
+
+
 ## The line's banner, in the line's own coordinates: a strip whose two ends are cut to a notch.
 static func _banner() -> PackedVector2Array:
 	return PackedVector2Array([Vector2(-LINE_HALF, -LINE_H), Vector2(LINE_HALF, -LINE_H),
