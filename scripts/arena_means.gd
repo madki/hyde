@@ -30,6 +30,10 @@ extends Control
 ## Pressing the flask or the salt only sends `drink_pressed` or `salt_pressed`, and only when
 ## it can be used. What a drink and a dose do is the arena's.
 ##
+## In a scene whose twist is "last", one stroke in the twist's colour crosses the flask and one
+## the paper, their words say neither works in this scene, and a press on either sends
+## `twist_acted`.
+##
 ## Nothing here works out a rule, and nothing moves at rest. `show_table(table, dials)` takes
 ## RulesView.table() and sets everything at once. The beats of a move then drive it, each call
 ## a coroutine to `await` that returns when its movement is over:
@@ -51,6 +55,8 @@ extends Control
 signal preview_changed(kind: String)
 signal drink_pressed
 signal salt_pressed
+## The flask or the salt was pressed in the scene where the last twist forbids both.
+signal twist_acted
 
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
@@ -110,6 +116,8 @@ const SHADOW := Color(Palette.OUTLINE, 0.28)
 ## What is drawn and written straight on the page, and the same when it is refused.
 const CHALK := Palette.CHALK
 const CHALK_DIM := Color(Palette.CHALK, 0.55)
+## Written beside the flask, and under the salt's doses, while the last twist forbids both.
+const LAST_WORDS := "Not in this scene"
 const OUTLINE := Color(Palette.OUTLINE, 0.9)
 ## A seal's wax, the part the die pressed flat, and what the die left raised (and its rim).
 const WAX := Palette.NIGHT_3
@@ -171,6 +179,8 @@ var _slots: Array[Dictionary] = []
 
 ## What the pointer is over: "", "flask", "salt", or "inst<n>" for the n-th of `_keys`.
 var _hover := ""
+## The last twist is in force: neither the draught nor the salt works in this scene.
+var _last := false
 
 var _back := Control.new()
 var _fills := Control.new()
@@ -210,6 +220,8 @@ func _ready() -> void:
 func show_table(table: Dictionary, dials: RulesDials = null) -> void:
 	if dials:
 		_dials = dials
+	var night: Dictionary = table.get("night", {})
+	_last = night.get("twist_now", false) and String(night.get("twist", "")) == "last"
 	var draught: Dictionary = table.draught
 	_draught = {"ok": draught.ok, "why": draught.why, "cost": draught.cost}
 	var salt: Dictionary = table.salt
@@ -388,7 +400,15 @@ func _gui_input(event: InputEvent) -> void:
 			salt_pressed.emit()
 		elif part == "flask" or part == "salt":
 			# Not ready: the same dull knock as its key gives, a little softer.
-			Sfx.play("refuse", 1.0, 0.7)
+			refused(0.7)
+
+
+## The flask or the salt was asked for, by a press or by its key, and cannot be used: the dull
+## knock, and `twist_acted` in the scene where the last twist forbids both.
+func refused(volume: float = 1.0) -> void:
+	Sfx.play("refuse", 1.0, volume)
+	if _last:
+		twist_acted.emit()
 
 
 func _notification(what: int) -> void:
@@ -438,6 +458,8 @@ func _preview_kind() -> String:
 ## The next drink's cost, as it is written beside the flask: short, to end inside the left
 ## column.
 func _cost_words() -> String:
+	if _last:
+		return LAST_WORDS
 	if _draught.cost == "first":
 		return "He arrives: %d Roots join" % RulesConfig.FIRST_ARRIVAL.size()
 	return "Stains a Paper Root"
@@ -843,6 +865,15 @@ func _draw_lines() -> void:
 		_dashed(mark, _rect_path(Rect2(c - Vector2(h, h), Vector2(h, h) * 2.0)), 4.0, 3.0, 1.5)
 		mark.stroke(PackedVector2Array([c + Vector2(-h + 2.0, h - 2.0), c + Vector2(h - 2.0, -h + 2.0)]), 1.8, 0.3)
 		mark.draw(_lines)
+	# The last twist: one stroke across the flask and one across the paper.
+	if _last:
+		var cross := Pencil.new(base + 300)
+		cross.colour = Palette.TWIST
+		var f := _flask_slot().grow(-4.0)
+		cross.stroke(PackedVector2Array([Vector2(f.position.x, f.end.y), Vector2(f.end.x, f.position.y)]), 2.0, 0.3)
+		var p := _salt_slot().grow(-2.0)
+		cross.stroke(PackedVector2Array([Vector2(p.position.x, p.end.y), Vector2(p.end.x, p.position.y)]), 2.0, 0.3)
+		cross.draw(_lines)
 	# The instruments: one ruled ring on the laboratory's emblem (a seal has its rim), and the
 	# sketch, no line of it thinner than MIN_STROKE on the page.
 	for i in _slots.size():
@@ -894,16 +925,19 @@ func _draw_text() -> void:
 	if not _draught.ok:
 		var past := _heavy.get_string_size("DRAUGHT  ", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14).x
 		_write(_slanted, at + Vector2(past, 0.0), "corked", 12, CHALK_DIM)
-	_write(_slanted, at + Vector2(0.0, 17.0), _cost_words(), 12, CHALK if _draught.ok else CHALK_DIM)
+	_write(_slanted, at + Vector2(0.0, 17.0), _cost_words(), 12,
+			Palette.TWIST if _last else (CHALK if _draught.ok else CHALK_DIM))
 	# The salt: the doses held, and under them why none can be taken now.
 	zone = _salt_zone()
 	var left := _paper_at().x + PAPER_SIZE * 0.5 + 10.0
 	var doses: int = _salt.doses
 	var why := "" if _salt.ok else ("no doses" if doses == 0 else "shut")
+	if _last:
+		why = LAST_WORDS.to_lower()
 	_write(_heavy, Vector2(left, zone.position.y + (19.0 if why != "" else 27.0)), _doses_words(), 14,
 			CHALK if _salt.ok else CHALK_DIM)
 	if why != "":
-		_write(_slanted, Vector2(left, zone.position.y + 36.0), why, 12, CHALK_DIM)
+		_write(_slanted, Vector2(left, zone.position.y + 36.0), why, 12, Palette.TWIST if _last else CHALK_DIM)
 	var note := _note_lines()
 	if note.is_empty():
 		return

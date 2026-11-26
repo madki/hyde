@@ -78,7 +78,7 @@ func _ready() -> void:
 	_controls.pass_pressed.connect(_pressed.bind(pass_play))
 	_means.drink_pressed.connect(_pressed.bind(drink))
 	_means.salt_pressed.connect(_pressed.bind(take_salt))
-	for extra: String in ["ghosts", "previews", "views", "sound"]:
+	for extra: String in ["ghosts", "previews", "twist", "views", "sound"]:
 		var script := _script("res://scripts/arena_extra_%s.gd" % extra)
 		if script:
 			script.setup(t)
@@ -195,12 +195,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if Rules.can_drink(_run).ok:
 				_pressed(drink)
 			else:
-				Sfx.play("refuse")
+				_means.refused()
 		KEY_S:
 			if Rules.can_salt(_run).ok:
 				_pressed(take_salt)
 			else:
-				Sfx.play("refuse")
+				_means.refused()
 		KEY_ESCAPE:
 			_hand.put_back_all()
 		KEY_0:

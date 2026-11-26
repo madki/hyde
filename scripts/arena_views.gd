@@ -2,12 +2,12 @@ class_name ArenaViews
 extends Control
 ## Views on demand: what the table does not keep on the page, one step away.
 ##
-## - Hold Shift (or Tab, or rest the pointer on the tab at the right edge, which says so):
+## - Hold Shift (or Tab, or rest the pointer on the tab at the edge, which says so):
 ##   every number at once, for as long as it is held. A sheet in the centre gives each
 ##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and
 ##   why, what the next drink costs, the scene's twist, what the dawn brings, and both men's
 ##   hands with their base chips and mult.
-## - Rest the pointer on the tab at the left edge, which names the scene's twist: the twist
+## - Rest the pointer on the twist's block or on the night's heading: the night, its twist
 ##   and what the dawn brings. On the restraint track: its limit and why.
 ## - Click the draw pile or the discards: the cards that lie in that pile, and no others,
 ##   in a shuffled order (the pile's own order is not shown). A click or a key closes it.
@@ -103,7 +103,6 @@ func bind(table: ArenaTable) -> void:
 	t.synced.connect(_on_synced)
 	resized.connect(_place_hint)
 	t.move_begun.connect(func(_move: String) -> void:
-		_name_twist(RulesView.table(t.run).night)
 		_open = false
 		_hint.visible = false
 		_clear(_notebook)
@@ -115,7 +114,6 @@ func _on_synced(table: Dictionary) -> void:
 	_open = table.phase == "play"
 	_hint.visible = _open and int(table.night.no) == 1
 	_place_hint()
-	_name_twist(table.night)
 	_show_notebook()
 
 
@@ -134,8 +132,10 @@ func _process(_delta: float) -> void:
 	_tabs.lit = tab
 	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible
 	var hover := ""
+	var night_at := Rect2()
 	if not held and not _deck.visible and _pointer_here:
-		if tab == "left":
+		night_at = _night_rect_at(point)
+		if night_at.has_area():
 			hover = "night"
 		elif t.numbers.restraint.get_global_rect().has_point(point):
 			hover = "restraint"
@@ -153,8 +153,9 @@ func _process(_delta: float) -> void:
 		# In the middle of the page.
 		_say(_every_number(), Vector2(0.0, ArenaLayout.note_top(size)), true)
 	elif hover == "night":
-		var left := _tabs.rect_of("left")
-		_say(_night_words(), Vector2(left.end.x + 12.0, left.position.y))
+		# Under what the pointer rests on.
+		var at := get_global_transform().affine_inverse() * night_at
+		_say(_night_words(), Vector2(at.position.x, at.end.y + 8.0))
 	elif hover == "restraint":
 		_say(_restraint_words(), ArenaLayout.stage(size).position + Vector2(0.0, 6.0))
 	else:
@@ -180,10 +181,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 
 
-# Writes the scene's twist on the left tab: `night` is RulesView.table().night.
-func _name_twist(night: Dictionary) -> void:
-	var twist: String = night.twist
-	_tabs.left = "Twist: %s" % (twist.capitalize() if twist != "" else "none")
+# The place, in the page's global coordinates, of the night's heading or of the twist's block
+# if the pointer rests on it; an empty rect if it rests on neither. A night with no twist has
+# no block.
+func _night_rect_at(point: Vector2) -> Rect2:
+	var heading := t.numbers.heading_rect()
+	if heading.has_point(point):
+		return heading
+	if String(_table.night.twist) != "":
+		var block := get_global_transform() * ArenaLayout.twist(size)
+		if block.has_point(point):
+			return block
+	return Rect2()
 
 
 # Shows the note with these words, its top left corner at `at`, or `centred` across the page

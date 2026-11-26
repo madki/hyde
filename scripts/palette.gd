@@ -38,6 +38,11 @@ const GOLD_HOT := Color("ffe9a8")
 const WARN := Color("fba952")
 const SALT := Color("eaf9ff")
 
+# The two gauges of a symbol, and the scene's twist: each a colour kept for it alone.
+const TEMPER := Color("8ff0a4")
+const HABIT := Color("c08bff")
+const TWIST := Color("e3e36a")
+
 # The split between screens: brighter than the lights, on screen for a moment only.
 const SPLIT_JEKYLL := Color(0.03, 0.95, 0.92)
 const SPLIT_HYDE := Color(0.88, 0.06, 0.46)

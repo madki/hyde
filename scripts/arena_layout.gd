@@ -37,7 +37,12 @@ const NOTE_TOP := 186.0
 
 ## The night and the round, with the night's title.
 static func night(page: Vector2) -> Rect2:
-	return _from_left(page, MARGIN, 44.0, Vector2(250.0, 44.0))
+	return _from_left(page, MARGIN, 30.0, Vector2(250.0, 32.0))
+
+
+## The night's road, under its heading: the two rounds, the scene and the dawn.
+static func road(page: Vector2) -> Rect2:
+	return _from_left(page, MARGIN, 64.0, Vector2(250.0, 28.0))
 
 
 ## The round's goal: the score against the target.
@@ -48,6 +53,11 @@ static func goal(page: Vector2) -> Rect2:
 ## The sovereigns.
 static func sovereigns(page: Vector2) -> Rect2:
 	return _from_right(page, MARGIN, 44.0, Vector2(80.0, 44.0))
+
+
+## The scene's twist, between the goal and the sovereigns.
+static func twist(page: Vector2) -> Rect2:
+	return _from_right(page, MARGIN + 92.0, 34.0, Vector2(200.0, 58.0))
 
 
 # --- The left column, from the top down ---------------------------------------------------
@@ -80,11 +90,6 @@ static func salt(page: Vector2) -> Rect2:
 
 
 # --- The edges ----------------------------------------------------------------------------
-
-## The tab on the left edge: the scene's twist. On the window's own edge, however wide.
-static func tab_left(_page: Vector2) -> Rect2:
-	return Rect2(0.0, 140.0, 34.0, 110.0)
-
 
 ## The tab on the right edge: the hint of the held key. On the window's own edge.
 static func tab_right(page: Vector2) -> Rect2:
@@ -205,6 +210,8 @@ static func rules(page: Vector2) -> PackedVector2Array:
 static func zones(page: Vector2) -> Dictionary:
 	return {
 		"night": night(page),
+		"road": road(page),
+		"twist": twist(page),
 		"goal": goal(page),
 		"sovereigns": sovereigns(page),
 		"symbols": symbols(page),
@@ -212,7 +219,6 @@ static func zones(page: Vector2) -> Dictionary:
 		"draught": draught(page),
 		"instruments": instruments(page),
 		"salt": salt(page),
-		"tab_left": tab_left(page),
 		"tab_right": tab_right(page),
 		"balance": balance(page),
 		"readout": readout(page),

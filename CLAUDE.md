@@ -34,6 +34,9 @@ It must stay clean at every commit, including history.
   asset that is changed also needs its changes listed there. No NonCommercial,
   NoDerivatives, ShareAlike or GPL/copyleft code or assets, and nothing with an
   unclear licence.
+- Fonts under the SIL Open Font Licence (OFL 1.1) or the Apache License 2.0 may
+  ship, with their licence
+  file beside them in `fonts/`, and are recorded in `CREDITS.md`.
 - Two exceptions, both recorded in `CREDITS.md`:
   - Jekyll's figure is rendered from a model bought on CGTrader. The model and
     the meshes made from it (`studio/figures/jekyll*.res`, gitignored) must

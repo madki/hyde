@@ -32,6 +32,9 @@ extends Control
 ##
 ## A debug build runs every call once with the C key (`demo`).
 
+## A hand is named whose mult the hunted twist has halved.
+signal twist_acted
+
 ## Times, in seconds, at a speed of 1.
 const TICK_TIMES: Array[float] = [0.30, 0.20, 0.14] ## a tick: the first five of a play, the next five, the rest
 const MARK_TIME := 0.35 ## a tally mark, a drop, the strike
@@ -78,6 +81,8 @@ const DROP_PITCH := 19.0
 ## The dark outline round the goal's words and numbers, as the caption has: the band's centre
 ## lies on the ink's pale edge, where chalk alone reads weakly.
 const OUTLINE := Color(Palette.OUTLINE, 0.9)
+## The readout's note when the hunted twist has halved the hand's mult.
+const HUNTED_NOTE := "hunted: mult halved"
 const OUTLINE_SIZE := 5
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
 
@@ -93,6 +98,8 @@ var speed := 1.0
 
 ## The restraint gauge, laid out in its zone.
 var restraint := ArenaRestraint.new()
+## The night's road (scripts/arena_road.gd), under the heading.
+var road := ArenaRoad.new()
 ## The two tallies, plays and discards, on a layer of their own: the controls lay it over
 ## their buttons (ArenaControls.hold_tallies), which would hide it from under them.
 var tallies := Control.new()
@@ -127,6 +134,8 @@ var _sov_glint := 0.0 ## 0 to 1 across the coin's glint, 0 at rest
 # The readout: a name or a reason, then chips × mult, or the total once they have landed.
 var _name := ""
 var _note := ""
+## The base mult as the hunted twist left it, while the readout shows it; -1 otherwise.
+var _hunted_mult := -1
 var _reason := ""
 var _numbers := false
 var _chips := 0.0
@@ -180,7 +189,8 @@ func _init() -> void:
 		_tally_items[i].draw.connect(_draw_tally.bind(i))
 		tallies.add_child(_tally_items[i])
 	restraint.name = "Restraint"
-	for child: Control in [_track, _marks, restraint, _text, tallies, _flight]:
+	road.name = "Road"
+	for child: Control in [_track, _marks, restraint, road, _text, tallies, _flight]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -215,6 +225,7 @@ func show_table(table: Dictionary) -> void:
 	var night: Dictionary = table.night
 	set_night(night.no, night.title, night.round, night.scene)
 	is_jekyll = table.stance == "jekyll"
+	road.show_night(night, is_jekyll)
 	_target = table.target
 	_score = table.score
 	# A target of 0 is one not yet written (a round's start counts it up): nothing to strike.
@@ -255,7 +266,10 @@ func show_choice(play: Variant) -> void:
 func show_hand(hand_name: String, chips: int, mult: int, note: String = "") -> void:
 	_stop_readout()
 	_name = hand_name
-	_note = note
+	# The hunted twist halves the base mult: said in the twist's colour, and the mult is marked
+	# in it until it first ticks.
+	_hunted_mult = mult if note == "(hunted)" else -1
+	_note = HUNTED_NOTE if note == "(hunted)" else note
 	_reason = ""
 	_numbers = true
 	_chips = chips
@@ -353,6 +367,8 @@ func count_sov(to: int) -> Tween:
 ## The hand is named: its name and base go up and both numbers pulse once.
 func name_hand(hand_name: String, chips: int, mult: int, note: String = "") -> Tween:
 	show_hand(hand_name, chips, mult, note)
+	if _hunted_mult >= 0:
+		twist_acted.emit()
 	var t := _tween()
 	_pulse(t, "_chips_pop")
 	_pulse(t, "_mult_pop")
@@ -590,7 +606,7 @@ func plays_place() -> Vector2:
 
 
 ## Where the night and the round are written, on the page: the first line's middle, and the
-## whole zone.
+## whole heading with the road under it (for a hover).
 func heading_place() -> Vector2:
 	var at := _night_at()
 	var w := _heavy.get_string_size(_heading, HORIZONTAL_ALIGNMENT_LEFT, -1.0, HEAD_SIZE).x
@@ -598,7 +614,7 @@ func heading_place() -> Vector2:
 
 
 func heading_rect() -> Rect2:
-	return get_global_transform() * ArenaLayout.night(size)
+	return get_global_transform() * ArenaLayout.night(size).merge(ArenaLayout.road(size))
 
 
 func _baseline() -> float:
@@ -651,7 +667,7 @@ func _drop_at(i: int) -> Vector2:
 
 ## The baseline of the night and round's first line, at its left end.
 func _night_at() -> Vector2:
-	return ArenaLayout.night(size).position + Vector2(0.0, 16.0)
+	return ArenaLayout.night(size).position + Vector2(0.0, 13.0)
 
 
 ## Where the target's number begins, on the goal's baseline: right of the zone's middle.
@@ -784,7 +800,7 @@ func _draw_text() -> void:
 	# The night and the round, and the night's title under them.
 	var at := _night_at()
 	c.draw_string(_heavy, at, _heading, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE, Palette.CHALK_2)
-	c.draw_string(_slanted, at + Vector2(0.0, 18.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE,
+	c.draw_string(_slanted, at + Vector2(0.0, 16.0), _title, HORIZONTAL_ALIGNMENT_LEFT, head.size.x, HEAD_SIZE,
 			Palette.CHALK_2)
 
 	# The goal: SCORE at the zone's top left, the score large ending left of the middle, the
@@ -864,15 +880,22 @@ func _draw_readout() -> void:
 	var line := _line()
 	var left := _line_left()
 	c.draw_string(_slanted, Vector2(left, base - 2.0), _name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NAME_SIZE, Palette.CHALK)
+	var hunted := _hunted_mult >= 0 and _note == HUNTED_NOTE
 	if _note != "":
 		c.draw_string(_slanted, Vector2(left + line.note, base - 2.0), " " + _note,
-				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Palette.CHALK_2)
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Palette.TWIST if hunted else Palette.CHALK_2)
 	c.draw_string(_heavy, Vector2(left + line.dash, base - 4.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 20, Palette.CHALK_2)
 	_number(c, _thousands(roundi(_chips)), Vector2(left + line.chips, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _chips_pop,
 			Palette.CHALK.lerp(_man(), _chips_glow))
 	c.draw_string(_heavy, Vector2(left + line.times, base - 3.0), "×", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22, Palette.CHALK_2)
+	# Hunted: the halved mult in the twist's colour with a small ½ at its upper right, until
+	# the mult first ticks.
+	var halved := hunted and roundi(_mult) == _hunted_mult
 	_number(c, str(roundi(_mult)), Vector2(left + line.mult, base), HORIZONTAL_ALIGNMENT_LEFT, 1.0 + _mult_pop,
-			Palette.CHALK.lerp(_man(), _mult_glow))
+			Palette.TWIST if halved else Palette.CHALK.lerp(_man(), _mult_glow))
+	if halved:
+		c.draw_string(_heavy, Vector2(left + line.mult + line.mult_w + 2.0, base - READOUT_SIZE * 0.55), "½",
+				HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, Palette.TWIST)
 	# The total is written after them as it is counted; it travels from there to the score
 	# on a layer of its own (`_draw_flight`).
 	if _merge > 0.0 and _travel < 0.0:

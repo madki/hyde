@@ -35,6 +35,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 				# Night 4's scene: the drink's shift without the flask.
 				ArenaMomentShift.cue_to_hyde(t, ArenaPace.CAPTION_MIN + int(e.ev.stored) * ArenaMomentShift.STORE_STEP)
 				t.beats.add_call(func() -> void: t.stage.show_caption("The window. He comes unasked."))
+				t.beats.add_call(func() -> void: (t.arena.get_node("Twist") as ArenaTwist).pulse())
 				t.beats.add_wait(ArenaPace.CAPTION_MIN)
 				ArenaMomentShift.store(t, e.ev.stored)
 				ArenaMomentShift.page(t, true)

@@ -20,7 +20,7 @@ static func joins(cause: String, names: Array) -> String:
 		"breakout":
 			return "He breaks out. %s join the deck." % _capital(list(names))
 		"rollover":
-			return "%s has become a Habit. A copy joins the deck." % _first(names)
+			return "%s joins the deck." % _first(names)
 		"no_paper":
 			return "Nothing is left to stain. %s joins the deck." % _capital(_a(_first(names)))
 		"dawn":
@@ -29,6 +29,14 @@ static func joins(cause: String, names: Array) -> String:
 	if names.size() == 1:
 		return "%s joins the deck." % _first(names)
 	return "%s join the deck." % _capital(list(names))
+
+
+## Why a gauge grew, said while its new value stands beside it: `cause` is "rollover" (a
+## Craving of three became a Habit) or "turn" (a Sublimation), `symbol` the symbol's name.
+static func grows(cause: String, symbol: String) -> String:
+	if cause == "turn":
+		return "Sublimation: its Craving is turned to Temper."
+	return "Craving reached 3: %s is a Habit now." % symbol
 
 
 ## A man brings Roots to the hand: `man` is "Jekyll" or "Hyde", `names` what he brings.

@@ -23,7 +23,8 @@ the game build.
 ## Art, audio and fonts
 
 Art is public domain (CC0), Creative Commons Attribution (CC BY 4.0, credited below), or
-generated procedurally in code (shaders, particles, drawn primitives), with two exceptions,
+generated procedurally in code (shaders, particles, drawn primitives); the font is under the
+Apache License 2.0, with its licence file beside it. There are two exceptions,
 both noted under the table: the figure of Jekyll, rendered from a bought model, and most of
 the game's sounds, made from a licensed sound library. No AI-generated image or audio assets.
 
@@ -38,6 +39,7 @@ Every third-party asset must be listed here before it is committed.
 | Cobblestone Floor 04 (texture) | `studio/assets/cobblestone_floor_04/` | Poly Haven | <https://polyhaven.com/a/cobblestone_floor_04> | CC0 |
 | Mad Corvin - AS3 'The Alienist' (model, modified) | `studio/figures/hyde.res` | Nicu.Scarlat | <https://skfb.ly/outWx> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 | Old paper7 (scan of a sheet of old paper, modified) | `art/arena/paper_mask.png` | Digital Yard Sale | <https://commons.wikimedia.org/wiki/File:Old_paper7.jpg> | Public domain |
+| Homemade Apple (font) | `fonts/HomemadeApple-Regular.ttf` | Font Diner | <https://github.com/google/fonts/tree/main/apache/homemadeapple> | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (`fonts/Apache-2.0.txt`) |
 | Echoes (music, modified: made a seamless loop, converted to OGG) | `audio/music/music_jekyll.ogg` | Scott Buckley | <https://www.scottbuckley.com.au/library/echoes/> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 | Division (music, modified: first 35 s only, made a seamless loop, converted to OGG) | `audio/music/music_hyde.ogg` | Kevin MacLeod (incompetech.com) | <https://incompetech.com/music/royalty-free/music.html> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
 | Decoherence (music, modified: 3:20 section from 2:00, made a seamless loop, converted to OGG) | `audio/music/music_dread.ogg` | Scott Buckley | <https://www.scottbuckley.com.au/library/decoherence/> | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) |
@@ -62,7 +64,9 @@ scan itself is not part of this repository.
 ### Sounds
 
 The sounds in `audio/sfx/` are Kenney's, each mixed to mono, set to one level and saved as
-Ogg Vorbis; the `_h` files are the same sounds three semitones lower.
+Ogg Vorbis; the `_h` files are the same sounds three semitones lower. One is not:
+`pen.ogg`, the scratch of a pen, is made by `tools/make_pen_sound.sh` from noise generated in
+code, with no recording; it is this project's own, released under CC0.
 
 | Source pack | Author | Source URL | Licence |
 |---|---|---|---|
