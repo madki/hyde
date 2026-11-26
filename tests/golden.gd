@@ -7,6 +7,7 @@ extends RefCounted
 ## a 1 or a 0 a move), a hash of the state's digest after each move (`hashes`), and the digest
 ## itself before the first move and after the last (`first`, `last`).
 
+const Case := preload("res://tests/case.gd")
 const PATH := "res://tests/golden/rules_runs.json"
 const FACTOR_CODE := {"cup": "c", "eye": "e", "lock": "k", "pen": "p", "cane": "n"}
 
@@ -24,9 +25,7 @@ static func runs() -> Array:
 ## The run a record starts from.
 static func begin(record: Dictionary) -> RulesRun:
 	# The runs were recorded on these numbers; a record's own changes go over them.
-	var dials := {"temper_mult": 2, "salt_from": 2, "draught_from": 1, "first_night_scale": 1.0}
-	dials.merge(record.dials, true)
-	var run := Rules.new_run(dials, record.seed)
+	var run := Rules.new_run(Case.written_to(record.dials), record.seed)
 	if record.start != null:
 		start_on(run, record.start.night, record.start.round)
 	return run

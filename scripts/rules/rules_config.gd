@@ -99,6 +99,8 @@ const STRIKE_PAPER := 4
 const STRIKE_INK := 8
 
 ## The five nights: two ordinary rounds, then a scene that bends one rule (`twist`).
+## `targets` are a night's plain targets: what a round asks is these by the numbers' scale
+## (see `targets()`), the first night by `first_night_scale`.
 ## `brings` is the Ink Root two copies of which join at that night's dawn ("habit": his
 ## highest-Habit Root, "": none). `unlocks` is the Factor that joins the pool at that dawn.
 const NIGHTS := [
