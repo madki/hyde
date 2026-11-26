@@ -95,6 +95,15 @@ static func joined(t: ArenaTable, e: Dictionary) -> void:
 		cards.append(t.card_data(c.id))
 		names.append(cards[-1].name)
 	var cause: String = {"first": "arrival", "breakout": "breakout", "stain": "no_paper"}.get(e.why, "reward")
+	# His first four come by a drink, a breakout or night 4's window: the engine's record of
+	# the arrival says which. Only a drink found there is said to be one.
+	if cause == "arrival":
+		var how := ""
+		for ev: Dictionary in t.run.log:
+			if ev.get("t") == "shift" and ev.get("first", false):
+				how = ev.how
+		cause = {"drink": "arrival", "breakout": "first_breakout", "walkedin": "first_breakout",
+				"window": "first_window"}.get(how, "first_other")
 	# They come out of his ink, at the right of the page.
 	var from := Vector2(t.arena.size.x - 60.0, t.arena.size.y * 0.42)
 	hyde_joins(t)

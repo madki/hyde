@@ -24,7 +24,7 @@ extends Control
 ## - `count_sov(to)`.
 ## - `restraint`: the restraint gauge (scripts/arena_restraint.gd) lies in its own zone and
 ##   is driven through its own calls.
-## - `mult_place()`, `sov_place()`, `plays_place()`, `heading_place()`, `heading_rect()`:
+## - `mult_place()`, `sov_place()`, `plays_place()`, `heading_place()`, `heading_rect()`, `note_rect(what)`:
 ##   where things are, on the page.
 ##
 ## The times are the constants below, from the pace of the table; `speed` scales them all
@@ -679,6 +679,22 @@ func heading_place() -> Vector2:
 
 func heading_rect() -> Rect2:
 	return get_global_transform() * ArenaLayout.night(size).merge(ArenaLayout.road(size))
+
+
+## Where a thing a note is about lies, on the page, for a hover: "goal" (the score and the
+## target), "purse" (the sovereigns), "plays" or "discards" (that tally, a little round it).
+func note_rect(what: String) -> Rect2:
+	var r := Rect2()
+	match what:
+		"goal":
+			r = ArenaLayout.goal(size)
+		"purse":
+			r = ArenaLayout.sovereigns(size)
+		"plays", "discards":
+			var i := 0 if what == "plays" else 1
+			var left := _tally_left(i)
+			r = Rect2(left, _tally_top(i), _tally_zone(i).end.x - TALLY_INSET - left, TALLY_HIGH).grow(6.0)
+	return get_global_transform() * r
 
 
 func _baseline() -> float:
