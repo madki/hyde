@@ -11,6 +11,8 @@ const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only in a Sublimation. If 
 ## Why cards join the deck, for `joins`:
 ## - "arrival": his first arrival (a group of four), by a drink.
 ## - "first_breakout": his first arrival by a breakout, with no drink: the same four.
+## - "first_window": his first arrival by night 4's window, with no drink: the same four.
+## - "first_other": his first arrival by a road not known here: the same four.
 ## - "breakout": a breakout's two.
 ## - "rollover": a copy of a Root whose Craving rolled over into a Habit.
 ## - "no_paper": a drink with no Paper Root left to stain.
@@ -18,7 +20,7 @@ const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only in a Sublimation. If 
 ## - "reward", "bought": a card taken after a won round, or bought.
 static func joins(cause: String, names: Array) -> String:
 	match cause:
-		"arrival", "first_breakout":
+		"arrival", "first_breakout", "first_window", "first_other":
 			return "He arrives. Four of his Roots join the deck."
 		"breakout":
 			return "He breaks out. %s join the deck." % _capital(list(names))
@@ -46,6 +48,10 @@ static func joins_notice(cause: String, paper: int, ink: int,
 			said = arrival()
 		"first_breakout":
 			said = first_breakout()
+		"first_window":
+			said = first_window()
+		"first_other":
+			said = first_other()
 		"breakout":
 			said = breakout()
 		"rollover":
@@ -64,6 +70,14 @@ static func arrival() -> Array:
 
 static func first_breakout() -> Array:
 	return ["Hyde arrives", "He breaks out without the draught, and four of his Roots come with him."]
+
+
+static func first_window() -> Array:
+	return ["Hyde arrives", "The window lets him in unasked, and four of his Roots come with him."]
+
+
+static func first_other() -> Array:
+	return ["Hyde arrives", "He is here at last, and four of his Roots come with him."]
 
 
 static func breakout() -> Array:
