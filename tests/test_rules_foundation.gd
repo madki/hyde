@@ -77,8 +77,9 @@ func test_config() -> void:
 	var scenes: Array = []
 	for n in 5:
 		scenes.append(RulesConfig.targets(d, n)[2])
-	eq(scenes, [2200, 5500, 13000, 26000, 40000], "the scenes' targets")
-	eq(RulesConfig.targets(d, 0), [1000, 1500, 2200], "night 1")
+	eq(scenes, [3300, 5500, 13000, 26000, 40000], "the scenes' targets")
+	eq(RulesConfig.targets(d, 0), [1500, 2250, 3300], "night 1")
+	eq([d.temper_mult, d.draught_from, d.salt_from, d.max_discard], [3, 0, 0, 5], "Temper's pay, the draught and the salt from the first round, a discard's size")
 
 
 func test_json_round_trip() -> void:

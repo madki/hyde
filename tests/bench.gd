@@ -150,7 +150,7 @@ func _move(run: RulesRun) -> void:
 			if not top.is_empty():
 				Rules.play(run, top.ids)
 			elif not Rules.pass_play(run).ok:
-				if not Rules.discard(run, run.hand.slice(0, run.dials.max_play)).ok:
+				if not Rules.discard(run, run.hand.slice(0, run.dials.max_discard)).ok:
 					Rules.give_up(run)
 		"result":
 			Rules.continue_result(run, 0 if run.offer != null else null)
@@ -166,7 +166,7 @@ func _dead(run: RulesRun) -> Array:
 	var out: Array = []
 	for id: int in run.hand:
 		var c := Rules.card(run, id)
-		if c.is_root() and c.ink != ink and out.size() < run.dials.max_play:
+		if c.is_root() and c.ink != ink and out.size() < run.dials.max_discard:
 			out.append(id)
 	return out
 

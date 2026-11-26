@@ -23,7 +23,10 @@ static func runs() -> Array:
 
 ## The run a record starts from.
 static func begin(record: Dictionary) -> RulesRun:
-	var run := Rules.new_run(record.dials, record.seed)
+	# The runs were recorded on these numbers; a record's own changes go over them.
+	var dials := {"temper_mult": 2, "salt_from": 2, "draught_from": 1, "first_night_scale": 1.0}
+	dials.merge(record.dials, true)
+	var run := Rules.new_run(dials, record.seed)
 	if record.start != null:
 		start_on(run, record.start.night, record.start.round)
 	return run

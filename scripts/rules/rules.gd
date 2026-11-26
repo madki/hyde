@@ -493,7 +493,7 @@ static func can_drink(run: RulesRun) -> Dictionary:
 		return {"ok": false, "why": "Not now."}
 	if run.stance != "jekyll":
 		return {"ok": false, "why": "He already has the table."}
-	if run.night == 0 and run.round == 0:
+	if run.night * 3 + run.round < run.dials.draught_from:
 		return {"ok": false, "why": "The draught does not exist yet."}
 	if twist_now(run) == "last":
 		return {"ok": false, "why": "No draught works in this scene."}
@@ -705,8 +705,8 @@ static func discard(run: RulesRun, ids: Array) -> Dictionary:
 		return {"ok": false, "reason": "No discards left."}
 	if not _in_hand(run, ids):
 		return {"ok": false, "reason": "Choose cards to discard."}
-	if ids.size() > run.dials.max_play:
-		return {"ok": false, "reason": "Discard up to %d cards." % run.dials.max_play}
+	if ids.size() > run.dials.max_discard:
+		return {"ok": false, "reason": "Discard up to %d cards." % run.dials.max_discard}
 	var events := _begin(run)
 	run.discards -= 1
 	_to_discards(run, ids, "discard")
