@@ -19,16 +19,16 @@ signal completed
 ## The player has moved on.
 signal advanced
 
-const FACE: Font = preload("res://fonts/Cedarville-Cursive.ttf")
+const FACE: Font = preload("res://fonts/HomemadeApple-Regular.ttf")
 const WIDTH := 560.0
-const LINE_SPACING := 1.4
+const LINE_SPACING := 1.75
 
 const JEKYLL_SIZE := 26
 const HYDE_SIZE := 26
 const PLAIN_SIZE := 20
 ## Hyde's hand: the same letters sloped backward, and heavier. The face leans forward of
-## itself by about a seventh, so the shear is that much more than the slope it is seen to have.
-const HYDE_SLOPE := 0.42
+## itself by about a half, so the shear is that and more: his slope is a little under Jekyll's.
+const HYDE_SLOPE := 0.82
 ## The plain face stands upright, so its slope is the one seen.
 const PLAIN_SLOPE := 0.28
 const HYDE_WEIGHT := 0.6

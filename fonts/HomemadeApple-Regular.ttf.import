@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://buhwd7gka2qoj"
-path="res://.godot/imported/Cedarville-Cursive.ttf-db6cc6ec7fb8f48662134466c4a07e4a.fontdata"
+uid="uid://cvoo3hlmr1vm7"
+path="res://.godot/imported/HomemadeApple-Regular.ttf-b2462f452a6353c296560beade941777.fontdata"
 
 [deps]
 
-source_file="res://fonts/Cedarville-Cursive.ttf"
-dest_files=["res://.godot/imported/Cedarville-Cursive.ttf-db6cc6ec7fb8f48662134466c4a07e4a.fontdata"]
+source_file="res://fonts/HomemadeApple-Regular.ttf"
+dest_files=["res://.godot/imported/HomemadeApple-Regular.ttf-b2462f452a6353c296560beade941777.fontdata"]
 
 [params]
 
