@@ -41,8 +41,19 @@ static func add(t: ArenaTable, e: Dictionary, first: Dictionary = {}) -> void:
 
 ## The size of "Round won.", the one caption written larger than the rest.
 const WON_SIZE := 27
-## The names of the run's three endings.
-const ENDINGS := {"hyde": "Mr Hyde", "double": "The Double Life", "myself": "This, Too, Was Myself"}
+## The run's four endings by their names. The rules name three ("myself", "double", "hyde");
+## theirs of "hyde" is two, by what ended the run: see `ending_of`.
+const ENDINGS := {
+	"jekyll": "This, Too, Was Myself",
+	"hyde": "The Double Life",
+	"succumbed": "Succumbed to Hyde",
+	"unmet": "Unmet Desires",
+}
+## How far the table goes toward the night's colour when the lamps go out: it can still be
+## made out.
+const LAMPS_OUT := 0.6
+## The name of the sheet that darkens the page.
+const NIGHT_SHEET := "LampsOut"
 
 
 # The round is covered by him: the target is struck in his ink, he has the table, the track
@@ -80,28 +91,67 @@ static func _rescued(t: ArenaTable, e: Dictionary, first: Dictionary) -> void:
 		ArenaMomentShift.joined(t, first)
 
 
+## Which of the four endings a `round_end` event ends the run on: a key of ENDINGS.
+static func ending_of(e: Dictionary) -> String:
+	match e.ending:
+		"myself":
+			return "jekyll"
+		"double":
+			return "hyde"
+	return "succumbed" if e.ended_by == "line" else "unmet"
+
+
 # The run ends: the table shows how, and hands over to the ending by its name.
 static func _ending(t: ArenaTable, e: Dictionary) -> void:
 	var ending: String = e.ending
+	var id := ending_of(e)
+	# The parts of the table the lamps' going out has darkened, each to the colour it had.
+	var lit := {}
 	t.beats.add(func() -> void:
-		if ending == "hyde":
-			# He has the page for good: the run is lost.
-			t.beats.sound("run_lost")
 		t.hand.lift(false)
 		t.numbers.clear_readout()
-		if ending == "hyde":
-			# The ink takes the whole page, and the cards sink into it.
-			t.ink.is_jekyll = false
-			var flood := t.beats.tween().set_parallel()
-			flood.tween_property(t.ink, "percent", 100.0, 1.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-			for node: Node in t.hand.get_children() + t.travel.get_children():
-				if node is ArenaCard:
-					flood.tween_property(node, "modulate", Color(Palette.INK_WASH, 0.0), 1.6)
-			await flood.finished
-		else:
-			# The page stills.
-			t.beats.sound("run_end")
-			await t.beats.wait(ArenaPace.HOLD)
+		match id:
+			"succumbed":
+				# He has the page for good: the ink takes all of it, and the cards sink into it.
+				t.beats.sound("run_lost")
+				t.ink.is_jekyll = false
+				var flood := t.beats.tween().set_parallel()
+				flood.tween_property(t.ink, "percent", 100.0, 1.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+				for card: ArenaCard in _cards(t):
+					flood.tween_property(card, "modulate", Color(Palette.INK_WASH, 0.0), 1.6)
+				await flood.finished
+			"unmet":
+				# The ink stays where it is; the whole table goes dark, as lamps going out: every
+				# part of it but the caption's (the stage).
+				t.beats.sound("run_lost")
+				# The page's shader takes no modulate: the night is a sheet laid over it.
+				var night := ColorRect.new()
+				night.name = NIGHT_SHEET
+				night.color = Color(Palette.NIGHT_1, 0.0)
+				night.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				night.set_anchors_preset(Control.PRESET_FULL_RECT)
+				t.ink.paper.add_child(night)
+				var dark := Color.WHITE.lerp(Palette.NIGHT_1, LAMPS_OUT)
+				var out := t.beats.tween().set_parallel()
+				out.tween_property(night, "color:a", LAMPS_OUT, 1.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+				for node: Node in t.arena.get_children():
+					var part := node as CanvasItem
+					if part == null or part == t.stage or part == t.ink.paper or part is StoryPage:
+						continue
+					lit[part] = part.modulate
+					# Its own alpha is kept: a part that is hidden stays hidden.
+					out.tween_property(part, "modulate", Color(dark * part.modulate, part.modulate.a), 1.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+				await out.finished
+			"jekyll":
+				# The ink draws back off the page, and the page stills.
+				t.beats.sound("run_end")
+				await t.beats.tween().tween_property(t.ink, "percent", 0.0, 1.2).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE).finished
+				await t.beats.wait(ArenaPace.HOLD)
+			_:
+				# The ink settles at half the page, and the page stills.
+				t.beats.sound("run_end", 0.8)
+				await t.beats.tween().tween_property(t.ink, "percent", 50.0, 1.2).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE).finished
+				await t.beats.wait(ArenaPace.HOLD)
 		# The round's cards are the deck's again.
 		t.shown.set_value("draw_count", 0)
 		t.shown.set_value("discard_count", 0))
@@ -110,11 +160,27 @@ static func _ending(t: ArenaTable, e: Dictionary) -> void:
 		if SceneFlow.show_ending(ending):
 			return
 		# No ending screen yet: the table names the ending and waits.
-		t.stage.show_caption("%s.  The run is over: press a key for a new one." % ENDINGS.get(ending, ending))
+		t.stage.show_caption("%s.  The run is over: press a key for a new one." % ENDINGS[id])
 		t.waiting_press = true
 		await t.pressed
 		t.waiting_press = false
-		await t.stage.clear_caption())
+		await t.stage.clear_caption()
+		# The next run begins on this table: the lamps come up again.
+		var night := t.ink.paper.get_node_or_null(NIGHT_SHEET)
+		if night:
+			night.free()
+		for part: CanvasItem in lit:
+			if is_instance_valid(part):
+				part.modulate = lit[part])
+
+
+# The cards on the table: in the hand and on their way.
+static func _cards(t: ArenaTable) -> Array[ArenaCard]:
+	var cards: Array[ArenaCard] = []
+	for node: Node in t.hand.get_children() + t.travel.get_children():
+		if node is ArenaCard:
+			cards.append(node)
+	return cards
 
 
 ## The hand and both piles gather into the deck, at the bottom left.

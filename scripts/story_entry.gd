@@ -152,9 +152,15 @@ func _input(event: InputEvent) -> void:
 	if not pressed:
 		return
 	get_viewport().set_input_as_handled()
+	press()
+
+
+## A press, as the player's: writes the rest of the line, or moves on from a whole one.
+## Nothing while no line is on the page.
+func press() -> void:
 	if _state == State.WRITING:
 		_finish()
-	else:
+	elif _state == State.WAITING:
 		_state = State.IDLE
 		_pen(false)
 		advanced.emit()

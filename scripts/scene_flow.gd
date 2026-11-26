@@ -1,8 +1,9 @@
 extends Node
 ## The game's screens, and what outlives a change of screen: the run being played. The title
 ## goes on to the table; at dawn the table hands over to the laboratory or the back alley
-## (`go_to_place`), and the place hands back (`back_to_table`). Every change of screen is made
-## here. Loaded with the game (an autoload), so it works whichever screen is run.
+## (`go_to_place`), and the place hands back (`back_to_table`); a run's end goes to the ending
+## screen (`show_ending`), and from there back to the title (`close_ending`). Every change of
+## screen is made here. Loaded with the game (an autoload), so it works whichever screen is run.
 
 ## The screens Enter goes through in turn, from the last back to the first. Enter goes on
 ## from the title only: on the table and in the two places it is theirs.
@@ -49,16 +50,39 @@ func _ready() -> void:
 ## "myself" (the rules' names).
 const ENDING_SCENE := "res://scenes/ending.tscn"
 var ending := ""
+## The run that ended, kept for the ending screen; null when no ending is showing. While it
+## is the table's run, the table begins no new run under the ending (see the table's `_go_on`).
+## Closing the ending forgets it, and the run.
+var ended: RulesRun
 
 
-## Hands a run's end over to the ending screen. False if there is no such screen yet: the
-## caller then shows the ending itself.
+## Hands a run's end over to the ending screen, which shows the run being played: it is kept
+## in `ended`, and the screen changes under the passage. False, and nothing changes, if there
+## is no such screen or a change of screen would be a plain cut (CUT_ARGS): the caller then
+## shows the ending itself, and the table plays on with a new run. (Under the bench it plays
+## on at dawn too; with `--fast` alone a dawn still goes to its place.)
 func show_ending(ending_key: String) -> bool:
 	ending = ending_key
-	if not ResourceLoader.exists(ENDING_SCENE):
+	if not ResourceLoader.exists(ENDING_SCENE) or _cuts():
 		return false
-	get_tree().change_scene_to_file(ENDING_SCENE)
+	ended = run
+	_change_to(ENDING_SCENE)
 	return true
+
+
+## True from a change of screen being asked for until its passage has lifted off the new
+## screen.
+func is_changing() -> bool:
+	return _changing
+
+
+## From the ending: the journal is closed, and the game is at its title again as when it was
+## started. No run is held, and none that ended: the next begins from the title.
+func close_ending() -> void:
+	ended = null
+	ending = ""
+	run = null
+	_change_to(TITLE_SCENE)
 
 
 func _unhandled_input(event: InputEvent) -> void:

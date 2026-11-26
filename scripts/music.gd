@@ -2,8 +2,8 @@ extends Node
 ## The game's music. Loaded with the game (an autoload, `Music`). Three loops, each a seamless
 ## loop of one piece in `res://audio/music/`:
 ##
-##   jekyll: his table, the title and the laboratory
-##   hyde:   his table and the back alley
+##   jekyll: his table, the title, the laboratory and the endings he is left at
+##   hyde:   his table, the back alley and the endings he is left at
 ##   dread:  a bed under both that rises with the danger
 ##
 ## A screen says where we are (`Music.enter("table")`); who has the table comes from
@@ -19,6 +19,9 @@ const PLACES: Dictionary[String, Dictionary] = {
 	"table": {jekyll = 0.0, hyde = 2.0},
 	"lab": {jekyll = -3.0, hyde = -80.0},
 	"alley": {jekyll = -80.0, hyde = -1.0},
+	# A run's ending, by the man who is left: his piece alone, as at his dawn's place.
+	"ending_jekyll": {jekyll = -3.0, hyde = -80.0},
+	"ending_hyde": {jekyll = -80.0, hyde = -1.0},
 }
 ## The level of all the music, under the sounds.
 const MASTER_DB := -9.0
@@ -56,7 +59,8 @@ func _ready() -> void:
 		_level[loop] = SILENT_DB
 
 
-## Says which screen the player is on: "title", "table", "lab", "alley" or "none" (silent).
+## Says which screen the player is on: "title", "table", "lab", "alley", "ending_jekyll",
+## "ending_hyde" or "none" (silent).
 ## Leaving the table clears the danger.
 func enter(place: String) -> void:
 	assert(PLACES.has(place), "Music: no place \"%s\"." % place)
