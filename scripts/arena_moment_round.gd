@@ -37,6 +37,7 @@ static func add(t: ArenaTable, result: Dictionary) -> void:
 				t.beats.add_call(func() -> void: t.stage.show_caption("The window. He comes unasked."))
 				t.beats.add_call(func() -> void: (t.arena.get_node("Twist") as ArenaTwist).pulse())
 				t.beats.add_wait(ArenaPace.CAPTION_MIN)
+				ArenaStory.add(t, ["window"])
 				ArenaMomentShift.store(t, e.ev.stored)
 				ArenaMomentShift.page(t, true)
 			"breakout":
@@ -135,6 +136,8 @@ static func _begin(t: ArenaTable, deck: int, before: Dictionary) -> void:
 	elif night.round == 1:
 		words.title = night.title
 		words.twist = "Its scene: %s" % night.twist_text
+	if int(night.round) == 1:
+		ArenaStory.night_begins(t, int(night.no))
 	t.beats.add(func() -> void:
 		await t.heading.play(words, t.numbers.heading_place()))
 	# The numbers settle.

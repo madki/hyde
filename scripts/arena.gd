@@ -356,6 +356,7 @@ func _go_to_place(events: Array) -> void:
 		_beats.add_call(t.snap_shown)
 		await _beats.run()
 	await ArenaFirsts.show_due(t, events)
+	await ArenaStory.dawn(t)
 	SceneFlow.go_to_place()
 
 

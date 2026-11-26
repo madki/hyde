@@ -43,3 +43,4 @@ static func add(t: ArenaTable, _e: Dictionary) -> void:
 		burst.queue_free())
 	# The words stay while the ink thins away, and a little longer.
 	t.beats.add_wait(ArenaMomentShift.NAME_TIME + ArenaMomentShift.NAME_FADE_WAIT - ArenaBurst.THIN_TIME)
+	ArenaStory.add(t, ["breakout"])
