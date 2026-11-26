@@ -102,12 +102,26 @@ static func batch_name(player: String, dials: Dictionary, give: Array, from: int
 
 ## The folder of a batch on disk whose manifest is the same runs as this one (player, dials,
 ## give, seeds, and the hashes of the rules and of the player), under any version, or "" if
-## there is none.
+## there is none. A batch that lacks some of its runs is not found.
 static func find(manifest_wanted: Dictionary) -> String:
 	for dir: String in batches():
-		if same_runs(manifest(dir), manifest_wanted):
+		if same_runs(manifest(dir), manifest_wanted) and is_whole(dir):
 			return dir
 	return ""
+
+
+## Whether a batch on disk holds every run its manifest names: one for each seed, in order.
+static func is_whole(dir: String) -> bool:
+	var seeds: Array = manifest(dir).get("seeds", [])
+	if seeds.size() != 2:
+		return false
+	var runs := read_lines(dir + "/runs.jsonl")
+	if runs.size() != int(seeds[1]) - int(seeds[0]):
+		return false
+	for i in runs.size():
+		if not runs[i] is Dictionary or runs[i].get("seed") != int(seeds[0]) + i:
+			return false
+	return true
 
 
 ## Whether two manifests are the same runs.

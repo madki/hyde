@@ -61,7 +61,7 @@ func _read_args() -> String:
 				if not key.begins_with("d.") or eq < 0:
 					return "Unknown argument: %s" % a
 				dials[key.substr(2)] = SimStore.read_value(value)
-	if to <= from:
+	if to <= from or from < 0:
 		return "No seeds: from=%d to=%d" % [from, to]
 	var wrong := RulesDials.problems(dials)
 	for k: Variant in wrong:
@@ -71,7 +71,7 @@ func _read_args() -> String:
 			return "No such instrument: %s" % key
 	if batch == "":
 		batch = SimStore.batch_name(player_name, dials, give, from, to)
-	if not batch.is_valid_filename():
+	if not batch.is_valid_filename() or batch.begins_with("."):
 		return "Not a batch's name: %s" % batch
 	return ""
 
@@ -90,6 +90,8 @@ func _plan() -> String:
 		var held := SimStore.manifest(dir)
 		if SimStore.is_stale(held, wanted):
 			print("SIM STALE %s was played before the player's scripts changed: played again" % batch)
+		elif SimStore.same_runs(held, wanted):
+			print("SIM STALE %s lacks some of its runs: played again" % batch)
 		elif not held.is_empty():
 			return "The batch %s holds other runs. Give another name, or force." % batch
 	SimStore.make_dir(dir)

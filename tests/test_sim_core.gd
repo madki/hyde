@@ -188,6 +188,10 @@ func test_batches_on_disk() -> void:
 	other.rules_hash = "0"
 	eq(SimStore.find(other), "", "other rules")
 	ok(not SimStore.is_stale(m, other), "which is not the same batch grown old")
+	ok(SimStore.write_lines(dir + "/runs.jsonl", [lines[0]]), "a batch cut short")
+	ok(not SimStore.is_whole(dir), "is not whole")
+	eq(SimStore.find(wanted), "", "and is not found")
+	ok(SimStore.write_lines(dir + "/runs.jsonl", lines) and SimStore.is_whole(dir), "with its runs back it is")
 	var old := m.duplicate(true)
 	old.player_hash = "0"
 	ok(SimStore.write_manifest(dir, old), "a batch played by other scripts of the player")
