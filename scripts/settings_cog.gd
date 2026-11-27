@@ -108,10 +108,19 @@ func take_key(event: InputEvent) -> bool:
 			and open_sheet() != null
 
 
-# Before the screen's own `_input` and `_unhandled_input`; while the sheet is open, the sheet
-# takes every key before the cog does.
+## A press of the pointer, in the window's coordinates, as the cog takes it: a left press on
+## the cog opens the sheet. True if it did.
+func take_press(event: InputEvent) -> bool:
+	var button := event as InputEventMouseButton
+	return button != null and button.pressed and button.button_index == MOUSE_BUTTON_LEFT \
+			and get_global_rect().has_point(button.position) and open_sheet() != null
+
+
+# Before the screen's own `_input` (which comes before the GUI) and `_unhandled_input`, so no
+# screen takes F2 or a click on the cog first. While the sheet is open, the sheet takes every
+# key and click before the cog does.
 func _input(event: InputEvent) -> void:
-	if is_visible_in_tree() and take_key(event):
+	if is_visible_in_tree() and (take_key(event) or take_press(event)):
 		get_viewport().set_input_as_handled()
 
 

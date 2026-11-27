@@ -10,7 +10,8 @@ extends CanvasLayer
 ## (switches), Close. Up and Down choose a row, Left and Right move a slider or flip a switch,
 ## Enter (or Space) flips a switch or closes on Close, Escape closes. The mouse works on every
 ## row: a click flips a switch, a click or a drag on a slider sets it. A click outside the panel
-## closes the sheet. Every change is applied and kept at once (Settings.set_*). Letting go of
+## closes the sheet. The sheet takes the pointer in its own `_input`, before any screen's, so
+## no click goes through it. Every change is applied and kept at once (Settings.set_*). Letting go of
 ## the Effects slider, or a step of it by key, plays one short sound at the new level.
 ##
 ## While it is open the screen under it takes no key and no click: a key pressed goes to the
@@ -151,6 +152,14 @@ func press(keycode: Key, echo: bool = false) -> bool:
 func _input(event: InputEvent) -> void:
 	if not _is_open:
 		return
+	if event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag:
+		# The pointer is the sheet's too: a screen's own `_input` (which comes before the GUI)
+		# must not take a click meant for the sheet. Touch reaches it as the mouse.
+		if is_inside_tree():
+			get_viewport().set_input_as_handled()
+		if event is InputEventMouse:
+			point(event)
+		return
 	var key := event as InputEventKey
 	if not key or not key.pressed:
 		return
@@ -158,6 +167,20 @@ func _input(event: InputEvent) -> void:
 	if is_inside_tree():
 		get_viewport().set_input_as_handled()
 	press(key.keycode, key.echo)
+
+
+## A mouse event, in the window's coordinates, as the sheet takes it: on the panel (or while a
+## slider is dragged) it goes to the panel; a left press outside the panel closes the sheet.
+func point(event: InputEventMouse) -> void:
+	var local := _panel.get_global_transform_with_canvas().affine_inverse() * event.position
+	var button := event as InputEventMouseButton
+	if _panel._dragging < 0 and not Rect2(Vector2.ZERO, _panel.size).has_point(local):
+		if button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
+			close()
+		return
+	var moved := event.duplicate() as InputEventMouse
+	moved.position = local
+	_panel._gui_input(moved)
 
 
 func _on_shade_input(event: InputEvent) -> void:
