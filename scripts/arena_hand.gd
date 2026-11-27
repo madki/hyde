@@ -93,6 +93,9 @@ var covered := false:
 		if covered:
 			_note_wait = null
 			_close_note()
+## The look keys held, as the views on demand count them (ArenaViews gives its own): no note
+## opens while one is held.
+var look: ArenaViews.LookKeys
 
 ## While true every card stands raised, as under the pointer: he is looking the hand over.
 var _lifted := false
@@ -730,10 +733,7 @@ func _note_ok() -> bool:
 	var t: Variant = arena.get("t")
 	if t is ArenaTable and (t.waiting_press or (t.moments != null and t.moments.notice != null and t.moments.notice.showing)):
 		return false
-	for key: Key in ArenaBeats.LOOK_KEYS:
-		if Input.is_key_pressed(key):
-			return false
-	return true
+	return look == null or not look.held()
 
 
 func _open_note(card: ArenaCard) -> void:

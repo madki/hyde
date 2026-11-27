@@ -175,6 +175,8 @@ func _on_window_input(event: InputEvent) -> void:
 func bind(table: ArenaTable) -> void:
 	t = table
 	_deck.t = table
+	# The hand's card notes stay shut while a look key is held: it reads the same keys.
+	t.hand.look = _look
 	t.synced.connect(_on_synced)
 	if t.arena.has_signal("settled"):
 		t.arena.connect("settled", _on_settled)

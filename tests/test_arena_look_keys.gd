@@ -1,6 +1,7 @@
 extends "res://tests/case.gd"
 ## The keys held to look at every number (ArenaViews.LookKeys): held from a press to its
-## release, not under Cmd, Ctrl or Alt, and let go when the window loses its focus.
+## release, not under Cmd, Ctrl or Alt, and let go when the window loses its focus. The hand's
+## card notes read the same keys.
 
 
 func _key(code: Key, pressed: bool, mods: Array = [], location: KeyLocation = KEY_LOCATION_UNSPECIFIED) -> InputEventKey:
@@ -97,4 +98,46 @@ func test_the_pointer_leaving_the_window_is_not_here() -> void:
 	ok(not views._pointer_here, "the pointer left")
 	views.notification(Node.NOTIFICATION_WM_MOUSE_ENTER)
 	ok(views._pointer_here, "the pointer came back")
+	views.free()
+
+
+# A hand on a page at play, nothing moving, reading the look keys of these views.
+func _hand_by(views: ArenaViews) -> ArenaHand:
+	var page := GDScript.new()
+	page.source_code = "extends Control\nfunc run() -> void:\n\tpass\nfunc is_idle() -> bool:\n\treturn true\n"
+	page.reload()
+	var arena := Control.new()
+	arena.set_script(page)
+	var hand := ArenaHand.new()
+	arena.add_child(hand)
+	hand._table = {"phase": "play"}
+	hand.look = views._look
+	return hand
+
+
+func test_the_hand_s_notes_are_shut_while_a_look_key_is_held() -> void:
+	var views := ArenaViews.new()
+	var hand := _hand_by(views)
+	ok(hand._note_ok(), "a note may open while no key is held")
+	views._on_window_input(_key(KEY_SHIFT, true))
+	ok(not hand._note_ok(), "Shift held shuts the notes")
+	views._on_window_input(_key(KEY_SHIFT, false))
+	ok(hand._note_ok(), "Shift let go opens them again")
+	views._on_window_input(_key(KEY_TAB, true))
+	ok(not hand._note_ok(), "Tab held shuts the notes")
+	views.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	ok(hand._note_ok(), "the focus lost lets them open again")
+	views.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	ok(hand._note_ok(), "and on return, until the key is pressed anew")
+	views._on_window_input(_key(KEY_SHIFT, true))
+	views._on_window_input(_key(KEY_META, true, ["shift"]))
+	ok(hand._note_ok(), "Cmd down lets go of a held Shift")
+	views._on_window_input(_key(KEY_META, false, ["shift"]))
+	views._on_window_input(_key(KEY_SHIFT, false))
+	views._on_window_input(_key(KEY_SHIFT, true, ["meta"]))
+	ok(hand._note_ok(), "Cmd+Shift is a shortcut and leaves the notes free")
+	# The note is built when the hand enters the tree, which this one never does.
+	hand._note.free()
+	hand._note_words.free()
+	hand.get_parent().free()
 	views.free()
