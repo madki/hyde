@@ -9,9 +9,13 @@ extends Control
 ## the dark whichever change is chosen. The panel on the dark side of the street holds one
 ## row to go on by: Press SHIFT at first, and Begin (as Enter) once Shift has shown Hyde. Until
 ## then Enter and a click on the row do what Shift does. Under it a second row, How to play,
-## opens the help book (HelpBook) over the street. With a run kept on this machine (RunSave),
-## the rows after Shift are Resume (selected), Begin and How to play, and Enter resumes.
+## opens the help book (HelpBook) over the street, and a last row, Settings, the settings
+## sheet (SettingsSheet); closing either leaves the row chosen as it was. With a run kept on
+## this machine (RunSave), the rows after Shift are Resume (selected), Begin, How to play and
+## Settings, and Enter resumes.
 ## `--begun` starts with Begin showing; with `--saved` too, as with a kept run (nothing read).
+## `--settings` opens the settings sheet, `--settings=4` on its fifth row (Close); with
+## `--music=40`, `--effects=..` and `--flashes` set first (nothing is kept from a still).
 ## For screenshots: `--apart=0.5` shows a moment of Jekyll coming apart, `--hyde=1` (with
 ## `--apart=1`) the magenta ghost turned into Hyde, `--glitch=0.3` a moment of the split of
 ## the screen, `--shift=1` starts on Hyde, and `--lamps=0.3` and `--dark=0.5` show a moment
@@ -39,6 +43,7 @@ const ROW_SHIFT := "Press SHIFT"
 const ROW_BEGIN := "Begin"
 const ROW_RESUME := "Resume"
 const ROW_HELP := "How to play"
+const ROW_SETTINGS := "Settings"
 const RAIN := "amb_title" ## the street's loop
 
 var _visit: Tween
@@ -64,7 +69,7 @@ func _ready() -> void:
 	_panel.accent = Palette.JEKYLL
 	_panel.set_heading(GAME_NAME)
 	_saved = Shot.has_arg("saved") or RunSave.has()
-	_show_rows([ROW_SHIFT, ROW_HELP])
+	_show_rows([ROW_SHIFT, ROW_HELP, ROW_SETTINGS])
 	_panel.row_chosen.connect(_on_row_chosen)
 	add_child(_help)
 	if Shot.has_arg("begun"):
@@ -82,6 +87,8 @@ func _ready() -> void:
 	if Shot.has_arg("glitch"):
 		_split.begin_glitch(SPLIT_SIZE, SHAKE)
 		_split.pose(float(Shot.arg("glitch")))
+	if Shot.has_arg("settings"):
+		_open_settings_for_still()
 	Shot.run_if_requested(self)
 
 
@@ -105,6 +112,9 @@ func _on_row_chosen(index: int) -> void:
 	if row == ROW_HELP:
 		Sfx.play("button")
 		_help.open()
+	elif row == ROW_SETTINGS:
+		Sfx.play("button")
+		_open_settings()
 	elif row == ROW_RESUME:
 		if SceneFlow.is_changing():
 			return
@@ -113,7 +123,7 @@ func _on_row_chosen(index: int) -> void:
 			Sfx.stop_loop(RAIN, 0.5)
 		else: # the kept run went bad meanwhile
 			_saved = false
-			_show_rows([ROW_BEGIN, ROW_HELP])
+			_show_rows([ROW_BEGIN, ROW_HELP, ROW_SETTINGS])
 	elif _begun:
 		Sfx.play("button")
 		Sfx.stop_loop(RAIN, 0.5)
@@ -123,15 +133,37 @@ func _on_row_chosen(index: int) -> void:
 		_shift()
 
 
+## Opens the settings sheet over the street. The panel keeps its row meanwhile, and is given
+## it again when the sheet closes.
+func _open_settings() -> void:
+	var row := _panel.selected()
+	var sheet := SettingsSheet.open(self)
+	sheet.closed.connect(_panel.select.bind(row))
+
+
+# For a still: the sheet open, with the settings and its row given on the command line.
+func _open_settings_for_still() -> void:
+	if Shot.has_arg("music"):
+		Settings.set_music(int(Shot.arg("music")))
+	if Shot.has_arg("effects"):
+		Settings.set_effects(int(Shot.arg("effects")))
+	if Shot.has_arg("flashes"):
+		Settings.set_reduce_flashes(true)
+	_panel.select(_rows.find(ROW_SETTINGS))
+	var sheet := SettingsSheet.open(self)
+	if not Shot.arg("settings").is_empty():
+		sheet.select(int(Shot.arg("settings")))
+
+
 ## Puts Begin on the panel in place of the prompt.
 func _offer_begin() -> void:
 	if _begun:
 		return
 	_begun = true
 	if _saved:
-		_show_rows([ROW_RESUME, ROW_BEGIN, ROW_HELP], false)
+		_show_rows([ROW_RESUME, ROW_BEGIN, ROW_HELP, ROW_SETTINGS], false)
 	else:
-		_show_rows([ROW_BEGIN, ROW_HELP])
+		_show_rows([ROW_BEGIN, ROW_HELP, ROW_SETTINGS])
 
 
 ## Sets the panel's rows, keeping the selected place or (`keep` false) selecting the first.

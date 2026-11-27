@@ -128,6 +128,7 @@ func _ready() -> void:
 	var presses := Presses.new()
 	presses.on_press = _on_press
 	add_child(presses)
+	SettingsCog.add_to(self, Palette.CHALK, SURVIVOR[id])
 	_letter.completed.connect(_on_letter_whole)
 	if Shot.has_arg("shot"):
 		_begin()

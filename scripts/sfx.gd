@@ -34,6 +34,8 @@ const NAMES: Array[String] = [
 ]
 ## How many sounds can be heard at once; one more cuts the oldest short.
 const VOICES := 16
+## The bus every sound plays on, sent to Master: its level is the player's (Settings.effects).
+const BUS := "Effects"
 
 ## A loop has begun again from its start: `sound` is its name. For what must keep time with it.
 signal loop_restarted(sound: String)
@@ -54,6 +56,7 @@ var _takes: Dictionary[String, Vector2i] = {}
 func _ready() -> void:
 	# Sounds go on while the tree is paused, as the beat queue does.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_make_bus()
 	for sound in NAMES:
 		for dir in [LOCAL_DIR, DIR]:
 			var path: String = dir + sound + ".ogg"
@@ -62,9 +65,11 @@ func _ready() -> void:
 				break
 	for i in VOICES:
 		var voice := AudioStreamPlayer.new()
+		voice.bus = BUS
 		add_child(voice)
 		_voices.append(voice)
 	_across = AudioStreamPlayer.new()
+	_across.bus = BUS
 	add_child(_across)
 
 
@@ -108,6 +113,7 @@ func loop(sound: String, pitch: float = 1.0, volume: float = 1.0) -> void:
 	var voice: AudioStreamPlayer = _loops.get(sound)
 	if not voice:
 		voice = AudioStreamPlayer.new()
+		voice.bus = BUS
 		add_child(voice)
 		voice.finished.connect(_restart.bind(sound, voice)) # the file itself need not be set to loop
 		_loops[sound] = voice
@@ -208,3 +214,12 @@ func _free_voice() -> AudioStreamPlayer:
 	var oldest := _voices[_next]
 	_next = (_next + 1) % VOICES
 	return oldest
+
+
+func _make_bus() -> void:
+	if AudioServer.get_bus_index(BUS) >= 0:
+		return
+	AudioServer.add_bus()
+	var index := AudioServer.bus_count - 1
+	AudioServer.set_bus_name(index, BUS)
+	AudioServer.set_bus_send(index, "Master")
