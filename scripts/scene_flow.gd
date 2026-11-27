@@ -140,7 +140,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if key.keycode != KEY_ENTER and key.keycode != KEY_KP_ENTER:
 		return
 	var current := get_tree().current_scene
-	if current and current.scene_file_path == TITLE_SCENE:
+	if current and current.scene_file_path == TITLE_SCENE and not resume():
 		next()
 
 
