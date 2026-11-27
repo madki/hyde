@@ -166,7 +166,9 @@ func _ready() -> void:
 
 func _on_window_input(event: InputEvent) -> void:
 	if event is InputEventKey:
-		_look.feed(event)
+		# Under the settings sheet no look begins; a key let go still lets it go.
+		if not (SettingsSheet.is_open() and event.is_pressed()):
+			_look.feed(event)
 	elif event is InputEventMouseMotion:
 		_pointer_here = true
 
