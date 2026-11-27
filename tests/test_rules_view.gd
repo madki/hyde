@@ -189,6 +189,20 @@ func test_hand() -> void:
 	eq([v.phase, v.hand, v.draught.ok, v.salt.ok, v.can_pass.ok, RulesView.preview(run, [h[2].id]).ok], ["result", [], false, false, false, false], "between rounds: no hand and no moves of the table")
 
 
+func test_a_card_on_offer_reads_as_in_the_hand() -> void:
+	var run := at(fresh({}, 5), 0, 1)
+	var h := deal(run, "P:heart P:lamp P:mirror F:cup F:lock P:heart P:lamp P:mirror")
+	for temper in [0, 2]:
+		run.temper.heart = temper
+		var offered := RulesView.offer_entry(run, "heart", "jekyll")
+		var held := RulesView.entry(run, Rules.card(run, h[0].id), "jekyll")
+		eq([offered.chips, offered.name, offered.ink, offered.t], [held.chips, held.name, held.ink, held.t], "a Paper Root on offer is worth what one in the deck is, at Temper %d" % temper)
+		eq(offered.chips, _hand_card(RulesView.table(run), h[0].id).chips, "and what the hand shows, at Temper %d" % temper)
+	eq(RulesView.offer_entry(run, "heart", "jekyll").chips, 45, "Temper 2: 15 + 2 x 15")
+	var factor := RulesView.offer_entry(run, "lock", "jekyll")
+	eq([factor.t, factor.name, factor.chips, factor.text], ["factor", "Resolve", run.dials.factor_chips, RulesConfig.factor_text("lock", "jekyll", run.dials)], "a Factor on offer, under Jekyll's name")
+
+
 func test_night_and_dawn() -> void:
 	var run := fresh({}, 5)
 	var n: Dictionary = RulesView.table(run).night

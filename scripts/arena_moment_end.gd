@@ -237,15 +237,14 @@ static func _pay(t: ArenaTable, e: Dictionary) -> void:
 static func _reward(t: ArenaTable) -> void:
 	var keys: Array = t.run.offer
 	var nodes: Array = []
+	# Each card's face, as the hand would show it now: a reward follows a round won as Jekyll.
+	var entries: Array = []
 	t.beats.add(func() -> void:
 		var from := t.stage.slot(0, 1) + Vector2(0.0, -90.0)
 		for key: String in keys:
-			var factor := RulesConfig.FACTOR.has(key)
-			var card := ArenaTravel.make_card({
-				"key": key, "ink": false, "name": Rules.key_name(key, false),
-				"chips": t.run.dials.factor_chips if factor else int(t.after.symbols[key].paper_chips),
-				"text": RulesConfig.factor_text(key, "jekyll", t.run.dials) if factor else "",
-			})
+			var entry := RulesView.offer_entry(t.run, key, "jekyll")
+			entries.append(entry)
+			var card := ArenaTravel.make_card(entry)
 			# Laid larger than its own size: its words are drawn sharp.
 			card.sharp = true
 			t.travel.place(card, from, 0.0, 0.5)
@@ -260,7 +259,11 @@ static func _reward(t: ArenaTable) -> void:
 		await t.stage.lay(t.travel, nodes, ArenaStage.REWARD_SCALE, ArenaStage.REWARD_GAP))
 	t.beats.add_choice(func() -> void:
 		t.freshen()
-		t.reward.offer(nodes)
+		# Each card's note, as the hand's, from the faces the cards were made with.
+		var symbols: Dictionary = RulesView.table(t.run).symbols
+		var notes: Array = entries.map(func(entry: Dictionary) -> String:
+			return ArenaCardNote.words(entry, symbols, t.run.dials, "jekyll"))
+		t.reward.offer(nodes, notes)
 		t.picked = await t.reward.chosen
 		t.offered = nodes)
 	t.beats.add(func() -> void: await t.stage.clear_caption())

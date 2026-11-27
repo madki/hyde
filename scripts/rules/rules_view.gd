@@ -82,13 +82,10 @@ static func table(run: RulesRun, chosen: Array = []) -> Dictionary:
 	for id: int in run.hand:
 		var c := Rules.card(run, id)
 		var turnable: bool = stance == "jekyll" and Rules.is_ink(c) and Rules._hand_has(run, c.sym, false)
-		hand.append({
-			"id": id, "t": c.t, "key": c.key(), "ink": c.is_ink(),
-			"name": Rules.name_of(c, stance), "chips": Rules.chips_of(run, c),
-			"text": RulesConfig.factor_text(c.kind, stance, run.dials) if c.is_factor() else "",
-			"playable": playing and (c.is_factor() or c.ink == (stance == "hyde") or turnable),
-			"turnable": playing and turnable,
-		})
+		var e := entry(run, c, stance)
+		e.playable = playing and (c.is_factor() or c.ink == (stance == "hyde") or turnable)
+		e.turnable = playing and turnable
+		hand.append(e)
 	var notebook: Variant = null
 	if Rules.has_inst(run, "notebook"):
 		var next: Array = []
@@ -118,6 +115,23 @@ static func table(run: RulesRun, chosen: Array = []) -> Dictionary:
 		"notebook": notebook,
 		"play": preview(run, chosen) if not chosen.is_empty() else null,
 	}
+
+
+## A card's face as the man at the table (`stance`) reads it: {id, t, key, ink, name, chips,
+## text}, an entry of table().hand without `playable` and `turnable`. The chips are what it
+## is worth now; `text` is what a Factor does ("" for a Root).
+static func entry(run: RulesRun, c: RulesCard, stance: String) -> Dictionary:
+	return {
+		"id": c.id, "t": c.t, "key": c.key(), "ink": c.is_ink(),
+		"name": Rules.name_of(c, stance), "chips": Rules.chips_of(run, c),
+		"text": RulesConfig.factor_text(c.kind, stance, run.dials) if c.is_factor() else "",
+	}
+
+
+## The same for a card in no deck yet, such as one on offer: a Factor of that kind, or a
+## Paper Root of that symbol. Its `id` is 0.
+static func offer_entry(run: RulesRun, key: String, stance: String) -> Dictionary:
+	return entry(run, RulesCard.make(0, key, false), stance)
 
 
 static func _night(run: RulesRun) -> Dictionary:
