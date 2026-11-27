@@ -30,49 +30,43 @@ var lit := Palette.HOT
 var accent: Variant = Palette.JEKYLL
 
 
-## Makes a cog, lays it in `screen`'s top-right corner and adds it, last, to `screen`. When
-## `clear_of` (something of the screen's) reaches the corner, the cog is laid `down` lower.
+## Makes a cog, lays it in `screen`'s top-right corner and adds it, last, to `screen`. With
+## `beside` (a panel of the screen's), the cog lies outside that panel instead: level with its
+## top edge and MARGIN clear of its left edge, wherever the panel is.
 static func add_to(screen: Control, ink_colour: Color, sheet_accent: Variant = Palette.JEKYLL,
-		clear_of: Control = null, down: float = 0.0) -> SettingsCog:
+		beside: Control = null) -> SettingsCog:
 	var cog := SettingsCog.new()
 	cog.ink = ink_colour
 	cog.lit = ink_colour.lerp(Palette.HOT, 0.6)
 	cog.accent = sheet_accent
-	cog._clear_of = clear_of
-	cog._down = down
+	cog._beside = beside
+	var out := MARGIN - (TARGET - SIZE) / 2.0
 	cog.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	cog.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	cog._place(0.0)
+	cog.offset_left = -out - TARGET
+	cog.offset_right = -out
+	cog.offset_top = out
+	cog.offset_bottom = out + TARGET
 	screen.add_child(cog)
-	if clear_of:
+	if beside:
+		cog.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		screen.resized.connect(cog._lay_out)
-		clear_of.resized.connect(cog._lay_out)
+		beside.item_rect_changed.connect(cog._lay_out)
 		cog._lay_out.call_deferred()
 	return cog
 
 
-var _clear_of: Control
-var _down := 0.0
+var _beside: Control
 
 
-# Lays the cog `down` below the corner.
-func _place(down: float) -> void:
-	var out := MARGIN - (TARGET - SIZE) / 2.0
-	offset_left = -out - TARGET
-	offset_right = -out
-	offset_top = out + down
-	offset_bottom = out + down + TARGET
-
-
-# In the corner, or lower if the thing it keeps clear of reaches the corner.
+# Outside the panel it lies beside, by its top-left corner.
 func _lay_out() -> void:
-	if not is_instance_valid(_clear_of) or not is_inside_tree():
+	if not is_instance_valid(_beside) or not is_inside_tree():
 		return
-	_place(0.0)
-	var corner := Rect2(get_global_rect().position + Vector2.ONE * (TARGET - SIZE) / 2.0,
-			Vector2(SIZE, SIZE))
-	if _clear_of.get_global_rect().intersects(corner):
-		_place(_down)
+	var corner := _beside.get_global_rect().position
+	var inset := (TARGET - SIZE) / 2.0
+	size = Vector2(TARGET, TARGET)
+	global_position = corner + Vector2(-MARGIN - SIZE - inset, -inset)
 
 
 func _init() -> void:
