@@ -37,6 +37,8 @@ const CLOSE_KEYS: Array[Key] = [KEY_ESCAPE, KEY_F1]
 const BACK_KEYS: Array[Key] = [KEY_LEFT, KEY_PAGEUP]
 const ON_KEYS: Array[Key] = [KEY_RIGHT, KEY_PAGEDOWN]
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
+## How a card's picture that is a drawing is printed: its lines, in the colour it is drawn with.
+const DRAWING_MATERIAL: ShaderMaterial = preload("res://shaders/card_drawing_material.tres")
 ## The size of the table's page whose zones the table's parts are laid out for (ArenaLayout).
 const TABLE_PAGE := Vector2(1152.0, 648.0)
 ## Each man's colours: the leaves, their edge, and his light.
@@ -65,14 +67,17 @@ var _dials := RulesDials.new()
 var _lit := 0
 
 var _sheet := Control.new()
-## The picture's parts, the pencil lines over them, and the writing over those.
+## The picture's parts, the pencil lines and drawings over them, and the writing over those.
 var _picture := Control.new()
 var _pencil := Control.new()
+var _drawn := Control.new()
 var _labels := Control.new()
 ## What the picture's layers draw, in the sheet's coordinates: {path, colour, width} or
-## {sketch, box, colour} for the pencil; {text, at, size, colour, heavy, align, width} for the
+## {sketch, box, colour} for the pencil; {picture, box, colour} for a picture that is a
+## drawing; {text, at, size, colour, heavy, align, width} for the
 ## writing; {rect, colour} under the parts.
 var _strokes: Array[Dictionary] = []
+var _drawings: Array[Dictionary] = []
 var _texts: Array[Dictionary] = []
 var _rects: Array[Dictionary] = []
 var _heavy := FontVariation.new()
@@ -92,9 +97,12 @@ func _init() -> void:
 	_sheet.draw.connect(_draw_sheet)
 	_pencil.material = LINE_MATERIAL
 	_pencil.draw.connect(_draw_pencil)
+	_drawn.material = DRAWING_MATERIAL
+	_drawn.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_drawn.draw.connect(_draw_drawings)
 	_labels.draw.connect(_draw_labels)
 	add_child(_sheet)
-	for layer: Control in [_sheet, _picture, _pencil, _labels]:
+	for layer: Control in [_sheet, _picture, _pencil, _drawn, _labels]:
 		layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if layer != _sheet:
 			layer.size = SHEET
@@ -256,7 +264,7 @@ func _show_page() -> void:
 			_build_gauges()
 		"line":
 			_build_line()
-	for layer: Control in [_sheet, _pencil, _labels]:
+	for layer: Control in [_sheet, _pencil, _drawn, _labels]:
 		layer.queue_redraw()
 
 
@@ -265,6 +273,7 @@ func _clear_picture() -> void:
 		_picture.remove_child(part)
 		part.queue_free()
 	_strokes.clear()
+	_drawings.clear()
 	_texts.clear()
 	_rects.clear()
 
@@ -330,6 +339,12 @@ func _draw_pencil() -> void:
 		pencil.draw(_pencil)
 
 
+func _draw_drawings() -> void:
+	for mark: Dictionary in _drawings:
+		var drawing := ArenaCardPictures.drawing(mark.picture)
+		_drawn.draw_texture_rect(drawing, ArenaCardPictures.drawing_box(drawing, mark.box), false, mark.colour)
+
+
 func _draw_labels() -> void:
 	for mark: Dictionary in _texts:
 		var font: Font = _heavy if mark.heavy else _light
@@ -347,6 +362,14 @@ func _say(text: String, at: Vector2, px: int, colour: Color, heavy: bool = false
 		align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT, width: float = -1.0) -> void:
 	_texts.append({"text": text, "at": at, "size": px, "colour": colour, "heavy": heavy, "align": align,
 			"width": width})
+
+
+# A card's picture fitted in `box`, in `colour`: drawn if it is a drawing, else in pencil.
+func _card_picture(picture: String, box: Rect2, colour: Color) -> void:
+	if ArenaCardPictures.drawing(picture):
+		_drawings.append({"picture": picture, "box": box, "colour": colour})
+	else:
+		_strokes.append({"sketch": picture, "box": box, "colour": colour})
 
 
 # A pencil line through `path`.
@@ -484,9 +507,9 @@ func _build_hands() -> void:
 		for i in marks.size():
 			var mark: String = marks[i]
 			var ink := mark.ends_with("*")
-			_strokes.append({"sketch": ArenaCardPictures.picture_of(mark.trim_suffix("*"), ink),
-					"box": Rect2(x + i * 28.0, y + 1.0, 24.0, 24.0), "colour": Palette.HYDE if ink else Palette.CHALK})
-		_say(row.label, Vector2(x, y + 29.0), NOTE_SIZE, Palette.CHALK)
+			_card_picture(ArenaCardPictures.picture_of(mark.trim_suffix("*"), ink),
+					Rect2(x + i * 36.0, y - 1.0, 32.0, 32.0), Palette.HYDE if ink else Palette.CHALK)
+		_say(row.label, Vector2(x, y + 33.0), NOTE_SIZE, Palette.CHALK)
 		for stance: String in columns:
 			var at := Vector2(columns[stance], y + 3.0)
 			if String(row[stance]) == "":
