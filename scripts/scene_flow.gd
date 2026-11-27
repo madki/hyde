@@ -58,6 +58,9 @@ func _ready() -> void:
 ## screen changes to the table for a round, or to the place for a dawn. False, and nothing
 ## changes, when no run is kept.
 func resume() -> bool:
+	# A change of screen is under way: this one would be dropped, so nothing is handed over.
+	if _changing:
+		return true
 	var kept := RunSave.read()
 	if kept.is_empty():
 		return false
@@ -130,6 +133,8 @@ func close_ending() -> void:
 	ended = null
 	ending = ""
 	run = null
+	resumed = false
+	resumed_story = []
 	_change_to(TITLE_SCENE)
 
 

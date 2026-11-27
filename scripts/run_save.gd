@@ -43,7 +43,11 @@ static func keep(run: RulesRun, story: Array = []) -> void:
 static func read() -> Dictionary:
 	if _driven():
 		return {}
-	return read_file(path)
+	var kept := read_file(path)
+	# Only a run at rest can be taken up: one in any other phase was not kept by the game.
+	if kept.is_empty() or not KEPT_PHASES.has(kept.run.phase):
+		return {}
+	return kept
 
 
 ## The run in the file at `file_path`, as read() gives it. The file may also hold a bare run
@@ -87,10 +91,10 @@ static func clear() -> void:
 		DirAccess.remove_absolute(path)
 
 
-# True when the bench drives the game from the command line: nothing kept on this machine is
-# read or changed.
+# True when the bench drives the game from the command line, or the run comes from a file
+# named there (`--run`): nothing kept on this machine is read or changed.
 static func _driven() -> bool:
-	for name: String in ["shot", "keys", "quit", "selftest"]:
+	for name: String in ["shot", "keys", "quit", "selftest", "run"]:
 		if Shot.has_arg(name):
 			return true
 	return false

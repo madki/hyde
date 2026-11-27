@@ -304,6 +304,10 @@ func _take_run() -> void:
 			_take_story()
 		_opening = _leave_place().events
 		return
+	# A new run: the one kept before it is given up, and nothing of it is taken up later.
+	RunSave.clear()
+	SceneFlow.resumed = false
+	SceneFlow.resumed_story = []
 	_run = Rules.new_run({}, int(Shot.arg("seed")) if Shot.has_arg("seed") else null)
 	ArenaBench.apply_set(_run)
 	SceneFlow.run = _run

@@ -106,6 +106,8 @@ func _on_row_chosen(index: int) -> void:
 		Sfx.play("button")
 		_help.open()
 	elif row == ROW_RESUME:
+		if SceneFlow.is_changing():
+			return
 		Sfx.play("button")
 		if SceneFlow.resume():
 			Sfx.stop_loop(RAIN, 0.5)

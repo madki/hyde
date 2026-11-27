@@ -102,3 +102,15 @@ func test_read_file_takes_a_bare_run() -> void:
 		eq(back.get("story"), [], "with no story told")
 		eq(RunSave.read_file("user://test_run_none.json"), {}, "a file that is not there reads as {}")
 	)
+
+
+func test_a_run_not_at_rest_is_not_taken_up() -> void:
+	var data := fresh().to_dict()
+	data.phase = "result"
+	data.last = {"how": "won"}
+	_with_test_file(func() -> void:
+		_write(JSON.stringify({"v": 1, "run": data, "story": []}))
+		ok(not RunSave.read_file(RunSave.path).is_empty(), "a run at a round's end reads from a file")
+		eq(RunSave.read(), {}, "but is not a save to take up")
+		ok(not RunSave.has(), "and no run is kept")
+	)
