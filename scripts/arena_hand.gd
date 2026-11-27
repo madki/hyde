@@ -823,27 +823,7 @@ func _note_words_of(card: ArenaCard) -> String:
 	if entry.is_empty() or arena == null or not arena.has_method("run"):
 		return ""
 	var run: RulesRun = arena.call("run")
-	var d := run.dials
-	var hyde: bool = _table.stance == "hyde"
-	var key: String = entry.key
-	var out := ""
-	if entry.t == "factor":
-		var faces: Dictionary = RulesConfig.FACTOR[key]
-		var other := "jekyll" if hyde else "hyde"
-		var does := RulesConfig.factor_text(key, other, d)
-		# The faces turn at a shift: the other man's reading, and what it does for him.
-		out = "Factor, %s's face: %s. %s reads it as %s, after a shift: %s" % [
-				"Hyde" if hyde else "Jekyll", faces.ink if hyde else faces.paper,
-				other.capitalize(), faces.paper if hyde else faces.ink, does.left(1).to_lower() + does.substr(1)]
-	else:
-		var root: Dictionary = RulesConfig.ROOT[key]
-		var s: Dictionary = _table.symbols[key]
-		if entry.ink:
-			out = "Ink Root of the %s, Hyde's. %d chips, +%d for each Craving (%d), +%d for each Habit (%d): %d now." % [
-					root.label, d.root_chips, d.craving_chips, s.craving, d.habit_chips, s.habit, entry.chips]
-		else:
-			out = "Paper Root of the %s, Jekyll's. %d chips, +%d for each Temper (%d): %d now." % [
-					root.label, d.root_chips, d.temper_chips, s.temper, entry.chips]
+	var out := ArenaCardNote.words(entry, _table.symbols, run.dials, _table.stance)
 	if not entry.playable:
 		var answer := RulesView.preview(run, [card.card_id])
 		if not answer.ok and String(answer.reason) != "":

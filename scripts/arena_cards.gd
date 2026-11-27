@@ -247,9 +247,8 @@ func _show_places() -> void:
 func _card(c: RulesCard, stance: String, at: Vector2) -> ArenaCard:
 	var card := ArenaCard.new()
 	card.position = at
-	card.show_face(c.key(), c.is_ink() or (c.is_factor() and stance == "hyde"), Rules.name_of(c, stance),
-			Rules.chips_of(_run, c),
-			RulesConfig.factor_text(c.kind, stance, _run.dials) if c.is_factor() else "")
+	var e := RulesView.entry(_run, c, stance)
+	card.show_face(e.key, e.ink or (e.t == "factor" and stance == "hyde"), e.name, e.chips, e.text)
 	_stage.add_child(card)
 	return card
 

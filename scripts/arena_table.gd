@@ -112,12 +112,9 @@ func entry(id: int) -> Dictionary:
 	var c := Rules.card(run, id)
 	if c == null:
 		return {"id": id, "t": "root", "key": "", "ink": false, "name": "", "chips": 0, "text": "", "playable": true}
-	return {
-		"id": id, "t": c.t, "key": c.key(), "ink": c.is_ink(),
-		"name": Rules.name_of(c, stance), "chips": Rules.chips_of(run, c),
-		"text": RulesConfig.factor_text(c.kind, stance, run.dials) if c.is_factor() else "",
-		"playable": playable,
-	}
+	var e := RulesView.entry(run, c, stance)
+	e.playable = playable
+	return e
 
 
 ## The same card as the data a travelling card is made from (ArenaTravel.make_card): its
