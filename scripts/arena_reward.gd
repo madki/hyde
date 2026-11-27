@@ -7,8 +7,8 @@ extends Control
 ##
 ## A card the pointer rests on (ArenaViews.REST seconds, still) has its note, the hand's
 ## (ArenaCardNote): what it is and what it is worth now. The caption lies on the row's top,
-## so the note opens under "Take none", in the hand's zone, which is empty then, its middle
-## under the card's where the page has the room. `--reward_note=<place>` (from 0) holds the
+## so the note opens under "Take none", in the hand's zone, which is empty then, at the page's
+## middle whichever card it is of. `--reward_note=<place>` (from 0) holds the
 ## note of that card open, for a still.
 ##
 ## It only asks: `offer` the card nodes (they stay where they lie, on the layer cards travel
@@ -211,15 +211,13 @@ func _close_note() -> void:
 	_note.visible = false
 
 
-# Under "Take none", clear of the caption and of every card's title, its middle under the
-# card's where the page has the room; kept on the page.
+# Under "Take none", at the page's middle wherever the card is, clear of the caption and of
+# every card's title; kept on the page.
 func _place_note() -> void:
-	if _noted < 0 or _noted >= _cards.size():
+	if _noted < 0:
 		return
-	var card: ArenaCard = _cards[_noted]
-	var middle: Vector2 = get_global_transform().affine_inverse() * (card.get_parent().get_global_transform() \
-			* (Vector2(_rest[_noted].x, _rest[_noted].y) + card.pivot_offset))
+	var none := ArenaLayout.reward_none(size)
 	var extent := _note.size
-	var x := clampf(middle.x - extent.x * 0.5, NOTE_GAP, maxf(NOTE_GAP, size.x - extent.x - 44.0))
-	var y := minf(ArenaLayout.reward_none(size).end.y + NOTE_GAP, size.y - NOTE_GAP - extent.y)
+	var x := clampf(none.get_center().x - extent.x * 0.5, NOTE_GAP, maxf(NOTE_GAP, size.x - extent.x - NOTE_GAP))
+	var y := minf(none.end.y + NOTE_GAP, size.y - NOTE_GAP - extent.y)
 	_note.position = Vector2(x, y)
