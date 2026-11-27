@@ -91,12 +91,12 @@ class LookKeys:
 			return
 		if not key.keycode in ArenaBeats.LOOK_KEYS:
 			return
-		# The left and right Shift are held apart.
-		var which := "%d %d" % [key.keycode, key.location]
+		# Held by key alone: a release of either Shift lets go of Shift, since with both
+		# down the release of the first may never arrive.
 		if not key.pressed:
-			_down.erase(which)
+			_down.erase(key.keycode)
 		elif not key.echo and not (key.meta_pressed or key.ctrl_pressed or key.alt_pressed):
-			_down[which] = true
+			_down[key.keycode] = true
 
 	func held() -> bool:
 		return not _down.is_empty()

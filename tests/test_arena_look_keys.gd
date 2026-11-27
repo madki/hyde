@@ -31,14 +31,19 @@ func test_a_look_key_is_held_from_its_press_to_its_release() -> void:
 	ok(not look.held(), "Tab released is let go")
 
 
-func test_both_shifts_are_held_apart() -> void:
-	var look := ArenaViews.LookKeys.new()
-	look.feed(_key(KEY_SHIFT, true, [], KEY_LOCATION_LEFT))
-	look.feed(_key(KEY_SHIFT, true, [], KEY_LOCATION_RIGHT))
-	look.feed(_key(KEY_SHIFT, false, [], KEY_LOCATION_LEFT))
-	ok(look.held(), "the right Shift still holds it")
-	look.feed(_key(KEY_SHIFT, false, [], KEY_LOCATION_RIGHT))
-	ok(not look.held(), "both let go")
+func test_a_release_of_either_shift_lets_go_of_shift() -> void:
+	var sides: Array[KeyLocation] = [KEY_LOCATION_LEFT, KEY_LOCATION_RIGHT, KEY_LOCATION_UNSPECIFIED]
+	for down: KeyLocation in sides:
+		for up: KeyLocation in sides:
+			var look := ArenaViews.LookKeys.new()
+			look.feed(_key(KEY_SHIFT, true, [], down))
+			look.feed(_key(KEY_SHIFT, false, [], up))
+			ok(not look.held(), "Shift pressed at %d is let go by a release at %d" % [down, up])
+	var both := ArenaViews.LookKeys.new()
+	both.feed(_key(KEY_SHIFT, true, [], KEY_LOCATION_LEFT))
+	both.feed(_key(KEY_SHIFT, true, [], KEY_LOCATION_RIGHT))
+	both.feed(_key(KEY_SHIFT, false, [], KEY_LOCATION_RIGHT))
+	ok(not both.held(), "with both down, one release lets go")
 
 
 func test_an_echo_is_no_press() -> void:
