@@ -3,7 +3,9 @@ extends Control
 ## Views on demand: what the table does not keep on the page, one step away.
 ##
 ## - Hold Shift (or Tab, or rest the pointer on the tab at the edge, which says so):
-##   every number at once, for as long as it is held. A sheet in the centre gives each
+##   every number at once, for as long as it is held. A key is held from its press to its
+##   release (LookKeys), not while the system says it is down; losing the window's focus lets
+##   it go, and a press with Cmd, Ctrl or Alt down is a shortcut, not a look. A sheet in the centre gives each
 ##   symbol's gauges in numbers, its Roots and what one is worth, the restraint's limit and
 ##   why, what the next drink costs, the scene's twist, what the dawn brings, and both men's
 ##   hands with their base chips and mult.
@@ -69,8 +71,38 @@ var _rest_left := 0.0
 var _last_point := Vector2.INF
 ## The note held open by `--hover`, for a still.
 var _forced := ""
-## False while the pointer is outside the window.
+## False while the pointer is outside the window, and from a loss of focus until it moves again.
 var _pointer_here := true
+## The look keys held down, from their own presses and releases.
+var _look := LookKeys.new()
+
+
+## The look keys (ArenaBeats.LOOK_KEYS) held down, kept from the key events themselves. A
+## press with Cmd, Ctrl or Alt down is part of a shortcut and is not held, and any of those
+## going down lets go of what is held. A key let go while the window had no focus is never
+## seen released: `let_go` forgets every key, which is then up until it is pressed anew.
+class LookKeys:
+	var _down := {}
+
+	func feed(key: InputEventKey) -> void:
+		if key.keycode in [KEY_META, KEY_CTRL, KEY_ALT]:
+			if key.pressed:
+				let_go()
+			return
+		if not key.keycode in ArenaBeats.LOOK_KEYS:
+			return
+		# Held by key alone: a release of either Shift lets go of Shift, since with both
+		# down the release of the first may never arrive.
+		if not key.pressed:
+			_down.erase(key.keycode)
+		elif not key.echo and not (key.meta_pressed or key.ctrl_pressed or key.alt_pressed):
+			_down[key.keycode] = true
+
+	func held() -> bool:
+		return not _down.is_empty()
+
+	func let_go() -> void:
+		_down.clear()
 
 
 func _init() -> void:
@@ -124,6 +156,19 @@ func _init() -> void:
 		_resting = "")
 	for child: Control in [_tabs, _notebook, _hint, _note, _deck, _book]:
 		add_child(child)
+
+
+func _ready() -> void:
+	# Every event the window takes, before any node may mark it handled: a release eaten on the
+	# way (by a move's beats, say) would leave a key held.
+	get_window().window_input.connect(_on_window_input)
+
+
+func _on_window_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		_look.feed(event)
+	elif event is InputEventMouseMotion:
+		_pointer_here = true
 
 
 ## Ties the views to the table. Call once.
@@ -180,7 +225,7 @@ func _process(delta: float) -> void:
 	var covered := _notice_up()
 	var tab := "" if _deck.visible or covered or not _pointer_here else _tabs.tab_at(_tabs.get_global_transform().affine_inverse() * point)
 	_tabs.lit = tab
-	var held := (Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_TAB) or tab == "right") and not _deck.visible and not covered
+	var held := (_look.held() or tab == "right") and not _deck.visible and not covered
 	var under := {}
 	if not held and _quiet_ok() and _pointer_here:
 		under = _thing_at(point)
@@ -395,7 +440,25 @@ func _notification(what: int) -> void:
 		_pointer_here = true
 	elif what == NOTIFICATION_WM_MOUSE_EXIT:
 		_pointer_here = false
+	elif what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT]:
+		# What was held is let go, and stays up on return until it is pressed anew. The pointer
+		# may leave unseen while the window has no focus: it is here again once it moves.
+		_look.let_go()
+		_pointer_here = false
+		_let_go()
+	elif what in [NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_IN]:
+		_look.let_go()
 
+
+# Closes the held sheet at once, without waiting for the next frame.
+func _let_go() -> void:
+	if t == null or not _held:
+		return
+	_held = false
+	_tabs.lit = ""
+	t.symbols.show_numbers(false)
+	_show_note()
+	Sfx.play("paper", 0.85, 0.45)
 
 # ---------- the words ----------
 
