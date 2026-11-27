@@ -91,7 +91,7 @@ func _ready() -> void:
 	_sheet.tone = "hyde"
 	_sheet.set_place(HEADING)
 	_sheet.leave.connect(_on_leave)
-	SettingsCog.add_to(self, Palette.HYDE, Palette.HYDE, _sheet)
+	SettingsCog.add_to(self, Palette.HYDE, Palette.HYDE, _sheet, true)
 	_sheet.add_child(_strip)
 	_words.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_words.draw.connect(_draw_words)

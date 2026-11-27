@@ -32,14 +32,16 @@ var accent: Variant = Palette.JEKYLL
 
 ## Makes a cog, lays it in `screen`'s top-right corner and adds it, last, to `screen`. With
 ## `beside` (a panel of the screen's), the cog lies outside that panel instead: level with its
-## top edge and MARGIN clear of its left edge, wherever the panel is.
+## top edge and MARGIN clear of its left edge (or of its right edge, with `on_right`), wherever
+## the panel is.
 static func add_to(screen: Control, ink_colour: Color, sheet_accent: Variant = Palette.JEKYLL,
-		beside: Control = null) -> SettingsCog:
+		beside: Control = null, on_right: bool = false) -> SettingsCog:
 	var cog := SettingsCog.new()
 	cog.ink = ink_colour
 	cog.lit = ink_colour.lerp(Palette.HOT, 0.6)
 	cog.accent = sheet_accent
 	cog._beside = beside
+	cog._on_right = on_right
 	var out := MARGIN - (TARGET - SIZE) / 2.0
 	cog.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	cog.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -57,16 +59,18 @@ static func add_to(screen: Control, ink_colour: Color, sheet_accent: Variant = P
 
 
 var _beside: Control
+var _on_right := false
 
 
-# Outside the panel it lies beside, by its top-left corner.
+# Outside the panel it lies beside, by its top-left (or top-right) corner.
 func _lay_out() -> void:
 	if not is_instance_valid(_beside) or not is_inside_tree():
 		return
-	var corner := _beside.get_global_rect().position
+	var panel := _beside.get_global_rect()
 	var inset := (TARGET - SIZE) / 2.0
+	var x := panel.end.x + MARGIN - inset if _on_right else panel.position.x - MARGIN - SIZE - inset
 	size = Vector2(TARGET, TARGET)
-	global_position = corner + Vector2(-MARGIN - SIZE - inset, -inset)
+	global_position = Vector2(x, panel.position.y - inset)
 
 
 func _init() -> void:
