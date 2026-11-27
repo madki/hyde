@@ -51,6 +51,9 @@ var t := ArenaTable.new()
 var _run: RulesRun
 ## The events of the round this table opens with.
 var _opening: Array = []
+## True when the table opens on a round already under way (a run taken up again): its
+## opening deals the hand as it stands, with no heading and no line of the story.
+var _resumed := false
 var _beats := ArenaBeats.new()
 var _busy := true
 
@@ -147,21 +150,27 @@ func do_move(move: String, result: Dictionary) -> void:
 	t.move_begun.emit(move)
 	t.after = RulesView.table(_run)
 	t.unhandled = false
+	var resumed: bool = result.get("resumed", false)
 	var script := _script("res://scripts/arena_moment_%s.gd" % move)
-	if script:
+	if resumed:
+		_add_resumed_deal()
+	elif script:
 		script.add(t, result)
 	else:
 		t.unhandled = true
 	if t.unhandled:
 		_beats.add_call(t.catch_up)
 	await _beats.run()
-	await ArenaFirsts.show_due(t, result.events)
+	if not resumed:
+		await ArenaFirsts.show_due(t, result.events)
 	if _run.phase != "play":
 		# The round is over: the table stays as its end left it, and goes on.
 		t.freshen()
 		await _go_on()
 		return
 	t.sync()
+	# The run is at rest: it is kept, so that a game closed now can be taken up from here.
+	RunSave.keep(_run, ArenaStory.told(_run))
 	_busy = false
 	_hand.enabled = true
 	_controls.rise()
@@ -273,19 +282,43 @@ func _lay_out() -> void:
 	_border.rules = ArenaLayout.rules(size)
 
 
-# The run this table plays, and the round it opens with. A run that comes back from a dawn's
-# place (SceneFlow holds it, still at the place) leaves the place here, which begins the next
-# night; otherwise a new run begins, and SceneFlow holds it from now on.
+# The run this table plays, and the round it opens with. A run taken up again in the middle
+# of a round (SceneFlow.resumed) is played on from where it stands: the table deals its hand
+# as it is. A run that comes back from a dawn's place (SceneFlow holds it, still at the place)
+# leaves the place here, which begins the next night. Otherwise a new run begins, and
+# SceneFlow holds it from now on. The story told before a run was taken up is not told again.
 func _take_run() -> void:
 	var held: RulesRun = SceneFlow.run
+	if held != null and SceneFlow.resumed and held.phase == "play":
+		_run = held
+		_take_story()
+		_resumed = true
+		_opening = [
+			{"t": "shuffle", "ids": _run.draw + _run.hand},
+			{"t": "drawn", "why": "deal", "ids": _run.hand.duplicate()},
+		]
+		return
 	if held != null and SceneFlow.PLACE_SCENES.has(held.phase):
 		_run = held
+		if SceneFlow.resumed:
+			_take_story()
 		_opening = _leave_place().events
 		return
+	# A new run: the one kept before it is given up, and nothing of it is taken up later.
+	RunSave.clear()
+	SceneFlow.resumed = false
+	SceneFlow.resumed_story = []
 	_run = Rules.new_run({}, int(Shot.arg("seed")) if Shot.has_arg("seed") else null)
 	ArenaBench.apply_set(_run)
 	SceneFlow.run = _run
 	_opening = _run.events
+
+
+# The run SceneFlow hands over was taken up again: the story's keys told before are marked
+# told, and the table has taken it.
+func _take_story() -> void:
+	ArenaStory.take(_run, SceneFlow.resumed_story)
+	SceneFlow.resumed = false
 
 
 # Leaves the dawn's place the run is at: the next night's first round begins. Returns what
@@ -296,7 +329,56 @@ func _leave_place() -> Dictionary:
 
 # The table's first round: the rules have begun it, and `_opening` holds its events.
 func _start() -> void:
-	do_move("round", {"ok": true, "events": _opening})
+	do_move("round", {"ok": true, "events": _opening, "resumed": _resumed})
+	_resumed = false
+
+
+# The opening of a round already under way: the table is set as the run stands, with the
+# discards on their pile and the round's numbers settling in their places; the draw pile,
+# which holds the hand for now, shuffles, and the hand is dealt from it. No heading: the
+# round has begun already.
+func _add_resumed_deal() -> void:
+	var table := RulesView.table(_run)
+	var hand_ids: Array = _run.hand.duplicate()
+	var discards: Array = _run.discard.duplicate()
+	t.beats.add_call(func() -> void:
+		t.hand.clear()
+		t.piles.deck_mode = false
+		t.symbols.show_table(table)
+		t.means.show_table(table, _run.dials)
+		for card in t.piles.discard_pile.take_all():
+			card.queue_free()
+		t.shown.snap_to(table, ArenaTable.KEYS)
+		t.ink.is_jekyll = table.stance == "jekyll"
+		t.hand.is_jekyll = table.stance == "jekyll"
+		Sfx.hyde = table.stance == "hyde"
+		var blank := table.duplicate()
+		for key: String in ["target", "plays", "discards"]:
+			blank[key] = 0
+			t.shown.set_value(key, 0)
+		blank.play = null
+		t.numbers.show_table(blank)
+		t.shown.set_value("draw_count", hand_ids.size() + _run.draw.size())
+		_lay_discards(discards))
+	t.add_mark("target", table.target, ArenaNumbers.COUNT_TIME)
+	t.add_mark("plays", table.plays)
+	t.add_mark("discards", table.discards)
+	t.beats.add(func() -> void: await t.piles.draw_pile.riffle(t.beats, true))
+	ArenaMomentCards.draw(t, hand_ids)
+
+
+# The discards' pile as `ids` (the run's discards, the last on top): its count, and the last
+# few face up on top, each a little askew as it would have landed.
+func _lay_discards(ids: Array) -> void:
+	var pile := t.piles.discard_pile
+	var tops := ids.slice(maxi(0, ids.size() - ArenaPile.TOPS))
+	t.shown.set_value("discard_count", ids.size() - tops.size())
+	for id: int in tops:
+		var card := ArenaTravel.make_card(t.card_data(id))
+		card.face_up = true
+		t.travel.place(card, pile.top_centre(), pile.top_turn(), ArenaPile.SCALE)
+		pile.land(card)
+		t.shown.add("discard_count", 1)
 
 
 # The chosen cards changed: the readout, the marks on the cards and the controls follow.
@@ -329,6 +411,8 @@ func _go_on() -> void:
 			return
 		events.append_array(result.events)
 	if _run.phase == "end":
+		# The run is over: nothing is kept of it.
+		RunSave.clear()
 		# The ending screen has the run: no new run begins under it.
 		if SceneFlow.ended == _run:
 			return
@@ -361,6 +445,8 @@ func _go_to_place(events: Array) -> void:
 		await _beats.run()
 	await ArenaFirsts.show_due(t, events)
 	await ArenaStory.dawn(t)
+	# The run is at rest at the place: it is kept as it arrives there.
+	RunSave.keep(_run, ArenaStory.told(_run))
 	SceneFlow.go_to_place()
 
 

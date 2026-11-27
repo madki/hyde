@@ -9,7 +9,9 @@ extends Control
 ## the dark whichever change is chosen. The panel on the dark side of the street holds one
 ## row to go on by: Press SHIFT at first, and Begin (as Enter) once Shift has shown Hyde. Until
 ## then Enter and a click on the row do what Shift does. Under it a second row, How to play,
-## opens the help book (HelpBook) over the street. `--begun` starts with Begin showing.
+## opens the help book (HelpBook) over the street. With a run kept on this machine (RunSave),
+## the rows after Shift are Resume (selected), Begin and How to play, and Enter resumes.
+## `--begun` starts with Begin showing; with `--saved` too, as with a kept run (nothing read).
 ## For screenshots: `--apart=0.5` shows a moment of Jekyll coming apart, `--hyde=1` (with
 ## `--apart=1`) the magenta ghost turned into Hyde, `--glitch=0.3` a moment of the split of
 ## the screen, `--shift=1` starts on Hyde, and `--lamps=0.3` and `--dark=0.5` show a moment
@@ -35,14 +37,17 @@ const SHAKE := 0.006
 const GAME_NAME := "Versura"
 const ROW_SHIFT := "Press SHIFT"
 const ROW_BEGIN := "Begin"
+const ROW_RESUME := "Resume"
 const ROW_HELP := "How to play"
-## The place of the help's row on the panel, under the row that goes on.
-const HELP_ROW := 1
 const RAIN := "amb_title" ## the street's loop
 
 var _visit: Tween
 ## True once Shift has been pressed and its change has played: the panel then offers Begin.
 var _begun := false
+## True while a kept run is offered as Resume once Shift has been pressed.
+var _saved := false
+## The panel's rows by what they are, in the panel's order.
+var _rows: Array[String] = []
 
 @onready var _bg: TitleBackground = $Background
 @onready var _split: SplitTransition = $SplitTransition
@@ -58,7 +63,8 @@ func _ready() -> void:
 	tree_exiting.connect(Sfx.stop_loop.bind(RAIN, 0.0))
 	_panel.accent = Palette.JEKYLL
 	_panel.set_heading(GAME_NAME)
-	_panel.set_rows([{text = ROW_SHIFT}, {text = ROW_HELP}])
+	_saved = Shot.has_arg("saved") or RunSave.has()
+	_show_rows([ROW_SHIFT, ROW_HELP])
 	_panel.row_chosen.connect(_on_row_chosen)
 	add_child(_help)
 	if Shot.has_arg("begun"):
@@ -95,9 +101,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_row_chosen(index: int) -> void:
-	if index == HELP_ROW:
+	var row := _rows[index] if index >= 0 and index < _rows.size() else ""
+	if row == ROW_HELP:
 		Sfx.play("button")
 		_help.open()
+	elif row == ROW_RESUME:
+		if SceneFlow.is_changing():
+			return
+		Sfx.play("button")
+		if SceneFlow.resume():
+			Sfx.stop_loop(RAIN, 0.5)
+		else: # the kept run went bad meanwhile
+			_saved = false
+			_show_rows([ROW_BEGIN, ROW_HELP])
 	elif _begun:
 		Sfx.play("button")
 		Sfx.stop_loop(RAIN, 0.5)
@@ -112,7 +128,19 @@ func _offer_begin() -> void:
 	if _begun:
 		return
 	_begun = true
-	_panel.set_rows([{text = ROW_BEGIN}, {text = ROW_HELP}])
+	if _saved:
+		_show_rows([ROW_RESUME, ROW_BEGIN, ROW_HELP], false)
+	else:
+		_show_rows([ROW_BEGIN, ROW_HELP])
+
+
+## Sets the panel's rows, keeping the selected place or (`keep` false) selecting the first.
+func _show_rows(rows: Array[String], keep: bool = true) -> void:
+	_rows = rows
+	var given: Array = []
+	for text in rows:
+		given.append({text = text})
+	_panel.set_rows(given, keep)
 
 
 func _is_busy() -> bool:

@@ -234,15 +234,8 @@ static func _selftest(arena: Node) -> void:
 	for i in moves:
 		await _idle(arena)
 		var run: RulesRun = arena.run()
-		var hand_ids: Array = t.hand.ids()
-		var want: Array = run.hand.duplicate()
-		hand_ids.sort()
-		want.sort()
-		if hand_ids != want:
-			errors.append("move %d: the hand shows %s, the engine holds %s" % [i, hand_ids, want])
-		if t.piles.draw_pile.count != run.draw.size() or t.piles.discard_pile.count != run.discard.size():
-			errors.append("move %d: the piles show %d and %d, the engine holds %d and %d" % [i,
-					t.piles.draw_pile.count, t.piles.discard_pile.count, run.draw.size(), run.discard.size()])
+		# Before each move, the first too: a table opened on a run under way is checked as dealt.
+		_check(arena, "move %d" % i, errors)
 		var move := ""
 		var before := Rules.to_json(run)
 		var roll := rng.randf()
@@ -283,8 +276,30 @@ static func _selftest(arena: Node) -> void:
 			errors.append("move %d: a %s of %s was refused" % [i, move, t.hand.chosen()])
 			t.hand.clear_chosen()
 	await _idle(arena)
+	_check(arena, "the end", errors)
 	for line in errors.slice(0, 20):
 		print("  ", line)
 	print("moves made: ", made)
 	print("SELFTEST %s" % ("PASS" if errors.is_empty() else "FAIL (%d)" % errors.size()))
 	arena.get_tree().quit(0 if errors.is_empty() else 1)
+
+
+# Whether the idle table shows what the engine holds: the hand, both piles' counts, and the
+# score and the plays and discards left. What differs is added to `errors`, under `at`.
+static func _check(arena: Node, at: String, errors: Array[String]) -> void:
+	var t: ArenaTable = arena.t
+	var run: RulesRun = arena.run()
+	if run.phase != "play":
+		return
+	var hand_ids: Array = t.hand.ids()
+	var want: Array = run.hand.duplicate()
+	hand_ids.sort()
+	want.sort()
+	if hand_ids != want:
+		errors.append("%s: the hand shows %s, the engine holds %s" % [at, hand_ids, want])
+	if t.piles.draw_pile.count != run.draw.size() or t.piles.discard_pile.count != run.discard.size():
+		errors.append("%s: the piles show %d and %d, the engine holds %d and %d" % [at,
+				t.piles.draw_pile.count, t.piles.discard_pile.count, run.draw.size(), run.discard.size()])
+	for key: String in ["score", "plays", "discards"]:
+		if int(t.shown.value(key, -1)) != int(run.get(key)):
+			errors.append("%s: the %s shows %s, the engine holds %s" % [at, key, t.shown.value(key), run.get(key)])
