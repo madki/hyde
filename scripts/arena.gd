@@ -90,6 +90,8 @@ func _ready() -> void:
 	_symbols.set_dials(_run.dials)
 	_symbols.show_table(table)
 	_means.show_table(table, _run.dials)
+	SettingsCog.add_to(self, Palette.CHALK,
+			func() -> Color: return Palette.JEKYLL if _run.stance == "jekyll" else Palette.HYDE)
 	_start.call_deferred()
 	await ArenaBench.run_if_requested(self)
 	Shot.run_if_requested(self)

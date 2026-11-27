@@ -85,6 +85,8 @@ func _ready() -> void:
 	_sheet.tone = "jekyll"
 	_sheet.set_place(HEADING)
 	_sheet.leave.connect(_leave)
+	# Where the sheet's header holds the corner, the cog sits by the first heading.
+	SettingsCog.add_to(self, Palette.JEKYLL, Palette.JEKYLL, _sheet, 160.0)
 	var place: Variant = RulesView.place(_run) if _run != null else null
 	if place == null:
 		_sheet.leave_button.grab_focus()
