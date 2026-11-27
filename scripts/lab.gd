@@ -4,9 +4,9 @@ extends Control
 ## what the laboratory sells laid out as a shelf:
 ##
 ## - the header: the place's name, the purse and the salt;
-## - what the dawn brought, and the deck's strip (ShopDeckStrip), which opens the deck; at
-##   the strip's right the instruments held, each of which can be dropped, and the rack's
-##   free places;
+## - what the dawn brought, and at its right the instruments held, each of which can be
+##   dropped, and the rack's free places;
+## - the deck's strip (ShopDeckStrip), which opens the deck;
 ## - "Cards": the shelf's cards, each a slot (ShopWare) with its price under it;
 ## - "Instruments & salt" and, past a rule, "Service": the shelf's instruments, a dose of
 ##   salt, and "Strike a card", which opens the deck as a picker: the card chosen there is
@@ -40,8 +40,10 @@ const HEADING := "The Laboratory"
 const STRIKE_HEADING := "Strike a card"
 const STRIKE_LEAD := "A card struck here leaves his deck for good."
 const LINE_SIZE := 12
-## The dawn's line, and the room under it.
-const DAWN_HEIGHT := 18.0
+## Under the row of the dawn's line and the rack.
+const RACK_GAP := 6.0
+## The room the rack's words take, at the rack's left.
+const HELD_WORDS := 84.0
 ## Under the deck's strip, and under the row of cards.
 const STRIP_GAP := 12.0
 const ROW_GAP := 22.0
@@ -49,8 +51,6 @@ const ROW_GAP := 22.0
 const DIVIDER_ROOM := 20.0
 ## The most room between two small slots.
 const SMALL_GAP := 8.0
-## The room between the deck's strip and the rack of the instruments held.
-const RACK_GAP := 12.0
 ## How long a bought card takes to reach the deck's pile.
 const FLY_TIME := 0.3
 
@@ -119,16 +119,14 @@ func _build(place: Dictionary) -> void:
 	var y := room.position.y
 	_dawn = _dawn_line(place.dawn)
 	_dawn_at = Vector2(room.position.x, y)
-	y += DAWN_HEIGHT
+	_slots = int(place.slots)
+	_held_at = Vector2(room.end.x - _slots * HeldSlot.SIZE.x, y)
+	y += HeldSlot.SIZE.y + RACK_GAP
 
 	_strip = ShopDeckStrip.new()
 	_sheet.add_child(_strip)
-	# The rack stands at the strip's right, in the room the strip can spare.
-	_slots = int(place.slots)
-	var rack := minf(_slots * HeldSlot.SIZE.x + RACK_GAP, room.size.x - ShopDeckStrip.LEAST_WIDTH)
 	_strip.position = Vector2(room.position.x, y)
-	_strip.size = Vector2(room.size.x - rack, ShopDeckStrip.HEIGHT)
-	_held_at = Vector2(room.end.x - rack + RACK_GAP, y)
+	_strip.size = Vector2(room.size.x, ShopDeckStrip.HEIGHT)
 	_strip.card_picked.connect(_on_struck)
 	y += ShopDeckStrip.HEIGHT + STRIP_GAP
 
@@ -265,15 +263,20 @@ func _held_place(i: int) -> Vector2:
 	return _held_at + Vector2(i * HeldSlot.SIZE.x, 0.0)
 
 
-# The dawn's line, and over the rack how many instruments are held; the rack's free places.
+# The dawn's line, on two lines if it must be; at the rack's left how many instruments are
+# held; and the rack's free places.
 func _draw_writing() -> void:
 	var font := ThemeDB.fallback_font
 	var faint: Color = ArenaNotice.TONES[_sheet.tone].faint
-	var base := _dawn_at.y + font.get_ascent(LINE_SIZE)
-	_writing.draw_string(font, Vector2(_dawn_at.x, base), _dawn, HORIZONTAL_ALIGNMENT_LEFT,
-			_held_at.x - RACK_GAP - _dawn_at.x, LINE_SIZE, faint)
-	_writing.draw_string(font, Vector2(_held_at.x, base), "Held: %d of %d" % [_held.size(), _slots],
-			HORIZONTAL_ALIGNMENT_RIGHT, _sheet.size.x - _dawn_at.x - _held_at.x, LINE_SIZE, faint)
+	var words_at := _held_at.x - HELD_WORDS
+	var width := words_at - 12.0 - _dawn_at.x
+	var lines := font.get_multiline_string_size(_dawn, HORIZONTAL_ALIGNMENT_LEFT, width, LINE_SIZE).y
+	var top := _dawn_at.y + maxf(0.0, (HeldSlot.SIZE.y - lines) * 0.5)
+	_writing.draw_multiline_string(font, Vector2(_dawn_at.x, top + font.get_ascent(LINE_SIZE)), _dawn,
+			HORIZONTAL_ALIGNMENT_LEFT, width, LINE_SIZE, 2, faint)
+	var base := _held_at.y + HeldSlot.SIZE.y * 0.5 + (font.get_ascent(LINE_SIZE) - font.get_descent(LINE_SIZE)) * 0.5
+	_writing.draw_string(font, Vector2(words_at, base), "Held: %d of %d" % [_held.size(), _slots],
+			HORIZONTAL_ALIGNMENT_RIGHT, HELD_WORDS - 8.0, LINE_SIZE, faint)
 	for i in range(_held.size(), _slots):
 		# A free place: a broken ring, empty.
 		var c := _held_place(i) + HeldSlot.SIZE * 0.5
@@ -301,8 +304,7 @@ func _dawn_line(dawn: Dictionary) -> String:
 ## end of a row or of the page the focus stays where it is.
 func _wire() -> void:
 	var rows: Array = []
-	var top: Array = [_strip]
-	for row: Array in [top + _held, _cards, _instruments + [_salt, _service], [_sheet.leave_button]]:
+	for row: Array in [_held, [_strip], _cards, _instruments + [_salt, _service], [_sheet.leave_button]]:
 		var open: Array = row.filter(func(c: Control) -> bool: return c.focus_mode != Control.FOCUS_NONE)
 		if not open.is_empty():
 			rows.append(open)
