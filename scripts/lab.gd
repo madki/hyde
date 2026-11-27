@@ -18,22 +18,19 @@ extends Control
 ## and every slot is then set again from a fresh record: a ware that was bought leaves its
 ## slot empty, and the purse, the deck's count and gauge and the rack change with it.
 ##
-## The arrow keys go from slot to slot (`_wire` gives each its neighbours, row by row), Enter
-## or Space takes the one lit, and D opens the deck. The pointer does the same: it lights the
-## slot it is on, and a click takes it.
+## The arrow keys go from slot to slot (ShopKeys.wire gives each its neighbours, row by row),
+## Enter or Space takes the one lit, D opens the deck and Escape goes to Leave. The pointer
+## does the same: it lights the slot it is on, and a click takes it. The instruments held are
+## slots too (ShopWare.show_racked), and so are the rack's free places.
 ##
 ## Run on its own (a still, or from the editor) it shows a run played to a dawn of its own:
 ## `tools/shot.sh /abs/out.png res://scenes/lab.tscn --seed=3` (see SceneFlow.run_for_place).
 ## Only then, never in a run that came from the table, it also takes:
 ##
-## - `--purse=<n>`: the purse holds that many sovereigns.
-## - `--held=<n>`: that many instruments are held (ones the shelf does not sell).
 ## - `--full-deck`: one card of every kind the deck lacks joins it (every Ink Root and every
 ##   Factor), for the fullest deck a run can open.
 ## - `--deck`: the deck is open. `--strike`: it is open as the picker of a card to strike.
-## - `--keys=rde`: keys pressed as a player would, in turn: l Left, r Right, u Up, d Down,
-##   e Enter, x Escape.
-## - `--point=700,300`: the pointer moved there, and `--click` a click there.
+## - `--purse`, `--held`, `--select`, `--press`, `--point` and `--click`, as ShopKeys says.
 
 const WHERE := "lab"
 const HEADING := "The Laboratory"
@@ -61,18 +58,19 @@ var _instruments: Array[ShopWare] = []
 var _salt: ShopWare
 var _service: ShopWare
 var _strip: ShopDeckStrip
-## The instruments held, made again whenever the rack changes.
-var _held: Array[HeldSlot] = []
+## The rack's places, made again whenever the rack changes: the instruments held, then its
+## free places.
+var _held: Array[ShopWare] = []
 var _held_keys: Array = []
+## True while the page sets itself up or shows a move: a slot lit then makes no sound.
+var _quiet := true
 ## The rack's size, and where its row lies on the sheet.
 var _slots := 0
 var _held_at := Vector2.ZERO
 var _dawn := ""
 var _dawn_at := Vector2.ZERO
-## The page's own writing on the sheet: the dawn's line and the rack's words and free places.
+## The page's own writing on the sheet: the dawn's line and the rack's words.
 var _writing := Control.new()
-## One table's worth of emblems, which draws those of the instruments held.
-var _means := ArenaMeans.new()
 
 @onready var _sheet: ShopSheet = $Sheet
 
@@ -95,19 +93,23 @@ func _ready() -> void:
 		_refresh()
 		_focus_first()
 	if own and place != null:
+		ShopKeys.select(_stops())
 		if Shot.has_arg("strike"):
 			_open_strike()
 		elif Shot.has_arg("deck"):
 			_strip.open()
-		if Shot.has_arg("shot"):
-			await _play_input()
-			await get_tree().create_timer(0.6).timeout
+		_quiet = false
+		await ShopKeys.play(self)
+	_quiet = false
 	Shot.run_if_requested(self)
 
 
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE and is_instance_valid(_means):
-		_means.free()
+func _unhandled_key_input(event: InputEvent) -> void:
+	# Escape: the keys go to Leave. (An open deck takes Escape first, to close.)
+	if event.is_action_pressed("ui_cancel") and not _strip.is_open():
+		get_viewport().set_input_as_handled()
+		ShopKeys.hover(false)
+		_sheet.leave_button.grab_focus()
 
 
 # ---------- the shelf ----------
@@ -120,8 +122,8 @@ func _build(place: Dictionary) -> void:
 	_dawn = _dawn_line(place.dawn)
 	_dawn_at = Vector2(room.position.x, y)
 	_slots = int(place.slots)
-	_held_at = Vector2(room.end.x - _slots * HeldSlot.SIZE.x, y)
-	y += HeldSlot.SIZE.y + RACK_GAP
+	_held_at = Vector2(room.end.x - _slots * ShopWare.RACK_SLOT.x, y)
+	y += ShopWare.RACK_SLOT.y + RACK_GAP
 
 	_strip = ShopDeckStrip.new()
 	_sheet.add_child(_strip)
@@ -202,7 +204,7 @@ func _refresh() -> void:
 	_salt.set_offer(place.salt, purse)
 	_set_service(place.strike)
 	_show_held(place.held)
-	_wire()
+	ShopKeys.wire(_key_rows())
 
 
 ## The service's slot, from the record's list of cards to strike: its price is the least any
@@ -227,62 +229,51 @@ func _set_service(strike: Array) -> void:
 		_service.set_state(ShopWare.State.TOO_DEAR, why)
 
 
-## The instruments held, in the rack's row. They are made again only when the rack changed;
-## the keys' focus stays in the row if it was there.
+## The rack's row: the instruments held, each to drop, then its free places. The places are
+## made again only when the rack changed.
 func _show_held(held: Array) -> void:
 	var keys: Array = []
 	for instrument: Dictionary in held:
 		keys.append(instrument.key)
-	if keys == _held_keys and _held.size() == keys.size():
+	if keys == _held_keys and _held.size() == _slots:
 		return
-	var at := -1
-	for i in _held.size():
-		if _held[i].has_focus():
-			at = i
-		_held[i].queue_free()
+	for place in _held:
+		_sheet.remove_child(place)
+		place.queue_free()
 	_held.clear()
 	_held_keys = keys
-	for i in held.size():
-		var instrument: Dictionary = held[i]
-		var slot := HeldSlot.new(_means, instrument.key, instrument.name, instrument.text)
-		_sheet.add_child(slot)
-		slot.position = _held_place(i)
-		slot.chosen.connect(_drop.bind(String(instrument.key)))
-		slot.lit_changed.connect(_on_lit)
-		_held.append(slot)
-	if at >= 0:
-		if _held.is_empty():
-			_focus_first()
+	for i in _slots:
+		var place := _ware(_held_place(i))
+		if i < held.size():
+			var instrument: Dictionary = held[i]
+			place.show_racked(instrument.key, instrument.name, "%s Enter or a click drops it." % instrument.text)
+			place.chosen.connect(_drop.bind(String(instrument.key)))
 		else:
-			_held[mini(at, _held.size() - 1)].grab_focus()
+			place.show_racked("")
+			place.set_state(ShopWare.State.BOUGHT)
+		_held.append(place)
 	_writing.queue_redraw()
 
 
 ## Where the rack's place number `i` lies on the sheet.
 func _held_place(i: int) -> Vector2:
-	return _held_at + Vector2(i * HeldSlot.SIZE.x, 0.0)
+	return _held_at + Vector2(i * ShopWare.RACK_SLOT.x, 0.0)
 
 
-# The dawn's line, on two lines if it must be; at the rack's left how many instruments are
-# held; and the rack's free places.
+# The dawn's line, on two lines if it must be, and at the rack's left how many instruments
+# are held.
 func _draw_writing() -> void:
 	var font := ThemeDB.fallback_font
 	var faint: Color = ArenaNotice.TONES[_sheet.tone].faint
 	var words_at := _held_at.x - HELD_WORDS
 	var width := words_at - 12.0 - _dawn_at.x
 	var lines := font.get_multiline_string_size(_dawn, HORIZONTAL_ALIGNMENT_LEFT, width, LINE_SIZE).y
-	var top := _dawn_at.y + maxf(0.0, (HeldSlot.SIZE.y - lines) * 0.5)
+	var top := _dawn_at.y + maxf(0.0, (ShopWare.RACK_SLOT.y - lines) * 0.5)
 	_writing.draw_multiline_string(font, Vector2(_dawn_at.x, top + font.get_ascent(LINE_SIZE)), _dawn,
 			HORIZONTAL_ALIGNMENT_LEFT, width, LINE_SIZE, 2, faint)
-	var base := _held_at.y + HeldSlot.SIZE.y * 0.5 + (font.get_ascent(LINE_SIZE) - font.get_descent(LINE_SIZE)) * 0.5
-	_writing.draw_string(font, Vector2(words_at, base), "Held: %d of %d" % [_held.size(), _slots],
+	var base := _held_at.y + ShopWare.RACK_SLOT.y * 0.5 + (font.get_ascent(LINE_SIZE) - font.get_descent(LINE_SIZE)) * 0.5
+	_writing.draw_string(font, Vector2(words_at, base), "Held: %d of %d" % [_held_keys.size(), _slots],
 			HORIZONTAL_ALIGNMENT_RIGHT, HELD_WORDS - 8.0, LINE_SIZE, faint)
-	for i in range(_held.size(), _slots):
-		# A free place: a broken ring, empty.
-		var c := _held_place(i) + HeldSlot.SIZE * 0.5
-		for k in 8:
-			_writing.draw_arc(c, ArenaMeans.ROUND_R - 2.0, k * TAU / 8.0, (k + 0.6) * TAU / 8.0, 6,
-					Color(faint, 0.55), 1.5, true)
 
 
 ## What the dawn brought, as the page's opening line.
@@ -299,43 +290,22 @@ func _dawn_line(dawn: Dictionary) -> String:
 
 # ---------- the keys ----------
 
-## Gives every slot its neighbours for the arrow keys: Left and Right along its row, Up and
-## Down to the slot nearest above and under it. A slot that is gone is passed over; at an
-## end of a row or of the page the focus stays where it is.
-func _wire() -> void:
-	var rows: Array = []
-	for row: Array in [_held, [_strip], _cards, _instruments + [_salt, _service], [_sheet.leave_button]]:
-		var open: Array = row.filter(func(c: Control) -> bool: return c.focus_mode != Control.FOCUS_NONE)
-		if not open.is_empty():
-			rows.append(open)
-	for r in rows.size():
-		var row: Array = rows[r]
-		for i in row.size():
-			var slot: Control = row[i]
-			var itself := slot.get_path_to(slot)
-			slot.focus_neighbor_left = slot.get_path_to(row[i - 1]) if i > 0 else itself
-			slot.focus_neighbor_right = slot.get_path_to(row[i + 1]) if i < row.size() - 1 else itself
-			slot.focus_neighbor_top = slot.get_path_to(_nearest(rows[r - 1], slot)) if r > 0 else itself
-			slot.focus_neighbor_bottom = slot.get_path_to(_nearest(rows[r + 1], slot)) if r < rows.size() - 1 else itself
+## Every control the keys can be on, in rows from the top, each row from the left.
+func _key_rows() -> Array:
+	return ShopKeys.rows([_held, [_strip], _cards, _instruments + [_salt, _service], [_sheet.leave_button]])
 
 
-## The slot of `row` whose middle is nearest that of `slot`, across the page.
-func _nearest(row: Array, slot: Control) -> Control:
-	var x := slot.get_global_rect().get_center().x
-	var best: Control = row[0]
-	for other: Control in row:
-		if absf(other.get_global_rect().get_center().x - x) < absf(best.get_global_rect().get_center().x - x):
-			best = other
-	return best
+## The slots the keys can be on and then Leave, without the deck's strip: what `--select`
+## counts, and where the focus may go on to from a slot that was emptied.
+func _stops() -> Array[Control]:
+	var stops := ShopKeys.stops(_key_rows())
+	stops.erase(_strip)
+	return stops
 
 
 ## The keys begin on the first ware that can be bought, or on Leave if none can.
 func _focus_first() -> void:
-	for ware: ShopWare in _cards + _instruments + [_salt, _service]:
-		if ware.state() == ShopWare.State.AVAILABLE:
-			ware.grab_focus()
-			return
-	_sheet.leave_button.grab_focus()
+	ShopKeys.focus_first(_cards + _instruments + [_salt, _service], _sheet.leave_button)
 
 
 # ---------- taking a slot ----------
@@ -343,6 +313,8 @@ func _focus_first() -> void:
 ## Makes a move in the rules (`move` returns their answer) and shows the shelf as it then
 ## stands. True if the rules made it.
 func _deal(move: Callable) -> bool:
+	var from := get_viewport().gui_get_focus_owner()
+	var spot := ShopKeys.middle(from)
 	var result: Dictionary = move.call()
 	if not result.ok:
 		Sfx.play("refuse")
@@ -354,9 +326,13 @@ func _deal(move: Callable) -> bool:
 				Sfx.play("lock", 0.7) # brass set down on wood
 			_:
 				Sfx.play("buy")
+	# The slots are set again and the focus put where it belongs, once, with no slot's sound
+	# over the move's own.
+	_quiet = true
 	_refresh()
-	if get_viewport().gui_get_focus_owner() == null and not _strip.is_open():
-		_focus_first()
+	if not _strip.is_open():
+		ShopKeys.keep_focus(self, from, spot, _stops(), _sheet.leave_button)
+	_quiet = false
 	return bool(result.ok)
 
 
@@ -386,8 +362,8 @@ func _on_refused(_why: String) -> void:
 
 
 func _on_lit(lit: bool) -> void:
-	if lit and not _strip.is_open():
-		Sfx.play("hover_j", Sfx.vary(), 0.3)
+	if lit and not _quiet and not _strip.is_open():
+		ShopKeys.hover(false)
 
 
 ## Opens the deck as a picker of the card to strike: every card with the rules' price to
@@ -425,8 +401,7 @@ func _leave() -> void:
 
 ## The purse, the rack and the deck asked for on the command line, for a still.
 func _set_up_still() -> void:
-	if Shot.has_arg("purse"):
-		_run.sov = maxi(0, int(Shot.arg("purse")))
+	ShopKeys.dress(_run)
 	if Shot.has_arg("full-deck"):
 		var kinds := {}
 		for c: RulesCard in _run.cards:
@@ -438,177 +413,3 @@ func _set_up_still() -> void:
 		for kind: String in RulesConfig.FACTORS:
 			if not kinds.has([kind, false]):
 				Rules.add_card(_run, kind, false, false)
-	var on_shelf: Array = []
-	if _run.shop != null:
-		for offer: Dictionary in _run.shop.instruments:
-			on_shelf.append(offer.key)
-	var wanted := mini(int(Shot.arg("held")), RulesConfig.MAX_INSTRUMENTS)
-	for key: String in RulesConfig.INSTRUMENTS:
-		if _run.instruments.size() >= wanted:
-			break
-		if not on_shelf.has(key) and not _run.instruments.has(key):
-			_run.instruments.append(key)
-
-
-## Plays the input asked for on the command line through the game's own input, a key at a
-## time, as a player would.
-func _play_input() -> void:
-	const KEYS := {"l": KEY_LEFT, "r": KEY_RIGHT, "u": KEY_UP, "d": KEY_DOWN, "e": KEY_ENTER,
-			"x": KEY_ESCAPE}
-	for letter in Shot.arg("keys"):
-		if not KEYS.has(letter):
-			continue
-		var key := InputEventKey.new()
-		key.keycode = KEYS[letter]
-		key.pressed = true
-		Input.parse_input_event(key)
-		await get_tree().process_frame
-		await get_tree().process_frame
-	var given := Shot.arg("point").split(",")
-	if given.size() != 2:
-		return
-	var point := Vector2(float(given[0]), float(given[1]))
-	var motion := InputEventMouseMotion.new()
-	motion.position = point
-	motion.global_position = point
-	get_viewport().push_input(motion, true)
-	await get_tree().process_frame
-	if not Shot.has_arg("click"):
-		return
-	for pressed: bool in [true, false]:
-		var button := InputEventMouseButton.new()
-		button.button_index = MOUSE_BUTTON_LEFT
-		button.pressed = pressed
-		button.position = point
-		button.global_position = point
-		get_viewport().push_input(button, true)
-		await get_tree().process_frame
-		await get_tree().process_frame
-
-
-## One instrument held, in the rack: its emblem as the table draws it. With the
-## pointer on it or the keys' focus it is ringed, and a note under it names it, says what it
-## does and that it can be dropped. A click, Enter or Space sends `chosen`.
-class HeldSlot:
-	extends Control
-
-	signal chosen
-	signal lit_changed(lit: bool)
-
-	const SIZE := Vector2(44.0, 44.0)
-	const NOTE_W := 200.0
-	const NOTE_SIZE := 12
-	const NOTE_PAD := 7.0
-
-	var _means: ArenaMeans
-	var _key := ""
-	var _title := ""
-	var _detail := ""
-	var _lines := Control.new()
-	var _note := Control.new()
-	var _heavy := FontVariation.new()
-	var _plain: Font = ThemeDB.fallback_font
-
-	func _init(means: ArenaMeans, key: String, title: String, detail: String) -> void:
-		_means = means
-		_key = key
-		_title = title
-		_detail = detail
-		_heavy.base_font = ThemeDB.fallback_font
-		_heavy.variation_embolden = 0.7
-		custom_minimum_size = SIZE
-		size = SIZE
-		focus_mode = Control.FOCUS_ALL
-		mouse_filter = Control.MOUSE_FILTER_STOP
-		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		_lines.material = ArenaMeans.LINE_MATERIAL
-		_lines.draw.connect(_draw_lines)
-		_note.draw.connect(_draw_note)
-		for child: Control in [_lines, _note]:
-			child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			add_child(child)
-		_note.top_level = true
-		_note.z_index = 100
-		_note.visible = false
-		mouse_entered.connect(grab_focus)
-		focus_entered.connect(_relight)
-		focus_exited.connect(_relight)
-
-	func _gui_input(event: InputEvent) -> void:
-		var button := event as InputEventMouseButton
-		if (button != null and button.pressed and button.button_index == MOUSE_BUTTON_LEFT) \
-				or event.is_action_pressed("ui_accept"):
-			accept_event()
-			chosen.emit()
-
-	func _relight() -> void:
-		_note.visible = has_focus()
-		if _note.visible:
-			var height := NOTE_PAD * 2.0
-			for line: Array in _note_lines():
-				height += _line_height(line) + 2.0
-			_note.size = Vector2(NOTE_W, height)
-			var at := global_position + Vector2((size.x - NOTE_W) * 0.5, size.y + 4.0)
-			at.x = clampf(at.x, 4.0, maxf(4.0, get_viewport_rect().size.x - NOTE_W - 4.0))
-			_note.global_position = at
-			_note.queue_redraw()
-		queue_redraw()
-		lit_changed.emit(has_focus())
-
-	# The stock or the wax under the sketch, and the ring of a lit slot.
-	func _draw() -> void:
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash(_key)
-		draw_set_transform(SIZE * 0.5)
-		if ArenaMeans._his(_key):
-			var edge := ArenaMeans._blob(rng, ArenaMeans.ROUND_R, 1.2, 5)
-			_means._card(self, edge, ArenaMeans.WAX)
-			draw_colored_polygon(ArenaMeans._blob(rng, ArenaMeans.ROUND_R - 4.5, 0.4, 3), ArenaMeans.WAX_PRESSED)
-			edge.append(edge[0])
-			draw_polyline(edge, ArenaMeans.WAX_LINE, ArenaMeans.RIM_WIDTH, true)
-		else:
-			_means._card(self, ArenaMeans._blob(rng, ArenaMeans.ROUND_R, 0.5, 3), ArenaMeans.CREAM)
-		if has_focus():
-			draw_arc(Vector2.ZERO, ArenaMeans.ROUND_R + 3.0, 0.0, TAU, 40, Palette.JEKYLL, 2.0, true)
-		draw_set_transform_matrix(Transform2D.IDENTITY)
-
-	# The instrument's sketch, in pencil.
-	func _draw_lines() -> void:
-		var his := ArenaMeans._his(_key)
-		var colour := ArenaMeans.WAX_LINE if his else ArenaMeans.PENCIL
-		var base := 23000 + hash(_key) % 97
-		_lines.draw_set_transform(SIZE * 0.5)
-		if not his:
-			var ring := Pencil.new(base + 400)
-			ring.colour = colour
-			ring.min_width = ArenaMeans.MIN_STROKE
-			ring.stroke(ArenaMeans._circle(Vector2.ZERO, ArenaMeans.ROUND_R - 2.5, 30), 1.6, 0.2)
-			ring.draw(_lines)
-		var sketch := Pencil.new(base + 600)
-		sketch.colour = colour
-		sketch.min_width = ArenaMeans.MIN_STROKE * (1.3 if his else 1.0) / ArenaMeans.SKETCH_SCALE
-		_lines.draw_set_transform(SIZE * 0.5, 0.0, Vector2.ONE * ArenaMeans.SKETCH_SCALE)
-		_means._instrument(sketch, _key)
-		sketch.draw(_lines)
-		_lines.draw_set_transform_matrix(Transform2D.IDENTITY)
-
-	# The note's lines, each [words, font, colour].
-	func _note_lines() -> Array:
-		return [[_title, _heavy, ArenaMeans.INK], [_detail, _plain, ArenaMeans.PENCIL],
-				["Enter or a click drops it.", _heavy, ArenaMeans.INK]]
-
-	func _line_height(line: Array) -> float:
-		var font: Font = line[1]
-		return font.get_multiline_string_size(line[0], HORIZONTAL_ALIGNMENT_LEFT, NOTE_W - NOTE_PAD * 2.0,
-				NOTE_SIZE).y
-
-	func _draw_note() -> void:
-		var box := Rect2(Vector2.ZERO, _note.size)
-		_note.draw_rect(Rect2(box.position + Vector2(3.0, 4.0), box.size), ArenaMeans.SHADOW)
-		_note.draw_rect(box, ArenaMeans.NOTE_CREAM)
-		var y := NOTE_PAD
-		for line: Array in _note_lines():
-			var font: Font = line[1]
-			_note.draw_multiline_string(font, Vector2(NOTE_PAD, y + font.get_ascent(NOTE_SIZE)), line[0],
-					HORIZONTAL_ALIGNMENT_LEFT, NOTE_W - NOTE_PAD * 2.0, NOTE_SIZE, -1, line[2])
-			y += _line_height(line) + 2.0

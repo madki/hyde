@@ -20,23 +20,17 @@ extends Control
 ##   rules and begins the next night.
 ##
 ## A ware that is taken leaves its slot empty, and so do the others of its kind, since one of
-## a kind is given. The arrows go from slot to slot, Enter or a click takes, and Escape goes
-## to Leave.
+## a kind is given. The arrows go from slot to slot (ShopKeys.wire), Enter or a click takes,
+## and Escape goes to Leave.
 ##
 ## Run on its own (a still, or from the editor) it shows a run played to a dawn of its own:
 ## `tools/shot.sh /abs/out.png res://scenes/alley.tscn --seed=3` (see SceneFlow.run_for_place).
 ## That run, and never one that came from the table, can be dressed for a still:
 ##
-## - `--purse=<n>`: the sovereigns held.
-## - `--held=<n>`: that many instruments held (the laboratory's first, then his), up to a
-##   full rack.
 ## - `--taken`: the free offers already taken, as far as the rules allow: the first Habit and
 ##   the first instrument.
-## - `--select=<n>`: the keys' focus on that slot, counted from 0 through the slots that can
-##   take it: the cards, the lower row, then Leave.
 ## - `--deck`: the deck opened.
-## - `--press=<keys>`: those keys pressed in turn after that, as a player would: any of left,
-##   right, up, down, enter, escape and d, with commas between.
+## - `--purse`, `--held`, `--select`, `--press`, `--point` and `--click`, as ShopKeys says.
 
 const WHERE := "alley"
 const HEADING := "The back alley"
@@ -55,9 +49,6 @@ const ROW_GAP_MOST := 30.0
 const TEXT_SIZE := 13
 const HINT_SIZE := 12
 const HINT_ROOM := 26.0
-## The keys `--press` knows.
-const KEYS := {"left": KEY_LEFT, "right": KEY_RIGHT, "up": KEY_UP, "down": KEY_DOWN, "enter": KEY_ENTER,
-		"escape": KEY_ESCAPE, "d": KEY_D}
 
 ## The run at this dawn. Null only if no run could be played to one.
 var _run: RulesRun
@@ -78,7 +69,7 @@ var _refusal := ""
 ## Where the writing beside the cards goes, and the hint under the lower row, on the sheet.
 var _text_box := Rect2()
 var _hint_at := Vector2.ZERO
-## True while the page sets itself up: a slot lit then makes no sound.
+## True while the page sets itself up or shows a move: a slot lit then makes no sound.
 var _quiet := true
 var _strip := ShopDeckStrip.new()
 ## The page's own writing on the sheet.
@@ -107,22 +98,21 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_lay_out)
 	_show()
 	_focus_first()
-	if own and Shot.has_arg("select"):
-		var stops := _stops()
-		stops[clampi(int(Shot.arg("select")), 0, stops.size() - 1)].grab_focus()
-	if own and Shot.has_arg("deck"):
-		_strip.open()
+	if own:
+		ShopKeys.select(_stops())
+		if Shot.has_arg("deck"):
+			_strip.open()
+		_quiet = false
+		await ShopKeys.play(self)
 	_quiet = false
-	if own and Shot.has_arg("press"):
-		_press(Shot.arg("press"))
 	Shot.run_if_requested(self)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	# Escape: the keys go to Leave.
+	# Escape: the keys go to Leave. (An open deck takes Escape first, to close.)
 	if event.is_action_pressed("ui_cancel") and not _strip.is_open():
 		get_viewport().set_input_as_handled()
-		Sfx.play("hover_h", Sfx.vary(), 0.35)
+		ShopKeys.hover(true)
 		_sheet.leave_button.grab_focus()
 
 
@@ -156,8 +146,6 @@ func _show() -> void:
 			if _lit == id:
 				_lit = ""
 	_lay_out()
-	if get_viewport().gui_get_focus_owner() == null:
-		_focus_first()
 
 
 # His free Habit: a slot for each symbol it can go on, showing his Root of that symbol.
@@ -298,7 +286,7 @@ func _lay_out() -> void:
 	_sheet.set_headings(headings)
 	_sheet.set_dividers(dividers)
 	_words.queue_redraw()
-	_join_keys()
+	ShopKeys.wire(_key_rows())
 
 
 # The page's writing: beside the cards what the dawn brought and what the Habit does, "drop"
@@ -381,73 +369,18 @@ func _habit_text() -> String:
 
 # Every control the keys can be on, in rows from the top, each row from the left.
 func _key_rows() -> Array:
-	var rows: Array = []
-	var lower: Array[ShopWare] = _goods + _held
-	for row: Array in [[_strip], _cards, lower, [_sheet.leave_button]]:
-		var stops: Array[Control] = []
-		for c: Control in row:
-			if c.focus_mode != Control.FOCUS_NONE:
-				stops.append(c)
-		if not stops.is_empty():
-			rows.append(stops)
-	return rows
+	return ShopKeys.rows([[_strip], _cards, _goods + _held, [_sheet.leave_button]])
 
 
-# The slots the keys can be on and then Leave, in the order `--select` counts them.
+# The slots the keys can be on and then Leave, without the deck's strip: what `--select`
+# counts, and where the focus may go on to from a slot that was emptied.
 func _stops() -> Array[Control]:
-	var stops: Array[Control] = []
-	for row: Array in _key_rows().slice(1):
-		stops.append_array(row)
-	return stops
-
-
-# Tells every control which one each arrow goes to: its neighbour in the row, and in the
-# row over or under it the one nearest above or below. An arrow with nowhere to go stays.
-func _join_keys() -> void:
-	var rows := _key_rows()
-	for r in rows.size():
-		var row: Array = rows[r]
-		for i in row.size():
-			var c: Control = row[i]
-			c.focus_neighbor_left = c.get_path_to(row[maxi(i - 1, 0)])
-			c.focus_neighbor_right = c.get_path_to(row[mini(i + 1, row.size() - 1)])
-			c.focus_neighbor_top = c.get_path_to(_nearest(rows[r - 1], c) if r > 0 else c)
-			c.focus_neighbor_bottom = c.get_path_to(_nearest(rows[r + 1], c) if r < rows.size() - 1 else c)
-
-
-# The control of `row` whose middle is nearest above or below the middle of `from`.
-func _nearest(row: Array, from: Control) -> Control:
-	var x := from.get_global_rect().get_center().x
-	var best: Control = row[0]
-	for c: Control in row:
-		if absf(c.get_global_rect().get_center().x - x) < absf(best.get_global_rect().get_center().x - x):
-			best = c
-	return best
+	return ShopKeys.stops(_key_rows().slice(1))
 
 
 # The keys begin on the first ware he can take, or on Leave when there is none.
 func _focus_first() -> void:
-	var first: Array[ShopWare] = _cards + _goods
-	for ware in first:
-		if ware.state() == ShopWare.State.AVAILABLE:
-			ware.grab_focus()
-			return
-	_sheet.leave_button.grab_focus()
-
-
-# The keys go on from a slot that was emptied, at `spot` in the window: to the nearest slot
-# left in its row, or else to the nearest in the rows under it, down to Leave.
-func _focus_near(spot: Vector2) -> void:
-	var best: Control = _sheet.leave_button
-	var least := INF
-	for c in _stops():
-		var to := c.get_global_rect().get_center() - spot
-		# A row further down counts for more than any step along a row.
-		var far := absf(to.x) + maxf(to.y, 0.0) * 100.0
-		if to.y > -1.0 and far < least:
-			least = far
-			best = c
-	best.grab_focus()
+	ShopKeys.focus_first(_cards + _goods, _sheet.leave_button)
 
 
 # --- Moves ----------------------------------------------------------------------------------
@@ -471,11 +404,14 @@ func _on_chosen(act: String, arg: String) -> void:
 		Sfx.play({"salt": "buy", "drop": "lock"}.get(act, "take"), 0.7 if act == "drop" else 1.0)
 	# A move the rules refuse although its slot could be taken: their reason is shown.
 	_refusal = "" if result.ok else String(result.get("reason", "Not now."))
+	# The slots are set again and the focus put where it belongs, once, with no slot's sound
+	# over the move's own.
 	var from := get_viewport().gui_get_focus_owner()
-	var spot := from.get_global_rect().get_center() if from != null else Vector2.ZERO
+	var spot := ShopKeys.middle(from)
+	_quiet = true
 	_show()
-	if from != null and (not from.is_inside_tree() or from.focus_mode == Control.FOCUS_NONE):
-		_focus_near(spot)
+	ShopKeys.keep_focus(self, from, spot, _stops(), _sheet.leave_button)
+	_quiet = false
 
 
 # A slot that cannot be taken was pressed: its own note says why.
@@ -487,7 +423,7 @@ func _on_lit(lit: bool, id: String) -> void:
 	if lit:
 		_lit = id
 		if not _quiet:
-			Sfx.play("hover_h", Sfx.vary(), 0.35)
+			ShopKeys.hover(true)
 	elif _lit == id:
 		_lit = ""
 	_words.queue_redraw()
@@ -498,26 +434,9 @@ func _on_leave() -> void:
 	SceneFlow.back_to_table()
 
 
-# Presses the keys named, through the game's own input.
-func _press(names: String) -> void:
-	for key_name: String in names.split(",", false):
-		for down: bool in [true, false]:
-			var key := InputEventKey.new()
-			key.keycode = KEYS.get(key_name.strip_edges(), KEY_NONE)
-			key.pressed = down
-			Input.parse_input_event(key)
-
-
 # Dresses a run the page made for itself as the command line asks, for a still.
 func _dress_for_still() -> void:
-	if Shot.has_arg("purse"):
-		_run.sov = maxi(0, int(Shot.arg("purse")))
-	if Shot.has_arg("held"):
-		var keys: Array = RulesConfig.LAB_INSTRUMENTS + RulesConfig.HIS_INSTRUMENTS
-		var count := clampi(int(Shot.arg("held")), 0, RulesConfig.MAX_INSTRUMENTS)
-		_run.instruments.clear()
-		for key: String in keys.slice(0, count):
-			_run.instruments.append(key)
+	ShopKeys.dress(_run)
 	if Shot.has_arg("taken"):
 		var place: Dictionary = RulesView.place(_run)
 		if not place.habit.is_empty():

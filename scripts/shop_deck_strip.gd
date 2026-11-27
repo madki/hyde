@@ -17,7 +17,10 @@ extends Control
 ##
 ##   strip.show_run(run)
 ##   strip.card_picked.connect(_on_struck)
-##   strip.open_picker(place.strike, "Strike a card", "It leaves the deck for good.")
+##   strip.open_picker(faces, "Strike a card", "It leaves the deck for good.")
+##
+## (`faces`: a RulesView.entry for each card, with the `price`, `ok` and `why` of its offer in
+## `place.strike`, which has no face of its own.)
 ##
 ## The caller sets the strip's width; its height is HEIGHT. It takes the focus like any
 ## control, so a page's keys can move to it and away with the focus neighbours.
@@ -202,7 +205,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _on_hover(over: bool) -> void:
 	_hover = over
 	if over and not is_open():
-		Sfx.play("hover_j", Sfx.vary(), 0.3)
+		ShopKeys.hover(_hyde)
 	_lay_out()
 
 

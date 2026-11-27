@@ -24,7 +24,8 @@ extends Control
 ## - TOO_DEAR: the ware dimmed, the price struck through and in the warning colour.
 ## - NOT_ALLOWED: the ware dimmed, a small barred ring on its corner.
 ## - BOUGHT: the slot left empty, a faint dashed outline with `word` ("sold", "taken")
-##   where the price was. It takes neither the pointer nor the keys.
+##   where the price was. It takes neither the pointer nor the keys: if it had the focus it
+##   lets it go, and the page says where the focus goes next (ShopKeys.keep_focus).
 ##
 ## `set_offer(offer, purse)` picks the state from one offer of RulesView.place.
 ##
@@ -38,7 +39,10 @@ extends Control
 ## `chosen` if it is available, `refused(why)` if not. Nothing here buys anything or makes a
 ## sound: the page does, then sets the slot's new state.
 ##
-## The slot has one of two fixed sizes, CARD_SLOT or SMALL_SLOT, set by what it shows.
+## The slot has one of three fixed sizes, set by what it shows: CARD_SLOT, SMALL_SLOT, or
+## RACK_SLOT for `show_racked(key, name, detail)`: an instrument held, in a rack with no room
+## for whole slots. That one is the emblem alone, at the table's size, ringed while it is
+## lit; its name is in its note, and it has no price.
 
 ## The ware was taken, and it can be: for the page to buy it.
 signal chosen
@@ -52,6 +56,8 @@ enum State { AVAILABLE, TOO_DEAR, NOT_ALLOWED, BOUGHT }
 ## The size of a slot that shows a card, and of one that shows anything else.
 const CARD_SLOT := Vector2(112.0, 178.0)
 const SMALL_SLOT := Vector2(104.0, 124.0)
+## The size of a place of a rack (`show_racked`).
+const RACK_SLOT := Vector2(44.0, 44.0)
 
 const CARD_AT := Vector2(8.0, 8.0)
 const TILE := Rect2(20.0, 29.0, 64.0, 64.0)
@@ -78,6 +84,8 @@ var accent := Palette.JEKYLL:
 
 var _kind := ""
 var _key := ""
+## True for a place of a rack: the emblem alone.
+var _racked := false
 var _name := ""
 var _detail := ""
 var _state := State.AVAILABLE
@@ -154,6 +162,12 @@ func show_instrument(key: String, ware_name: String = "", detail: String = "") -
 	_show_small("instrument", key, ware_name, detail)
 
 
+## Shows an instrument held as a place of a rack (RACK_SLOT): its emblem alone, as the table
+## draws it. With "" for `key` it is a free place, to be set BOUGHT.
+func show_racked(key: String, ware_name: String = "", detail: String = "") -> void:
+	_show_small("instrument", key, ware_name, detail, true)
+
+
 ## Shows a dose of salt as its folded paper.
 func show_salt(ware_name: String = "A dose of salt", detail: String = "") -> void:
 	_show_small("salt", "", ware_name, detail)
@@ -185,13 +199,12 @@ func set_state(new_state: State, why: String = "", word: String = "") -> void:
 	_why = why
 	_word = word
 	if _state == State.BOUGHT:
-		# The focus goes on to the next slot before this one stops taking it.
-		var next := find_next_valid_focus() if has_focus() else null
+		# The slot lets the focus go, and does not pass it on: the page knows where it belongs.
+		if has_focus():
+			release_focus()
 		focus_mode = Control.FOCUS_NONE
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hover = false
-		if next != null and next != self:
-			next.grab_focus()
 	else:
 		focus_mode = Control.FOCUS_ALL
 		mouse_filter = Control.MOUSE_FILTER_STOP
@@ -297,17 +310,19 @@ func _set_lift(value: float) -> void:
 # --- Where things are -----------------------------------------------------------------------
 
 
-func _show_small(kind: String, key: String, ware_name: String, detail: String) -> void:
+func _show_small(kind: String, key: String, ware_name: String, detail: String, racked: bool = false) -> void:
 	_kind = kind
 	_key = key
+	_racked = racked
 	_name = ware_name
 	_detail = detail
 	if _card != null:
 		_card.queue_free()
 		_card = null
-	if kind != "service" and _means == null:
+	# Only a ware whose drawing is the table's needs the table's emblems.
+	if _means == null and (kind == "salt" or (kind == "instrument" and key != "")):
 		_means = ArenaMeans.new()
-	_set_slot(SMALL_SLOT)
+	_set_slot(RACK_SLOT if racked else SMALL_SLOT)
 	_refresh()
 
 
@@ -319,11 +334,18 @@ func _set_slot(slot: Vector2) -> void:
 
 
 func _rise() -> Vector2:
-	return Vector2(0.0, -LIFT * _lift)
+	return Vector2.ZERO if _racked else Vector2(0.0, -LIFT * _lift)
+
+
+## How large an emblem is drawn, by its size on the table.
+func _emblem_scale() -> float:
+	return 1.0 if _racked else EMBLEM_SCALE
 
 
 ## The ware's own rectangle in the slot, as it stands now: the card, or the small ware's tile.
 func _ware_rect() -> Rect2:
+	if _racked:
+		return Rect2(Vector2.ZERO, RACK_SLOT)
 	var rect := Rect2(CARD_AT, ArenaCard.SIZE) if _kind == "card" else TILE
 	rect.position += _rise()
 	return rect
@@ -361,18 +383,19 @@ func _draw_back() -> void:
 	if _kind == "card" or _kind == "":
 		return
 	var rect := _ware_rect()
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(Palette.NIGHT_1, 0.45)
-	box.border_color = Palette.RULE
-	box.set_border_width_all(2)
-	box.set_corner_radius_all(ArenaMeans.SLOT_CORNER)
-	box.anti_aliasing = true
-	_back.draw_style_box(box, rect)
-	if _kind != "instrument":
+	if not _racked:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(Palette.NIGHT_1, 0.45)
+		box.border_color = Palette.RULE
+		box.set_border_width_all(2)
+		box.set_corner_radius_all(ArenaMeans.SLOT_CORNER)
+		box.anti_aliasing = true
+		_back.draw_style_box(box, rect)
+	if _kind != "instrument" or _key == "":
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(_key)
-	_back.draw_set_transform(rect.get_center(), 0.0, Vector2.ONE * EMBLEM_SCALE)
+	_back.draw_set_transform(rect.get_center(), 0.0, Vector2.ONE * _emblem_scale())
 	if ArenaMeans._his(_key):
 		var edge := ArenaMeans._blob(rng, ArenaMeans.ROUND_R, 1.2, 5)
 		_means._card(_back, edge, ArenaMeans.WAX)
@@ -393,9 +416,11 @@ func _draw_lines() -> void:
 	var base := 23000 + hash(_key) % 97
 	match _kind:
 		"instrument":
+			if _key == "":
+				return
 			var his := ArenaMeans._his(_key)
 			var colour := ArenaMeans.WAX_LINE if his else ArenaMeans.PENCIL
-			_lines.draw_set_transform(centre, 0.0, Vector2.ONE * EMBLEM_SCALE)
+			_lines.draw_set_transform(centre, 0.0, Vector2.ONE * _emblem_scale())
 			if not his:
 				var ring := Pencil.new(base + 400)
 				ring.colour = colour
@@ -405,13 +430,13 @@ func _draw_lines() -> void:
 			var sketch := Pencil.new(base + 600)
 			sketch.colour = colour
 			sketch.min_width = ArenaMeans.MIN_STROKE * (1.3 if his else 1.0) / ArenaMeans.SKETCH_SCALE
-			_lines.draw_set_transform(centre, 0.0, Vector2.ONE * EMBLEM_SCALE * ArenaMeans.SKETCH_SCALE)
+			_lines.draw_set_transform(centre, 0.0, Vector2.ONE * _emblem_scale() * ArenaMeans.SKETCH_SCALE)
 			_means._instrument(sketch, _key)
 			sketch.draw(_lines)
 		"salt":
 			var paper := Pencil.new(base + 100)
 			paper.colour = ArenaMeans.GLASS_LIGHT
-			_lines.draw_set_transform(centre, 0.0, Vector2.ONE * EMBLEM_SCALE)
+			_lines.draw_set_transform(centre, 0.0, Vector2.ONE * _emblem_scale())
 			_means._paper_path(paper, Vector2.ZERO, 0.0)
 			paper.draw(_lines)
 		"service":
@@ -434,6 +459,9 @@ func _draw_over() -> void:
 	if _kind == "":
 		return
 	var rect := _ware_rect()
+	if _racked:
+		_draw_racked(rect.get_center())
+		return
 	var rest := Rect2(CARD_AT, ArenaCard.SIZE) if _kind == "card" else TILE
 	if _state == State.BOUGHT:
 		_dashed_outline(rest.grow(-1.0), Color(Palette.CHALK_3, 0.6))
@@ -458,6 +486,18 @@ func _draw_over() -> void:
 		if _state == State.NOT_ALLOWED:
 			_draw_bar(Vector2(rect.end.x - 5.0, rect.position.y + 5.0))
 	_draw_tag(rest.end.y + TAG_GAP)
+
+
+## What lies over a place of a rack, about `c`: a broken ring if it is free, the ring of a
+## lit one if not.
+func _draw_racked(c: Vector2) -> void:
+	if _state == State.BOUGHT:
+		for k in 8:
+			_over.draw_arc(c, ArenaMeans.ROUND_R - 2.0, k * TAU / 8.0, (k + 0.6) * TAU / 8.0, 6,
+					Color(Palette.CHALK_3, 0.6), 1.5, true)
+	elif _lit:
+		_over.draw_arc(c, ArenaMeans.ROUND_R + 3.0, 0.0, TAU, 40, accent if _takeable() else Palette.CHALK_2,
+				2.0, true)
 
 
 ## The price, its top at `top`, in the middle of the slot's width.
@@ -520,9 +560,11 @@ func _dashed_outline(rect: Rect2, colour: Color) -> void:
 
 
 ## The note's lines, each [words, font, colour]: what the ware does, then why it cannot be
-## taken.
+## taken. A place of a rack has its name first, which is written nowhere else.
 func _note_lines() -> Array:
 	var lines := []
+	if _racked and _name != "":
+		lines.append([_name, _heavy, ArenaMeans.INK])
 	if _detail != "":
 		lines.append([_detail, _plain, ArenaMeans.PENCIL])
 	if not _takeable() and _why != "":

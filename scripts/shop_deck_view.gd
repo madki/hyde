@@ -15,7 +15,8 @@ extends Control
 ## on the card's foot, after a coin. Escape, or a click beside the cards, closes the view with nothing
 ## chosen.
 ##
-## While it is open the view takes every key and click, so the page under it does nothing.
+## While it is open the view takes every click, its own keys and the keys that move about a
+## page, so the page under it does nothing; a key it has no use for (F3) goes on.
 ## The cards come in one after another; with ArenaPace.reduce_flashes on, the view only fades.
 
 ## The view begins to go.
@@ -48,6 +49,10 @@ const EASE := 16.0
 ## How deep the fade is at an edge where more cards lie beyond.
 const FADE := 40.0
 
+## The keys the view takes for itself.
+const OWN_KEYS: Array[Key] = [KEY_ESCAPE, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_LEFT, KEY_RIGHT, KEY_UP,
+		KEY_DOWN, KEY_PAGEUP, KEY_PAGEDOWN, KEY_HOME, KEY_END]
+
 ## A key that closes the view as Escape does: the key that opened it.
 var close_key: Key = KEY_NONE
 
@@ -63,6 +68,7 @@ var _cards: Array[ArenaCard] = []
 ## Each card's place in the body, its top left corner, before any lift.
 var _places: Array[Vector2] = []
 var _picker := false
+var _hyde := false
 var _lead_words := ""
 var _at := -1
 var _a_row := 1
@@ -131,6 +137,7 @@ func open(cards: Array, hyde_has_table: bool, picker: bool, heading: String, lea
 	_empty()
 	_entries = cards
 	_picker = picker
+	_hyde = hyde_has_table
 	_lead_words = lead
 	_heading.text = heading
 	_lead.text = lead
@@ -230,7 +237,10 @@ func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not visible or _going:
 		return
-	# Every key is the view's while it is open: the page under it hears none.
+	# The view's own keys, and the keys that would move about the page under it, stop here.
+	# Any other (F3, say) goes on to whoever listens for it.
+	if not _is_ours(key):
+		return
 	get_viewport().set_input_as_handled()
 	if not key.pressed:
 		return
@@ -266,6 +276,17 @@ func _input(event: InputEvent) -> void:
 				close()
 
 
+# True for a key the view uses, and for one the page under it would take (any of the
+# engine's `ui_` actions: Tab, the arrows, Enter).
+func _is_ours(key: InputEventKey) -> bool:
+	if key.keycode in OWN_KEYS or (close_key != KEY_NONE and key.keycode == close_key):
+		return true
+	for action: StringName in InputMap.get_actions():
+		if String(action).begins_with("ui_") and key.is_action(action):
+			return true
+	return false
+
+
 func _gui_input(event: InputEvent) -> void:
 	if _going:
 		return
@@ -292,7 +313,7 @@ func _gui_input(event: InputEvent) -> void:
 			var under := _card_at(motion.position)
 			if under >= 0 and under != _at:
 				_at = under
-				Sfx.play("hover_j", Sfx.vary(), 0.3)
+				ShopKeys.hover(_hyde)
 				_show_lit()
 	elif pan:
 		accept_event()
@@ -314,7 +335,7 @@ func _step(by: int) -> void:
 		else:
 			return
 	_at = next
-	Sfx.play("hover_j", Sfx.vary(), 0.3)
+	ShopKeys.hover(_hyde)
 	_show_lit()
 	var top := _places[_at].y - 14.0
 	var foot := _places[_at].y + ArenaCard.SIZE.y + 14.0
