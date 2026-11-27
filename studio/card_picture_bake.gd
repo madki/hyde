@@ -29,7 +29,9 @@ extends SceneTree
 ## ink on paper. Every line is made `width` pixels of the baked picture wide (the gauges show
 ## the picture about a tenth of its size, so a line much thinner than ten would vanish there),
 ## and the outline is as wide, half inside the shape and half out. `inner`, when given, is the
-## width of the lines inside the shapes instead, for a drawing with many of them close together. The picture is laid out as
+## width of the lines inside the shapes instead, for a drawing with many of them close together.
+## The gauges' pictures are baked with `chalk 6 4` (the cloak and the quill) and `chalk 6 5`
+## (the cane in its hand): thinner than that, the lines break up into dust at the gauge's size. The picture is laid out as
 ## a card's is, PAD and all, so scripts/arena_card_pictures.gd fits either the same way.
 
 const OUT := "res://art/card_pictures/%s.png"
