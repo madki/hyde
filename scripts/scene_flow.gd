@@ -33,6 +33,12 @@ const DAWN_TRIES := 200
 ## new run begins; the places read and change it.
 var run: RulesRun
 
+## True from a run read from a file being handed over (`resume`, or `--run=<path>`) until a
+## screen has taken it: the screen then sets it false.
+var resumed := false
+## The keys of the story told in the run handed over, for the table to take.
+var resumed_story: Array = []
+
 ## True from a change of screen being asked for until its passage is over: a second change
 ## asked for meanwhile is dropped.
 var _changing := false
@@ -45,6 +51,45 @@ func _ready() -> void:
 	_passage = Passage.new()
 	_passage.name = "Passage"
 	add_child(_passage)
+	_take_run_argument()
+
+
+## Takes up the run kept on this machine (RunSave): it becomes the run being played, and the
+## screen changes to the table for a round, or to the place for a dawn. False, and nothing
+## changes, when no run is kept.
+func resume() -> bool:
+	var kept := RunSave.read()
+	if kept.is_empty():
+		return false
+	_hand_over(kept)
+	if run.phase == "play":
+		_change_to(TABLE_SCENE)
+	else:
+		go_to_place()
+	return true
+
+
+# With `--run=<path>` (absolute, or res://), the run in that file is handed over to whichever
+# screen the command line starts; a run at its end is kept for the ending screen too. A file
+# that does not read leaves the game as without the argument.
+func _take_run_argument() -> void:
+	if not Shot.has_arg("run"):
+		return
+	var file_path := Shot.arg("run")
+	var kept := RunSave.read_file(file_path)
+	if kept.is_empty():
+		push_warning("No run could be read from %s; the game starts without it." % file_path)
+		return
+	_hand_over(kept)
+	if run.phase == "end":
+		ended = run
+		ending = str(run.ending) if run.ending != null else ""
+
+
+func _hand_over(kept: Dictionary) -> void:
+	run = kept.run
+	resumed_story = kept.story
+	resumed = true
 
 ## The screen that shows how a run ended, and the ending it is to show: "hyde", "double" or
 ## "myself" (the rules' names).
@@ -60,9 +105,11 @@ var ended: RulesRun
 ## in `ended`, and the screen changes under the passage. False, and nothing changes, if there
 ## is no such screen or a change of screen would be a plain cut (CUT_ARGS): the caller then
 ## shows the ending itself, and the table plays on with a new run. (Under the bench it plays
-## on at dawn too; with `--fast` alone a dawn still goes to its place.)
+## on at dawn too; with `--fast` alone a dawn still goes to its place.) The run kept on this
+## machine (RunSave) is forgotten either way.
 func show_ending(ending_key: String) -> bool:
 	ending = ending_key
+	RunSave.clear()
 	if not ResourceLoader.exists(ENDING_SCENE) or _cuts():
 		return false
 	ended = run
@@ -79,6 +126,7 @@ func is_changing() -> bool:
 ## From the ending: the journal is closed, and the game is at its title again as when it was
 ## started. No run is held, and none that ended: the next begins from the title.
 func close_ending() -> void:
+	RunSave.clear()
 	ended = null
 	ending = ""
 	run = null
