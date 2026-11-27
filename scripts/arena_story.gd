@@ -95,6 +95,24 @@ static func tell(t: ArenaTable, keys: Array[String]) -> void:
 	await _tell_over(t, _in_order(due))
 
 
+## The keys told in the run being played (kept with the run, see RunSave); with `run`, none
+## unless it is that run.
+static func told(run: RulesRun = null) -> Array:
+	if _run == null or _run.get_ref() == null or (run != null and _run.get_ref() != run):
+		return []
+	return _told.keys()
+
+
+## A run taken up again: `keys` were told in it before, and are not told again. The opening's
+## pages were told in that sitting or an earlier one.
+static func take(run: RulesRun, keys: Array) -> void:
+	opened = true
+	_run = weakref(run)
+	_told = {}
+	for key: Variant in keys:
+		_told[str(key)] = true
+
+
 ## Dawn: its line, by its number and the place the run goes to ("lab" or "alley").
 static func dawn(t: ArenaTable) -> void:
 	if t.run.dawn == null:
