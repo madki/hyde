@@ -29,7 +29,7 @@ Apache License 2.0, with its licence file beside it. There are two exceptions,
 both noted under the table: the figure of Jekyll, rendered from a bought model, and most of
 the game's sounds, made from a licensed sound library. No AI-generated image or audio assets.
 
-The cards' pictures in `art/card_pictures/` (the cloak, the quill, the cup, the hourglass and
+The cards' pictures in `art/card_pictures/` (the cloak, the quill, the cane, the cup, the hourglass and
 the mask) were drawn for this game by Sumedha; all rights to them are with the game.
 `studio/card_picture_bake.gd` cuts each drawing out of its sheet and saves it small, with its
 lines and their glow; the sheets themselves are not part of this repository.

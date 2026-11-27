@@ -8,17 +8,18 @@ class_name ArenaCardPictures
 
 ## Paper pictures by key: a Root's Paper side, or a Factor (which has one picture for both men).
 const PAPER := {
-	"lamp": "cloak", "heart": "quill", "mirror": "mirror",
+	"lamp": "cloak", "heart": "quill", "mirror": "cane_hand",
 	"cup": "cup", "eye": "hourglass", "lock": "lock", "pen": "mask", "cane": "cane",
 }
 ## The pictures of the Ink Roots that have one of their own: the others keep their Paper
 ## picture, in Ink's light.
-const INK := {"mirror": "pride"}
+const INK := {}
 ## The pictures that are drawings: the drawing's lines are in the texture's red and their glow
 ## in its green, with DRAWN_PAD pixels of the texture left clear on every side of the drawing.
 const DRAWN := {
 	"cloak": preload("res://art/card_pictures/cloak.png"),
 	"quill": preload("res://art/card_pictures/quill.png"),
+	"cane_hand": preload("res://art/card_pictures/cane_hand.png"),
 	"cup": preload("res://art/card_pictures/cup.png"),
 	"mask": preload("res://art/card_pictures/mask.png"),
 	"hourglass": preload("res://art/card_pictures/hourglass.png"),
@@ -61,18 +62,6 @@ static func add(pencil: Pencil, picture: String, box: Rect2, width: float = 1.5)
 static func lines(picture: String) -> Array[PackedVector2Array]:
 	var out: Array[PackedVector2Array] = []
 	match picture:
-		"mirror":
-			# A hand mirror.
-			out.append(_arc(Vector2(0.5, 0.36), Vector2(0.25, 0.3), 0.0, 360.0))
-			out.append(_arc(Vector2(0.5, 0.36), Vector2(0.19, 0.24), 0.0, 360.0))
-			out.append(_path([0.46, 0.66, 0.45, 0.94, 0.55, 0.94, 0.54, 0.66]))
-			out.append(_path([0.42, 0.3, 0.52, 0.2]))
-		"pride":
-			# The mirror, crowned.
-			out.append(_arc(Vector2(0.5, 0.52), Vector2(0.22, 0.26), 0.0, 360.0))
-			out.append(_path([0.46, 0.78, 0.45, 0.96, 0.55, 0.96, 0.54, 0.78]))
-			out.append(_path([0.3, 0.22, 0.26, 0.04, 0.4, 0.14, 0.5, 0.02, 0.6, 0.14, 0.74, 0.04, 0.7, 0.22, 0.3, 0.22]))
-			out.append(_path([0.4, 0.5, 0.5, 0.4, 0.5, 0.56, 0.6, 0.46]))
 		"lock":
 			# A padlock.
 			out.append(_path([0.22, 0.46, 0.78, 0.46, 0.78, 0.92, 0.22, 0.92, 0.22, 0.46]))
