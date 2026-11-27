@@ -44,9 +44,10 @@ extends Control
 ## `ghost_temper` and `set_lock`. `clear_ghosts()` takes them all away.
 
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
-## Each gauge shows its Root's drawing in chalk: the drawing's clear lines and an outline round
-## its shapes, baked from the sheet the card's picture comes from (studio/card_picture_bake.gd,
-## laid out as a card's picture is), and printed grainy and a little broken.
+## Each gauge shows its Root's drawing in chalk: an outline round its shapes and the few lines
+## inside them that carry the shape, baked from the sheet the card's picture comes from
+## (studio/card_picture_bake.gd) at twice the size it is shown here, SKETCH_BOX and a pixel
+## round it, and printed with a chalk grain.
 const DRAWING_MATERIAL: ShaderMaterial = preload("res://shaders/chalk_drawing_material.tres")
 const PICTURES := {
 	"lamp": preload("res://art/gauge_pictures/cloak.png"),
@@ -59,8 +60,9 @@ const SYMS: Array[String] = ["lamp", "heart", "mirror"]
 ## A gauge: its height, the gap between two (and so the step from one to the next under it,
 ## GAUGE_STEP), and the room inside it, from left to right: the
 ## bracket's, the drawing's, each pip's (three are kept, the third for a rollover and the lock),
-## and the least room each side's tallies are given. The drawing is fitted in a box SKETCH_BOX
-## large around its middle, a little wider than its room, as its edges are mostly clear.
+## and the least room each side's tallies are given. The drawing fills a box SKETCH_BOX large
+## around its middle, a little wider than its room, as its edges are mostly clear (the bake
+## fits it to that box; here it is only centred).
 const GAUGE_H := 32.0
 const GAUGE_GAP := 6.0
 const GAUGE_STEP := GAUGE_H + GAUGE_GAP
@@ -187,7 +189,7 @@ func _init() -> void:
 		_s[sym] = _blank()
 	_lines.material = LINE_MATERIAL
 	_drawings.material = DRAWING_MATERIAL
-	_drawings.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_drawings.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_back.draw.connect(_draw_back)
 	_drawings.draw.connect(_draw_drawings)
 	_lines.draw.connect(_draw_lines)
@@ -886,8 +888,9 @@ func _draw_drawings() -> void:
 	for sym in SYMS:
 		var drawn: Texture2D = PICTURES[sym]
 		var g: Dictionary = _g[sym]
-		var box := Rect2(Vector2(g.sketch_x, g.y) - SKETCH_BOX * 0.5, SKETCH_BOX)
-		_drawings.draw_texture_rect(drawn, ArenaCardPictures.drawing_box(drawn, box), false,
+		var shown := drawn.get_size() * 0.5
+		var at := (Vector2(g.sketch_x, g.y) - shown * 0.5).round()
+		_drawings.draw_texture_rect(drawn, Rect2(at, shown), false,
 				MARK.lerp(INK, float(_s[sym].flash) * 0.6))
 
 

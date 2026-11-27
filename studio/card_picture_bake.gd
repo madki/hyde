@@ -22,17 +22,23 @@ extends SceneTree
 ##
 ## A gauge's picture, art/gauge_pictures/<name>.png, is baked from the same sheet in chalk:
 ##
-##   godot --headless --path . -s studio/card_picture_bake.gd -- /abs/path/drawing.png <name> chalk <width> [inner]
+##   godot --headless --path . -s studio/card_picture_bake.gd -- /abs/path/drawing.png <name> chalk
 ##
-## For a drawing of filled shapes cut through by thin clear lines, it keeps the clear lines and
-## an outline round each shape, and lets the fills go: chalk on a slate, where the cards print
-## ink on paper. Every line is made `width` pixels of the baked picture wide (the gauges show
-## the picture about a tenth of its size, so a line much thinner than ten would vanish there),
-## and the outline is as wide, half inside the shape and half out. `inner`, when given, is the
-## width of the lines inside the shapes instead, for a drawing with many of them close together.
-## The gauges' pictures are baked with `chalk 6 4` (the cloak and the quill) and `chalk 6 5`
-## (the cane in its hand): thinner than that, the lines break up into dust at the gauge's size. The picture is laid out as
-## a card's is, PAD and all, so scripts/arena_card_pictures.gd fits either the same way.
+## For a drawing of filled shapes cut through by thin clear lines, it draws an outline round
+## each shape and lets the fills go: chalk on a slate, where the cards print ink on paper. Of
+## the clear lines inside the shapes only the few that carry the shape are kept, named in KEEP:
+## a clear line is kept where it runs within KEEP_REACH of one of the picture's paths there.
+## The cloak keeps its collar and the edges of the short cape over its shoulders (its facets
+## are too fine for the gauge), the quill the spine of its
+## feather (the inkwell is its outline alone), and the cane its thumb, the cuff's band and the
+## collar under the knob.
+##
+## The picture is baked at twice the size the gauge shows it (scripts/arena_symbols.gd draws it
+## at half its pixels, centred): the drawing and its outline fit CHALK_BOX, with CHALK_PAD clear
+## round it, the picture's sides made even so that every two of its pixels fall on one screen
+## pixel. So the cloak is baked 56 x 58, the quill 44 x 58 and the cane 56 x 54. The outline is
+## CHALK_WIDTH pixels wide, half inside the shape and half out, and the kept lines CHALK_INNER:
+## both 1.5 pixels on the screen. At 2 the cloak's and the quill's lines run together.
 
 const OUT := "res://art/card_pictures/%s.png"
 const CHALK_OUT := "res://art/gauge_pictures/%s.png"
@@ -49,6 +55,31 @@ const CELL_INK := 0.12
 ## most that is added to each side of a line to reach it.
 const LINE_WIDTH := 4.0
 const MOST_THICKEN := 1.0
+## In chalk: the box the drawing is fitted in, the room left round it, and the widths of its
+## outline and of the lines kept inside it, all in pixels of the baked picture.
+const CHALK_BOX := Vector2(52.0, 54.0)
+const CHALK_PAD := 2
+const CHALK_WIDTH := 3.0
+const CHALK_INNER := 3.0
+## The clear lines kept inside each drawing in chalk: paths, in pixels of its sheet (2048
+## square), that a kept line runs along, and how near to one a line must be to be kept.
+const KEEP := {
+	"cloak": [
+		[Vector2(975, 585), Vector2(1020, 715), Vector2(1075, 585)],
+		[Vector2(1015, 735), Vector2(945, 970), Vector2(835, 925)],
+		[Vector2(1030, 735), Vector2(1110, 970), Vector2(1220, 925)],
+	],
+	"quill": [
+		[Vector2(1010, 630), Vector2(930, 730), Vector2(850, 850), Vector2(790, 960),
+				Vector2(740, 1060), Vector2(695, 1160), Vector2(660, 1290)],
+	],
+	"cane_hand": [
+		[Vector2(1080, 695), Vector2(1140, 635), Vector2(1210, 662)],
+		[Vector2(1155, 930), Vector2(1295, 825)],
+		[Vector2(1308, 488), Vector2(1352, 532)],
+	],
+}
+const KEEP_REACH := 35.0
 ## In chalk, how wide a clear line can be, in pixels of the sheet, and still be closed up when
 ## the drawing's shapes are found.
 const CLOSE_FOR := 40.0
@@ -59,9 +90,9 @@ var _size := Vector2i.ZERO
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
-	var chalk := args.size() >= 4 and args.size() <= 5 and args[2] == "chalk"
-	if args.size() < 2 or args.size() > 3 and not chalk:
-		printerr("usage: -- /abs/path/drawing.png <name> [thicken], or <name> chalk <width> [inner]")
+	var chalk := args.size() == 3 and args[2] == "chalk"
+	if args.size() < 2 or args.size() > 3 or chalk and not KEEP.has(args[1]):
+		printerr("usage: -- /abs/path/drawing.png <name> [thicken], or <name> chalk (for a name in KEEP)")
 		quit(1)
 		return
 	var sheet := Image.load_from_file(args[0])
@@ -97,30 +128,39 @@ func _init() -> void:
 
 	# The drawing in the middle of a square, as greys, made small. In chalk the outline reaches
 	# out past the shapes, so room is left for it.
-	var inner := OUT_SIDE - PAD * 2
-	var scale := float(inner) / maxi(found.size.x, found.size.y)
+	var pad := CHALK_PAD if chalk else PAD
+	var box := CHALK_BOX if chalk else Vector2.ONE * (OUT_SIDE - PAD * 2)
+	var scale := minf(box.x / found.size.x, box.y / found.size.y)
 	if chalk:
-		found = found.grow(int(ceil(float(args[3]) / scale))).intersection(Rect2i(Vector2i.ZERO, size))
-		scale = float(inner) / maxi(found.size.x, found.size.y)
+		found = found.grow(int(ceil(CHALK_WIDTH / scale))).intersection(Rect2i(Vector2i.ZERO, size))
+		scale = minf(box.x / found.size.x, box.y / found.size.y)
 	var cut := Image.create(found.size.x, found.size.y, false, Image.FORMAT_L8)
 	var cut_bytes := PackedByteArray()
 	cut_bytes.resize(found.size.x * found.size.y)
 	for y in found.size.y:
 		for x in found.size.x:
 			cut_bytes[y * found.size.x + x] = int(round(ink[(found.position.y + y) * size.x + found.position.x + x] * 255.0))
-	var thicken_given := args.size() == 3
+	var thicken_given := args.size() == 3 and not chalk
 	if chalk:
-		var inner_width := float(args[4] if args.size() == 5 else args[3])
-		cut_bytes = _chalk(cut_bytes, found.size, float(args[3]) / scale, inner_width / scale)
+		var keep: Array[PackedVector2Array] = []
+		for path: Array in KEEP[args[1]]:
+			var local := PackedVector2Array()
+			for point: Vector2 in path:
+				local.append(point - Vector2(found.position))
+			keep.append(local)
+		cut_bytes = _chalk(cut_bytes, found.size, CHALK_WIDTH / scale, CHALK_INNER / scale, keep)
 	elif thicken_given and float(args[2]) < 0.0:
 		cut_bytes = _widen_gaps(cut_bytes, found.size, -float(args[2]) / scale)
 	cut.set_data(found.size.x, found.size.y, false, Image.FORMAT_L8, cut_bytes)
 	var small := Vector2i(maxi(1, int(round(found.size.x * scale))), maxi(1, int(round(found.size.y * scale))))
 	cut.resize(small.x, small.y, Image.INTERPOLATE_LANCZOS)
-	_size = small + Vector2i(PAD, PAD) * 2
+	_size = small + Vector2i(pad, pad) * 2
+	if chalk:
+		# Even, so that at half size each pixel of the picture is a whole pixel of the screen.
+		_size += _size % 2
 	var lines := PackedFloat32Array()
 	lines.resize(_size.x * _size.y)
-	var at := Vector2i(PAD, PAD)
+	var at := Vector2i(pad, pad)
 	var small_bytes := cut.get_data()
 	for y in small.y:
 		for x in small.x:
@@ -269,11 +309,13 @@ func _widen_gaps(greys: PackedByteArray, size: Vector2i, by: float) -> PackedByt
 	return out
 
 
-## The chalk of a drawing (greys, `size` pixels) of filled shapes cut by clear lines: the clear
-## lines inside the shapes, `inner` pixels wide, and an outline round each, `width` wide. A shape is the
+## The chalk of a drawing (greys, `size` pixels) of filled shapes cut by clear lines: an
+## outline round each shape, `width` pixels wide, and the clear lines inside the shapes that
+## run along the paths of `keep`, `inner` wide. A shape is the
 ## ink with its clear lines closed up (any gap narrower than CLOSE_FOR across is filled) and
 ## every hole in it filled.
-func _chalk(greys: PackedByteArray, size: Vector2i, width: float, inner: float) -> PackedByteArray:
+func _chalk(greys: PackedByteArray, size: Vector2i, width: float, inner: float,
+		keep: Array[PackedVector2Array]) -> PackedByteArray:
 	var count := size.x * size.y
 	var close_by := maxf(width, CLOSE_FOR) * 0.5
 	var ink := PackedByteArray()
@@ -311,7 +353,7 @@ func _chalk(greys: PackedByteArray, size: Vector2i, width: float, inner: float) 
 	gaps.resize(count)
 	for i in count:
 		shape[i] = 1 - outside[i]
-		gaps[i] = 1 if shape[i] == 1 and ink[i] == 0 else 0
+		gaps[i] = 1 if shape[i] == 1 and ink[i] == 0 and _near(i % size.x, i / size.x, keep) else 0
 	var from_shape := _distance(shape, size, false)
 	var from_outline := _distance(outside, size, false)
 	var from_gap := _distance(gaps, size, false)
@@ -323,6 +365,18 @@ func _chalk(greys: PackedByteArray, size: Vector2i, width: float, inner: float) 
 		var c := maxf(clampf(half + 0.5 - edge, 0.0, 1.0), clampf(inner * 0.5 + 0.5 - from_gap[i], 0.0, 1.0))
 		out[i] = int(round(c * 255.0))
 	return out
+
+
+## Whether the pixel at (x, y) is within KEEP_REACH of one of the paths.
+func _near(x: int, y: int, paths: Array[PackedVector2Array]) -> bool:
+	var at := Vector2(x, y)
+	for path in paths:
+		if path.size() == 1 and at.distance_to(path[0]) <= KEEP_REACH:
+			return true
+		for k in path.size() - 1:
+			if at.distance_to(Geometry2D.get_closest_point_to_segment(at, path[k], path[k + 1])) <= KEEP_REACH:
+				return true
+	return false
 
 
 ## How far every pixel is from the nearest one that is set in `marks`, in pixels (a little
