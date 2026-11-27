@@ -5,7 +5,7 @@ extends Control
 ## Lamp, Heart and Mirror are three gauges, one under another at the top of the left column,
 ## each between brackets on a slip of cream stock that reads on the slate and on Hyde's ink
 ## alike, beginning at the column's left edge and as wide as its marks need. A gauge reads
-## from left to right: Habit as ink tallies, the symbol's small sketch, Craving as ink pips
+## from left to right: Habit as ink tallies, the symbol's Root's drawing in chalk, Craving as ink pips
 ## (two places; a third shows only while Craving rolls over), a bar, and Temper as pencil
 ## tallies. A side with nothing on it has a dash. Under the top rule, in the centre, lies the line, as
 ## a banner: Paper Roots as pencil tallies to the left of a centre mark, Ink Roots as ink
@@ -27,7 +27,7 @@ extends Control
 ##   tally, the pips are left empty.
 ## - `turn(sym, temper_to)`: the filled pips travel into Temper, one tally each.
 ## - `set_habit(sym, n)`, `set_temper(sym, n)`: tallies drawn or taken away.
-## - `flash(sym)`: the sketch pulses.
+## - `flash(sym)`: the drawing pulses.
 ## - `set_pay(sym, row, words, pulse)`: a gauge that pays ("temper" or "habit"): its tallies
 ##   pulse by `pulse` and "Temper 2" stands beside it, as strong as `words` (each 0 to 1). The
 ##   beat that pays drives both, through the beat queue. `pay_place(sym, row)` is where its
@@ -44,19 +44,29 @@ extends Control
 ## `ghost_temper` and `set_lock`. `clear_ghosts()` takes them all away.
 
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
+## Each gauge shows its Root's drawing in chalk: the drawing's clear lines and an outline round
+## its shapes, baked from the sheet the card's picture comes from (studio/card_picture_bake.gd,
+## laid out as a card's picture is), and printed grainy and a little broken.
+const DRAWING_MATERIAL: ShaderMaterial = preload("res://shaders/chalk_drawing_material.tres")
+const PICTURES := {
+	"lamp": preload("res://art/gauge_pictures/cloak.png"),
+	"heart": preload("res://art/gauge_pictures/quill.png"),
+	"mirror": preload("res://art/gauge_pictures/cane_hand.png"),
+}
 
 const SYMS: Array[String] = ["lamp", "heart", "mirror"]
 
 ## A gauge: its height, the gap between two (and so the step from one to the next under it,
 ## GAUGE_STEP), and the room inside it, from left to right: the
-## bracket's, the sketch's, each pip's (three are kept, the third for a rollover and the lock),
-## and the least room each side's tallies are given.
+## bracket's, the drawing's, each pip's (three are kept, the third for a rollover and the lock),
+## and the least room each side's tallies are given. The drawing is fitted in a box SKETCH_BOX
+## large around its middle, a little wider than its room, as its edges are mostly clear.
 const GAUGE_H := 32.0
 const GAUGE_GAP := 6.0
 const GAUGE_STEP := GAUGE_H + GAUGE_GAP
 const PAD := 9.0
 const SKETCH_W := 22.0
-const SKETCH_SCALE := 0.4
+const SKETCH_BOX := Vector2(26.0, 27.0)
 const PIP_R := 5.0
 const PIP_PITCH := 13.0
 const SIDE_MIN := 14.0
@@ -158,6 +168,7 @@ var _gap := TALLY_GAP
 var _travel: Array[Dictionary] = []
 
 var _back := Control.new()
+var _drawings := Control.new()
 var _lines := Control.new()
 var _fills := Control.new()
 var _text := Control.new()
@@ -175,11 +186,14 @@ func _init() -> void:
 	for sym in SYMS:
 		_s[sym] = _blank()
 	_lines.material = LINE_MATERIAL
+	_drawings.material = DRAWING_MATERIAL
+	_drawings.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_back.draw.connect(_draw_back)
+	_drawings.draw.connect(_draw_drawings)
 	_lines.draw.connect(_draw_lines)
 	_fills.draw.connect(_draw_fills)
 	_text.draw.connect(_draw_text)
-	for child: Control in [_back, _lines, _fills, _text]:
+	for child: Control in [_back, _drawings, _lines, _fills, _text]:
 		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(child)
 	_rest.one_shot = true
@@ -345,7 +359,7 @@ func set_craving(sym: String, n: int) -> void:
 
 
 ## Craving reaches three: the third pip appears and fills, the three join and burn into one
-## Habit tally, and the pips are left empty. The sketch pulses and Habit's number shows.
+## Habit tally, and the pips are left empty. The drawing pulses and Habit's number shows.
 func rollover(sym: String, habit_to: int) -> void:
 	var s: Dictionary = _s[sym]
 	var from: Array = s.fill.duplicate()
@@ -413,7 +427,7 @@ func set_temper(sym: String, n: int) -> void:
 	await _grow_tallies(sym, "temper", n)
 
 
-## The sketch pulses.
+## The drawing pulses.
 func flash(sym: String) -> void:
 	var s: Dictionary = _s[sym]
 	await _tween(FLASH_TIME, func(t: float) -> void: s.flash = sin(t * PI))
@@ -598,7 +612,7 @@ func _traveller(from: Vector2, to: Vector2, from_colour: Color, to_colour: Color
 
 func _redraw() -> void:
 	_measure()
-	for child: Control in [_back, _lines, _fills, _text]:
+	for child: Control in [_back, _drawings, _lines, _fills, _text]:
 		child.queue_redraw()
 
 
@@ -606,7 +620,7 @@ func _redraw() -> void:
 
 
 func _lay_out() -> void:
-	for child: Control in [_back, _lines, _fills, _text]:
+	for child: Control in [_back, _drawings, _lines, _fills, _text]:
 		child.size = size
 	_redraw()
 
@@ -686,7 +700,7 @@ func _y(sym: String) -> float:
 	return _g[sym].y
 
 
-## The middle of a symbol's sketch, on the page: where what its gauges pay comes from.
+## The middle of a symbol's drawing, on the page: where what its gauges pay comes from.
 func sketch_place(sym: String) -> Vector2:
 	_measure()
 	return get_global_transform() * Vector2(_g[sym].sketch_x, _y(sym))
@@ -867,7 +881,17 @@ func _roll_slip(sym: String) -> Rect2:
 	return Rect2(r.end.x + 3.0, r.get_center().y - 8.0, w, 16.0)
 
 
-## Every pencil line: the brackets, the sketches, the pips' rims, the tallies, the ghosts, the
+## Each symbol's Root's drawing in chalk, pulled toward Hyde's light while it flashes.
+func _draw_drawings() -> void:
+	for sym in SYMS:
+		var drawn: Texture2D = PICTURES[sym]
+		var g: Dictionary = _g[sym]
+		var box := Rect2(Vector2(g.sketch_x, g.y) - SKETCH_BOX * 0.5, SKETCH_BOX)
+		_drawings.draw_texture_rect(drawn, ArenaCardPictures.drawing_box(drawn, box), false,
+				MARK.lerp(INK, float(_s[sym].flash) * 0.6))
+
+
+## Every pencil line: the brackets, the pips' rims, the tallies, the ghosts, the
 ## lock and the line.
 func _draw_lines() -> void:
 	for i in 3:
@@ -895,10 +919,6 @@ func _draw_lines() -> void:
 				var x: float = g[row + "_x"]
 				frame.stroke(PackedVector2Array([Vector2(x + 2.0, g.y + 0.5), Vector2(x + 9.0, g.y)]), 1.5, 0.3)
 		frame.draw(_lines)
-		var sketch := Pencil.new(seed_base)
-		sketch.colour = MARK.lerp(INK, s.flash * 0.6)
-		_sketch(sketch, sym, Vector2(g.sketch_x, g.y), SKETCH_SCALE)
-		sketch.draw(_lines)
 		# The pips' rims: two always, the third while it is there.
 		var rims := Pencil.new(seed_base + 1)
 		for k in 3:
@@ -1248,40 +1268,3 @@ func _lock_path(pencil: Pencil, at: Vector2, a: float) -> void:
 	pencil.colour = _faint(FRAME, a)
 	pencil.stroke(_rect_path(Rect2(at + Vector2(-4.5, 0.0), Vector2(9.0, 8.0))), 1.4, 0.15)
 	pencil.stroke(_arc(at, Vector2(3.0, 4.0), PI, TAU, 8), 1.4, 0.15)
-
-
-## The placeholder sketch of a symbol around `c`, as the page's own pencil drawings, `k` times
-## the size it is written at below (its lines a little heavier than that would make them).
-func _sketch(pencil: Pencil, sym: String, c: Vector2, k: float = 1.0) -> void:
-	var w := lerpf(k, 1.0, 0.45)
-	match sym:
-		"lamp":
-			# An oil lamp: a foot, a round fount, a collar, and a tall chimney with its flame.
-			pencil.stroke(PackedVector2Array([c + Vector2(-18, 34) * k, c + Vector2(18, 34) * k]), 2.0 * w, 0.6 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-8, 33) * k, c + Vector2(-5, 22) * k, c + Vector2(5, 22) * k, c + Vector2(8, 33) * k]), 1.7 * w, 0.5 * k)
-			pencil.stroke(_ellipse(c + Vector2(0, 11) * k, Vector2(16, 11) * k, 22), 1.9 * w, 0.6 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-8, 0) * k, c + Vector2(8, 0) * k]), 1.7 * w, 0.4 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-5, -1) * k, c + Vector2(-9, -14) * k, c + Vector2(-6, -34) * k]), 1.6 * w, 0.5 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(5, -1) * k, c + Vector2(9, -14) * k, c + Vector2(6, -34) * k]), 1.6 * w, 0.5 * k)
-			pencil.stroke(_arc(c + Vector2(0, -12) * k, Vector2(3, 7) * k, PI * 0.1, PI * 1.9, 14), 1.4 * w, 0.3 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-12, 9) * k, c + Vector2(-9, 15) * k]), 1.0 * w, 0.3 * k)
-		"heart":
-			# A heart as in an anatomy plate: the lobed body leaning left, the great vessels above.
-			var body := PackedVector2Array()
-			for step in 31:
-				var t := TAU * step / 30.0
-				var x := 16.0 * pow(sin(t), 3.0)
-				var y := -(13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t))
-				body.append(c + Vector2(x * 1.2, y * 1.2 + 8.0).rotated(-0.25) * k)
-			pencil.stroke(body, 2.0 * w, 0.6 * k)
-			pencil.stroke(_arc(c + Vector2(4, -16) * k, Vector2(9, 10) * k, PI, PI * 2.0, 12), 2.0 * w, 0.5 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-5, -15) * k, c + Vector2(-5, -30) * k]), 1.7 * w, 0.5 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(12, -15) * k, c + Vector2(14, -28) * k]), 1.7 * w, 0.5 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-2, -4) * k, c + Vector2(4, 12) * k, c + Vector2(2, 26) * k]), 1.0 * w, 0.4 * k)
-		"mirror":
-			# A hand mirror: an oval glass in its frame, a handle, and a glint.
-			pencil.stroke(_ellipse(c + Vector2(0, -8) * k, Vector2(20, 25) * k, 30), 2.0 * w, 0.6 * k)
-			pencil.stroke(_ellipse(c + Vector2(0, -8) * k, Vector2(16, 21) * k, 28), 1.2 * w, 0.4 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-4, 16) * k, c + Vector2(-4, 36) * k, c + Vector2(4, 36) * k, c + Vector2(4, 16) * k]), 1.8 * w, 0.5 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-9, -20) * k, c + Vector2(-3, -27) * k]), 1.3 * w, 0.3 * k)
-			pencil.stroke(PackedVector2Array([c + Vector2(-10, -12) * k, c + Vector2(-6, -16) * k]), 1.0 * w, 0.3 * k)
