@@ -548,48 +548,60 @@ func _draw_shadow() -> void:
 
 # The sheet: its paper, what its tone lays behind the cards, the arrow, and its edge on top.
 func _draw_sheet() -> void:
-	var rect := Rect2(Vector2.ZERO, _sheet.size)
+	draw_sheet(_sheet, Rect2(Vector2.ZERO, _sheet.size), _tone_name, _cards_box,
+			hash(_title.text) + _cards.size() * 31 + _after.size() * 7, _arrow)
+
+
+## Draws a notice's sheet on `on`, over `rect`: its paper in the tone named (a key of TONES),
+## what the tone lays behind `box` (the blot of "hyde", the lamp light of "jekyll"; a box of
+## no area puts it at the middle of the sheet), an arrow from `arrow[0]` to `arrow[1]` if two
+## points are given, and the edge on top. The same `blot_seed` always gives the same blot.
+## For another sheet of the same paper; `on` should cut its drawing off at its edge
+## (`clip_contents`), since a blot may reach past it.
+static func draw_sheet(on: CanvasItem, rect: Rect2, tone_name: String, box: Rect2, blot_seed: int,
+		arrow := PackedVector2Array()) -> void:
+	var tone: Dictionary = TONES[tone_name]
 	var paper := StyleBoxFlat.new()
-	paper.bg_color = _tone.fill
+	paper.bg_color = tone.fill
 	paper.set_corner_radius_all(4)
-	_sheet.draw_style_box(paper, rect)
-	match _tone_name:
+	on.draw_style_box(paper, rect)
+	match tone_name:
 		"hyde":
-			_draw_blot(rect)
+			_draw_blot(on, rect, box, blot_seed)
 		"jekyll":
-			_draw_lamp_light(rect)
-	if _arrow.size() == 2:
-		var way := (_arrow[1] - _arrow[0]).normalized()
+			_draw_lamp_light(on, rect, box)
+	if arrow.size() == 2:
+		var way := (arrow[1] - arrow[0]).normalized()
 		var side := Vector2(-way.y, way.x)
-		for pass_: Array in [[7.0, Palette.OUTLINE, 3.0], [3.0, _tone.arrow, 0.0]]:
+		for pass_: Array in [[7.0, Palette.OUTLINE, 3.0], [3.0, tone.arrow, 0.0]]:
 			var colour: Color = pass_[1]
 			var grow: float = pass_[2]
-			_sheet.draw_line(_arrow[0] - way * grow * 0.5, _arrow[1], colour, pass_[0], true)
-			_sheet.draw_colored_polygon(PackedVector2Array([
-				_arrow[1] + way * (10.0 + grow), _arrow[1] + side * (8.0 + grow) - way * grow * 0.4,
-				_arrow[1] - side * (8.0 + grow) - way * grow * 0.4]), colour)
+			on.draw_line(arrow[0] - way * grow * 0.5, arrow[1], colour, pass_[0], true)
+			on.draw_colored_polygon(PackedVector2Array([
+				arrow[1] + way * (10.0 + grow), arrow[1] + side * (8.0 + grow) - way * grow * 0.4,
+				arrow[1] - side * (8.0 + grow) - way * grow * 0.4]), colour)
 	var edge := StyleBoxFlat.new()
 	edge.draw_center = false
-	edge.border_color = _tone.edge
+	edge.border_color = tone.edge
 	edge.set_border_width_all(2)
 	edge.set_corner_radius_all(4)
-	_sheet.draw_style_box(edge, rect)
-	if _tone_name != "plain":
+	on.draw_style_box(edge, rect)
+	if tone_name != "plain":
 		# A hairline of the owner's light inside the edge.
 		var hair := StyleBoxFlat.new()
 		hair.draw_center = false
-		hair.border_color = Color(_tone.title, 0.35)
+		hair.border_color = Color(tone.title, 0.35)
 		hair.set_border_width_all(1)
 		hair.set_corner_radius_all(2)
-		_sheet.draw_style_box(hair, rect.grow(-5.0))
+		on.draw_style_box(hair, rect.grow(-5.0))
 
 
 # Hyde's: a blot of ink behind the cards (or behind the writing, without cards), with drops
 # thrown off it, and his light low in it. The same notice always has the same blot.
-func _draw_blot(rect: Rect2) -> void:
-	var box := _cards_box if _cards_box.has_area() else Rect2(rect.size.x * 0.25, rect.size.y * 0.3, rect.size.x * 0.5, rect.size.y * 0.3)
+static func _draw_blot(on: CanvasItem, rect: Rect2, cards_box: Rect2, blot_seed: int) -> void:
+	var box := cards_box if cards_box.has_area() else Rect2(rect.size.x * 0.25, rect.size.y * 0.3, rect.size.x * 0.5, rect.size.y * 0.3)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(_title.text) + _cards.size() * 31 + _after.size() * 7
+	rng.seed = blot_seed
 	var middle := box.get_center()
 	var reach := Vector2(box.size.x * 0.5 + 34.0, box.size.y * 0.5 + 6.0)
 	# The body, then a deeper bloom inside it: each an oval with an uneven edge of small lobes.
@@ -597,33 +609,33 @@ func _draw_blot(rect: Rect2) -> void:
 		var colour: Color = layer[0]
 		var share: float = layer[1]
 		var oval := reach * share
-		_sheet.draw_set_transform(middle, 0.0, Vector2(oval.x / oval.y, 1.0))
-		_sheet.draw_circle(Vector2.ZERO, oval.y, colour, true, -1.0, true)
-		_sheet.draw_set_transform(Vector2.ZERO)
+		on.draw_set_transform(middle, 0.0, Vector2(oval.x / oval.y, 1.0))
+		on.draw_circle(Vector2.ZERO, oval.y, colour, true, -1.0, true)
+		on.draw_set_transform(Vector2.ZERO)
 		for i: int in layer[2]:
 			var angle := (i + rng.randf_range(-0.4, 0.4)) * TAU / float(layer[2])
 			var radius := rng.randf_range(9.0, 24.0) * share
 			var at := middle + Vector2(cos(angle) * oval.x, sin(angle) * oval.y) * rng.randf_range(0.9, 1.0)
-			_sheet.draw_circle(at, radius, colour, true, -1.0, true)
+			on.draw_circle(at, radius, colour, true, -1.0, true)
 	# His light, low in the blot.
 	for i in 6:
-		_sheet.draw_set_transform(middle + Vector2(0.0, reach.y * 0.25), 0.0, Vector2(reach.x / reach.y, 1.0))
-		_sheet.draw_circle(Vector2.ZERO, reach.y * (0.95 - i * 0.13), Color(Palette.HYDE, 0.035), true, -1.0, true)
-	_sheet.draw_set_transform(Vector2.ZERO)
+		on.draw_set_transform(middle + Vector2(0.0, reach.y * 0.25), 0.0, Vector2(reach.x / reach.y, 1.0))
+		on.draw_circle(Vector2.ZERO, reach.y * (0.95 - i * 0.13), Color(Palette.HYDE, 0.035), true, -1.0, true)
+	on.draw_set_transform(Vector2.ZERO)
 	# Drops thrown off it.
 	for i in 14:
 		var angle := rng.randf() * TAU
 		var far := rng.randf_range(1.02, 1.3)
 		var at := middle + Vector2(cos(angle) * reach.x * far, sin(angle) * reach.y * far)
-		_sheet.draw_circle(at, rng.randf_range(2.0, 6.5), Palette.INK_BODY if i % 3 else Palette.INK_BLOOM, true, -1.0, true)
+		on.draw_circle(at, rng.randf_range(2.0, 6.5), Palette.INK_BODY if i % 3 else Palette.INK_BLOOM, true, -1.0, true)
 
 
 # Jekyll's: a lamp's light falling from over the cards onto clean paper.
-func _draw_lamp_light(rect: Rect2) -> void:
-	var box := _cards_box if _cards_box.has_area() else Rect2(rect.size.x * 0.25, rect.size.y * 0.3, rect.size.x * 0.5, rect.size.y * 0.3)
+static func _draw_lamp_light(on: CanvasItem, rect: Rect2, cards_box: Rect2) -> void:
+	var box := cards_box if cards_box.has_area() else Rect2(rect.size.x * 0.25, rect.size.y * 0.3, rect.size.x * 0.5, rect.size.y * 0.3)
 	var middle := Vector2(rect.size.x * 0.5, box.position.y + box.size.y * 0.4)
 	var reach := Vector2(maxf(box.size.x * 0.5 + 90.0, rect.size.x * 0.42), box.size.y * 0.5 + 60.0)
-	_sheet.draw_set_transform(middle, 0.0, Vector2(reach.x / reach.y, 1.0))
+	on.draw_set_transform(middle, 0.0, Vector2(reach.x / reach.y, 1.0))
 	for i in 40:
-		_sheet.draw_circle(Vector2.ZERO, reach.y * (1.0 - i / 40.0), Color(Palette.JEKYLL, 0.007), true, -1.0, true)
-	_sheet.draw_set_transform(Vector2.ZERO)
+		on.draw_circle(Vector2.ZERO, reach.y * (1.0 - i / 40.0), Color(Palette.JEKYLL, 0.007), true, -1.0, true)
+	on.draw_set_transform(Vector2.ZERO)
