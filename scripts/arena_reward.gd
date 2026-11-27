@@ -8,8 +8,8 @@ extends Control
 ## A card the pointer rests on (ArenaViews.REST seconds, still) has its note, the hand's
 ## (ArenaCardNote): what it is and what it is worth now. The caption lies on the row's top,
 ## so the note opens under "Take none", in the hand's zone, which is empty then, at the page's
-## middle whichever card it is of. `--reward_note=<place>` (from 0) holds the
-## note of that card open, for a still.
+## middle whichever card it is of. With `--shot`, `--reward_note=<place>` (from 0) holds the
+## note of that card open, for the still.
 ##
 ## It only asks: `offer` the card nodes (they stay where they lie, on the layer cards travel
 ## on) with their notes' words, and await `chosen`, which gives the place of the card taken,
@@ -25,6 +25,14 @@ const NOTE_GAP := 8.0
 
 ## True while the player is choosing.
 var waiting := false
+## True while a notice, the help book or the piles' view lies over the page (ArenaViews):
+## no note opens, and one that is open closes. The pointer must rest anew once it lifts.
+var covered := false:
+	set(value):
+		covered = value
+		if covered:
+			_note_wait = -1
+			_close_note()
 
 var _cards: Array = []
 ## Where each card lies at rest: its position and its scale.
@@ -41,7 +49,7 @@ var _note_wait := -1
 var _note_left := 0.0
 var _note_point := Vector2.INF
 ## The place of the card whose note `--reward_note` holds open, or -1.
-var _forced_note := int(Shot.arg("reward_note")) if Shot.has_arg("reward_note") else -1
+var _forced_note := int(Shot.arg("reward_note")) if Shot.has_arg("shot") and Shot.has_arg("reward_note") else -1
 
 
 func _init() -> void:
@@ -172,13 +180,13 @@ func _under() -> int:
 
 
 # Each frame: the note of the card under the pointer opens once the pointer has rested on it,
-# and closes when the pointer leaves it or a key is held to look.
+# and closes when the pointer leaves it, a key is held to look or the page is covered.
 func _follow_note(under: int, delta: float) -> void:
 	var point := get_global_mouse_position()
 	var looking := false
 	for key: Key in ArenaBeats.LOOK_KEYS:
 		looking = looking or Input.is_key_pressed(key)
-	if under < 0 or looking:
+	if under < 0 or looking or covered:
 		_note_wait = -1
 		_close_note()
 	elif under != _noted:

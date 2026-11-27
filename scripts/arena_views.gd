@@ -99,7 +99,7 @@ func _init() -> void:
 	_deck.closed.connect(func() -> void:
 		# The hand takes the pointer again, unless a move has begun meanwhile.
 		_deck_up = false
-		t.hand.covered = _covering()
+		_cover(_covering())
 		t.hand.enabled = _open)
 	_notebook.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A written word, as PLAY and DISCARD are, and smaller.
@@ -171,7 +171,7 @@ func _process(delta: float) -> void:
 	if t == null:
 		return
 	# Under a notice, the help book or the piles' view no card of the hand answers the pointer.
-	t.hand.covered = _covering()
+	_cover(_covering())
 	# Nothing here follows the pointer while the book is open.
 	if _table.is_empty() or _book.is_open():
 		return
@@ -251,6 +251,13 @@ func _notice_up() -> bool:
 # True while something lies over the hand: a notice, the help book or the piles' view.
 func _covering() -> bool:
 	return _notice_up() or _book.is_open() or _deck_up
+
+
+# The hand's cards and the reward's notes do not answer the pointer while `on`.
+func _cover(on: bool) -> void:
+	t.hand.covered = on
+	if t.reward != null:
+		t.reward.covered = on
 
 
 # The thing under the pointer: {name}, or empty for none.
@@ -355,7 +362,7 @@ func _open_help() -> void:
 	_tabs.lit = ""
 	var gauge_last := _gauge_at >= 0 and Time.get_ticks_msec() - _gauge_at < GAUGE_FRESH
 	_book.open(HelpPages.page_for(_table, gauge_last), _table.stance == "hyde", t.run.dials)
-	t.hand.covered = true
+	_cover(true)
 
 
 # Shows the note with these words, its top left corner at `at`, or `centred` across the page
@@ -539,7 +546,7 @@ func _open_pile(which: String) -> void:
 		return
 	_deck.open(which)
 	_deck_up = true
-	t.hand.covered = true
+	_cover(true)
 	_note.visible = false
 	# The hand lies under the view: no card of it takes the pointer while the view is open.
 	t.hand.enabled = false

@@ -105,10 +105,8 @@ var _resting: ArenaCard
 ## A screenshot must not depend on where the pointer happens to rest, nor catch a card midway.
 var _still := Shot.has_arg("shot")
 
-## The note of the card the pointer rests on, and its words.
-var _note := PanelContainer.new()
-var _note_words := Label.new()
-var _note_font := FontVariation.new()
+## The note of the card the pointer rests on.
+var _note := ArenaCardNote.new()
 ## The card the note is about (null while it is closed); the card whose note waits for the
 ## pointer to rest, how much longer it waits, and where the pointer was.
 var _noted: ArenaCard
@@ -674,25 +672,9 @@ const NOTE_GAP := 8.0
 const NOTE_TILT_ROOM := 6.0
 
 
-# The note, in the look of the page's other notes (ArenaViews): cream, pencilled, 14 px.
+# The note (ArenaCardNote), in the look of the page's other notes.
 func _build_note() -> void:
-	_note_font.base_font = ThemeDB.fallback_font
-	_note_font.variation_embolden = 0.5
-	var box := StyleBoxFlat.new()
-	box.bg_color = ArenaViews.CREAM
-	box.border_color = ArenaViews.PENCIL
-	box.set_border_width_all(2)
-	box.set_corner_radius_all(3)
-	box.set_content_margin_all(12)
-	box.shadow_color = Color(Palette.OUTLINE, 0.3)
-	box.shadow_size = 5
-	_note.add_theme_stylebox_override("panel", box)
-	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_note.visible = false
-	_note_words.add_theme_font_override("font", _note_font)
-	_note_words.add_theme_font_size_override("font_size", ArenaViews.NOTE_SIZE)
-	_note_words.add_theme_color_override("font_color", ArenaViews.PENCIL)
-	_note.add_child(_note_words)
+	_note.width = NOTE_WIDTH
 	add_child(_note)
 	if _still and _forced_note >= 0:
 		get_tree().process_frame.connect(_force_note)
@@ -742,7 +724,7 @@ func _open_note(card: ArenaCard) -> void:
 		_close_note()
 		return
 	_noted = card
-	_set_note_words(words)
+	_note.say(words)
 	move_child(_note, get_child_count() - 1)
 	_note.visible = true
 	_place_note()
@@ -775,25 +757,6 @@ func _force_note() -> void:
 	_restack()
 	_fit_titles()
 	_open_note(card)
-
-
-# Puts the note's words in, broken into lines no wider than NOTE_WIDTH.
-func _set_note_words(words: String) -> void:
-	var px := ArenaViews.NOTE_SIZE
-	var lines := PackedStringArray()
-	for said in words.split("\n"):
-		var line := ""
-		for word in said.split(" ", false):
-			var next := word if line == "" else line + " " + word
-			if line != "" and _note_font.get_string_size(next, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > NOTE_WIDTH:
-				lines.append(line)
-				line = word
-			else:
-				line = next
-		lines.append(line)
-	_note_words.text = "\n".join(lines)
-	_note.size = Vector2.ZERO
-	_note.reset_size()
 
 
 # Above the row, clear of every card's title, its middle over the card's where the page has
