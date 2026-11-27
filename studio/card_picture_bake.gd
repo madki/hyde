@@ -19,8 +19,21 @@ extends SceneTree
 ## is cut back by that much on each side, and a line too thin to be cut back is left as drawn.
 ## That is done on the sheet itself, before the drawing is made small, so the gaps keep clean
 ## edges.
+##
+## A gauge's picture, art/gauge_pictures/<name>.png, is baked from the same sheet in chalk:
+##
+##   godot --headless --path . -s studio/card_picture_bake.gd -- /abs/path/drawing.png <name> chalk <width> [inner]
+##
+## For a drawing of filled shapes cut through by thin clear lines, it keeps the clear lines and
+## an outline round each shape, and lets the fills go: chalk on a slate, where the cards print
+## ink on paper. Every line is made `width` pixels of the baked picture wide (the gauges show
+## the picture about a tenth of its size, so a line much thinner than ten would vanish there),
+## and the outline is as wide, half inside the shape and half out. `inner`, when given, is the
+## width of the lines inside the shapes instead, for a drawing with many of them close together. The picture is laid out as
+## a card's is, PAD and all, so scripts/arena_card_pictures.gd fits either the same way.
 
 const OUT := "res://art/card_pictures/%s.png"
+const CHALK_OUT := "res://art/gauge_pictures/%s.png"
 const OUT_SIDE := 256
 ## The room left around the drawing, in pixels of the baked picture.
 const PAD := 18
@@ -34,6 +47,9 @@ const CELL_INK := 0.12
 ## most that is added to each side of a line to reach it.
 const LINE_WIDTH := 4.0
 const MOST_THICKEN := 1.0
+## In chalk, how wide a clear line can be, in pixels of the sheet, and still be closed up when
+## the drawing's shapes are found.
+const CLOSE_FOR := 40.0
 
 ## The size of the baked picture.
 var _size := Vector2i.ZERO
@@ -41,8 +57,9 @@ var _size := Vector2i.ZERO
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
-	if args.size() < 2 or args.size() > 3:
-		printerr("usage: -- /abs/path/drawing.png <name> [thicken]")
+	var chalk := args.size() >= 4 and args.size() <= 5 and args[2] == "chalk"
+	if args.size() < 2 or args.size() > 3 and not chalk:
+		printerr("usage: -- /abs/path/drawing.png <name> [thicken], or <name> chalk <width> [inner]")
 		quit(1)
 		return
 	var sheet := Image.load_from_file(args[0])
@@ -76,9 +93,13 @@ func _init() -> void:
 		quit(1)
 		return
 
-	# The drawing in the middle of a square, as greys, made small.
+	# The drawing in the middle of a square, as greys, made small. In chalk the outline reaches
+	# out past the shapes, so room is left for it.
 	var inner := OUT_SIDE - PAD * 2
 	var scale := float(inner) / maxi(found.size.x, found.size.y)
+	if chalk:
+		found = found.grow(int(ceil(float(args[3]) / scale))).intersection(Rect2i(Vector2i.ZERO, size))
+		scale = float(inner) / maxi(found.size.x, found.size.y)
 	var cut := Image.create(found.size.x, found.size.y, false, Image.FORMAT_L8)
 	var cut_bytes := PackedByteArray()
 	cut_bytes.resize(found.size.x * found.size.y)
@@ -86,7 +107,10 @@ func _init() -> void:
 		for x in found.size.x:
 			cut_bytes[y * found.size.x + x] = int(round(ink[(found.position.y + y) * size.x + found.position.x + x] * 255.0))
 	var thicken_given := args.size() == 3
-	if thicken_given and float(args[2]) < 0.0:
+	if chalk:
+		var inner_width := float(args[4] if args.size() == 5 else args[3])
+		cut_bytes = _chalk(cut_bytes, found.size, float(args[3]) / scale, inner_width / scale)
+	elif thicken_given and float(args[2]) < 0.0:
 		cut_bytes = _widen_gaps(cut_bytes, found.size, -float(args[2]) / scale)
 	cut.set_data(found.size.x, found.size.y, false, Image.FORMAT_L8, cut_bytes)
 	var small := Vector2i(maxi(1, int(round(found.size.x * scale))), maxi(1, int(round(found.size.y * scale))))
@@ -101,7 +125,9 @@ func _init() -> void:
 			lines[(at.y + y) * _size.x + at.x + x] = small_bytes[y * small.x + x] / 255.0
 	var usual := _line_width(small_bytes, small)
 	var thicken := clampf((LINE_WIDTH - usual) * 0.5, 0.0, MOST_THICKEN)
-	if thicken_given:
+	if chalk:
+		thicken = 0.0
+	elif thicken_given:
 		thicken = float(args[2])
 	if thicken > 0.0:
 		lines = _thicken(lines, thicken)
@@ -118,10 +144,13 @@ func _init() -> void:
 		out_bytes[i * 3] = int(round(clampf(lines[i], 0.0, 1.0) * 255.0))
 		out_bytes[i * 3 + 1] = int(round(clampf(glow[i], 0.0, 1.0) * 255.0))
 	var out := Image.create_from_data(_size.x, _size.y, false, Image.FORMAT_RGB8, out_bytes)
-	var path := OUT % args[1]
+	var path := (CHALK_OUT if chalk else OUT) % args[1]
 	out.save_png(path)
-	print("baked %s: the drawing is %s on its sheet, %s here; its lines are %.1f px wide, made %.2f px wider on each side" % [
-			path, found, _size, usual, thicken])
+	if chalk:
+		print("baked %s in chalk: the drawing is %s on its sheet, %s here" % [path, found, _size])
+	else:
+		print("baked %s: the drawing is %s on its sheet, %s here; its lines are %.1f px wide, made %.2f px wider on each side" % [
+				path, found, _size, usual, thicken])
 	quit()
 
 
@@ -235,6 +264,62 @@ func _widen_gaps(greys: PackedByteArray, size: Vector2i, by: float) -> PackedByt
 		if from_kept[i] <= by + 3.0:
 			ink = maxf(ink, greys[i])
 		out[i] = int(round(ink))
+	return out
+
+
+## The chalk of a drawing (greys, `size` pixels) of filled shapes cut by clear lines: the clear
+## lines inside the shapes, `inner` pixels wide, and an outline round each, `width` wide. A shape is the
+## ink with its clear lines closed up (any gap narrower than CLOSE_FOR across is filled) and
+## every hole in it filled.
+func _chalk(greys: PackedByteArray, size: Vector2i, width: float, inner: float) -> PackedByteArray:
+	var count := size.x * size.y
+	var close_by := maxf(width, CLOSE_FOR) * 0.5
+	var ink := PackedByteArray()
+	ink.resize(count)
+	for i in count:
+		ink[i] = 1 if greys[i] > 127 else 0
+	var from_ink := _distance(ink, size, false)
+	var grown := PackedByteArray()
+	grown.resize(count)
+	for i in count:
+		grown[i] = 0 if from_ink[i] <= close_by else 1
+	var from_outside := _distance(grown, size, false)
+	# The shapes: the grown ink cut back again, and what the sheet's edge cannot reach.
+	var outside := PackedByteArray()
+	outside.resize(count)
+	var reach := PackedInt32Array()
+	for i in count:
+		var x := i % size.x
+		var y := i / size.x
+		if (x == 0 or y == 0 or x == size.x - 1 or y == size.y - 1) and from_outside[i] <= close_by:
+			outside[i] = 1
+			reach.append(i)
+	var next := 0
+	while next < reach.size():
+		var i := reach[next]
+		next += 1
+		var x := i % size.x
+		for j: int in [i - 1 if x > 0 else -1, i + 1 if x < size.x - 1 else -1, i - size.x, i + size.x]:
+			if j >= 0 and j < count and outside[j] == 0 and from_outside[j] <= close_by:
+				outside[j] = 1
+				reach.append(j)
+	var shape := PackedByteArray()
+	shape.resize(count)
+	var gaps := PackedByteArray()
+	gaps.resize(count)
+	for i in count:
+		shape[i] = 1 - outside[i]
+		gaps[i] = 1 if shape[i] == 1 and ink[i] == 0 else 0
+	var from_shape := _distance(shape, size, false)
+	var from_outline := _distance(outside, size, false)
+	var from_gap := _distance(gaps, size, false)
+	var half := width * 0.5
+	var out := PackedByteArray()
+	out.resize(count)
+	for i in count:
+		var edge := from_outline[i] if shape[i] == 1 else from_shape[i]
+		var c := maxf(clampf(half + 0.5 - edge, 0.0, 1.0), clampf(inner * 0.5 + 0.5 - from_gap[i], 0.0, 1.0))
+		out[i] = int(round(c * 255.0))
 	return out
 
 

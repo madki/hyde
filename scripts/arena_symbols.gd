@@ -44,8 +44,15 @@ extends Control
 ## `ghost_temper` and `set_lock`. `clear_ghosts()` takes them all away.
 
 const LINE_MATERIAL: ShaderMaterial = preload("res://shaders/pencil_line_material.tres")
-## The Roots' drawings are printed as the cards print theirs: the drawing's lines in its colour.
-const DRAWING_MATERIAL: ShaderMaterial = preload("res://shaders/card_drawing_material.tres")
+## Each gauge shows its Root's drawing in chalk: the drawing's clear lines and an outline round
+## its shapes, baked from the sheet the card's picture comes from (studio/card_picture_bake.gd,
+## laid out as a card's picture is), and printed grainy and a little broken.
+const DRAWING_MATERIAL: ShaderMaterial = preload("res://shaders/chalk_drawing_material.tres")
+const PICTURES := {
+	"lamp": preload("res://art/gauge_pictures/cloak.png"),
+	"heart": preload("res://art/gauge_pictures/quill.png"),
+	"mirror": preload("res://art/gauge_pictures/cane_hand.png"),
+}
 
 const SYMS: Array[String] = ["lamp", "heart", "mirror"]
 
@@ -877,9 +884,7 @@ func _roll_slip(sym: String) -> Rect2:
 ## Each symbol's Root's drawing in chalk, pulled toward Hyde's light while it flashes.
 func _draw_drawings() -> void:
 	for sym in SYMS:
-		var drawn := ArenaCardPictures.drawing(ArenaCardPictures.picture_of(sym, false))
-		if not drawn:
-			continue
+		var drawn: Texture2D = PICTURES[sym]
 		var g: Dictionary = _g[sym]
 		var box := Rect2(Vector2(g.sketch_x, g.y) - SKETCH_BOX * 0.5, SKETCH_BOX)
 		_drawings.draw_texture_rect(drawn, ArenaCardPictures.drawing_box(drawn, box), false,
