@@ -25,7 +25,7 @@ extends Control
 ## - `tone`: "jekyll" (lamp light on clean paper) or "hyde" (his ink, a blot behind the wares).
 ## - `set_place(name)`: the name at the header's left, in the heading face.
 ## - `set_purse(sovereigns, salt)`: at the header's right, a coin and the sovereigns, a crystal
-##   and the doses of salt. A number below 0 is not shown.
+##   and the doses of salt ("Salt ×2"). A number below 0 is not shown.
 ## - `set_leave(next)`: the night to come, written after "Leave" on the button ("" for none).
 ##   It is written smaller if it must be to fit.
 ## - `set_headings(headings)`: each {text, at, width}: the heading's top left corner and how far
@@ -235,8 +235,13 @@ func _purse_width() -> float:
 	if _salt >= 0:
 		if width > 0.0:
 			width += 20.0
-		width += 16.0 + _width(_heavy, str(_salt), PURSE_SIZE) + 5.0 + _width(_light, "salt", SMALL_SIZE)
+		width += 16.0 + _width(_heavy, _salt_words(), PURSE_SIZE)
 	return width
+
+
+# The doses of salt held, as the header writes them.
+func _salt_words() -> String:
+	return "Salt ×%d" % _salt
 
 
 # What is held, from `at` (the left end, on the name's baseline) to the right.
@@ -256,27 +261,25 @@ func _draw_purse(at: Vector2) -> void:
 				c + Vector2(4.5, 2.5), c + Vector2(0, 6), c + Vector2(-4.5, 2.5),
 				c + Vector2(-4.5, -2.5)]), Palette.SALT)
 		x += 16.0
-		_writing.draw_string(_heavy, Vector2(x, at.y), str(_salt), HORIZONTAL_ALIGNMENT_LEFT, -1,
+		_writing.draw_string(_heavy, Vector2(x, at.y), _salt_words(), HORIZONTAL_ALIGNMENT_LEFT, -1,
 				PURSE_SIZE, Palette.SALT)
-		x += _width(_heavy, str(_salt), PURSE_SIZE) + 5.0
-		_writing.draw_string(_light, Vector2(x, at.y), "salt", HORIZONTAL_ALIGNMENT_LEFT, -1,
-				SMALL_SIZE, _colours().faint)
 
 
-# The Leave button: an outlined box at rest; under the pointer or with the focus it is filled
-# with its owner's light, ringed, and marked with a diamond before its word.
+# The Leave button: an outlined box at rest; under the pointer or with the focus it is ringed
+# in its owner's light over a wash of it, its words stand in full chalk, and a diamond marks
+# it before its word.
 func _draw_leave() -> void:
 	var colours := _colours()
 	var lit := leave_button.has_focus() or leave_button.is_hovered()
 	var rect := Rect2(Vector2.ZERO, leave_button.size)
 	var box := StyleBoxFlat.new()
-	box.bg_color = colours.button if lit else Color(Palette.OUTLINE, 0.45)
-	box.border_color = colours.button_edge if lit else colours.edge
+	box.bg_color = Color(Palette.OUTLINE, 0.45).blend(Color(colours.button, 0.14)) if lit else Color(Palette.OUTLINE, 0.45)
+	box.border_color = colours.button if lit else colours.edge
 	box.set_border_width_all(2)
 	box.set_corner_radius_all(3)
 	leave_button.draw_style_box(box, rect)
-	var word: Color = colours.button_word if lit else colours.words
-	var rest: Color = colours.button_word if lit else colours.faint
+	var word: Color = colours.words
+	var rest: Color = colours.words if lit else colours.faint
 	var after := "" if _next.is_empty() else "  ·  " + _next
 	var marker := 20.0
 	var room_for_words := rect.size.x - 2.0 * 12.0 - marker
@@ -290,7 +293,7 @@ func _draw_leave() -> void:
 	if lit:
 		var c := Vector2(x - marker + 6.0, rect.get_center().y)
 		leave_button.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -6), c + Vector2(6, 0),
-				c + Vector2(0, 6), c + Vector2(-6, 0)]), word)
+				c + Vector2(0, 6), c + Vector2(-6, 0)]), colours.button)
 	leave_button.draw_string(_heavy, Vector2(x, base), "Leave", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, word)
 	if not after.is_empty():
 		leave_button.draw_string(_light, Vector2(x + leave_width, base), after, HORIZONTAL_ALIGNMENT_LEFT,

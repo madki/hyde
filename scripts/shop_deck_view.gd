@@ -12,7 +12,7 @@ extends Control
 ## pointer move to another, and Enter, Space or a click on a card chooses it: the view closes
 ## and `card_picked` is sent with that card's dictionary. A card with `ok` false is dimmed
 ## and cannot be chosen; its `why` stands at the foot while it is lit. A `price` is written
-## on the card's foot. Escape, or a click beside the cards, closes the view with nothing
+## on the card's foot, after a coin. Escape, or a click beside the cards, closes the view with nothing
 ## chosen.
 ##
 ## While it is open the view takes every key and click, so the page under it does nothing.
@@ -144,7 +144,12 @@ func open(cards: Array, hyde_has_table: bool, picker: bool, heading: String, lea
 			card.dimmed = not can
 			var price := int(entry.get("price", 0))
 			if price > 0:
-				card.set_tag("%d sov." % price, not can)
+				# The number, with room before it for its coin.
+				card.set_tag("     %d" % price, not can)
+				var coin := Control.new()
+				coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				coin.draw.connect(_draw_coin.bind(coin, card, not can))
+				card.add_child(coin)
 			elif not can:
 				card.set_tag("not now", true)
 		_body.add_child(card)
@@ -368,6 +373,18 @@ func _show_lit() -> void:
 	if price > 0:
 		cost = " for %d sovereign%s" % [price, "" if price == 1 else "s"]
 	_foot.text = "%s%s  ·  Enter or a click to choose, Escape to go back" % [entry.get("name", "This card"), cost]
+
+
+# The coin before a price in a card's foot: at the left end of the tag's words, where the tag
+# left room for it.
+func _draw_coin(on: Control, card: ArenaCard, warns: bool) -> void:
+	const R := 4.5
+	var tag := card._tag
+	var font_size := tag.get_theme_font_size("font_size")
+	var width := ArenaCard._width(tag.text, card._plain, font_size)
+	var c := tag.position + Vector2((tag.size.x - width) * 0.5 + R + 1.0, tag.size.y * 0.5)
+	on.draw_circle(c, R, Palette.WARN if warns else Palette.GOLD, true, -1.0, true)
+	on.draw_arc(c, R - 1.8, 0.0, TAU, 16, Color(Palette.OUTLINE, 0.55), 1.0, true)
 
 
 func _lay_out() -> void:
