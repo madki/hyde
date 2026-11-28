@@ -7,10 +7,10 @@ extends Control
 ## chips and text, what can be played or turned, and the marks of a chosen play all come
 ## from RulesView and Rules. On a page with a hand the cards can be chosen with a click.
 ##
-## 0. The 16 faces. G raises every gauge by one (the chips follow), U unlocks the Pen and the Cane.
-## 1. Jekyll's hand, with a Sublimation chosen.
+## 0. The 16 faces. G raises every gauge by one (the chips follow), U unlocks the Scale and the Key.
+## 1. Jekyll's hand, with Tame the Other chosen.
 ## 2. Jekyll's last play, falling short: the Roots he would take.
-## 3. Hyde's hand, with a Fixation chosen.
+## 3. Hyde's hand, with Stoke Compulsion chosen.
 ## 4. Where a card lies: the draw pile, the discards, on offer, on top of the draw pile.
 ## 5. What happens to a card. S stains a Paper Root in the hand, T turns an Ink Root back,
 ##    D draws a card, P plays the first card away, X strikes the first card from the deck.

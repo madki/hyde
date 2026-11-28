@@ -27,9 +27,9 @@ const DEFAULTS := {
 	## Is Jekyll for the scene Hyde is hunted in.
 	"scene_aware": true,
 	# --- what a play is worth, in shares of the round's target ---
-	## For each Root a Sublimation turns, times how near the line is.
+	## For each Root Tame the Other turns, times how near the line is.
 	"w_turn": 0.15,
-	## For each point of Temper a Sublimation gains.
+	## For each point of Temper Tame the Other gains.
 	"w_temper": 0.10,
 	## Taken off a play of Jekyll's that fills the meter.
 	"w_break": 0.6,
@@ -61,7 +61,7 @@ const DEFAULTS := {
 	## The Factors struck, one of each, when money is left over.
 	"strike_kinds": [],
 	# --- habits: one thing the policy does, taken away ---
-	## Never plays a Sublimation.
+	## Never plays Tame the Other.
 	"no_turn": false,
 	## Never discards while it has a play.
 	"no_discard": false,
@@ -99,7 +99,7 @@ const NAMED := {
 		"drink_at": 3, "hyde_stay": 99, "salt_cushion": 1, "salt_target": 2, "w_habit": 0.2, "min_cushion": 0,
 		"inst_pref": ["saucers", "spirit", "balance"],
 	},
-	# Hyde as soon as the draught exists, and never back by choice. Cunning holds the line.
+	# Hyde as soon as the draught exists, and never back by choice. Deceit holds the line.
 	"hyde": {
 		"drink_asap": true, "hyde_stay": 99, "salt_cushion": -9, "salt_target": 0, "scene_aware": false,
 		"w_habit": 0.2, "min_cushion": 1, "paper_w": 1.2, "inst_pref": ["spirit", "balance"],
@@ -107,7 +107,7 @@ const NAMED := {
 	# The players with one human habit each: `dance`, with one thing taken away.
 	# Never drinks unless a breakout is the other choice, and never buys salt.
 	"nodrink": {"based_on": "dance", "drink_at": 99, "salt_target": 0},
-	# Never plays a Sublimation.
+	# Never plays Tame the Other.
 	"noturn": {"based_on": "dance", "no_turn": true},
 	# Always the highest score: no weights.
 	"bighand": {"based_on": "dance", "w_turn": 0.0, "w_temper": 0.0, "w_break": 0.0, "w_habit": 0.0, "min_cushion": -99},

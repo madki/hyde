@@ -2,7 +2,7 @@ class_name ArenaSymbols
 extends Control
 ## The three symbols and the line, each in its zone of the arena's page (ArenaLayout).
 ##
-## Lamp, Heart and Mirror are three gauges, one under another at the top of the left column,
+## Cloak, Quill and Cane are three gauges, one under another at the top of the left column,
 ## each between brackets on a slip of cream stock that reads on the slate and on Hyde's ink
 ## alike, beginning at the column's left edge and as wide as its marks need. A gauge reads
 ## from left to right: Habit as ink tallies, the symbol's Root's drawing in chalk, Craving as ink pips
@@ -384,7 +384,7 @@ func rollover(sym: String, habit_to: int) -> void:
 	await flash(sym)
 
 
-## Sublimation: each filled pip travels into Temper and becomes a tally there. The pips are
+## Tame the Other: each filled pip travels into Temper and becomes a tally there. The pips are
 ## left empty and Temper's number shows.
 func turn(sym: String, temper_to: int) -> void:
 	var s: Dictionary = _s[sym]
@@ -1198,7 +1198,7 @@ func _ledger_parts(sym: String) -> Array[Dictionary]:
 		add.call("Temper 0: pays nothing yet.", _heavy, LEDGER_SIZE, TEMPER, LEDGER_STEP)
 	var rise: String = RulesConfig.HANDS.hyde.stirring.name
 	var turn: String = RulesConfig.HANDS.jekyll.sublimation.name
-	add.call("Craving rises as Hyde plays %s in a %s or better. A %s (%s with %s) turns it into Temper." % [ink,
+	add.call("Craving rises as Hyde plays %s in any hand from %s up. %s (%s with %s) turns it into Temper." % [ink,
 			rise, turn, paper, ink], _slanted, LEDGER_SIZE, Palette.CHALK_2, LEDGER_STEP * 2.0, true)
 	add.call("%d %s in the deck, %d chips each" % [s.paper, paper, s.paper_chips], _slanted, LEDGER_SIZE, Palette.CHALK_2,
 			LEDGER_STEP * 2.0, true)

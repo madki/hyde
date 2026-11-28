@@ -55,7 +55,7 @@ const NOTES: Array[Dictionary] = [
 		"title": "The score",
 		"lines": [
 			"A play scores chips times mult. The hand gives some of each, and every card adds its chips.",
-			"Jekyll's best hand is a {best}: one Root of each symbol, {symbols}.",
+			"Jekyll's best hand is {best}: one Root of each symbol, {symbols}.",
 		],
 	},
 	{
@@ -79,7 +79,7 @@ const NOTES: Array[Dictionary] = [
 		"title": "Hyde plays",
 		"lines": [
 			"Hyde cannot play your Paper Roots: only his Ink Roots, and the Factors, which both men play.",
-			"His hands want Roots alike: two of one symbol are a {pair}, three a {three}.",
+			"His hands want Roots alike: two of one symbol make {pair}, three make {three}.",
 		],
 	},
 	{
@@ -135,7 +135,7 @@ const NOTES: Array[Dictionary] = [
 		"title": "The line",
 		"lines": [
 			"Ink is within {near} of Paper, and the page's edges beat to say so. Ink must not be ahead when a round ends.",
-			"Push it back with a {sublimation}: Jekyll plays a Paper Root with the Ink Root of its symbol, which turns to paper.",
+			"Push it back with {sublimation}: Jekyll plays a Paper Root with the Ink Root of its symbol, which turns to paper.",
 		],
 	},
 ]

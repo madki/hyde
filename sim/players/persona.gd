@@ -102,7 +102,7 @@ func between(run: RulesRun) -> void:
 
 # Every play the persona weighs, best score first, as {ids, score, key, ev}. `ev` is
 # RulesHands.read's, and is {} for a play that is worth its score and nothing else: only a
-# Sublimation, a play of Hyde's that may breed, or one of Jekyll's at the brink is read.
+# Tame the Other, a play of Hyde's that may breed, or one of Jekyll's at the brink is read.
 func _plays(run: RulesRun) -> Array:
 	var out: Array = []
 	var no_turn: bool = p.no_turn
@@ -176,7 +176,7 @@ func _worths(run: RulesRun, all: Array) -> Array[float]:
 
 # The worth of the best play of the run's hand, as _worths gives it, or 0 with no play or
 # none worth anything. It reads only the plays that can be the best: the plays come highest
-# score first, and only a Sublimation or a play that breeds is worth more than its score.
+# score first, and only Tame the Other or a play that breeds is worth more than its score.
 func _best_worth(run: RulesRun) -> float:
 	_look(run)
 	var best := 0.0

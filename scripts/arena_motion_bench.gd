@@ -18,7 +18,7 @@ extends Control
 ##   G  between rounds: the draw pile's place holds the whole deck, or the two piles again
 ## Card moments (the three patterns):
 ##   1  four of his Roots join the deck (his first arrival)    2  one card joins (a reward)
-##   3  Hyde brings two Fog from the draw pile    4  Jekyll brings two from the discards
+##   3  Hyde brings two Corruption from the draw pile    4  Jekyll brings two from the discards
 ##   5  none brought
 ##   6  the first hand card changes side (stained if paper, turned if ink)
 ##   7  a card in the draw pile changes side    8  a card in the discards changes side
@@ -43,7 +43,7 @@ var beats := ArenaBeats.new()
 var engine := {"score": 0, "plays": 4, "discards": 3, "restraint": {"meter": 1, "limit": 5},
 		"draw_count": 30, "discard_count": 0}
 ## Sample cards, as RulesView.table().hand gives them: [paper name, ink name, chips].
-const SAMPLES := [["Composure", "Fog", 1], ["Kindness", "Appetite", 1], ["Scruple", "Pride", 2]]
+const SAMPLES := [["Piety", "Corruption", 1], ["Reason", "Madness", 1], ["Composure", "Brutality", 2]]
 
 var travel := ArenaTravel.new()
 var piles := ArenaPiles.new()
@@ -207,20 +207,20 @@ func _moment(which: int) -> void:
 	var ink_from := Vector2(930.0, 200.0)
 	match which:
 		1:
-			var cards := [_root("Fog"), _root("Fog"), _root("Appetite"), _root("Pride")]
+			var cards := [_root("Corruption"), _root("Corruption"), _root("Madness"), _root("Brutality")]
 			_count_in(cards.size())
 			moments.join_deck(cards, ArenaCaptions.joins("arrival", []), ink_from)
 		2:
-			var card := _root("Kindness")
+			var card := _root("Reason")
 			_count_in(1)
 			moments.join_deck([card], ArenaCaptions.joins("reward", [card.name]), Vector2(628.0, 70.0))
 		3:
-			var cards := [_root("Fog"), _root("Fog")]
+			var cards := [_root("Corruption"), _root("Corruption")]
 			engine.draw_count -= 2
 			moments.bring_to_hand("Hyde", cards, "draw", _take_into_hand)
 		4:
 			_ensure_discards(2)
-			var cards := [_root("Composure"), _root("Scruple")]
+			var cards := [_root("Piety"), _root("Composure")]
 			engine.discard_count -= 2
 			moments.bring_to_hand("Jekyll", cards, "discards", _take_into_hand)
 		5:
@@ -245,7 +245,7 @@ func _moment(which: int) -> void:
 				_ensure_discards(1)
 			var to_ink: bool = _to_ink[where]
 			_to_ink[where] = not to_ink
-			var before := _root("Kindness" if to_ink else "Fog")
+			var before := _root("Reason" if to_ink else "Corruption")
 			var after := _twin(before)
 			moments.change_side(before, after, where,
 					ArenaCaptions.changes("stain" if to_ink else "turn", before.name, after.name))
@@ -650,12 +650,12 @@ func _selftest() -> void:
 			shown_for += get_process_delta_time()
 		await get_tree().process_frame
 	_expect(shown_for >= ArenaPace.CAPTION_MIN - 0.05, "a caption stays a second (%.2f s)" % shown_for)
-	_expect(ArenaCaptions.brings("Hyde", ["Fog", "Fog"]) == "Hyde brings two Fog."
-			and ArenaCaptions.brings("Jekyll", ["Composure", "Scruple"]) == "Jekyll brings a Composure and a Scruple."
-			and ArenaCaptions.changes("stain", "Kindness", "Appetite") == "The draught stains a Kindness. It is an Appetite now."
-			and ArenaCaptions.joins("breakout", ["Fog", "Pride"]) == "He breaks out. A Fog and a Pride join the deck."
-			and ArenaCaptions.joins("dawn", ["Appetite", "Appetite"]) == "Dawn. Two Appetite join the deck."
-			and ArenaCaptions.joins("no_paper", ["Appetite"]) == "Nothing is left to stain. An Appetite joins the deck.",
+	_expect(ArenaCaptions.brings("Hyde", ["Corruption", "Corruption"]) == "Hyde brings two Corruption."
+			and ArenaCaptions.brings("Jekyll", ["Piety", "Composure"]) == "Jekyll brings a Piety and a Composure."
+			and ArenaCaptions.changes("stain", "Reason", "Madness") == "The draught stains a Reason. It is a Madness now."
+			and ArenaCaptions.joins("breakout", ["Corruption", "Brutality"]) == "He breaks out. A Corruption and a Brutality join the deck."
+			and ArenaCaptions.joins("dawn", ["Madness", "Madness"]) == "Dawn. Two Madness join the deck."
+			and ArenaCaptions.joins("no_paper", ["Madness"]) == "Nothing is left to stain. A Madness joins the deck.",
 			"the captions read as they are meant to")
 	print("SELFTEST PASS" if _fails.is_empty() else "SELFTEST FAILED: %s" % str(_fails))
 

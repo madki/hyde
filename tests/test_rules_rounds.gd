@@ -2,8 +2,8 @@ extends "res://tests/case.gd"
 ## The rescue, the end of a round, pay, the line, the reward, and passing a play.
 
 
-# Night 2, round 1 (target 3,000), he has arrived, Lamp Temper 1, one play left. The hand is
-# two Kindness to play, and to hold: a Composure, a Scruple, a Cup, a Fog, an Appetite, an Eye.
+# Night 2, round 1 (target 3,000), he has arrived, Cloak Temper 1, one play left. The hand is
+# two Reason to play, and to hold: a Piety, a Composure, a Chalice, a Corruption, a Madness, an Hourglass.
 func _rescue_table(prior: int) -> Array:
 	var run := at(fresh({}, 16), 1, 0)
 	run.hyde_arrived = true
@@ -20,13 +20,13 @@ func test_rescue_plan() -> void:
 	var run: RulesRun = t[0]
 	var h: Array = t[1]
 	var ev := Rules.evaluate(run, [h[0], h[1]])
-	eq(ev.score, 110, "Rumination 55 x 2")
+	eq(ev.score, 110, "Strengthen Conviction 55 x 2")
 	var before := run.copy()
 	var plan := Rules.plan_rescue(run, 2000, 110, ids(h.slice(2)), false)
 	# 2000 + 110 x 2^k >= 3000 needs k = 4, but only two Paper Roots are held.
 	eq([plan.k, plan.pool, plan.ok, plan.score], [2, 2, false, 2440], "only held Paper Roots count: Factors and his Roots are ignored")
 	plan = Rules.plan_rescue(run, 2800, 110, ids(h.slice(2)), false)
-	eq([plan.k, plan.score, plan.ok, Rules.card(run, plan.ids[0]).sym, plan.factor], [1, 3020, true, "mirror", 2], "lowest Temper first: the Scruple before the tempered Composure")
+	eq([plan.k, plan.score, plan.ok, Rules.card(run, plan.ids[0]).sym, plan.factor], [1, 3020, true, "mirror", 2], "lowest Temper first: the Composure before the tempered Piety")
 	eq([plan.ink, plan.paper, plan.over], [5, 7, false], "the line as it would stand: 5 to 7")
 	plan = Rules.plan_rescue(run, 2700, 110, ids(h.slice(2)), false)
 	eq([plan.k, plan.score, plan.ok, plan.ids], [2, 2700 + 440, true, [h[3].id, h[2].id]], "x2 for each card, on the last play only")
@@ -35,14 +35,14 @@ func test_rescue_plan() -> void:
 
 
 func test_rescue_three_priors() -> void:
-	# Prior 2,800: he converts the Scruple.
+	# Prior 2,800: he converts the Composure.
 	var t := _rescue_table(2800)
 	var run: RulesRun = t[0]
 	var h: Array = t[1]
 	Rules.play(run, [h[0].id, h[1].id])
 	eq([run.phase, run.last.how, run.score, run.last.rescue.k, ink_n(run), paper_n(run)], ["result", "rescued", 3020, 1, 5, 7], "prior 2,800: 3,020, rescued at 5 to 7")
-	eq([h[3].ink, h[2].ink], [true, false], "the Scruple is his, the Composure is not")
-	# Prior 2,700: the Scruple, then the Composure.
+	eq([h[3].ink, h[2].ink], [true, false], "the Composure is his, the Piety is not")
+	# Prior 2,700: the Composure, then the Piety.
 	t = _rescue_table(2700)
 	run = t[0]
 	h = t[1]
@@ -52,8 +52,8 @@ func test_rescue_three_priors() -> void:
 	eq([Rules.line_info(run).ink, Rules.line_info(run).paper], [before.ink + 2, before.paper - 2], "two Paper Roots became his")
 	eq([ink_n(run), paper_n(run)], [6, 6], "6 to 6, and the tie holds")
 	eq([run.stats.rescues, run.stats.converted, run.last.rescue.k], [1, 2, 2], "counted")
-	ok(h[2].ink and h[3].ink, "the held Composure and Scruple are ink now")
-	eq(run.last.rescue.names, [["Scruple", "Pride"], ["Composure", "Fog"]], "in that order")
+	ok(h[2].ink and h[3].ink, "the held Piety and Composure are ink now")
+	eq(run.last.rescue.names, [["Composure", "Brutality"], ["Piety", "Corruption"]], "in that order")
 	# Prior 2,000: both are converted and 2,440 is still short.
 	t = _rescue_table(2000)
 	run = t[0]
@@ -70,10 +70,10 @@ func test_rescue_as_first_arrival() -> void:
 	run.score = 900
 	run.restraint = 2
 	var h := deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
-	Rules.play(run, [h[0].id])  # Spark 30 x 2 = 60: 960 is short; one card makes 900 + 120
+	Rules.play(run, [h[0].id])  # Kindle Virtue 30 x 2 = 60: 960 is short; one card makes 900 + 120
 	eq([run.last.how, run.last.first, run.last.rescue.k, ink_n(run), paper_n(run), run.phase, run.score], ["rescued", true, 1, 5, 7, "result", 1020], "first arrival by rescue: his four join as well")
 	eq([run.stance, run.restraint, run.stored, run.hyde_arrived, run.last.was], ["hyde", 0, 0, true, "jekyll"], "his stance, restraint 0, nothing stored")
-	ok(h[4].ink != h[5].ink and not h[1].ink and not h[3].ink, "one Composure is converted, and nothing else")
+	ok(h[4].ink != h[5].ink and not h[1].ink and not h[3].ink, "one Piety is converted, and nothing else")
 	run = at(fresh({}, 17), 0, 0)
 	run.plays = 1
 	run.score = 700
@@ -148,7 +148,7 @@ func test_rounds_pay_and_offers() -> void:
 	eq(run.sov, run.last.pay, "paid in sovereigns")
 	var offer: Array = run.offer
 	ok(offer != null and offer.size() == 3 and offer[0] != offer[1] and offer[1] != offer[2] and offer[0] != offer[2], "three different cards on offer")
-	ok(offer.all(func(k: String) -> bool: return RulesConfig.ROOT.has(k) or ["cup", "eye", "lock"].has(k)), "Pen and Cane are not in the pool yet")
+	ok(offer.all(func(k: String) -> bool: return RulesConfig.ROOT.has(k) or ["cup", "eye", "lock"].has(k)), "Scale and Key are not in the pool yet")
 	ok(not Rules.play(run, [1]).ok and not Rules.drink(run).ok, "no play between rounds")
 	var n: int = run.cards.size()
 	var k: String = offer[0]

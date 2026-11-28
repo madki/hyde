@@ -29,39 +29,39 @@ func _read(run: RulesRun, list: String) -> Array:
 func _score_rows() -> Array:
 	var hyde := {"stance": "hyde"}
 	return [
-		[{}, "P:lamp P:heart P:mirror F:cup F:lock", "Lucid Mind", 120, 7, 840, {"adds_restraint": false}],
-		[{}, "P:lamp", "Spark", 30, 2, 60, {"adds_restraint": true}],
-		[{}, "P:lamp P:lamp", "Rumination", 55, 2, 110, {"adds_restraint": true}],
-		[{}, "P:lamp P:lamp P:heart", "Good Work", 75, 3, 225, {}],
-		[{}, "P:lamp P:lamp P:lamp P:heart", "Dogma", 100, 3, 300, {}],
-		[{}, "P:lamp P:lamp P:heart P:mirror", "Lucid Mind", 115, 5, 575, {}],
-		[{}, "P:lamp P:heart P:mirror F:pen F:pen", "Lucid Mind", 120, 17, 2040, {"adds_restraint": true}],
-		[{}, "P:lamp P:heart F:cup F:cup", "Good Work", 80, 7, 560, {}],
-		[{"temper": {"heart": 2}}, "P:lamp P:heart F:cane", "Good Work", 145, 9, 1305, {}],
-		[{"temper": {"lamp": 2, "heart": 2, "mirror": 2}}, "P:lamp P:heart P:mirror F:pen F:cane", "Lucid Mind", 255, 25, 6375, {}],
-		[{"temper": {"lamp": 3}}, "P:lamp P:lamp P:lamp F:cane F:cane", "Dogma", 360, 13, 4680, {}],
-		[{}, "F:cup F:eye", "Passing Thought", 10, 1, 10, {"adds_restraint": true, "draws": 1}],
-		[{}, "F:lock", "Passing Thought", 10, 1, 10, {"adds_restraint": false}],
-		[{"craving": {"lamp": 2}}, "P:lamp I:lamp F:cup", "Sublimation", 85, 10, 850, {"temper_gain": {"lamp": 2}, "adds_restraint": false}],
-		[{}, "P:heart I:heart", "Sublimation", 55, 4, 220, {"temper_gain": {"heart": 0}, "adds_restraint": false}],
-		[{"temper": {"lamp": 2}, "craving": {"lamp": 1}, "habit": {"lamp": 1}}, "P:lamp I:lamp F:cane", "Sublimation", 165, 12, 1980, {"temper_gain": {"lamp": 1}}],
-		[{"inst": ["saucers"], "craving": {"lamp": 2}}, "P:lamp I:lamp I:lamp", "Sublimation", 90, 10, 900, {"temper_gain": {"lamp": 2}}],
-		[{"inst": ["saucers"], "craving": {"lamp": 2, "heart": 1}}, "P:lamp I:lamp P:heart I:heart F:cup", "Sublimation", 125, 14, 1750, {"temper_gain": {"lamp": 2, "heart": 1}}],
-		[{"stance": "hyde", "stored": 3}, "I:lamp I:lamp F:cup F:eye", "Fixation", 110, 11, 1210, {"craving_on": {"lamp": 1}, "draws": 1, "spends_stored": true}],
-		[hyde, "I:lamp", "Stirring", 35, 3, 105, {"craving_on": {"lamp": 1}, "adds_restraint": false}],
-		[hyde, "I:lamp I:heart", "Lapse", 55, 3, 165, {"craving_on": {"lamp": 1, "heart": 1}}],
-		[hyde, "I:lamp I:heart I:mirror", "Turmoil", 85, 4, 340, {"craving_on": {"lamp": 1, "heart": 1, "mirror": 1}}],
-		[hyde, "I:lamp I:lamp I:heart", "Fixation", 80, 5, 400, {"craving_on": {"lamp": 1, "heart": 1}}],
-		[hyde, "I:lamp I:lamp I:heart I:mirror", "Fixation", 95, 5, 475, {"craving_on": {"lamp": 1, "heart": 1, "mirror": 1}}],
-		[{"stance": "hyde", "habit": {"lamp": 1}}, "I:lamp I:lamp I:lamp", "Mania", 150, 10, 1500, {"craving_on": {"lamp": 1}}],
-		[{"stance": "hyde", "craving": {"lamp": 2}}, "I:lamp I:lamp", "Fixation", 105, 5, 525, {"breeds": ["lamp"]}],
-		[{"stance": "hyde", "habit": {"lamp": 2}}, "I:lamp I:lamp I:lamp I:lamp F:pen", "Mania", 250, 23, 5750, {"craving_on": {"lamp": 1}}],
-		[{"stance": "hyde", "habit": {"lamp": 2}, "hunted": true}, "I:lamp I:lamp I:lamp I:lamp F:pen", "Mania", 250, 20, 5000, {"craving_on": {"lamp": 1}}],
-		[{"stance": "hyde", "habit": {"heart": 1}}, "I:lamp I:heart F:cane", "Lapse", 110, 6, 660, {"craving_on": {"lamp": 1, "heart": 2}}],
-		[{"stance": "hyde", "craving": {"lamp": 2}}, "I:lamp F:cane", "Stirring", 100, 5, 500, {"craving_on": {"lamp": 2}, "breeds": ["lamp"]}],
-		[hyde, "I:lamp I:heart F:cane F:lock", "Lapse", 90, 5, 450, {"craving_on": {}, "no_craving": true, "breeds": []}],
-		[{"stance": "hyde", "inst": ["hcane"]}, "I:lamp I:lamp I:lamp", "Mania", 105, 11, 1155, {"craving_on": {"lamp": 1}}],
-		[hyde, "F:cup F:eye", "Passing Thought", 10, 1, 10, {"craving_on": {}, "no_craving": true, "draws": 1, "spends_stored": false}],
+		[{}, "P:lamp P:heart P:mirror F:cup F:lock", "Master the Self", 120, 7, 840, {"adds_restraint": false}],
+		[{}, "P:lamp", "Kindle Virtue", 30, 2, 60, {"adds_restraint": true}],
+		[{}, "P:lamp P:lamp", "Strengthen Conviction", 55, 2, 110, {"adds_restraint": true}],
+		[{}, "P:lamp P:lamp P:heart", "Weave Harmony", 75, 3, 225, {}],
+		[{}, "P:lamp P:lamp P:lamp P:heart", "Impose Order", 100, 3, 300, {}],
+		[{}, "P:lamp P:lamp P:heart P:mirror", "Master the Self", 115, 5, 575, {}],
+		[{}, "P:lamp P:heart P:mirror F:pen F:pen", "Master the Self", 120, 17, 2040, {"adds_restraint": true}],
+		[{}, "P:lamp P:heart F:cup F:cup", "Weave Harmony", 80, 7, 560, {}],
+		[{"temper": {"heart": 2}}, "P:lamp P:heart F:cane", "Weave Harmony", 145, 9, 1305, {}],
+		[{"temper": {"lamp": 2, "heart": 2, "mirror": 2}}, "P:lamp P:heart P:mirror F:pen F:cane", "Master the Self", 255, 25, 6375, {}],
+		[{"temper": {"lamp": 3}}, "P:lamp P:lamp P:lamp F:cane F:cane", "Impose Order", 360, 13, 4680, {}],
+		[{}, "F:cup F:eye", "Guard the Veil", 10, 1, 10, {"adds_restraint": true, "draws": 1}],
+		[{}, "F:lock", "Guard the Veil", 10, 1, 10, {"adds_restraint": false}],
+		[{"craving": {"lamp": 2}}, "P:lamp I:lamp F:cup", "Tame the Other", 85, 10, 850, {"temper_gain": {"lamp": 2}, "adds_restraint": false}],
+		[{}, "P:heart I:heart", "Tame the Other", 55, 4, 220, {"temper_gain": {"heart": 0}, "adds_restraint": false}],
+		[{"temper": {"lamp": 2}, "craving": {"lamp": 1}, "habit": {"lamp": 1}}, "P:lamp I:lamp F:cane", "Tame the Other", 165, 12, 1980, {"temper_gain": {"lamp": 1}}],
+		[{"inst": ["saucers"], "craving": {"lamp": 2}}, "P:lamp I:lamp I:lamp", "Tame the Other", 90, 10, 900, {"temper_gain": {"lamp": 2}}],
+		[{"inst": ["saucers"], "craving": {"lamp": 2, "heart": 1}}, "P:lamp I:lamp P:heart I:heart F:cup", "Tame the Other", 125, 14, 1750, {"temper_gain": {"lamp": 2, "heart": 1}}],
+		[{"stance": "hyde", "stored": 3}, "I:lamp I:lamp F:cup F:eye", "Stoke Compulsion", 110, 11, 1210, {"craving_on": {"lamp": 1}, "draws": 1, "spends_stored": true}],
+		[hyde, "I:lamp", "Indulge Vice", 35, 3, 105, {"craving_on": {"lamp": 1}, "adds_restraint": false}],
+		[hyde, "I:lamp I:heart", "Sow Discord", 55, 3, 165, {"craving_on": {"lamp": 1, "heart": 1}}],
+		[hyde, "I:lamp I:heart I:mirror", "Unchain the Beast", 85, 4, 340, {"craving_on": {"lamp": 1, "heart": 1, "mirror": 1}}],
+		[hyde, "I:lamp I:lamp I:heart", "Stoke Compulsion", 80, 5, 400, {"craving_on": {"lamp": 1, "heart": 1}}],
+		[hyde, "I:lamp I:lamp I:heart I:mirror", "Stoke Compulsion", 95, 5, 475, {"craving_on": {"lamp": 1, "heart": 1, "mirror": 1}}],
+		[{"stance": "hyde", "habit": {"lamp": 1}}, "I:lamp I:lamp I:lamp", "Spread Ruin", 150, 10, 1500, {"craving_on": {"lamp": 1}}],
+		[{"stance": "hyde", "craving": {"lamp": 2}}, "I:lamp I:lamp", "Stoke Compulsion", 105, 5, 525, {"breeds": ["lamp"]}],
+		[{"stance": "hyde", "habit": {"lamp": 2}}, "I:lamp I:lamp I:lamp I:lamp F:pen", "Spread Ruin", 250, 23, 5750, {"craving_on": {"lamp": 1}}],
+		[{"stance": "hyde", "habit": {"lamp": 2}, "hunted": true}, "I:lamp I:lamp I:lamp I:lamp F:pen", "Spread Ruin", 250, 20, 5000, {"craving_on": {"lamp": 1}}],
+		[{"stance": "hyde", "habit": {"heart": 1}}, "I:lamp I:heart F:cane", "Sow Discord", 110, 6, 660, {"craving_on": {"lamp": 1, "heart": 2}}],
+		[{"stance": "hyde", "craving": {"lamp": 2}}, "I:lamp F:cane", "Indulge Vice", 100, 5, 500, {"craving_on": {"lamp": 2}, "breeds": ["lamp"]}],
+		[hyde, "I:lamp I:heart F:cane F:lock", "Sow Discord", 90, 5, 450, {"craving_on": {}, "no_craving": true, "breeds": []}],
+		[{"stance": "hyde", "inst": ["hcane"]}, "I:lamp I:lamp I:lamp", "Spread Ruin", 105, 11, 1155, {"craving_on": {"lamp": 1}}],
+		[hyde, "F:cup F:eye", "Guard the Veil", 10, 1, 10, {"craving_on": {}, "no_craving": true, "draws": 1, "spends_stored": false}],
 	]
 
 
@@ -108,23 +108,23 @@ func test_score_table_steps() -> void:
 	eq(_shape(e), [
 		["base", 55, 5], ["root", 15, 0], ["root", 15, 0], ["root", 15, 0],
 		["factor", 10, 0], ["effect", 0, 2], ["factor", 10, 0], ["effect", 0, 0],
-	], "row 1: Lucid Mind, three Roots, Good Cheer and its mult, Resolve and its lock")
-	eq(e.steps.map(func(s: Dictionary) -> String: return s.sym), ["", "lamp", "heart", "mirror", "", "", "", ""], "row 1: Lamp, Heart, Mirror")
-	eq(e.steps[-1].label, "no restraint", "row 1: Resolve's effect")
+	], "row 1: Master the Self, three Roots, Temperance and its mult, Truth and its lock")
+	eq(e.steps.map(func(s: Dictionary) -> String: return s.sym), ["", "lamp", "heart", "mirror", "", "", "", ""], "row 1: Cloak, Quill, Cane")
+	eq(e.steps[-1].label, "no restraint", "row 1: Truth's effect")
 	e = Rules.evaluate(_run_with(rows[13][0]), cards(rows[13][1]))
 	eq(_shape(e), [
 		["base", 25, 2], ["root", 15, 0], ["root", 35, 0], ["gauge", 0, 6], ["factor", 10, 0], ["effect", 0, 2],
-	], "row 14: Sublimation, Composure, Fog and its burst, Good Cheer")
-	eq([e.steps[2].id, e.steps[3].id, e.steps[3].gauge], [e.turns[0], e.turns[0], "burst"], "row 14: the burst follows the Fog")
+	], "row 14: Tame the Other, Piety, Corruption and its burst, Temperance")
+	eq([e.steps[2].id, e.steps[3].id, e.steps[3].gauge], [e.turns[0], e.turns[0], "burst"], "row 14: the burst follows the Corruption")
 	eq([e.steps[-1].chips_to, e.steps[-1].mult_to], [85, 10], "row 14: 85 x 10")
 	e = Rules.evaluate(_run_with(rows[18][0]), cards(rows[18][1]))
 	eq(_shape(e), [
 		["base", 35, 5], ["root", 15, 0], ["root", 15, 0], ["factor", 10, 0], ["effect", 25, 0],
 		["factor", 10, 0], ["effect", 0, 0], ["stored", 0, 2], ["stored", 0, 2], ["stored", 0, 2],
-	], "row 19: Fixation, two Fog, Glee and its 25, Impulse and its draw, three stored drops")
+	], "row 19: Stoke Compulsion, two Corruption, Indulgence and its 25, Impulse and its draw, three stored drops")
 	eq(e.steps[6].label, "draws 1 more", "row 19: Impulse's effect")
 	e = Rules.evaluate(_run_with(rows[25][0]), cards(rows[25][1]))
-	eq(_shape(e), [["base", 35, 5], ["root", 35, 0], ["root", 35, 0]], "row 26: Fixation, two Fog at 35")
+	eq(_shape(e), [["base", 35, 5], ["root", 35, 0], ["root", 35, 0]], "row 26: Stoke Compulsion, two Corruption at 35")
 
 
 func test_steps_of_gauges_and_factors() -> void:
@@ -135,10 +135,10 @@ func test_steps_of_gauges_and_factors() -> void:
 	eq(_shape(e), [
 		["base", 30, 3], ["root", 45, 0], ["gauge", 0, 4], ["root", 45, 0], ["root", 30, 0], ["gauge", 0, 2],
 		["factor", 10, 0], ["effect", 0, 2], ["effect", 0, 2],
-	], "Temper after the first Lamp and the first Heart; Reason once a symbol")
+	], "Temper after the first Cloak and the first Quill; Balance once a symbol")
 	eq([e.steps[2].id, e.steps[5].id], [cs[1].id, cs[0].id], "Temper names the Root it follows")
-	eq([e.steps[7].of, e.steps[8].of], [cs[1].id, cs[0].id], "Reason names the Roots it counts")
-	# Habit fires after every Ink Root; Alibi counts the largest set; Restlessness repeats the best.
+	eq([e.steps[7].of, e.steps[8].of], [cs[1].id, cs[0].id], "Balance names the Roots it counts")
+	# Habit fires after every Ink Root; Obsession counts the largest set; Surrender repeats the best.
 	run = _run_with({"stance": "hyde", "habit": {"heart": 1}, "craving": {"lamp": 1}})
 	cs = cards("I:heart I:lamp I:heart F:cane F:pen")
 	e = Rules.evaluate(run, cs)
@@ -146,22 +146,22 @@ func test_steps_of_gauges_and_factors() -> void:
 		["base", 35, 5], ["root", 25, 0], ["root", 30, 0], ["gauge", 0, 1], ["root", 30, 0], ["gauge", 0, 1],
 		["factor", 10, 0], ["effect", 0, 2], ["effect", 0, 2],
 		["factor", 10, 0], ["again", 30, 0], ["effect", 0, 2],
-	], "Habit after each Heart, Alibi on the two Hearts, Restlessness repeats a Root")
-	eq([e.steps[7].of, e.steps[8].of], [cs[0].id, cs[2].id], "Alibi names the Roots of the largest set")
-	eq(e.steps[10].of, cs[0].id, "Restlessness names the best Root: the first Heart, at 30")
+	], "Habit after each Quill, Obsession on the two Quills, Surrender repeats a Root")
+	eq([e.steps[7].of, e.steps[8].of], [cs[0].id, cs[2].id], "Obsession names the Roots of the largest set")
+	eq(e.steps[10].of, cs[0].id, "Surrender names the best Root: the first Quill, at 30")
 	# Hunted: the base already carries the halved mult.
 	e = Rules.evaluate(_run_with({"stance": "hyde", "hunted": true}), cards("I:lamp I:lamp I:lamp"))
 	eq(e.steps[0].mult, 4, "hunted: the base mult is halved")
 	# The Cane after stored restraint.
 	e = Rules.evaluate(_run_with({"stance": "hyde", "stored": 1, "inst": ["hcane"]}), cards("I:lamp I:lamp I:lamp"))
 	eq(_shape(e).slice(-2), [["stored", 0, 2], ["instrument", 0, 4]], "stored restraint, then The Cane")
-	# With the Glass saucers, the second Fog scores and bursts at 0 Craving.
+	# With the Glass saucers, the second Corruption scores and bursts at 0 Craving.
 	e = Rules.evaluate(_run_with({"inst": ["saucers"], "craving": {"lamp": 2}}), cards("P:lamp I:lamp I:lamp"))
-	eq(_shape(e), [["base", 25, 2], ["root", 15, 0], ["root", 35, 0], ["gauge", 0, 6], ["root", 15, 0], ["gauge", 0, 2]], "two Fog turn")
-	# A Passing Thought: its base is one Factor's chips; no Factor adds more.
+	eq(_shape(e), [["base", 25, 2], ["root", 15, 0], ["root", 35, 0], ["gauge", 0, 6], ["root", 15, 0], ["gauge", 0, 2]], "two Corruption turn")
+	# Guard the Veil: its base is one Factor's chips; no Factor adds more.
 	cs = cards("F:cup F:eye")
 	e = Rules.evaluate(_run_with({}), cs)
-	eq(_shape(e), [["base", 10, 1], ["factor", 0, 0], ["factor", 0, 0], ["effect", 0, 0]], "a Passing Thought")
+	eq(_shape(e), [["base", 10, 1], ["factor", 0, 0], ["factor", 0, 0], ["effect", 0, 0]], "Guard the Veil")
 	# A refused play has no steps.
 	eq(Rules.evaluate(_run_with({}), cards("I:lamp")).steps, [], "a refused play has no steps")
 
@@ -171,10 +171,10 @@ func test_plays_not_allowed() -> void:
 		[{"stance": "hyde"}, "P:lamp"],  # a Paper Root in Hyde's stance
 		[{}, "I:lamp"],  # an Ink Root without its Paper twin
 		[{}, "P:heart I:lamp"],  # the wrong twin
-		[{}, "P:lamp I:lamp P:heart"],  # a Sublimation with a second Paper Root
-		[{}, "P:lamp I:lamp F:cup F:eye"],  # a Sublimation with two Factors
+		[{}, "P:lamp I:lamp P:heart"],  # Tame the Other with a second Paper Root
+		[{}, "P:lamp I:lamp F:cup F:eye"],  # Tame the Other with two Factors
 		[{}, "P:lamp I:lamp I:lamp"],  # two Ink Roots without the saucers
-		[saucers, "P:lamp I:lamp I:heart"],  # Appetite has no Kindness beside it
+		[saucers, "P:lamp I:lamp I:heart"],  # Madness has no Reason beside it
 	]
 	for row: Array in rows:
 		var e := Rules.evaluate(_run_with(row[0]), cards(row[1]))
@@ -189,48 +189,48 @@ func test_plays_not_allowed() -> void:
 func test_worked_examples() -> void:
 	var run := fresh()
 	var ev := Rules.evaluate(run, cards("P:lamp P:heart P:mirror F:cup F:lock"))
-	eq([ev.name, ev.chips, ev.mult, ev.score, ev.adds_restraint], ["Lucid Mind", 120, 7, 840, false], "night 1 Lucid Mind")
+	eq([ev.name, ev.chips, ev.mult, ev.score, ev.adds_restraint], ["Master the Self", 120, 7, 840, false], "night 1 Master the Self")
 	as_hyde(run)
 	run.stored = 3
 	ev = Rules.evaluate(run, cards("I:lamp I:lamp F:cup F:eye"))
-	eq([ev.name, ev.chips, ev.mult, ev.score, ev.craving_on.lamp, ev.draws], ["Fixation", 110, 11, 1210, 1, 1], "Hyde's first Fixation")
+	eq([ev.name, ev.chips, ev.mult, ev.score, ev.craving_on.lamp, ev.draws], ["Stoke Compulsion", 110, 11, 1210, 1, 1], "Hyde's first Stoke Compulsion")
 	run.stance = "jekyll"
 	run.stored = 0
 	run.craving.lamp = 2
 	ev = Rules.evaluate(run, cards("P:lamp I:lamp F:cup"))
-	eq([ev.name, ev.chips, ev.mult, ev.score, ev.temper_gain.lamp, ev.adds_restraint], ["Sublimation", 85, 10, 850, 2, false], "Sublimation at 2 Craving")
+	eq([ev.name, ev.chips, ev.mult, ev.score, ev.temper_gain.lamp, ev.adds_restraint], ["Tame the Other", 85, 10, 850, 2, false], "Tame the Other at 2 Craving")
 	run.craving.lamp = 0
 	run.temper = {"lamp": 2, "heart": 2, "mirror": 2}
 	ev = Rules.evaluate(run, cards("P:lamp P:heart P:mirror F:pen F:cane"))
-	eq([ev.name, ev.chips, ev.mult, ev.score], ["Lucid Mind", 255, 25, 6375], "late Lucid Mind")
+	eq([ev.name, ev.chips, ev.mult, ev.score], ["Master the Self", 255, 25, 6375], "late Master the Self")
 
 
 func test_hand_types_and_precedence() -> void:
 	var run := fresh()
-	eq(_read(run, "P:lamp"), ["Spark", 30, 2], "Spark")
-	eq(_read(run, "P:lamp P:lamp"), ["Rumination", 55, 2], "Rumination")
-	eq(_read(run, "P:lamp P:heart"), ["Good Work", 60, 3], "Good Work")
-	eq(_read(run, "P:lamp P:lamp P:lamp"), ["Dogma", 85, 3], "Dogma")
-	eq(_read(run, "P:lamp P:heart P:mirror"), ["Lucid Mind", 100, 5], "Lucid Mind")
-	eq(_read(run, "P:lamp P:lamp P:heart"), ["Good Work", 75, 3], "A A B is Good Work for Jekyll, all three Roots score")
-	eq(_read(run, "P:lamp P:lamp P:lamp P:heart"), ["Dogma", 100, 3], "A A A B is Dogma")
-	eq(_read(run, "P:lamp P:lamp P:heart P:mirror"), ["Lucid Mind", 115, 5], "A A B C is Lucid Mind")
-	eq(_read(run, "P:lamp P:lamp P:lamp P:heart P:mirror"), ["Lucid Mind", 130, 5], "A A A B C is Lucid Mind, over Dogma")
-	eq(_read(run, "P:lamp P:lamp P:heart P:heart"), ["Good Work", 90, 3], "A A B B is Good Work, over Rumination")
-	eq(_read(run, "P:lamp P:lamp P:lamp P:lamp P:lamp"), ["Dogma", 115, 3], "five alike is still Dogma")
-	eq(_read(run, "F:cup"), ["Passing Thought", 10, 1], "Passing Thought")
-	eq(_read(run, "F:cup F:eye F:lock"), ["Passing Thought", 10, 1], "Passing Thought of three Factors scores one")
+	eq(_read(run, "P:lamp"), ["Kindle Virtue", 30, 2], "Kindle Virtue")
+	eq(_read(run, "P:lamp P:lamp"), ["Strengthen Conviction", 55, 2], "Strengthen Conviction")
+	eq(_read(run, "P:lamp P:heart"), ["Weave Harmony", 60, 3], "Weave Harmony")
+	eq(_read(run, "P:lamp P:lamp P:lamp"), ["Impose Order", 85, 3], "Impose Order")
+	eq(_read(run, "P:lamp P:heart P:mirror"), ["Master the Self", 100, 5], "Master the Self")
+	eq(_read(run, "P:lamp P:lamp P:heart"), ["Weave Harmony", 75, 3], "A A B is Weave Harmony for Jekyll, all three Roots score")
+	eq(_read(run, "P:lamp P:lamp P:lamp P:heart"), ["Impose Order", 100, 3], "A A A B is Impose Order")
+	eq(_read(run, "P:lamp P:lamp P:heart P:mirror"), ["Master the Self", 115, 5], "A A B C is Master the Self")
+	eq(_read(run, "P:lamp P:lamp P:lamp P:heart P:mirror"), ["Master the Self", 130, 5], "A A A B C is Master the Self, over Impose Order")
+	eq(_read(run, "P:lamp P:lamp P:heart P:heart"), ["Weave Harmony", 90, 3], "A A B B is Weave Harmony, over Strengthen Conviction")
+	eq(_read(run, "P:lamp P:lamp P:lamp P:lamp P:lamp"), ["Impose Order", 115, 3], "five alike is still Impose Order")
+	eq(_read(run, "F:cup"), ["Guard the Veil", 10, 1], "Guard the Veil")
+	eq(_read(run, "F:cup F:eye F:lock"), ["Guard the Veil", 10, 1], "Guard the Veil of three Factors scores one")
 	as_hyde(run)
-	eq(_read(run, "I:lamp"), ["Stirring", 35, 3], "Stirring")
-	eq(_read(run, "I:lamp I:lamp"), ["Fixation", 65, 5], "Fixation")
-	eq(_read(run, "I:lamp I:heart"), ["Lapse", 55, 3], "Lapse")
-	eq(_read(run, "I:lamp I:lamp I:lamp"), ["Mania", 105, 7], "Mania")
-	eq(_read(run, "I:lamp I:heart I:mirror"), ["Turmoil", 85, 4], "Turmoil")
-	eq(_read(run, "I:lamp I:lamp I:heart"), ["Fixation", 80, 5], "A A B is Fixation for Hyde")
-	eq(_read(run, "I:lamp I:lamp I:heart I:mirror"), ["Fixation", 95, 5], "A A B C is Fixation, not Turmoil")
-	eq(_read(run, "I:lamp I:lamp I:lamp I:heart I:mirror"), ["Mania", 135, 7], "A A A B C is Mania, over Fixation and Turmoil")
-	eq(_read(run, "I:lamp I:lamp I:lamp I:lamp"), ["Mania", 120, 7], "four alike is Mania")
-	eq(_read(run, "F:eye"), ["Passing Thought", 10, 1], "Hyde's Passing Thought")
+	eq(_read(run, "I:lamp"), ["Indulge Vice", 35, 3], "Indulge Vice")
+	eq(_read(run, "I:lamp I:lamp"), ["Stoke Compulsion", 65, 5], "Stoke Compulsion")
+	eq(_read(run, "I:lamp I:heart"), ["Sow Discord", 55, 3], "Sow Discord")
+	eq(_read(run, "I:lamp I:lamp I:lamp"), ["Spread Ruin", 105, 7], "Spread Ruin")
+	eq(_read(run, "I:lamp I:heart I:mirror"), ["Unchain the Beast", 85, 4], "Unchain the Beast")
+	eq(_read(run, "I:lamp I:lamp I:heart"), ["Stoke Compulsion", 80, 5], "A A B is Stoke Compulsion for Hyde")
+	eq(_read(run, "I:lamp I:lamp I:heart I:mirror"), ["Stoke Compulsion", 95, 5], "A A B C is Stoke Compulsion, not Unchain the Beast")
+	eq(_read(run, "I:lamp I:lamp I:lamp I:heart I:mirror"), ["Spread Ruin", 135, 7], "A A A B C is Spread Ruin, over Stoke Compulsion and Unchain the Beast")
+	eq(_read(run, "I:lamp I:lamp I:lamp I:lamp"), ["Spread Ruin", 120, 7], "four alike is Spread Ruin")
+	eq(_read(run, "F:eye"), ["Guard the Veil", 10, 1], "Hyde's Guard the Veil")
 	# Every card in a hand scores its chips, and A A B marks both symbols.
 	var e := Rules.evaluate(run, cards("I:lamp I:lamp I:heart"))
 	eq(e.craving_on, {"lamp": 1, "heart": 1}, "Craving on each symbol present, once")
@@ -247,39 +247,39 @@ func test_hand_types_and_precedence() -> void:
 func test_common_factors() -> void:
 	var run := fresh()
 	var e := Rules.evaluate(run, cards("P:lamp P:heart F:cup F:cup"))
-	eq([e.chips, e.mult], [80, 7], "two Good Cheer stack: +4 mult")
+	eq([e.chips, e.mult], [80, 7], "two Temperance stack: +4 mult")
 	run.unlocked.pen = true
 	run.unlocked.cane = true
 	e = Rules.evaluate(run, cards("P:lamp P:heart P:mirror F:pen F:pen"))
-	eq([e.chips, e.mult, e.score], [120, 17, 2040], "two Reason on a Lucid Mind: +12 mult")
+	eq([e.chips, e.mult, e.score], [120, 17, 2040], "two Scales on Master the Self: +12 mult")
 	e = Rules.evaluate(run, cards("P:lamp P:lamp P:lamp F:pen"))
-	eq(e.mult, 5, "Reason on a Dogma counts one different Root")
+	eq(e.mult, 5, "Balance on Impose Order counts one different Root")
 	run.temper.heart = 2
 	e = Rules.evaluate(run, cards("P:lamp P:heart F:cane"))
-	eq([e.chips, e.mult], [30 + 15 + 45 + 10 + 45, 3 + 4 + 2], "Vigour scores the best Root again (Kindness at Temper 2) and adds 2")
+	eq([e.chips, e.mult], [30 + 15 + 45 + 10 + 45, 3 + 4 + 2], "Resolve scores the best Root again (Reason at Temper 2) and adds 2")
 	e = Rules.evaluate(run, cards("P:lamp P:heart F:cane F:cane"))
-	eq([e.chips, e.mult], [30 + 15 + 45 + 20 + 90, 3 + 4 + 4], "two Vigour: twice again, +4 mult")
+	eq([e.chips, e.mult], [30 + 15 + 45 + 20 + 90, 3 + 4 + 4], "two Resolve: twice again, +4 mult")
 	run.temper.heart = 0
 	e = Rules.evaluate(run, cards("P:heart P:lamp P:mirror F:cane"))
-	ok(e.parts.any(func(p: Dictionary) -> bool: return p.label == "Composure again"), "ties on chips go Lamp, Heart, Mirror")
-	eq(Rules.evaluate(run, cards("P:lamp F:lock")).adds_restraint, false, "Resolve: no restraint")
-	eq(Rules.evaluate(run, cards("F:lock")).adds_restraint, false, "Resolve works in a Passing Thought")
-	eq(Rules.evaluate(run, cards("F:cup")).adds_restraint, true, "a Passing Thought is a play")
-	eq(Rules.evaluate(run, cards("F:eye F:eye")).draws, 2, "Curiosity works in a Passing Thought")
+	ok(e.parts.any(func(p: Dictionary) -> bool: return p.label == "Piety again"), "ties on chips go Cloak, Quill, Cane")
+	eq(Rules.evaluate(run, cards("P:lamp F:lock")).adds_restraint, false, "Truth: no restraint")
+	eq(Rules.evaluate(run, cards("F:lock")).adds_restraint, false, "Truth works in Guard the Veil")
+	eq(Rules.evaluate(run, cards("F:cup")).adds_restraint, true, "Guard the Veil is a play")
+	eq(Rules.evaluate(run, cards("F:eye F:eye")).draws, 2, "Patience works in Guard the Veil")
 	as_hyde(run)
 	e = Rules.evaluate(run, cards("I:lamp F:cup F:cup"))
-	eq([e.chips, e.mult], [20 + 15 + 20 + 50, 3], "Glee adds 25 chips each")
+	eq([e.chips, e.mult], [20 + 15 + 20 + 50, 3], "Indulgence adds 25 chips each")
 	e = Rules.evaluate(run, cards("I:lamp I:lamp I:lamp I:lamp F:pen"))
-	eq(e.mult, 7 + 8, "Alibi: 2 mult for each Root in the largest matching set")
+	eq(e.mult, 7 + 8, "Obsession: 2 mult for each Root in the largest matching set")
 	e = Rules.evaluate(run, cards("I:lamp I:lamp I:heart F:pen"))
-	eq(e.mult, 5 + 4, "Alibi counts the largest set only")
+	eq(e.mult, 5 + 4, "Obsession counts the largest set only")
 	run.habit.heart = 1
 	e = Rules.evaluate(run, cards("I:lamp I:heart F:cane"))
-	eq([e.chips, e.mult, e.craving_on], [25 + 15 + 30 + 10 + 30, 3 + 1 + 2, {"lamp": 1, "heart": 2}], "Restlessness: best Root again, +2 mult, 1 more Craving on it")
+	eq([e.chips, e.mult, e.craving_on], [25 + 15 + 30 + 10 + 30, 3 + 1 + 2, {"lamp": 1, "heart": 2}], "Surrender: best Root again, +2 mult, 1 more Craving on it")
 	e = Rules.evaluate(run, cards("I:lamp I:heart F:cane F:lock"))
-	eq([e.craving_on, e.no_craving, e.breeds], [{}, true, []], "Cunning: no Craving at all")
+	eq([e.craving_on, e.no_craving, e.breeds], [{}, true, []], "Deceit: no Craving at all")
 	e = Rules.evaluate(run, cards("F:cup F:eye"))
-	eq([e.score, e.spends_stored], [10, false], "no bonus in a Passing Thought")
+	eq([e.score, e.spends_stored], [10, false], "no bonus in Guard the Veil")
 
 
 func test_hunted() -> void:
@@ -287,7 +287,7 @@ func test_hunted() -> void:
 	var mult := func(list: String) -> int: return Rules.evaluate(run, cards(list)).mult
 	eq([mult.call("I:lamp"), mult.call("I:lamp I:lamp"), mult.call("I:lamp I:heart"), mult.call("I:lamp I:lamp I:lamp"), mult.call("I:lamp I:heart I:mirror")],
 			[2, 3, 2, 4, 2], "hunted: 2 / 3 / 2 / 4 / 2")
-	eq(Rules.evaluate(run, cards("I:lamp I:lamp I:heart I:mirror")).name, "Fixation", "precedence is unchanged while hunted")
+	eq(Rules.evaluate(run, cards("I:lamp I:lamp I:heart I:mirror")).name, "Stoke Compulsion", "precedence is unchanged while hunted")
 	run.habit.lamp = 2
 	run.stored = 1
 	eq(mult.call("I:lamp I:lamp"), 3 + 4 + 2, "only the base is halved")
@@ -306,7 +306,7 @@ func test_glass_saucers() -> void:
 	ok(not Rules.evaluate(run, cards("P:lamp I:lamp I:lamp")).ok, "two need the saucers")
 	run.instruments.append("saucers")
 	var e := Rules.evaluate(run, cards("P:lamp I:lamp I:lamp"))
-	eq([e.ok, e.chips, e.mult, e.temper_gain], [true, 25 + 15 + 35 + 15, 2 + 6 + 2, {"lamp": 2}], "two Fog at 2 Craving: +6 then +2, Temper +2 once")
+	eq([e.ok, e.chips, e.mult, e.temper_gain], [true, 25 + 15 + 35 + 15, 2 + 6 + 2, {"lamp": 2}], "two Corruption at 2 Craving: +6 then +2, Temper +2 once")
 	eq(e.turns.size(), 2, "both turn")
 	e = Rules.evaluate(run, cards("P:lamp I:lamp P:heart I:heart F:cup"))
 	eq([e.ok, e.chips, e.mult, e.temper_gain], [true, 25 + 15 + 15 + 35 + 25 + 10, 2 + 6 + 4 + 2, {"lamp": 2, "heart": 1}], "two twin pairs and a Factor")
@@ -315,10 +315,10 @@ func test_glass_saucers() -> void:
 	ok(not Rules.evaluate(run, cards("P:lamp P:heart I:lamp I:lamp")).ok, "no spare Paper Root")
 	ok(not Rules.evaluate(run, cards("P:lamp I:lamp I:lamp I:lamp")).ok, "never three")
 	ok(not Rules.evaluate(run, cards("P:lamp I:lamp I:lamp F:cup F:eye")).ok, "still one Factor")
-	# The Ink Roots resolve Lamp before Heart before Mirror, whatever the order of the play.
+	# The Ink Roots resolve Cloak before Quill before Cane, whatever the order of the play.
 	var mixed := cards("I:heart P:heart I:lamp P:lamp")
 	e = Rules.evaluate(run, mixed)
-	eq(e.turns, [mixed[2].id, mixed[0].id], "Fog resolves before Appetite")
+	eq(e.turns, [mixed[2].id, mixed[0].id], "Corruption resolves before Madness")
 
 
 func test_reading_changes_nothing() -> void:
@@ -382,10 +382,10 @@ func test_best_with_a_large_hand() -> void:
 	var t0 := Time.get_ticks_msec()
 	var b := Rules.best(run)
 	var took := Time.get_ticks_msec() - t0
-	eq([b.ev.name, b.ids.size()], ["Mania", 5], "its best play is found")
+	eq([b.ev.name, b.ids.size()], ["Spread Ruin", 5], "its best play is found")
 	ok(took < 500, "without reading every subset of the hand (%d ms)" % took)
 	# More than seven of a kind in one play, if the numbers allow it.
 	run = as_hyde(at(fresh({"max_play": 8, "hand_size": 9}, 1), 1, 0))
 	deal(run, "I:heart I:lamp I:lamp I:lamp I:lamp I:lamp I:lamp I:lamp I:lamp")
 	b = Rules.best(run)
-	eq([b.ev.name, b.ids.size()], ["Mania", 9 - 1], "eight alike are not taken for one of another kind")
+	eq([b.ev.name, b.ids.size()], ["Spread Ruin", 9 - 1], "eight alike are not taken for one of another kind")

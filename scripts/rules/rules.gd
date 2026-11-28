@@ -10,7 +10,7 @@ class_name Rules
 ##
 ## - shuffle {ids}: the deck shuffled into the draw pile at a round's start (top last).
 ## - drawn {why, ids}: cards drawn to the hand, in order. `why` is "deal", "refill" or
-##   "draws" (one more for each Curiosity or Impulse).
+##   "draws" (one more for each Patience or Impulse).
 ## - reshuffle {ids}: the discards turned into the draw pile, as it now lies (top last),
 ##   placed among the draws where it happened.
 ## - scored {score, to}: a play's score, and the round's after it.
@@ -18,7 +18,7 @@ class_name Rules
 ## - craving {sym, n}, breed {sym, habit, id, at}: Craving rose; a rollover's copy joined the
 ##   draw pile at place `at`.
 ## - cheque {sov}: the Cheque book paid 1.
-## - turn {id, sym, gain, temper}: a Sublimation turned an Ink Root.
+## - turn {id, sym, gain, temper}: a play of Tame the Other turned an Ink Root.
 ## - restraint {n}: the meter after a step.
 ## - discarded {why, ids}: cards from the hand to the discards ("play" or "discard").
 ## - shift {ev} (a drink, night 4's window, salt) and breakout {ev} (a breakout or walking in
@@ -136,7 +136,7 @@ static func limit(run: RulesRun) -> int:
 	return limit_for(run, is_scene(run))
 
 
-## How many Ink Roots one Sublimation may turn.
+## How many Ink Roots one play of Tame the Other may turn.
 static func turn_cap(run: RulesRun) -> int:
 	return 2 if has_inst(run, "saucers") else 1
 
@@ -364,7 +364,7 @@ static func _pull(run: RulesRun, sym: String, ink: bool, moved: Array) -> int:
 # Hyde: a matching pair if the piles hold one (most Habit, then most copies there);
 # otherwise one each of two symbols (one he already holds first, then most Habit).
 # Jekyll: one each of two symbols (one his hand lacks first, then one whose Ink twin he holds).
-# Remaining ties go Lamp, Heart, Mirror.
+# Remaining ties go Cloak, Quill, Cane.
 static func _bring_roots(run: RulesRun) -> Array:
 	var out: Array = []
 	var moved: Array = []
@@ -760,8 +760,8 @@ static func pass_play(run: RulesRun) -> Dictionary:
 ## The rescue of a last play that falls short, worked out but not applied. `prior` is the
 ## round's score before that play, `last` the play's score, `held_ids` the cards left in hand
 ## when its cards leave (before the refill), `breaks_out` whether that play also fills the
-## meter. He converts held Paper Roots to their Ink twins, lowest Temper first, then Lamp,
-## Heart, Mirror. Each one doubles the last play, and he stops when the target is met.
+## meter. He converts held Paper Roots to their Ink twins, lowest Temper first, then Cloak,
+## Quill, Cane. Each one doubles the last play, and he stops when the target is met.
 ## Returns {k, ids, pool, factor, score, ok, ink, paper, over}: the Roots taken, the score
 ## reached and whether it covers the round, and the line as it would then stand.
 static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, breaks_out: bool) -> Dictionary:
@@ -787,7 +787,7 @@ static func plan_rescue(run: RulesRun, prior: int, last: int, held_ids: Array, b
 
 
 ## The Paper Roots among these held cards in the order a rescue takes them: lowest Temper
-## first, then Lamp, Heart, Mirror (then by id). As RulesCard.
+## first, then Cloak, Quill, Cane (then by id). As RulesCard.
 static func rescue_pool(run: RulesRun, held_ids: Array) -> Array:
 	var papers: Array = []
 	for id: int in held_ids:
@@ -973,7 +973,7 @@ static func salt_cost(run: RulesRun, where: String) -> int:
 
 
 ## His Root with the most Habit. Ties go to the most Craving, then the fewest Ink copies in
-## the deck, then Lamp, Heart, Mirror.
+## the deck, then Cloak, Quill, Cane.
 static func highest_habit(run: RulesRun) -> String:
 	var roots := RulesConfig.ROOTS
 	return sort_by(roots, func(s: String) -> Array:
@@ -1006,8 +1006,8 @@ static func _enter_dawn(run: RulesRun) -> void:
 		_open_lab(run)
 
 
-# The laboratory's Factor: the one that unlocked at this dawn; failing that, an unlocked Pen
-# or Cane the deck has no copy of, Pen first; failing that, any unlocked Factor at random.
+# The laboratory's Factor: the one that unlocked at this dawn; failing that, an unlocked Scale
+# or Key the deck has no copy of, Scale first; failing that, any unlocked Factor at random.
 static func _lab_factor(run: RulesRun) -> String:
 	var night := night_of(run)
 	if night.unlocks != "":

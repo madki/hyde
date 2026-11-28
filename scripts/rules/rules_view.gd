@@ -260,7 +260,7 @@ static func _offer(o: Dictionary, can: Dictionary) -> Dictionary:
 ## - `ev`: the reading (RulesHands.evaluate): the hand's name, chips, mult and score with
 ##   their parts and steps, `spends_stored`, `cheque`, `draws`, `no_craving`.
 ## - `base`: {chips, mult}: the hand's own chips and mult (rules 4.1; the mult halved when
-##   hunted; 10 x 1 for a Passing Thought), without the cards' chips or any bonus.
+##   hunted; 10 x 1 for Guard the Veil), without the cards' chips or any bonus.
 ## - `at_risk`: on the round's last play only, else null: the ids of the Paper Roots that
 ##   would stay in the hand, in the order a rescue would take them. `line_breaks_at`: the
 ##   place in that list (from 0) of the first Root whose loss would put his Roots ahead of
@@ -272,7 +272,7 @@ static func _offer(o: Dictionary, can: Dictionary) -> Dictionary:
 ## - `craving`: for each symbol the play adds to: {adds, to, copies, habit_to}.
 ## - `turns`: for each Ink Root turned, in order: {id, sym, gain, temper_to}.
 ## - `best_root`: the id of the play's best Root (the active Root with the most chips, ties
-##   going Lamp, Heart, Mirror), or -1 for a play without an active Root.
+##   going Cloak, Quill, Cane), or -1 for a play without an active Root.
 ## - `score_to`, `target`, `meets_target`, `last_play`.
 ## - `result`: "goes_on", "won", "rescued" or "lost" (a rescue that cannot cover the round).
 ## - `rescue`: null, or for a last play that falls short {k, ids, names, pool, factor, score,

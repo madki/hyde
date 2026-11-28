@@ -27,7 +27,7 @@ var salt: int
 var doses_bought: int
 var sov: int
 var hyde_arrived: bool
-## Which of the Pen and the Cane have unlocked.
+## Which of the Scale and the Key have unlocked.
 var unlocked: Dictionary = {"pen": false, "cane": false}
 ## Keys of the instruments held.
 var instruments: Array = []

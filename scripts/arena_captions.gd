@@ -5,7 +5,7 @@ class_name ArenaCaptions
 
 const NUMBERS := ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"]
 ## What an Ink Root in the deck means, in the rules' words.
-const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only in a Sublimation. If Ink Roots outnumber Paper Roots when a round ends, the run is lost."
+const INK_MEANS := "Only Hyde plays Ink Roots; Jekyll only when he tames the Other. If Ink Roots outnumber Paper Roots when a round ends, the run is lost."
 
 
 ## Why cards join the deck, for `joins`:
@@ -102,10 +102,10 @@ static func line_stands(paper: int, ink: int) -> String:
 
 
 ## Why a gauge grew, said while its new value stands beside it: `cause` is "rollover" (a
-## Craving of three became a Habit) or "turn" (a Sublimation), `symbol` the symbol's name.
+## Craving of three became a Habit) or "turn" (Tame the Other), `symbol` the symbol's name.
 static func grows(cause: String, symbol: String) -> String:
 	if cause == "turn":
-		return "Sublimation: its Craving is turned to Temper."
+		return "%s: its Craving is turned to Temper." % RulesConfig.HANDS.jekyll.sublimation.name
 	return "Craving reached 3: %s is a Habit now." % symbol
 
 
@@ -116,8 +116,8 @@ static func brings(man: String, names: Array) -> String:
 	return "%s brings %s." % [man, list(names)]
 
 
-## A Root changes side: `change` is "stain" (a drink), "convert" (the rescue) or "turn" (a
-## Sublimation). `from` is the card's name before, `to` its twin's.
+## A Root changes side: `change` is "stain" (a drink), "convert" (the rescue) or "turn" (Tame
+## the Other). `from` is the card's name before, `to` its twin's.
 static func changes(change: String, from: String, to: String) -> String:
 	match change:
 		"stain":
@@ -128,7 +128,7 @@ static func changes(change: String, from: String, to: String) -> String:
 
 
 ## The notice shown when a Root changes side: {title, lines}. `change` is "stain" (a drink)
-## or "turn" (a Sublimation); `from` and `to` the card's name before and its twin's; the line
+## or "turn" (Tame the Other); `from` and `to` the card's name before and its twin's; the line
 ## before (`paper`, `ink`) moves a mark across. For a turn, `symbol` is the label of the
 ## symbol whose Craving was turned, `gain` the Temper it gained and `temper` what it is now.
 static func changes_notice(change: String, from: String, to: String, paper: int, ink: int,
@@ -137,7 +137,7 @@ static func changes_notice(change: String, from: String, to: String, paper: int,
 		var temper_line := "The %s had no Craving to turn to Temper." % symbol
 		if gain > 0:
 			temper_line = "Its Craving is turned to Temper: the %s's Temper rises by %d, to %d." % [symbol, gain, temper]
-		return {"title": "Sublimation", "lines": [
+		return {"title": RulesConfig.HANDS.jekyll.sublimation.name, "lines": [
 			"%s is %s again." % [from, _a(to)], temper_line,
 			line_moves(paper, ink, paper + 1, ink - 1)]}
 	return {"title": "The draught stains a Root", "lines": [
@@ -161,7 +161,7 @@ static func line_moves(paper: int, ink: int, to_paper: int, to_ink: int) -> Stri
 	return "%s to Paper %d, Ink %d." % [line_stands(paper, ink).trim_suffix("."), to_paper, to_ink]
 
 
-## Names as a phrase: "a Fog", "two Fog", "a Composure and a Scruple", "two Fog and a Pride".
+## Names as a phrase: "a Corruption", "two Corruption", "a Piety and a Composure", "two Corruption and a Brutality".
 static func list(names: Array) -> String:
 	var counts := {}
 	for name: String in names:

@@ -3,7 +3,7 @@ extends Control
 ## on the arena's page, with keys that run each of its movements. The numbers here are the
 ## bench's own, made up to drive the element; the arena takes them from the rules.
 ##
-## Keys: 1, 2, 3 choose Lamp, Heart or Mirror. P adds a pip (a third rolls over), O empties
+## Keys: 1, 2, 3 choose Cloak, Quill or Cane. P adds a pip (a third rolls over), O empties
 ## one, R rolls Craving over, T turns it into Temper, H adds a Habit tally. G steps through
 ## the ghost marks (a pip, a rollover, Temper, none) and L sets the lock. F flashes the
 ## sketch. On the line: A moves a paper mark across to ink, S an ink mark back to paper,
