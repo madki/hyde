@@ -9,7 +9,7 @@ class_name ArenaCardPictures
 ## Paper pictures by key: a Root's Paper side, or a Factor (which has one picture for both men).
 const PAPER := {
 	"lamp": "cloak", "heart": "quill", "mirror": "cane_hand",
-	"cup": "cup", "eye": "hourglass", "lock": "lock", "pen": "mask", "cane": "cane",
+	"cup": "cup", "eye": "hourglass", "lock": "mask", "pen": "scale", "cane": "key",
 }
 ## The pictures of the Ink Roots that have one of their own: the others keep their Paper
 ## picture, in Ink's light.
@@ -23,6 +23,8 @@ const DRAWN := {
 	"cup": preload("res://art/card_pictures/cup.png"),
 	"mask": preload("res://art/card_pictures/mask.png"),
 	"hourglass": preload("res://art/card_pictures/hourglass.png"),
+	"scale": preload("res://art/card_pictures/scale.png"),
+	"key": preload("res://art/card_pictures/key.png"),
 }
 const DRAWN_PAD := 18.0
 
@@ -58,39 +60,7 @@ static func add(pencil: Pencil, picture: String, box: Rect2, width: float = 1.5)
 		pencil.stroke(path, width, 0.35, 0.0)
 
 
-## The lines of a picture, in the unit box.
-static func lines(picture: String) -> Array[PackedVector2Array]:
-	var out: Array[PackedVector2Array] = []
-	match picture:
-		"lock":
-			# A padlock.
-			out.append(_path([0.22, 0.46, 0.78, 0.46, 0.78, 0.92, 0.22, 0.92, 0.22, 0.46]))
-			out.append(_path([0.33, 0.46, 0.33, 0.3]))
-			out.append(_arc(Vector2(0.5, 0.3), Vector2(0.17, 0.2), 180.0, 360.0))
-			out.append(_path([0.67, 0.3, 0.67, 0.46]))
-			out.append(_arc(Vector2(0.5, 0.64), Vector2(0.06, 0.06), 0.0, 360.0))
-			out.append(_path([0.5, 0.7, 0.5, 0.82]))
-		"cane":
-			# A walking cane.
-			out.append(_path([0.62, 0.94, 0.4, 0.26]))
-			out.append(_arc(Vector2(0.54, 0.22), Vector2(0.15, 0.15), 165.0, 380.0))
-			out.append(_path([0.38, 0.2, 0.47, 0.5]))
-	return out
-
-
-## A line through pairs of numbers: x, y, x, y and so on.
-static func _path(numbers: Array) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	for i in range(0, numbers.size() - 1, 2):
-		out.append(Vector2(numbers[i], numbers[i + 1]))
-	return out
-
-
-## Part of an ellipse, from one angle to another in degrees: 0 points right and 90 down.
-static func _arc(centre: Vector2, radius: Vector2, from: float, to: float) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	var pieces := maxi(4, int(absf(to - from) / 15.0))
-	for k in pieces + 1:
-		var angle := deg_to_rad(lerpf(from, to, float(k) / pieces))
-		out.append(centre + Vector2(cos(angle), sin(angle)) * radius)
-	return out
+## The lines of a picture, in the unit box. Every card's picture is a drawing now, so none
+## has lines; a picture that is not yet drawn would add its lines here.
+static func lines(_picture: String) -> Array[PackedVector2Array]:
+	return []
