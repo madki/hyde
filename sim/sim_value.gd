@@ -85,8 +85,8 @@ static func next_round(run: RulesRun) -> Dictionary:
 	return {"night": mini(run.night + 1, last), "round": 0}
 
 
-## About what a good play of Jekyll's scores as the gauges stand: a Lucid Mind of his three
-## symbols with a Good Cheer, his Temper counted, and a share of the Craving he may yet turn.
+## About what a good play of Jekyll's scores as the gauges stand: Master the Self of his three
+## symbols with a Chalice, his Temper counted, and a share of the Craving he may yet turn.
 static func jekyll_play(run: RulesRun, w: Dictionary = weights) -> float:
 	var d := run.dials
 	var hand: Dictionary = RulesConfig.HANDS.jekyll.lucid
@@ -98,8 +98,8 @@ static func jekyll_play(run: RulesRun, w: Dictionary = weights) -> float:
 	return chips * mult
 
 
-## About what a good play of Hyde's scores as the gauges stand: a Mania of his best symbol
-## with a Glee, its Craving and Habit counted. `hunted`: the base mult of his hands is halved.
+## About what a good play of Hyde's scores as the gauges stand: Spread Ruin of his best symbol
+## with a Chalice, its Craving and Habit counted. `hunted`: the base mult of his hands is halved.
 static func hyde_play(run: RulesRun, hunted: bool = false) -> float:
 	var d := run.dials
 	var hand: Dictionary = RulesConfig.HANDS.hyde.mania

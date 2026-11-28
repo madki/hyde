@@ -68,7 +68,7 @@ func test_card_chips() -> void:
 	eq(Rules.chips_of(run, ink, 0), 15 + 15 * 3, "at a given Craving")
 	eq(Rules.chips_of(run, loose("F:pen")), 10, "a Factor is 10")
 	eq([Rules.name_of(paper, "hyde"), Rules.name_of(ink, "jekyll"), Rules.name_of(loose("F:lock"), "jekyll"), Rules.name_of(loose("F:lock"), "hyde")],
-			["Composure", "Appetite", "Resolve", "Cunning"], "a Root keeps its name, a Factor takes the name of the man at the table")
+			["Piety", "Madness", "Truth", "Deceit"], "a Root keeps its name, a Factor takes the name of the man at the table")
 
 
 func test_config() -> void:

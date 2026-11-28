@@ -20,22 +20,22 @@ var habit_chips: int = 15
 var temper_chips: int = 15
 
 # Mult.
-## Good Cheer.
+## Temperance (the Chalice).
 var cheer_mult: int = 2
-## Reason: a different symbol. Alibi: a Root of the largest matching set.
+## Balance: a different symbol. Obsession: a Root of the largest matching set.
 var pen_mult: int = 2
-## Vigour and Restlessness.
+## Resolve and Surrender.
 var cane_mult: int = 2
 ## A point of Habit, for every Ink Root of the symbol in the play.
 var habit_mult: int = 1
 ## A point of Temper, once for a symbol in the play.
 var temper_mult: int = 3
-## A Sublimation's burst for a turned Root, and for each point of Craving it carries.
+## The burst of Tame the Other for a turned Root, and for each point of Craving it carries.
 var burst_mult: int = 2
 var burst_craving_mult: int = 2
-## A point of stored restraint, on his first Stirring or better.
+## A point of stored restraint, on his first Indulge Vice or better.
 var restraint_pay: int = 2
-## The Cane, on a Mania.
+## The Cane, on Spread Ruin.
 var hcane_mult: int = 4
 
 # Gauges and restraint.

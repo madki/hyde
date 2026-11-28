@@ -53,7 +53,7 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 	var active: Array = ink if st == "hyde" else paper
 	res.ok = true
 	if active.is_empty():
-		# A Passing Thought: Factors only. One of them scores its chips, times 1. No bonus
+		# Guard the Veil: Factors only. One of them scores its chips, times 1. No bonus
 		# applies and no Craving rises.
 		var first: RulesCard = fac[0]
 		var fchips: int = d.factor_chips
@@ -130,7 +130,7 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 		if nf.cup > 0:
 			var v: int = d.glee_chips * int(nf.cup)
 			chips += v
-			parts.append({"label": "Glee bonus", "v": v})
+			parts.append({"label": "Indulgence bonus", "v": v})
 		var habit_bonus := 0
 		for c: RulesCard in active:
 			habit_bonus += d.habit_mult * run.habit[c.sym]
@@ -145,15 +145,15 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 		if nf.pen > 0:
 			var b: int = d.pen_mult * most * int(nf.pen)
 			mult += b
-			mult_parts.append({"label": "Alibi", "v": b})
+			mult_parts.append({"label": "Obsession", "v": b})
 		if canes > 0:
 			mult += d.cane_mult * canes
-			mult_parts.append({"label": "Restlessness", "v": d.cane_mult * canes})
+			mult_parts.append({"label": "Surrender", "v": d.cane_mult * canes})
 		if key == "mania" and Rules.has_inst(run, "hcane"):
 			mult += d.hcane_mult
 			mult_parts.append({"label": "The Cane", "v": d.hcane_mult})
 		# Craving: 1 for each of his symbols in the play, 1 more on the best Root's symbol for
-		# each Restlessness, none at all with Cunning.
+		# each Surrender, none at all with Deceit.
 		res.no_craving = nf.lock > 0
 		if not res.no_craving:
 			var on: Dictionary = res.craving_on
@@ -178,14 +178,14 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 				mult_parts.append({"label": "Temper, " + str(RulesConfig.ROOT[sym].label), "v": b})
 		if nf.cup > 0:
 			mult += d.cheer_mult * int(nf.cup)
-			mult_parts.append({"label": "Good Cheer", "v": d.cheer_mult * int(nf.cup)})
+			mult_parts.append({"label": "Temperance", "v": d.cheer_mult * int(nf.cup)})
 		if nf.pen > 0:
 			var b: int = d.pen_mult * different * int(nf.pen)
 			mult += b
-			mult_parts.append({"label": "Reason", "v": b})
+			mult_parts.append({"label": "Balance", "v": b})
 		if canes > 0:
 			mult += d.cane_mult * canes
-			mult_parts.append({"label": "Vigour", "v": d.cane_mult * canes})
+			mult_parts.append({"label": "Resolve", "v": d.cane_mult * canes})
 		res.adds_restraint = nf.lock == 0
 	res.chips = chips
 	res.mult = mult
@@ -194,7 +194,7 @@ static func evaluate(run: RulesRun, cards: Array) -> Dictionary:
 	return res
 
 
-## The best Root of a play: the one with the most chips. Ties go Lamp, Heart, Mirror.
+## The best Root of a play: the one with the most chips. Ties go Cloak, Quill, Cane.
 static func best_root(run: RulesRun, roots: Array) -> RulesCard:
 	var top: RulesCard = null
 	var top_chips := -1
@@ -281,15 +281,15 @@ static func _factor_name(kind: String, stance: String) -> String:
 	return RulesConfig.FACTOR[kind].ink if stance == "hyde" else RulesConfig.FACTOR[kind].paper
 
 
-# A Sublimation: Paper Roots beside their Ink twins, and one Factor at most. One Ink Root
+# Tame the Other: Paper Roots beside their Ink twins, and one Factor at most. One Ink Root
 # turns, or two with the Glass saucers: one Paper Root and two of its twins, or two twin
-# pairs. The Ink Roots resolve one at a time, Lamp before Heart before Mirror, each at the
+# pairs. The Ink Roots resolve one at a time, Cloak before Quill before Cane, each at the
 # Craving its symbol has by then.
 static func _sublimation(run: RulesRun, res: Dictionary, paper: Array, ink: Array, fac: Array) -> Dictionary:
 	var d := run.dials
 	var cap := Rules.turn_cap(run)
 	if ink.size() > cap:
-		res.reason = "A Sublimation turns one of his Roots." if cap == 1 else "A Sublimation turns two of his Roots at most."
+		res.reason = "Tame the Other turns one of his Roots." if cap == 1 else "Tame the Other turns two of his Roots at most."
 		return res
 	for c: RulesCard in ink:
 		if not _has_sym(paper, c.sym):
@@ -300,11 +300,11 @@ static func _sublimation(run: RulesRun, res: Dictionary, paper: Array, ink: Arra
 		if not _has_sym(ink, p.sym):
 			spare = true
 	if spare:
-		res.reason = ("A Sublimation is one of Jekyll's Roots, its ink twin, and one Factor at most." if cap == 1
-				else "A Sublimation is his Roots beside their paper twins, and one Factor at most.")
+		res.reason = ("Tame the Other takes one of Jekyll's Roots, its ink twin, and one Factor at most." if cap == 1
+				else "Tame the Other takes his Roots beside their paper twins, and one Factor at most.")
 		return res
 	if fac.size() > 1:
-		res.reason = "A Sublimation holds one Factor at most."
+		res.reason = "Tame the Other holds one Factor at most."
 		return res
 	var def: Dictionary = RulesConfig.HANDS.jekyll.sublimation
 	res.ok = true
@@ -349,18 +349,18 @@ static func _sublimation(run: RulesRun, res: Dictionary, paper: Array, ink: Arra
 		parts.append({"label": RulesConfig.FACTOR[f.kind].paper, "v": d.factor_chips, "id": f.id})
 		if f.kind == "cup":
 			mult += d.cheer_mult
-			mult_parts.append({"label": "Good Cheer", "v": d.cheer_mult})
+			mult_parts.append({"label": "Temperance", "v": d.cheer_mult})
 		elif f.kind == "pen":
 			var b: int = d.pen_mult * seen.size()
 			mult += b
-			mult_parts.append({"label": "Reason", "v": b})
+			mult_parts.append({"label": "Balance", "v": b})
 		elif f.kind == "cane":
 			var top := best_root(run, paper)
 			var v := Rules.chips_of(run, top)
 			chips += v
 			parts.append({"label": str(RulesConfig.ROOT[top.sym].paper) + " again", "v": v})
 			mult += d.cane_mult
-			mult_parts.append({"label": "Vigour", "v": d.cane_mult})
+			mult_parts.append({"label": "Resolve", "v": d.cane_mult})
 	res.chips = chips
 	res.mult = mult
 	res.score = chips * mult
@@ -378,8 +378,8 @@ static func _has_sym(cards: Array, sym: String) -> bool:
 # ---------- the score, step by step ----------
 
 # The score of an allowed play as the steps a table performs it in, one card at a time: the
-# hand's base; each Root, by Lamp, Heart, Mirror (Paper before Ink, then by id), with its
-# gauge bonus right after it; each Factor, by Cup, Eye, Lock, Pen, Cane (then by id), with
+# hand's base; each Root, by Cloak, Quill, Cane (Paper before Ink, then by id), with its
+# gauge bonus right after it; each Factor, by Chalice, Hourglass, Mask, Scale, Key (then by id), with
 # its effect right after it; then stored restraint, one step a point, and The Cane.
 #
 # A step is {kind, id, of, sym, gauge, chips, mult, label, chips_to, mult_to}. `kind` is
@@ -391,12 +391,12 @@ static func _has_sym(cards: Array, sym: String) -> bool:
 # running totals after it, so the last step's are the play's chips and mult.
 #
 # - Temper fires once a symbol, after the first Paper Root of it; Habit after every Ink Root.
-# - A Sublimation's Ink Root scores at the Craving its symbol has then, and its burst follows.
-# - Reason gives one step for each different Paper symbol, Alibi one for each Ink Root of
+# - In Tame the Other, an Ink Root scores at the Craving its symbol has then, and its burst follows.
+# - Balance gives one step for each different Paper symbol, Obsession one for each Ink Root of
 #   the largest matching set, each naming that Root in `of`.
-# - Vigour and Restlessness: an "again" step for the best Root, then their mult.
-# - Curiosity, Impulse, Resolve and Cunning have an effect step that adds nothing.
-# - A Passing Thought's base is the one Factor's chips times 1, and its Factors add nothing.
+# - Resolve and Surrender: an "again" step for the best Root, then their mult.
+# - Patience, Impulse, Truth and Deceit have an effect step that adds nothing.
+# - Guard the Veil's base is the one Factor's chips times 1, and its Factors add nothing.
 # - Hunted: the base step's mult is already halved.
 static func _steps(run: RulesRun, res: Dictionary, roots: Array, fac: Array, base_chips: int, base_mult: int, base_label: String) -> Array:
 	var d := run.dials
@@ -427,7 +427,7 @@ static func _steps(run: RulesRun, res: Dictionary, roots: Array, fac: Array, bas
 			firsts.append(c)
 			if run.temper[c.sym] > 0:
 				_step(out, "gauge", c.id, -1, c.sym, 0, d.temper_mult * run.temper[c.sym], "Temper", "temper")
-	# The Roots Alibi counts: those of the largest matching set, first by Lamp, Heart, Mirror.
+	# The Roots Obsession counts: those of the largest matching set, first by Cloak, Quill, Cane.
 	var largest: Array = []
 	if st == "hyde":
 		for sym in RulesConfig.ROOTS:
@@ -450,9 +450,9 @@ static func _steps(run: RulesRun, res: Dictionary, roots: Array, fac: Array, bas
 				if thought:
 					pass
 				elif st == "hyde":
-					_step(out, "effect", f.id, -1, "", d.glee_chips, 0, "Glee")
+					_step(out, "effect", f.id, -1, "", d.glee_chips, 0, "Indulgence")
 				else:
-					_step(out, "effect", f.id, -1, "", 0, d.cheer_mult, "Good Cheer")
+					_step(out, "effect", f.id, -1, "", 0, d.cheer_mult, "Temperance")
 			"eye":
 				_step(out, "effect", f.id, -1, "", 0, 0, "draws 1 more")
 			"lock":
@@ -475,8 +475,8 @@ static func _steps(run: RulesRun, res: Dictionary, roots: Array, fac: Array, bas
 	return out
 
 
-# A sorted copy of Roots or of Factors: Roots by Lamp, Heart, Mirror, Paper before Ink,
-# Factors by Cup, Eye, Lock, Pen, Cane, and cards that are alike by id.
+# A sorted copy of Roots or of Factors: Roots by Cloak, Quill, Cane, Paper before Ink,
+# Factors by Chalice, Hourglass, Mask, Scale, Key, and cards that are alike by id.
 static func _in_order(cards: Array) -> Array:
 	var out: Array = []
 	var ranks := PackedInt32Array()
@@ -506,8 +506,8 @@ static func _step(out: Array, kind: String, id: int, of: int, sym: String, chips
 #
 # What a play scores depends only on how many cards of each kind it holds, so a search can
 # read it from eleven counts, without the labels, parts and steps a table shows. The counts
-# are kept in the order of _TALLY: the Paper Roots (Lamp, Heart, Mirror), the Ink Roots, then
-# the Factors (Cup, Eye, Lock, Pen, Cane). The numbers below are filled by _prepare for one
+# are kept in the order of _TALLY: the Paper Roots (Cloak, Quill, Cane), the Ink Roots, then
+# the Factors (Chalice, Hourglass, Mask, Scale, Key). The numbers below are filled by _prepare for one
 # run and read by _count_score; _count_score leaves what it found in the _r_ ones.
 
 const _TALLY := {"lamp": 0, "heart": 1, "mirror": 2, "cup": 6, "eye": 7, "lock": 8, "pen": 9, "cane": 10}
@@ -556,7 +556,7 @@ static var _w_keep := false
 ## search that reads many: {ok: false} when the play is not allowed, and otherwise `ok`,
 ## `kind`, `key`, `name`, `chips`, `mult`, `score`, `adds_restraint`, `no_craving`, `craving_on`,
 ## `breeds`, `turns`, `temper_gain`, `spends_stored`, `cheque` and `draws`, each as evaluate
-## gives it (`craving_on` and `temper_gain` list their symbols Lamp, Heart, Mirror).
+## gives it (`craving_on` and `temper_gain` list their symbols Cloak, Quill, Cane).
 static func read(run: RulesRun, cards: Array) -> Dictionary:
 	_prepare(run)
 	var t := _tally
@@ -584,7 +584,7 @@ static func read(run: RulesRun, cards: Array) -> Dictionary:
 		var inks: Array = []
 		for c: RulesCard in cards:
 			if c.kind == "" and c.ink:
-				# Lamp before Heart before Mirror, then by id.
+				# Cloak before Quill before Cane, then by id.
 				var rank: int = _TALLY[c.sym] * 0x100000000 + c.id
 				var i := inks.size()
 				while i > 0 and rank < int(inks[i - 1][0]):
@@ -725,7 +725,7 @@ static func _count_score(t: PackedInt32Array) -> int:
 	var def: Array = _hand_of(hyde, different, most)
 	var worth := _q_ink if hyde else _q_paper
 	var chips: int = int(def[1]) + a0 * worth[0] + a1 * worth[1] + a2 * worth[2] + d.factor_chips * nf
-	# The best Root: the most chips, ties Lamp, Heart, Mirror.
+	# The best Root: the most chips, ties Cloak, Quill, Cane.
 	var top := -1
 	var top_chips := -1
 	if a0 > 0:
@@ -765,7 +765,7 @@ static func _count_score(t: PackedInt32Array) -> int:
 	return chips * mult
 
 
-# A Sublimation's score from its counts, or -1.
+# The score of Tame the Other from its counts, or -1.
 static func _count_sublimation(t: PackedInt32Array, np: int, ni: int, nf: int) -> int:
 	var d := _q_d
 	if ni > _q_cap or np > ni or nf > 1:
@@ -868,7 +868,7 @@ static func _search(run: RulesRun, hand: Array, keep: bool) -> int:
 			if by_kind[k] != null:
 				_w_groups.append([k, by_kind[k]])
 	else:
-		# Jekyll plays Ink Roots only in a Sublimation, so they are chosen first, and with
+		# Jekyll plays Ink Roots only when he tames the Other, so they are chosen first, and with
 		# any of them few other cards can follow.
 		for k: int in [3, 4, 5, 0, 1, 2, 6, 7, 8, 9, 10]:
 			if by_kind[k] != null:
@@ -903,7 +903,7 @@ static func _walk(at: int, left: int, size: int, mask: int, turns: int) -> void:
 			_w_all.append([-score, size, mask, _r_key])
 		return
 	if at == _w_inks and size > 0:
-		# A Sublimation: no more Paper Roots than Ink Roots, and one Factor at most.
+		# Tame the Other: no more Paper Roots than Ink Roots, and one Factor at most.
 		left = mini(left, size + 1)
 	var group: Array = _w_groups[at]
 	var kind: int = group[0]

@@ -8,11 +8,12 @@ const RULES_VERSION := "2026.11.26.2"
 
 ## The three symbols, in the order every tie between symbols is settled by.
 const ROOTS: Array[String] = ["lamp", "heart", "mirror"]
-## A Root card has a symbol and a side: paper is Jekyll's, ink is Hyde's.
+## A Root card has a symbol and a side: paper is Jekyll's, ink is Hyde's. `label` is the
+## symbol; `domain` is the part of the man it stands for (shown nowhere yet).
 const ROOT := {
-	"lamp": {"label": "Lamp", "paper": "Composure", "ink": "Fog"},
-	"heart": {"label": "Heart", "paper": "Kindness", "ink": "Appetite"},
-	"mirror": {"label": "Mirror", "paper": "Scruple", "ink": "Pride"},
+	"lamp": {"label": "Cloak", "domain": "Soul", "paper": "Piety", "ink": "Corruption"},
+	"heart": {"label": "Quill", "domain": "Mind", "paper": "Reason", "ink": "Madness"},
+	"mirror": {"label": "Cane", "domain": "Body", "paper": "Composure", "ink": "Brutality"},
 }
 
 const FACTORS: Array[String] = ["cup", "eye", "lock", "pen", "cane"]
@@ -22,25 +23,25 @@ const FACTORS: Array[String] = ["cup", "eye", "lock", "pen", "cane"]
 ## show it through text(), which puts the run's number in.
 const FACTOR := {
 	"cup": {
-		"label": "Cup", "paper": "Good Cheer", "ink": "Glee", "unlock": 0,
+		"label": "Chalice", "paper": "Temperance", "ink": "Indulgence", "unlock": 0,
 		"paper_text": "Adds {cheer_mult} mult.", "ink_text": "Adds {glee_chips} chips.",
 	},
 	"eye": {
-		"label": "Eye", "paper": "Curiosity", "ink": "Impulse", "unlock": 0,
+		"label": "Hourglass", "paper": "Patience", "ink": "Impulse", "unlock": 0,
 		"paper_text": "Draws one more card after the hand refills.",
 		"ink_text": "Draws one more card after the hand refills.",
 	},
 	"lock": {
-		"label": "Lock", "paper": "Resolve", "ink": "Cunning", "unlock": 0,
+		"label": "Mask", "paper": "Truth", "ink": "Deceit", "unlock": 0,
 		"paper_text": "The play adds no restraint.", "ink_text": "The play adds no Craving.",
 	},
 	"pen": {
-		"label": "Pen", "paper": "Reason", "ink": "Alibi", "unlock": 1,
+		"label": "Scale", "paper": "Balance", "ink": "Obsession", "unlock": 1,
 		"paper_text": "Adds {pen_mult} mult for each different Paper Root in the play.",
 		"ink_text": "Adds {pen_mult} mult for each Ink Root in the largest matching set in the play.",
 	},
 	"cane": {
-		"label": "Cane", "paper": "Vigour", "ink": "Restlessness", "unlock": 2,
+		"label": "Key", "paper": "Resolve", "ink": "Surrender", "unlock": 2,
 		"paper_text": "Scores the play's best Root a second time and adds {cane_mult} mult.",
 		"ink_text": "Scores the play's best Root a second time, adds {cane_mult} mult, and adds 1 more Craving to that Root.",
 	},
@@ -49,19 +50,19 @@ const FACTOR := {
 ## The hands of each stance. When a play fits several, the highest chips x mult counts.
 const HANDS := {
 	"jekyll": {
-		"spark": {"name": "Spark", "chips": 15, "mult": 2, "row": "one"},
-		"rumination": {"name": "Rumination", "chips": 25, "mult": 2, "row": "pair"},
-		"goodwork": {"name": "Good Work", "chips": 30, "mult": 3, "row": "two"},
-		"dogma": {"name": "Dogma", "chips": 40, "mult": 3, "row": "three"},
-		"lucid": {"name": "Lucid Mind", "chips": 55, "mult": 5, "row": "all"},
-		"sublimation": {"name": "Sublimation", "chips": 25, "mult": 2, "row": "sub"},
+		"spark": {"name": "Kindle Virtue", "chips": 15, "mult": 2, "row": "one"},
+		"rumination": {"name": "Strengthen Conviction", "chips": 25, "mult": 2, "row": "pair"},
+		"goodwork": {"name": "Weave Harmony", "chips": 30, "mult": 3, "row": "two"},
+		"dogma": {"name": "Impose Order", "chips": 40, "mult": 3, "row": "three"},
+		"lucid": {"name": "Master the Self", "chips": 55, "mult": 5, "row": "all"},
+		"sublimation": {"name": "Tame the Other", "chips": 25, "mult": 2, "row": "sub"},
 	},
 	"hyde": {
-		"stirring": {"name": "Stirring", "chips": 20, "mult": 3, "row": "one"},
-		"fixation": {"name": "Fixation", "chips": 35, "mult": 5, "row": "pair"},
-		"lapse": {"name": "Lapse", "chips": 25, "mult": 3, "row": "two"},
-		"mania": {"name": "Mania", "chips": 60, "mult": 7, "row": "three"},
-		"turmoil": {"name": "Turmoil", "chips": 40, "mult": 4, "row": "all"},
+		"stirring": {"name": "Indulge Vice", "chips": 20, "mult": 3, "row": "one"},
+		"fixation": {"name": "Stoke Compulsion", "chips": 35, "mult": 5, "row": "pair"},
+		"lapse": {"name": "Sow Discord", "chips": 25, "mult": 3, "row": "two"},
+		"mania": {"name": "Spread Ruin", "chips": 60, "mult": 7, "row": "three"},
+		"turmoil": {"name": "Unchain the Beast", "chips": 40, "mult": 4, "row": "all"},
 	},
 }
 ## The patterns of active Roots, and the hand each stance makes of them.
@@ -73,15 +74,15 @@ const ROWS := [
 	{"key": "all", "label": "All three symbols", "jekyll": "lucid", "hyde": "turmoil"},
 	{"key": "sub", "label": "A Root and its ink twin", "jekyll": "sublimation", "hyde": ""},
 ]
-const THOUGHT_NAME := "Passing Thought"
+const THOUGHT_NAME := "Guard the Veil"
 
 const INSTRUMENTS := {
 	"spirit": {"name": "Spirit lamp", "text": "One more discard a round.", "price": 5, "whose": "lab"},
 	"notebook": {"name": "Notebook", "text": "Shows the next three cards of the draw pile.", "price": 5, "whose": "lab"},
 	"balance": {"name": "Balance", "text": "Restraint holds {balance_bonus} more.", "price": 6, "whose": "lab"},
-	"saucers": {"name": "Glass saucers", "text": "A Sublimation may turn two of his Roots.", "price": 7, "whose": "lab"},
-	"hcane": {"name": "The Cane", "text": "His Mania gains {hcane_mult} mult.", "price": 0, "whose": "his"},
-	"cheque": {"name": "Cheque book", "text": "Each Stirring or better of his pays 1 sovereign.", "price": 0, "whose": "his"},
+	"saucers": {"name": "Glass saucers", "text": "Tame the Other may turn two of his Roots.", "price": 7, "whose": "lab"},
+	"hcane": {"name": "The Cane", "text": "His Spread Ruin gains {hcane_mult} mult.", "price": 0, "whose": "his"},
+	"cheque": {"name": "Cheque book", "text": "Each Indulge Vice or better of his pays 1 sovereign.", "price": 0, "whose": "his"},
 }
 const LAB_INSTRUMENTS: Array[String] = ["spirit", "notebook", "balance", "saucers"]
 const HIS_INSTRUMENTS: Array[String] = ["hcane", "cheque"]
@@ -91,7 +92,7 @@ const MAX_INSTRUMENTS := 3
 const STARTING_DECK: Array[String] = [
 	"lamp", "lamp", "lamp", "heart", "heart", "heart", "mirror", "mirror", "cup", "cup", "eye", "lock",
 ]
-## The Ink Roots that join the first time Hyde has the table: 2 Fog, 1 Appetite, 1 Pride.
+## The Ink Roots that join the first time Hyde has the table: 2 Corruption, 1 Madness, 1 Brutality.
 const FIRST_ARRIVAL: Array[String] = ["lamp", "lamp", "heart", "mirror"]
 
 const CARD_PRICE := 3
