@@ -169,7 +169,7 @@ func test_hand() -> void:
 	eq(v.hand.size(), 8, "every card of the hand")
 	eq(_hand_card(v, h[0].id), {"id": h[0].id, "t": "root", "key": "lamp", "ink": false, "name": "Piety", "chips": 30, "text": "", "playable": true, "turnable": false}, "a Paper Root as Jekyll")
 	eq([_hand_card(v, h[1].id).playable, _hand_card(v, h[1].id).turnable], [true, true], "a Corruption beside a Piety can be turned")
-	eq([_hand_card(v, h[2].id).playable, _hand_card(v, h[2].id).turnable, _hand_card(v, h[2].id).name], [false, false, "Madness"], "an Madness with no Reason cannot")
+	eq([_hand_card(v, h[2].id).playable, _hand_card(v, h[2].id).turnable, _hand_card(v, h[2].id).name], [false, false, "Madness"], "a Madness with no Reason cannot")
 	eq([_hand_card(v, h[3].id).name, _hand_card(v, h[3].id).playable, _hand_card(v, h[3].id).key, _hand_card(v, h[3].id).text], ["Temperance", true, "cup", "Adds 2 mult."], "a Factor, under Jekyll's name, and what it does")
 	eq(v.can_pass.ok, false, "a card can be played, so no pass")
 	run.stance = "hyde"
@@ -342,7 +342,7 @@ func test_texts_follow_the_numbers() -> void:
 	var h := deal(run, "F:cup I:lamp I:lamp I:lamp I:lamp P:heart P:mirror P:lamp")
 	eq(_hand_card(RulesView.table(run), h[0].id).text, "Adds 30 chips.", "Indulgence's text names the run's number")
 	eq(RulesView.table(run).night.twist_text, "Restraint holds 1 fewer.", "so does the twist's")
-	eq([RulesConfig.instrument_text("hcane", run.dials), RulesConfig.instrument_text("balance", run.dials)], ["His Spread Ruin gains 6 mult.", "Restraint holds 2 more."], "and an instrument's")
+	eq([RulesConfig.instrument_text("hcane", run.dials), RulesConfig.instrument_text("balance", run.dials)], ["Spread Ruin gains 6 mult when he plays it.", "Restraint holds 2 more."], "and an instrument's")
 	eq(Rules.evaluate(run, h.slice(1, 5)).reason, "A hand is up to 3 cards.", "a play of too many cards")
 	eq(Rules.discard(run, ids(h.slice(1, 5))).reason, "Discard up to 3 cards.", "a discard of too many")
 	for kind in RulesConfig.FACTORS:

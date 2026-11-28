@@ -81,8 +81,8 @@ const INSTRUMENTS := {
 	"notebook": {"name": "Notebook", "text": "Shows the next three cards of the draw pile.", "price": 5, "whose": "lab"},
 	"balance": {"name": "Balance", "text": "Restraint holds {balance_bonus} more.", "price": 6, "whose": "lab"},
 	"saucers": {"name": "Glass saucers", "text": "Tame the Other may turn two of his Roots.", "price": 7, "whose": "lab"},
-	"hcane": {"name": "The Cane", "text": "His Spread Ruin gains {hcane_mult} mult.", "price": 0, "whose": "his"},
-	"cheque": {"name": "Cheque book", "text": "Each Indulge Vice or better of his pays 1 sovereign.", "price": 0, "whose": "his"},
+	"hcane": {"name": "The Cane", "text": "Spread Ruin gains {hcane_mult} mult when he plays it.", "price": 0, "whose": "his"},
+	"cheque": {"name": "Cheque book", "text": "Each of his hands from Indulge Vice up pays 1 sovereign.", "price": 0, "whose": "his"},
 }
 const LAB_INSTRUMENTS: Array[String] = ["spirit", "notebook", "balance", "saucers"]
 const HIS_INSTRUMENTS: Array[String] = ["hcane", "cheque"]

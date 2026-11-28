@@ -33,7 +33,7 @@ var temper_mult: int = 3
 ## The burst of Tame the Other for a turned Root, and for each point of Craving it carries.
 var burst_mult: int = 2
 var burst_craving_mult: int = 2
-## A point of stored restraint, on his first Indulge Vice or better.
+## A point of stored restraint, on his first hand from Indulge Vice up.
 var restraint_pay: int = 2
 ## The Cane, on Spread Ruin.
 var hcane_mult: int = 4

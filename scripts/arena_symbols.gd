@@ -1198,7 +1198,7 @@ func _ledger_parts(sym: String) -> Array[Dictionary]:
 		add.call("Temper 0: pays nothing yet.", _heavy, LEDGER_SIZE, TEMPER, LEDGER_STEP)
 	var rise: String = RulesConfig.HANDS.hyde.stirring.name
 	var turn: String = RulesConfig.HANDS.jekyll.sublimation.name
-	add.call("Craving rises as Hyde plays %s in %s or better. %s (%s with %s) turns it into Temper." % [ink,
+	add.call("Craving rises as Hyde plays %s in any hand from %s up. %s (%s with %s) turns it into Temper." % [ink,
 			rise, turn, paper, ink], _slanted, LEDGER_SIZE, Palette.CHALK_2, LEDGER_STEP * 2.0, true)
 	add.call("%d %s in the deck, %d chips each" % [s.paper, paper, s.paper_chips], _slanted, LEDGER_SIZE, Palette.CHALK_2,
 			LEDGER_STEP * 2.0, true)

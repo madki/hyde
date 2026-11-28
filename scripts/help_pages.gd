@@ -44,7 +44,7 @@ const PAGES: Array[Dictionary] = [
 	{
 		"title": "The gauges", "picture": "gauges",
 		"words": [
-			"Craving rises as Hyde plays Ink Roots in {rise} or better. Each Ink Root: +{craving_chips}\u00a0chips.",
+			"Craving rises as Hyde plays Ink Roots in any hand from {rise} up. Each Ink Root: +{craving_chips}\u00a0chips.",
 			"At {cap} it becomes a Habit, Hyde's, and a new Ink Root joins the deck. Each Ink Root: +{habit_chips}\u00a0chips, +{habit_mult}\u00a0mult for each played.",
 			"{turn} turns Craving into Temper, Jekyll's. Each Paper Root: +{temper_chips}\u00a0chips, +{temper_mult}\u00a0mult once a play.",
 		],

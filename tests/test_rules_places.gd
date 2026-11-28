@@ -131,7 +131,7 @@ func test_laboratory_refusals() -> void:
 	p = _agrees(run, "a full rack")
 	eq([p.slots_free, _whys(p.instruments)], [0, ["3 instruments held. Drop one first.", "3 instruments held. Drop one first."]], "a full rack: no instrument can be bought")
 	eq(p.held.map(func(o: Dictionary) -> Array: return [o.key, o.name, o.text]),
-			[["hcane", "The Cane", "His Spread Ruin gains 4 mult."], ["cheque", "Cheque book", "Each Indulge Vice or better of his pays 1 sovereign."], ["spirit", "Spirit lamp", "One more discard a round."]], "the instruments held, with what they do")
+			[["hcane", "The Cane", "Spread Ruin gains 4 mult when he plays it."], ["cheque", "Cheque book", "Each of his hands from Indulge Vice up pays 1 sovereign."], ["spirit", "Spirit lamp", "One more discard a round."]], "the instruments held, with what they do")
 	Rules.drop_instrument(run, "hcane")
 	p = _agrees(run, "one dropped")
 	eq([p.slots_free, _oks(p.instruments), p.held.size()], [1, [true, true], 2], "one dropped: a slot is free")
@@ -160,7 +160,7 @@ func test_back_alley() -> void:
 	eq(p.habit.map(func(o: Dictionary) -> Array: return [o.sym, o.name, o.habit, o.adds, o.taken, o.ok]),
 			[["lamp", "Corruption", 0, 1, false, true], ["heart", "Madness", 0, 1, false, true], ["mirror", "Brutality", 0, 1, false, true]], "a Habit on any Root of his")
 	eq(p.instruments.map(func(o: Dictionary) -> Array: return [o.key, o.name, o.text, o.taken, o.ok]),
-			[["hcane", "The Cane", "His Spread Ruin gains 4 mult.", false, true], ["cheque", "Cheque book", "Each Indulge Vice or better of his pays 1 sovereign.", false, true]], "his two instruments")
+			[["hcane", "The Cane", "Spread Ruin gains 4 mult when he plays it.", false, true], ["cheque", "Cheque book", "Each of his hands from Indulge Vice up pays 1 sovereign.", false, true]], "his two instruments")
 	eq(p.taken, {"habit": "", "instrument": ""}, "nothing taken yet")
 	# The Habit, once.
 	Rules.alley_habit(run, "heart")
@@ -250,7 +250,7 @@ func test_texts_have_the_runs_numbers() -> void:
 	Rules.continue_result(run)
 	run.instruments = ["balance", "hcane"]
 	var p := _agrees(run, "changed numbers, the laboratory")
-	eq(p.held.map(func(o: Dictionary) -> String: return o.text), ["Restraint holds 2 more.", "His Spread Ruin gains 6 mult."], "the instruments' texts")
+	eq(p.held.map(func(o: Dictionary) -> String: return o.text), ["Restraint holds 2 more.", "Spread Ruin gains 6 mult when he plays it."], "the instruments' texts")
 	eq(p.strike.filter(func(o: Dictionary) -> bool: return o.key == "cup")[0].text, "Adds 3 mult.", "a Factor's text, in Jekyll's words")
 	run = at(fresh({"balance_bonus": 2, "hcane_mult": 6, "cheer_mult": 3, "glee_chips": 25, "alley_habit": 2, "alley_markup": 4}, 23), 0, 2)
 	Rules.drink(run)
@@ -258,7 +258,7 @@ func test_texts_have_the_runs_numbers() -> void:
 	Rules.continue_result(run)
 	run.sov = 20
 	p = _agrees(run, "changed numbers, the back alley")
-	eq([p.instruments[0].text, p.habit[0].adds, p.salt.price], ["His Spread Ruin gains 6 mult.", 2, 7], "his instrument's text, the Habit and the price")
+	eq([p.instruments[0].text, p.habit[0].adds, p.salt.price], ["Spread Ruin gains 6 mult when he plays it.", 2, 7], "his instrument's text, the Habit and the price")
 	Rules.alley_habit(run, "lamp")
 	eq(RulesView.place(run).habit[0].habit, 2, "the Habit taken")
 	for o: Dictionary in p.instruments + p.held:

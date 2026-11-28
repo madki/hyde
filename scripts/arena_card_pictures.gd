@@ -49,11 +49,18 @@ static func drawing_box(drawn: Texture2D, box: Rect2) -> Rect2:
 	return Rect2(box.get_center() - size * 0.5, size)
 
 
-## Lays the picture out with `pencil`, inside `box`, keeping its shape.
+## Lays the picture out with `pencil`, inside `box`, keeping its shape. A drawing adds
+## nothing here; a picture that is neither a drawing nor has lines is an error, not a blank.
 static func add(pencil: Pencil, picture: String, box: Rect2, width: float = 1.5) -> void:
+	if DRAWN.has(picture):
+		return
+	var shape := lines(picture)
+	if shape.is_empty():
+		push_error("The card picture '%s' has no drawing and no lines." % picture)
+		return
 	var side := minf(box.size.x, box.size.y)
 	var origin := box.get_center() - Vector2(side, side) * 0.5
-	for line: PackedVector2Array in lines(picture):
+	for line: PackedVector2Array in shape:
 		var path := PackedVector2Array()
 		for point in line:
 			path.append(origin + point * side)

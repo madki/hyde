@@ -491,14 +491,25 @@ func _build_men() -> void:
 # chips and mult. The column of the man at the table is lit.
 func _build_hands() -> void:
 	var x := PIC.position.x
-	var columns := {"jekyll": x + 190.0, "hyde": x + 324.0}
-	var column_w := 124.0
-	# A hand's name wraps in its column; a row whose names take two lines sets its numbers lower.
+	# Jekyll's column begins far enough right that the widest row label keeps clear of it, lit or
+	# not; the two columns share what is left of the picture's width.
+	var label_w := _light.get_string_size("Roots in the play", HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE).x
+	for row: Dictionary in RulesConfig.ROWS:
+		label_w = maxf(label_w, _light.get_string_size(row.label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, NOTE_SIZE).x)
+	var lit_pad := 8.0
+	var gap := 14.0
+	var left := ceilf(label_w) + gap + lit_pad
+	var column_w := floorf((PIC.size.x - left) / 2.0)
+	var columns := {"jekyll": x + left, "hyde": x + left + column_w}
+	# A hand's name wraps in its column. In a row where a name takes two lines, a one-line name
+	# sits on the lower line, so that each name ends just above its numbers and the numbers of
+	# a row are level.
 	var name_w := column_w - 10.0
 	var name_size := 15
+	var line_step := 18.0
 	var top := PIC.position.y
 	var pitch := 64.0
-	_rects.append({"rect": Rect2(columns[_stance()] - 8.0, top - 6.0, column_w, 32.0 + pitch * RulesConfig.ROWS.size()),
+	_rects.append({"rect": Rect2(columns[_stance()] - lit_pad, top - 6.0, column_w, 32.0 + pitch * RulesConfig.ROWS.size()),
 			"colour": Color(_light_colour(), 0.09)})
 	_say("Roots in the play", Vector2(x, top + 2.0), NOTE_SIZE, Palette.CHALK_2)
 	_say("Jekyll", Vector2(columns.jekyll, top), 18, Palette.JEKYLL, true)
@@ -513,23 +524,43 @@ func _build_hands() -> void:
 			_card_picture(ArenaCardPictures.picture_of(mark.trim_suffix("*"), ink),
 					Rect2(x + i * 36.0, y - 1.0, 32.0, 32.0), Palette.HYDE if ink else Palette.CHALK)
 		_say(row.label, Vector2(x, y + 33.0), NOTE_SIZE, Palette.CHALK)
-		var wraps := false
+		var lines := {}
+		var most := 1
 		for stance: String in columns:
+			lines[stance] = PackedStringArray()
 			if String(row[stance]) != "":
-				var named: String = RulesConfig.HANDS[stance][row[stance]].name
-				wraps = wraps or _heavy.get_string_size(named, HORIZONTAL_ALIGNMENT_LEFT, -1.0, name_size).x > name_w
+				lines[stance] = _wrap(RulesConfig.HANDS[stance][row[stance]].name, name_size, name_w)
+			most = maxi(most, lines[stance].size())
+		var name_top := y + (3.0 if most == 1 else -2.0)
+		var numbers_y := name_top + most * line_step + 3.0
 		for stance: String in columns:
-			var at := Vector2(columns[stance], y + (-2.0 if wraps else 3.0))
 			if String(row[stance]) == "":
-				_say("none", at, NOTE_SIZE, Palette.CHALK_3)
+				_say("none", Vector2(columns[stance], name_top), NOTE_SIZE, Palette.CHALK_3)
 				continue
 			var hand: Dictionary = RulesConfig.HANDS[stance][row[stance]]
-			_say(hand.name, at, name_size, Palette.JEKYLL if stance == "jekyll" else Palette.HYDE, true,
-					HORIZONTAL_ALIGNMENT_LEFT, name_w)
-			_say("%d × %d" % [hand.chips, hand.mult], at + Vector2(0.0, 39.0 if wraps else 24.0), NOTE_SIZE,
+			var shown: PackedStringArray = lines[stance]
+			for i in shown.size():
+				_say(shown[i], Vector2(columns[stance], name_top + (most - shown.size() + i) * line_step), name_size,
+						Palette.JEKYLL if stance == "jekyll" else Palette.HYDE, true)
+			_say("%d × %d" % [hand.chips, hand.mult], Vector2(columns[stance], numbers_y), NOTE_SIZE,
 					Palette.CHALK)
 		y += pitch
 	_say("Each hand gives chips × mult.", Vector2(x, y + 2.0), NOTE_SIZE, Palette.CHALK_2)
+
+
+# `text` broken into lines no wider than `width` in the heavy font at `px`, at its spaces.
+func _wrap(text: String, px: int, width: float) -> PackedStringArray:
+	var out := PackedStringArray()
+	var line := ""
+	for word: String in text.split(" "):
+		var longer := word if line == "" else line + " " + word
+		if line != "" and _heavy.get_string_size(longer, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > width:
+			out.append(line)
+			line = word
+		else:
+			line = longer
+	out.append(line)
+	return out
 
 
 # The gauges as the table draws them, with each of a gauge's three counts named.

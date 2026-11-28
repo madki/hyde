@@ -3,7 +3,7 @@ extends "res://tests/case.gd"
 
 
 # Night 2, round 1 (target 3,000), he has arrived, Cloak Temper 1, one play left. The hand is
-# two Reason to play, and to hold: a Piety, a Composure, a Chalice, a Corruption, an Madness, an Hourglass.
+# two Reason to play, and to hold: a Piety, a Composure, a Chalice, a Corruption, a Madness, an Hourglass.
 func _rescue_table(prior: int) -> Array:
 	var run := at(fresh({}, 16), 1, 0)
 	run.hyde_arrived = true

@@ -52,7 +52,7 @@ func _ready() -> void:
 		w.show_card({"key": "heart", "ink": true, "name": "Madness", "chips": 15}, 9)
 		w.set_price(0), "", "One Habit a dawn.", "taken")
 	_add_row(RIGHT, TOP + ShopWare.CARD_SLOT.y + 8.0, accent, func(w: ShopWare) -> void:
-		w.show_instrument("hcane", "The Cane", "His Spread Ruin gains 2 mult.")
+		w.show_instrument("hcane", "The Cane", "Spread Ruin gains 2 mult when he plays it.")
 		w.set_price(0), "", "You hold three instruments already.", "taken")
 	_add_row(RIGHT, TOP + ShopWare.CARD_SLOT.y + ShopWare.SMALL_SLOT.y + 16.0, accent, func(w: ShopWare) -> void:
 		w.show_service("Strike a card", "Takes one card out of the deck for good.")
