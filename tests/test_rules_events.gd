@@ -139,7 +139,7 @@ func test_draws_deal_refill_and_eye() -> void:
 	top.reverse()
 	r = Rules.play(run, [h[0].id, h[1].id])
 	var drawn: Array = r.events.filter(func(e: Dictionary) -> bool: return e.t == "drawn")
-	eq(drawn.map(func(e: Dictionary) -> Array: return [e.why, e.ids]), [["refill", top.slice(0, 2)], ["draws", top.slice(2)]], "two refill the hand, one more for the Curiosity")
+	eq(drawn.map(func(e: Dictionary) -> Array: return [e.why, e.ids]), [["refill", top.slice(0, 2)], ["draws", top.slice(2)]], "two refill the hand, one more for the Patience")
 	r = Rules.discard(run, run.hand.slice(0, 2))
 	eq(_types(r.events), ["discarded", "drawn"], "a discard: the cards leave, one is drawn (the hand held 9)")
 	eq(r.events[0].why, "discard", "and says so")
@@ -168,7 +168,7 @@ func test_breed_reports_the_copy() -> void:
 	var breed: Array = r.events.filter(func(e: Dictionary) -> bool: return e.t == "breed")
 	eq(breed.size(), 1, "one copy")
 	var copy := Rules.card(run, breed[0].id)
-	ok(copy != null and copy.ink and copy.sym == "lamp", "the copy's id is a new Fog")
+	ok(copy != null and copy.ink and copy.sym == "lamp", "the copy's id is a new Corruption")
 	eq([breed[0].sym, breed[0].habit], ["lamp", 1], "its symbol and the new Habit")
 	eq(_types(r.events).slice(0, 4), ["scored", "breed", "craving", "discarded"], "bred before the cards leave")
 
@@ -257,7 +257,7 @@ func test_converted_in_order() -> void:
 	var tail: Array = _types(r.events).slice(-4)
 	eq(tail, ["rescue", "converted", "converted", "round_end"], "the rescue, each Root, then the round's end")
 	var conv: Array = r.events.filter(func(e: Dictionary) -> bool: return e.t == "converted")
-	eq(conv.map(func(e: Dictionary) -> Array: return [e.id, e.score]), [[h[3].id, 2700 + 220], [h[2].id, 2700 + 440]], "the Scruple, then the Composure, with the score after each")
+	eq(conv.map(func(e: Dictionary) -> Array: return [e.id, e.score]), [[h[3].id, 2700 + 220], [h[2].id, 2700 + 440]], "the Composure, then the Piety, with the score after each")
 	var end: Dictionary = r.events[-1]
 	eq([end.how, end.ink, end.paper, end.over, end.pay, end.offers_card, end.was], ["rescued", 6, 6, false, 0, false, "jekyll"], "rescued at 6 to 6, no pay, no card")
 

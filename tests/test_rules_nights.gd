@@ -10,10 +10,10 @@ func test_dawn_1_in_the_laboratory() -> void:
 	eq([ink_n(run), paper_n(run)], [2, 8], "before he has arrived: 2 Ink Roots to 8 Paper Roots")
 	run.sov = 40
 	eq([run.phase, run.dawn.no, run.dawn.brings, run.dawn.unlocks, ink_n(run, "heart"), run.unlocked.pen, run.hyde_arrived],
-			["lab", 1, "heart", "pen", 2, true, false], "dawn 1: two Appetite join and the Pen unlocks; then the laboratory")
+			["lab", 1, "heart", "pen", 2, true, false], "dawn 1: two Madness join and the Scale unlocks; then the laboratory")
 	eq([run.alley, run.dawn.as_hyde, run.dawn.last], [null, false, false], "no back alley for Jekyll")
 	var sh: Dictionary = run.shop
-	eq([sh.cards.size(), sh.cards[2].key, sh.cards.map(func(o: Dictionary) -> int: return o.price)], [3, "pen", [3, 3, 3]], "the shelf: two Paper Roots and Reason, 3 sovereigns each")
+	eq([sh.cards.size(), sh.cards[2].key, sh.cards.map(func(o: Dictionary) -> int: return o.price)], [3, "pen", [3, 3, 3]], "the shelf: two Paper Roots and Balance, 3 sovereigns each")
 	ok(RulesConfig.ROOT.has(sh.cards[0].key) and RulesConfig.ROOT.has(sh.cards[1].key) and sh.cards[0].key != sh.cards[1].key, "two different Paper Roots")
 	eq(sh.instruments.size(), 2, "two instruments on offer")
 	ok(sh.instruments[0].key != sh.instruments[1].key and sh.instruments.all(func(o: Dictionary) -> bool:
@@ -22,7 +22,7 @@ func test_dawn_1_in_the_laboratory() -> void:
 	Rules.buy_card(run, 0)
 	Rules.buy_card(run, 2)
 	eq([run.cards.size(), run.sov, Rules.buy_card(run, 0).ok], [n + 2, 34, false], "one copy of each")
-	eq([run.cards[-1].t, run.cards[-1].kind, Rules.is_paper(run.cards[-2])], ["factor", "pen", true], "a Reason and a Paper Root joined the deck")
+	eq([run.cards[-1].t, run.cards[-1].kind, Rules.is_paper(run.cards[-2])], ["factor", "pen", true], "a Scale and a Paper Root joined the deck")
 	eq([Rules.salt_cost(run, "lab"), Rules.salt_cost(run, "alley")], [3, 5], "salt costs 3, and the alley would charge 5")
 	eq([Rules.buy_salt(run).ok, Rules.salt_cost(run, "lab"), Rules.salt_cost(run, "alley"), run.salt, run.sov], [true, 4, 6, 4, 31], "then 4 and 6 after one dose")
 	Rules.buy_salt(run)
@@ -44,7 +44,7 @@ func test_dawn_1_in_the_laboratory() -> void:
 	ok(not Rules.buy_card(run, 1).ok and not Rules.buy_salt(run).ok and not Rules.strike(run, fac.id).ok and not Rules.buy_instrument(run, 1).ok, "nothing without the sovereigns")
 	Rules.leave_lab(run)
 	eq([run.night, run.round, run.phase, run.stance, run.shop, run.dawn], [1, 0, "play", "jekyll", null, null], "night 2 begins, in the same stance")
-	ok(Rules.unlocked_factors(run).has("pen") and not Rules.unlocked_factors(run).has("cane"), "Reason is in the reward pool, Vigour not yet")
+	ok(Rules.unlocked_factors(run).has("pen") and not Rules.unlocked_factors(run).has("cane"), "Balance is in the reward pool, Resolve not yet")
 	ok(not Rules.leave_lab(run).ok and not Rules.buy_salt(run).ok and not Rules.drop_instrument(run, run.instruments[0]).ok, "the laboratory is closed during a night")
 
 
@@ -65,18 +65,18 @@ func test_dawn_1_in_the_back_alley() -> void:
 	eq([Rules.salt_cost(run, "alley"), Rules.alley_salt(run).ok, run.sov, run.salt, run.doses_bought, Rules.salt_cost(run, "alley")], [5, true, 15, 4, 1, 6], "street chemist: salt at 2 over the price, and it still raises the price")
 	Rules.alley_leave(run)
 	eq([run.night, run.round, run.phase, run.stance], [1, 0, "play", "hyde"], "straight to night 2, still Hyde")
-	# The Cane: Mania gains 4.
+	# The Cane: Spread Ruin gains 4.
 	run.habit.lamp = 0
 	run.craving.lamp = 0
 	run.stored = 0
-	eq(Rules.evaluate(run, cards("I:lamp I:lamp I:lamp")).mult, 11, "The Cane on a Mania")
-	eq(Rules.evaluate(run, cards("I:lamp I:lamp")).mult, 5, "and not on a Fixation")
+	eq(Rules.evaluate(run, cards("I:lamp I:lamp I:lamp")).mult, 11, "The Cane on Spread Ruin")
+	eq(Rules.evaluate(run, cards("I:lamp I:lamp")).mult, 5, "and not on Stoke Compulsion")
 
 
 func test_alley_limits() -> void:
 	var run := at(fresh({}, 23), 0, 2)
 	Rules.drink(run)
-	for c: RulesCard in run.cards:  # no Pride in the deck
+	for c: RulesCard in run.cards:  # no Brutality in the deck
 		if c.t == "root" and c.ink and c.sym == "mirror":
 			c.ink = false
 	win_scene(run)
@@ -112,22 +112,22 @@ func test_later_dawns() -> void:
 	Rules.drink(run)
 	win_scene(run)
 	Rules.continue_result(run)
-	Rules.alley_leave(run)  # dawn 1 in the alley: no Reason seen
+	Rules.alley_leave(run)  # dawn 1 in the alley: no Balance seen
 	run.stance = "jekyll"
 	at(run, 1, 2)
 	win_scene(run)
 	Rules.continue_result(run)
-	eq([run.phase, run.dawn.brings, run.dawn.unlocks, run.shop.cards[2].key, ink_n(run, "mirror")], ["lab", "mirror", "cane", "cane", 3], "dawn 2: two Pride, the Cane unlocks, Vigour is on the shelf")
+	eq([run.phase, run.dawn.brings, run.dawn.unlocks, run.shop.cards[2].key, ink_n(run, "mirror")], ["lab", "mirror", "cane", "cane", 3], "dawn 2: two Brutality, the Key unlocks, Resolve is on the shelf")
 	Rules.leave_lab(run)
 	at(run, 2, 2)
 	run.restraint = 0
 	win_scene(run)
 	Rules.continue_result(run)
-	eq([run.phase, run.shop.cards[2].key, run.dawn.unlocks], ["lab", "pen", null], "dawn 3: Reason, which the deck still lacks")
+	eq([run.phase, run.shop.cards[2].key, run.dawn.unlocks], ["lab", "pen", null], "dawn 3: Balance, which the deck still lacks")
 	run.sov = 3
 	Rules.buy_card(run, 2)
 	Rules.leave_lab(run)
-	# Dawn 4: the deck lacks the Cane, so Vigour. It is the last dawn and nothing joins.
+	# Dawn 4: the deck lacks the Key, so Resolve. It is the last dawn and nothing joins.
 	for i in 4:
 		push(run, "P:lamp")
 	at(run, 3, 2)  # he comes through the window; give the table back to Jekyll
@@ -136,7 +136,7 @@ func test_later_dawns() -> void:
 	var n: int = run.cards.size()
 	win_scene(run)
 	Rules.continue_result(run)
-	eq([run.phase, run.dawn.no, run.dawn.brings, run.dawn.last, run.cards.size(), run.shop.cards[2].key], ["lab", 4, null, true, n, "cane"], "dawn 4: nothing joins, and Vigour is owed")
+	eq([run.phase, run.dawn.no, run.dawn.brings, run.dawn.last, run.cards.size(), run.shop.cards[2].key], ["lab", 4, null, true, n, "cane"], "dawn 4: nothing joins, and Resolve is owed")
 	run.sov = 3
 	Rules.buy_card(run, 2)
 	Rules.leave_lab(run)
@@ -144,7 +144,7 @@ func test_later_dawns() -> void:
 
 
 func test_lab_factor_at_random() -> void:
-	# With both the Pen and the Cane in the deck, dawn 3's Factor is any unlocked one.
+	# With both the Scale and the Key in the deck, dawn 3's Factor is any unlocked one.
 	var seen := {}
 	for s in 40:
 		var run := at(fresh({}, 100 + s), 2, 2)
@@ -161,7 +161,7 @@ func test_lab_factor_at_random() -> void:
 
 
 func test_dawn_3_brings_his_highest_habit() -> void:
-	# Ties by Craving, then by fewest copies, then Lamp, Heart, Mirror.
+	# Ties by Craving, then by fewest copies, then Cloak, Quill, Cane.
 	var run := at(fresh({}, 26), 2, 2)
 	run.hyde_arrived = true
 	run.habit = {"lamp": 1, "heart": 2, "mirror": 2}
@@ -175,9 +175,9 @@ func test_dawn_3_brings_his_highest_habit() -> void:
 	Rules.start_round(run)
 	win_scene(run)
 	Rules.continue_result(run)
-	eq([run.dawn.brings, run.dawn.unlocks, ink_n(run, "heart"), run.dawn.last], ["heart", null, 4, false], "two Appetite join at dawn 3")
+	eq([run.dawn.brings, run.dawn.unlocks, ink_n(run, "heart"), run.dawn.last], ["heart", null, 4, false], "two Madness join at dawn 3")
 	run = fresh({}, 26)
-	eq(Rules.highest_habit(run), "lamp", "all equal: Lamp")
+	eq(Rules.highest_habit(run), "lamp", "all equal: Cloak")
 	run.habit.mirror = 1
 	eq(Rules.highest_habit(run), "mirror", "the most Habit comes first")
 

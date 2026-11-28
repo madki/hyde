@@ -18,15 +18,15 @@ func test_first_drink() -> void:
 	ok(Rules.can_drink(run).ok and Rules.drink_cost(run) == "first", "the draught arrives in round 2")
 	var r := Rules.drink(run)
 	eq([run.stance, run.stored, run.restraint, run.cards.size(), ink_n(run, "lamp"), ink_n(run, "heart"), ink_n(run, "mirror"), paper_n(run)],
-			["hyde", 3, 0, 16, 2, 1, 1, 8], "first arrival: 2 Fog, 1 Appetite, 1 Pride, and nothing stained")
+			["hyde", 3, 0, 16, 2, 1, 1, 8], "first arrival: 2 Corruption, 1 Madness, 1 Brutality, and nothing stained")
 	eq([r.ev.first, r.ev.stained, r.ev.brought.size()], [true, null, 2], "he brings two Roots")
 	var b := _roots(run, r.ev.brought)
-	ok(b[0].ink and b[1].ink and b[0].sym == "lamp" and b[1].sym == "lamp", "a matching pair when the piles hold one: the two Fog")
+	ok(b[0].ink and b[1].ink and b[0].sym == "lamp" and b[1].sym == "lamp", "a matching pair when the piles hold one: the two Corruption")
 	eq(run.hand.size(), 10, "the hand may go over 8")
 	ok(not Rules.can_salt(run).ok, "no salt before the scene of night 1")
 	ok(not Rules.can_drink(run).ok, "and no drink while he has the table")
 	var fix := Rules.best(run)
-	eq([fix.ev.name, fix.ev.spends_stored], ["Fixation", true], "his first hand carries the stored restraint")
+	eq([fix.ev.name, fix.ev.spends_stored], ["Stoke Compulsion", true], "his first hand carries the stored restraint")
 	ok(fix.ev.mult_parts.any(func(p: Dictionary) -> bool: return p.label == "stored restraint" and p.v == 6), "2 mult a point")
 	Rules.play(run, fix.ids)
 	eq(run.stored, 0, "spent once")
@@ -34,13 +34,13 @@ func test_first_drink() -> void:
 
 
 func test_stored_restraint_and_salt() -> void:
-	# The stored restraint waits through a Passing Thought and is lost to salt.
+	# The stored restraint waits through Guard the Veil and is lost to salt.
 	var run := at(fresh({}, 6), 0, 2)
 	run.restraint = 2
 	Rules.drink(run)
 	var h := deal(run, "F:cup I:lamp I:lamp P:heart P:heart P:mirror P:lamp P:lamp")
 	Rules.play(run, [h[0].id])
-	eq(run.stored, 2, "a Passing Thought does not spend it")
+	eq(run.stored, 2, "Guard the Veil does not spend it")
 	ok(Rules.can_salt(run).ok, "salt works in the scene")
 	var r := Rules.take_salt(run)
 	eq([run.stance, run.stored, run.restraint, run.salt, r.ev.lost_stored], ["jekyll", 0, 0, 2, 2], "salt: one dose, restraint 0, the store is lost")
@@ -83,13 +83,13 @@ func test_stain_order() -> void:
 	run.draw = run.draw.filter(live)
 	run.hand = run.hand.filter(live)
 	run.discard = run.discard.filter(live)
-	# Make sure every Scruple is in the draw pile.
+	# Make sure every Composure is in the draw pile.
 	for c: RulesCard in run.cards:
 		if c.t == "root" and not c.ink and c.sym == "mirror" and run.hand.has(c.id):
 			run.hand.erase(c.id)
 			run.draw.append(c.id)
 	var r := Rules.drink(run)
-	eq([r.ev.stained.sym, ink_n(run, "mirror")], ["mirror", 1], "no Pride in the deck: a Scruple is stained first")
+	eq([r.ev.stained.sym, ink_n(run, "mirror")], ["mirror", 1], "no Brutality in the deck: a Composure is stained first")
 	# A draw pile with no Paper Root: the discards are next.
 	Rules.take_salt(run)
 	var is_paper := func(id: int) -> bool: return Rules.is_paper(Rules.card(run, id))
@@ -164,14 +164,14 @@ func _brought(run: RulesRun) -> Array:
 
 func test_who_brings_what() -> void:
 	var papers := "P:lamp P:lamp P:lamp P:heart P:heart P:heart P:mirror P:mirror"
-	# Hyde: a matching pair, by most Habit, then most copies in the piles, then Lamp, Heart, Mirror.
+	# Hyde: a matching pair, by most Habit, then most copies in the piles, then Cloak, Quill, Cane.
 	var run := _table("hyde", "I:lamp I:lamp I:heart I:heart I:mirror I:mirror I:mirror", papers)
 	eq(_brought(run), ["I:mirror", "I:mirror"], "with no Habit, the pair with the most copies")
 	run = _table("hyde", "I:lamp I:lamp I:heart I:heart I:mirror I:mirror I:mirror", papers)
 	run.habit.heart = 1
 	eq(_brought(run), ["I:heart", "I:heart"], "the pair with the most Habit comes before that")
 	run = _table("hyde", "I:lamp I:lamp I:heart I:heart I:mirror I:mirror", papers)
-	eq(_brought(run), ["I:lamp", "I:lamp"], "all else equal: Lamp, Heart, Mirror")
+	eq(_brought(run), ["I:lamp", "I:lamp"], "all else equal: Cloak, Quill, Cane")
 	eq(run.hand.size(), 10, "the two join the hand")
 	# A pair counts across the draw pile and the discards.
 	run = _table("hyde", "I:lamp I:heart I:heart I:mirror", papers)
@@ -188,16 +188,16 @@ func test_who_brings_what() -> void:
 	run.habit.mirror = 1
 	eq(_brought(run), ["I:heart", "I:mirror"], "no pair: the symbol he holds, then the one with the most Habit")
 	run = _table("hyde", "I:lamp I:heart I:mirror", papers)
-	eq(_brought(run), ["I:lamp", "I:heart"], "no pair, nothing held, no Habit: Lamp, then Heart")
+	eq(_brought(run), ["I:lamp", "I:heart"], "no pair, nothing held, no Habit: Cloak, then Quill")
 	run = _table("hyde", "I:mirror", papers)
 	eq(_brought(run), ["I:mirror"], "only one of his in the piles: he brings one")
 	# Jekyll: a symbol his hand lacks first, then a symbol whose Ink twin he holds.
 	run = _table("jekyll", "I:mirror I:lamp", "P:lamp I:mirror F:cup F:cup F:eye F:lock I:lamp P:lamp")
 	eq(_brought(run), ["P:mirror", "P:heart"], "Jekyll: the symbols he lacks, the one whose Ink twin he holds first")
 	run = _table("jekyll", "P:lamp P:heart P:mirror I:lamp", "P:lamp P:heart P:mirror I:mirror F:cup F:cup F:eye F:lock")
-	eq(_brought(run), ["P:mirror", "P:lamp"], "he holds all three: the twin he can turn, then Lamp")
+	eq(_brought(run), ["P:mirror", "P:lamp"], "he holds all three: the twin he can turn, then Cloak")
 	run = _table("jekyll", "I:lamp", "F:cup F:cup F:eye F:lock I:lamp")
-	eq(_brought(run), ["P:lamp", "P:heart"], "he holds none: the twin first, then Lamp, Heart, Mirror")
+	eq(_brought(run), ["P:lamp", "P:heart"], "he holds none: the twin first, then Cloak, Quill, Cane")
 	# From the discards when the draw pile has no copy.
 	run = _table("jekyll", "I:lamp", "F:cup F:cup F:eye F:lock I:lamp")
 	var moved: Array = run.draw.filter(func(id: int) -> bool: return Rules.card(run, id).sym == "lamp")
@@ -212,7 +212,7 @@ func test_breakout() -> void:
 	var run := at(fresh({}, 12), 0, 1)
 	run.restraint = 4
 	var h := deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
-	var r := Rules.play(run, [h[0].id])  # a Spark: fills the meter, nowhere near the target
+	var r := Rules.play(run, [h[0].id])  # Kindle Virtue: fills the meter, nowhere near the target
 	eq([run.stance, run.restraint, run.stored, run.phase, run.plays], ["hyde", 0, 0, "play", 3], "breakout: his stance, meter empty, nothing stored, the round goes on")
 	eq([ink_n(run, "lamp"), ink_n(run, "heart"), ink_n(run, "mirror"), paper_n(run)], [2, 2, 2, 8], "first arrival by breakout: his four, then one each of his two lowest-count Roots")
 	eq(run.hand.size(), 10, "he brings two Roots: a hand of 10")
@@ -226,7 +226,7 @@ func test_breakout() -> void:
 	push(run, "I:heart")
 	h = deal(run, "P:lamp P:heart P:heart P:mirror P:lamp P:lamp F:cup F:eye")
 	Rules.play(run, [h[0].id])
-	eq([ink_n(run, "lamp"), ink_n(run, "heart"), ink_n(run, "mirror")], [3, 3, 3], "two lowest-count: Fog and Pride")
+	eq([ink_n(run, "lamp"), ink_n(run, "heart"), ink_n(run, "mirror")], [3, 3, 3], "two lowest-count: Corruption and Brutality")
 
 
 func test_breakout_on_the_winning_play() -> void:
@@ -234,7 +234,7 @@ func test_breakout_on_the_winning_play() -> void:
 	run.restraint = 4
 	run.score = 900
 	var h := deal(run, "P:lamp P:heart P:mirror F:cup F:lock P:lamp P:heart P:mirror")
-	var r := Rules.play(run, ids(h.slice(0, 4)))  # Lucid Mind with Good Cheer, no Resolve
+	var r := Rules.play(run, ids(h.slice(0, 4)))  # Master the Self with Temperance, no Truth
 	eq(r.ev.score, 770, "the play scores 770")
 	eq([run.phase, run.last.how, run.last.stance, run.last.pay, run.offer, run.sov], ["result", "won", "hyde", 3 + 3, null, 6], "won as Hyde: paid, and no card offered")
 	eq([ink_n(run), paper_n(run), run.hyde_arrived], [6, 8, true], "his Roots still arrived: 6 Ink Roots to 8 Paper Roots")
@@ -242,12 +242,12 @@ func test_breakout_on_the_winning_play() -> void:
 
 
 func test_restraint_limits() -> void:
-	# Resolve and Sublimation add nothing; the Balance holds one more; night 3's scene two fewer.
+	# Truth and Tame the Other add nothing; the Balance holds one more; night 3's scene two fewer.
 	var run := at(fresh({}, 14), 0, 1)
 	run.restraint = 4
 	var h := deal(run, "P:lamp F:lock P:heart P:mirror P:lamp P:lamp F:cup F:eye")
 	Rules.play(run, [h[0].id, h[1].id])
-	eq([run.stance, run.restraint], ["jekyll", 4], "Resolve: restraint stays")
+	eq([run.stance, run.restraint], ["jekyll", 4], "Truth: restraint stays")
 	eq(Rules.limit(run), 5, "limit 5")
 	run.instruments.append("balance")
 	eq(Rules.limit(run), 6, "Balance: 6")

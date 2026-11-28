@@ -17,7 +17,7 @@ func _run(seed_value: int, player: String, won: bool, moves: Array, more: Dictio
 	return run
 
 
-# Won runs of two plain kinds (Hyde's, with the cane and Mania; Jekyll's, with drinks and a
+# Won runs of two plain kinds (Hyde's, with the cane and Spread Ruin; Jekyll's, with drinks and a
 # long line), each a little different from the last by chance, and lost runs that end in
 # two ways.
 func _lines() -> Array:

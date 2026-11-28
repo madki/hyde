@@ -16,11 +16,11 @@ func test_dealing() -> void:
 	var all: Array = run.hand + run.draw + run.discard
 	all.sort()
 	eq(all, range(1, 13), "and every card is still in exactly one pile")
-	# Curiosity draws one more after the refill.
+	# Patience draws one more after the refill.
 	run = fresh({}, 2)
 	h = deal(run, "P:lamp F:eye P:heart F:cup P:lamp P:heart P:mirror P:mirror")
 	Rules.play(run, [h[0].id, h[1].id])
-	eq(run.hand.size(), 9, "Curiosity: refill to 8, then 1 more")
+	eq(run.hand.size(), 9, "Patience: refill to 8, then 1 more")
 	# A hand over 8 does not refill until it is under 8 again.
 	run = fresh({}, 2)
 	h = deal(run, "P:lamp P:lamp P:lamp P:heart P:heart P:heart P:mirror P:mirror P:lamp P:heart")
@@ -66,7 +66,7 @@ func test_craving_and_habit() -> void:
 	var total: int = run.cards.size()
 	var h := deal(run, "I:lamp I:lamp F:cup F:eye F:lock P:heart P:heart P:mirror")
 	var r := Rules.play(run, ids(h.slice(0, 2)))
-	eq([run.craving.lamp, run.habit.lamp, run.cards.size()], [1, 0, total], "one Fixation: 1 Craving")
+	eq([run.craving.lamp, run.habit.lamp, run.cards.size()], [1, 0, total], "one Stoke Compulsion: 1 Craving")
 	h = deal(run, "I:lamp I:lamp P:heart P:heart P:mirror P:lamp P:lamp P:lamp")
 	Rules.play(run, ids(h.slice(0, 1)))
 	eq([run.craving.lamp, run.habit.lamp], [2, 0], "second hand: 2 Craving")
@@ -81,32 +81,32 @@ func test_craving_and_habit() -> void:
 	ok(run.draw.has(bred.id) or run.hand.has(bred.id), "the copy went into the draw pile, from where the refill may draw it")
 	e = Rules.evaluate(run, cards("I:lamp I:lamp I:lamp"))
 	eq([e.chips, e.mult, e.score], [60 + 3 * 30, 7 + 3, 1500], "Habit: 15 chips and 1 mult on every card of that symbol")
-	# Restlessness can push two points in one play.
+	# Surrender can push two points in one play.
 	run.craving.lamp = 2
 	run.plays = 2
 	run.score = 0
 	h = deal(run, "I:lamp F:cane P:heart P:heart P:mirror P:lamp P:lamp P:lamp")
 	r = Rules.play(run, ids(h.slice(0, 2)))
 	eq([r.ev.score, run.craving.lamp, run.habit.lamp], [(20 + 50 + 10 + 50) * (3 + 1 + 2), 1, 2], "2 + 2 Craving: one rollover, 1 left over")
-	# Cunning holds the Craving still.
+	# Deceit holds the Craving still.
 	run.plays = 2
 	run.score = 0
 	h = deal(run, "I:lamp F:lock P:heart P:heart P:mirror P:lamp P:lamp P:lamp")
 	Rules.play(run, ids(h.slice(0, 2)))
-	eq(run.craving.lamp, 1, "Cunning: Craving unchanged")
+	eq(run.craving.lamp, 1, "Deceit: Craving unchanged")
 
 
 func test_rollover_scores_at_the_craving_it_found() -> void:
 	var run := at(as_hyde(fresh({}, 5)), 0, 2)
 	first_arrival(run)
 	run.craving.lamp = 2
-	eq([run.cards.size(), ink_n(run, "lamp")], [16, 2], "16 cards, 2 Fog")
+	eq([run.cards.size(), ink_n(run, "lamp")], [16, 2], "16 cards, 2 Corruption")
 	var h := deal(run, "I:lamp I:lamp P:heart P:heart P:mirror P:lamp P:lamp P:lamp")
 	var r := Rules.play(run, ids(h.slice(0, 2)))
-	eq([r.ev.name, r.ev.score, run.score], ["Fixation", 525, 525], "Fog, Fog at Craving 2 scores 525")
-	eq([run.craving.lamp, run.habit.lamp, run.cards.size(), ink_n(run, "lamp"), run.stats.bred], [0, 1, 17, 3, 1], "then Craving 0, Habit 1, and the deck goes from 16 to 17 with 3 Fog")
+	eq([r.ev.name, r.ev.score, run.score], ["Stoke Compulsion", 525, 525], "Corruption, Corruption at Craving 2 scores 525")
+	eq([run.craving.lamp, run.habit.lamp, run.cards.size(), ink_n(run, "lamp"), run.stats.bred], [0, 1, 17, 3, 1], "then Craving 0, Habit 1, and the deck goes from 16 to 17 with 3 Corruption")
 	var bred: RulesCard = run.cards[-1]
-	eq([bred.t, bred.sym, bred.ink], ["root", "lamp", true], "the copy is a Fog")
+	eq([bred.t, bred.sym, bred.ink], ["root", "lamp", true], "the copy is a Corruption")
 	ok(run.draw.has(bred.id) or run.hand.has(bred.id), "in the draw pile before the refill, so it can be drawn at once")
 	# With the draw pile empty the copy is the first card of the refill.
 	run = at(as_hyde(fresh({}, 5)), 0, 2)
@@ -129,13 +129,13 @@ func test_several_copies_in_one_play() -> void:
 	var n: int = run.cards.size()
 	Rules.play(run, ids(h.slice(0, 4)))
 	eq([run.craving.lamp, run.habit.lamp, run.cards.size() - n, ink_n(run, "lamp")], [0, 2, 2, 4], "a play that adds several points can breed more than one copy")
-	# Row 30: Restlessness at Craving 2 leaves Craving 1, Habit 1.
+	# Row 30: Surrender at Craving 2 leaves Craving 1, Habit 1.
 	run = at(as_hyde(fresh({}, 6)), 1, 0)
 	first_arrival(run)
 	run.craving.lamp = 2
 	h = deal(run, "I:lamp F:cane P:heart P:heart P:mirror P:lamp P:lamp P:heart")
 	var r := Rules.play(run, ids(h.slice(0, 2)))
-	eq([r.ev.name, r.ev.score, run.craving.lamp, run.habit.lamp, ink_n(run, "lamp")], ["Stirring", 500, 1, 1, 3], "Restlessness at Craving 2: Craving 1, Habit 1, a Fog joins")
+	eq([r.ev.name, r.ev.score, run.craving.lamp, run.habit.lamp, ink_n(run, "lamp")], ["Indulge Vice", 500, 1, 1, 3], "Surrender at Craving 2: Craving 1, Habit 1, a Corruption joins")
 
 
 func test_sublimation() -> void:
@@ -148,7 +148,7 @@ func test_sublimation() -> void:
 	var before := Rules.line_info(run)
 	eq([before.ink, before.paper], [4, 8], "4 against 8 before")
 	var r := Rules.play(run, ids(h.slice(0, 3)))
-	eq([run.temper.lamp, run.craving.lamp, run.restraint, h[1].ink], [2, 0, 3, false], "Sublimation: Temper +2, Craving 0, no restraint, the card is paper for good")
+	eq([run.temper.lamp, run.craving.lamp, run.restraint, h[1].ink], [2, 0, 3, false], "Tame the Other: Temper +2, Craving 0, no restraint, the card is paper for good")
 	eq([Rules.line_info(run).ink, Rules.line_info(run).paper], [3, 9], "one Root crosses the line: 3 against 9")
 	eq(r.ev.score, 850, "and it scored the worked example")
 	ok(r.events.any(func(x: Dictionary) -> bool: return x.t == "turn" and x.sym == "lamp" and x.gain == 2 and x.temper == 2), "the play reports the turn")
@@ -160,19 +160,19 @@ func test_sublimation() -> void:
 	# At 0 Craving the card still turns, for 2 burst mult and no Temper.
 	h = deal(run, "P:heart I:heart P:heart P:mirror P:lamp P:lamp F:eye F:lock")
 	e = Rules.evaluate(run, [h[0], h[1]])
-	eq([e.chips, e.mult, e.temper_gain.heart], [25 + 15 + 15, 2 + 2, 0], "Sublimation at 0 Craving")
+	eq([e.chips, e.mult, e.temper_gain.heart], [25 + 15 + 15, 2 + 2, 0], "Tame the Other at 0 Craving")
 	ok(not Rules.evaluate(run, [h[0], h[1], h[6], h[7]]).ok, "one Factor at most")
 	ok(not Rules.evaluate(run, [h[0], h[1], h[2]]).ok, "one Paper Root only")
 	ok(not Rules.evaluate(run, [h[0], h[1], h[3]]).ok, "no third Root")
-	# Vigour scores the Paper Root again; Reason counts one different Root.
+	# Resolve scores the Paper Root again; Balance counts one different Root.
 	run.unlocked.pen = true
 	run.unlocked.cane = true
 	run.craving.lamp = 1
 	e = Rules.evaluate(run, cards("P:lamp I:lamp F:cane"))
-	eq([e.chips, e.mult], [25 + 45 + 25 + 10 + 45, 2 + 4 + 4 + 2], "Sublimation with Vigour")
+	eq([e.chips, e.mult], [25 + 45 + 25 + 10 + 45, 2 + 4 + 4 + 2], "Tame the Other with Resolve")
 	e = Rules.evaluate(run, cards("P:lamp I:lamp F:pen"))
-	eq(e.mult, 2 + 4 + 4 + 2, "Sublimation with Reason")
-	# Curiosity draws in a Sublimation too.
+	eq(e.mult, 2 + 4 + 4 + 2, "Tame the Other with Balance")
+	# Patience draws in Tame the Other too.
 	h = deal(run, "P:heart I:heart F:eye P:mirror P:lamp P:lamp P:heart F:lock")
 	Rules.play(run, ids(h.slice(0, 3)))
 	eq([run.hand.size(), h[1].ink, run.temper.heart, run.restraint], [9, false, 0, 3], "it turns, draws a card, and adds no Temper at 0 Craving")
@@ -186,7 +186,7 @@ func test_sublimation_with_saucers() -> void:
 	run.instruments.append("saucers")
 	var h := deal(run, "P:lamp I:lamp I:lamp P:heart P:heart P:mirror F:cup F:eye")
 	var r := Rules.play(run, ids(h.slice(0, 3)))
-	eq(r.ev.score, 900, "two Fog beside a Composure at Craving 2")
+	eq(r.ev.score, 900, "two Corruption beside a Piety at Craving 2")
 	eq([run.temper.lamp, run.craving.lamp, h[1].ink, h[2].ink, run.stats.turns], [2, 0, false, false, 2], "both turned, Temper +2")
 	h = deal(run, "P:lamp I:lamp P:heart I:heart F:cup P:mirror P:mirror F:eye")
 	run.craving.lamp = 2
@@ -203,16 +203,16 @@ func test_passing_thought() -> void:
 	run.instruments.append("cheque")
 	var h := deal(run, "F:cup F:eye I:lamp P:heart P:heart P:mirror P:lamp P:lamp")
 	var r := Rules.play(run, [h[0].id, h[1].id])
-	eq([r.ev.name, r.ev.score, run.score], ["Passing Thought", 10, 10], "one Factor's chips, times 1")
+	eq([r.ev.name, r.ev.score, run.score], ["Guard the Veil", 10, 10], "one Factor's chips, times 1")
 	eq([run.craving.lamp, run.stored, run.sov, run.restraint], [1, 2, 0, 0], "no Craving, the stored restraint is kept, and the Cheque book does not pay")
 	eq(run.hand.size(), 9, "Impulse still draws")
 	h = deal(run, "I:lamp F:cup P:heart P:heart P:mirror P:lamp P:lamp P:heart")
 	Rules.play(run, [h[0].id])
-	eq([run.stored, run.sov, run.craving.lamp], [0, 1, 2], "a Stirring spends the store, and the Cheque book pays 1")
+	eq([run.stored, run.sov, run.craving.lamp], [0, 1, 2], "Indulge Vice spends the store, and the Cheque book pays 1")
 	# As Jekyll it is a play like any other for restraint.
 	run = at(fresh({}, 7), 0, 1)
 	h = deal(run, "F:cup F:lock P:heart P:heart P:mirror P:lamp P:lamp P:heart")
 	Rules.play(run, [h[0].id])
 	eq(run.restraint, 1, "as Jekyll it adds 1 restraint")
 	Rules.play(run, [h[1].id])
-	eq(run.restraint, 1, "unless it holds Resolve")
+	eq(run.restraint, 1, "unless it holds Truth")
