@@ -63,10 +63,10 @@ func _alley_wares() -> Array[Dictionary]:
 	return [
 		{section = "Cards"},
 		{text = "Night Walk", price = 4,
-				detail = "Hyde walks until the lamps go out: two Craving on the Lamp, and draw a card."},
+				detail = "Hyde walks until the lamps go out: two Craving on the Cloak, and draw a card."},
 		{text = "Black tonic", price = 12, detail = "The next dose of salt costs nothing."},
 		{text = "Old Debt", sold = "sold", why = "Sold to another caller before you came.",
-				detail = "Pay a sovereign, or take one Temper on the Heart."},
+				detail = "Pay a sovereign, or take one Temper on the Quill."},
 		{text = "A torn page", price = 0, detail = "Left on the step. Nobody is asking for it."},
 		{section = "Instruments"},
 		{text = "Brass scales", price = 6,
@@ -83,8 +83,8 @@ func _long_wares() -> Array[Dictionary]:
 	return [
 		{section = "Cards"},
 		{text = "Night Walk", price = 4,
-				detail = "Hyde walks until the lamps go out: two Craving on the Lamp, and draw a card."},
-		{text = "A Steady Hand", price = 5, detail = "Jekyll: one Temper off the Mirror."},
+				detail = "Hyde walks until the lamps go out: two Craving on the Cloak, and draw a card."},
+		{text = "A Steady Hand", price = 5, detail = "Jekyll: one Temper off the Cane."},
 		{text = "Black tonic", price = 12, detail = "The next dose of salt costs nothing."},
 		{section = "Instruments"},
 		{text = "Brass scales", price = 6,
@@ -120,7 +120,7 @@ func _open_deck(from: int) -> void:
 	_in_deck = true
 	_opened_from = from
 	var rows: Array[Dictionary] = []
-	for group: String in ["Lamp", "Heart", "Mirror"]:
+	for group: String in ["Cloak", "Quill", "Cane"]:
 		rows.append({section = group})
 		for i in 8:
 			rows.append({text = "%s card %d" % [group, i + 1],

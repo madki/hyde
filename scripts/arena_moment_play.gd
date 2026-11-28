@@ -7,14 +7,14 @@ class_name ArenaMomentPlay
 ## 3. Each Root hops and gives its chips; what its gauge gives of them rises under its own,
 ##    in the gauge's colour. Its gauge's mult follows it, a beat of its own: the Root hops, a
 ##    tally mark leaves it for the gauge, the gauge pulses and says its name and value, and
-##    the mult travels from it to the mult. A Sublimation's burst rises from the Ink Root.
-## 4. Each Factor hops, gives its chips, and then its effect. Vigour and Restlessness make
-##    the best Root hop again; Reason and Alibi make each Root they count hop.
+##    the mult travels from it to the mult. Tame the Other's burst rises from the Ink Root.
+## 4. Each Factor hops, gives its chips, and then its effect. Resolve and Surrender make
+##    the best Root hop again; Balance and Obsession make each Root they count hop.
 ## 5. Stored restraint flies into the mult a drop at a time, and The Cane hops.
 ## 6. Chips and mult become one total, which travels to the round's score; a score that
 ##    reaches the target strikes it through.
 ## 7. What the play does to the gauges (ArenaMomentAfter).
-## 8. The laid cards go to the discards and the hand refills, the card drawn for Curiosity or
+## 8. The laid cards go to the discards and the hand refills, the card drawn for Patience or
 ##    Impulse under an eye mark. A play that ends the round is not refilled.
 ##
 ## The first ticks of a play are slow and the later ones quicker (ArenaPace.tick).
@@ -22,7 +22,7 @@ class_name ArenaMomentPlay
 ## The time of a step that moves no number (a lock, an eye), as a share of a tick's.
 const QUIET := 0.7
 ## How strong each hand sounds as it is named, 1 to 3 (the stingers `hand_j_<n>` and
-## `hand_h_<n>`): mostly by its base chips × mult among its man's hands; a Sublimation, rare
+## `hand_h_<n>`): mostly by its base chips × mult among its man's hands; Tame the Other, rare
 ## and turning his Roots, is a middle one.
 const HAND_TIERS := {
 	"thought": 1, "spark": 1, "rumination": 1, "goodwork": 2, "sublimation": 2, "dogma": 2, "lucid": 3,
@@ -172,7 +172,7 @@ static func _score(t: ArenaTable, steps: Array, laid: Dictionary, eyes: Array, c
 
 
 # The stinger played as the hand is named: its man's, louder for a stronger hand. A hand of
-# neither man's (a Passing Thought) is the man's at the table.
+# neither man's (Guard the Veil) is the man's at the table.
 static func _stinger(key: String, hyde: bool) -> String:
 	var side := "h" if hyde else "j"
 	if RulesConfig.HANDS.hyde.has(key):
@@ -400,7 +400,7 @@ static func _leave(t: ArenaTable, order: Array, laid: Dictionary) -> void:
 			await t.piles.put("discards", cards))
 
 
-# The cards drawn for Curiosity or Impulse: each comes to the hand under an eye mark.
+# The cards drawn for Patience or Impulse: each comes to the hand under an eye mark.
 static func _draw_with_eyes(t: ArenaTable, ids: Array, eyes: Array) -> void:
 	for id: int in ids:
 		t.beats.add(func() -> void:

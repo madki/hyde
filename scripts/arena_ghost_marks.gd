@@ -1,7 +1,7 @@
 class_name ArenaGhostMarks
 extends Control
 ## The marks of a chosen play that have no part of their own to lie on: the outline of each
-## card more it would draw (Curiosity, Impulse), beside the draw pile, and the one line said
+## card more it would draw (Patience, Impulse), beside the draw pile, and the one line said
 ## on a round's last play. They are still: nothing here moves.
 
 const CREAM := Palette.CHALK

@@ -12,7 +12,7 @@ extends Control
 ##   panel.lead = "The dawn brought two sovereigns."
 ##   panel.set_rows([
 ##       {section = "Cards"},
-##       {text = "Night Walk", price = 4, detail = "Hyde: 2 Craving on the Lamp."},
+##       {text = "Night Walk", price = 4, detail = "Hyde: 2 Craving on the Cloak."},
 ##       {text = "Black tonic", price = 12, enabled = false, why = "Not enough sovereigns"},
 ##       {text = "Old Debt", sold = "sold"},
 ##       {text = "Leave"},

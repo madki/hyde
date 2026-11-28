@@ -491,10 +491,13 @@ func _build_men() -> void:
 # chips and mult. The column of the man at the table is lit.
 func _build_hands() -> void:
 	var x := PIC.position.x
-	var columns := {"jekyll": x + 212.0, "hyde": x + 332.0}
-	var column_w := 116.0
+	var columns := {"jekyll": x + 190.0, "hyde": x + 324.0}
+	var column_w := 124.0
+	# A hand's name wraps in its column; a row whose names take two lines sets its numbers lower.
+	var name_w := column_w - 10.0
+	var name_size := 15
 	var top := PIC.position.y
-	var pitch := 62.0
+	var pitch := 64.0
 	_rects.append({"rect": Rect2(columns[_stance()] - 8.0, top - 6.0, column_w, 32.0 + pitch * RulesConfig.ROWS.size()),
 			"colour": Color(_light_colour(), 0.09)})
 	_say("Roots in the play", Vector2(x, top + 2.0), NOTE_SIZE, Palette.CHALK_2)
@@ -510,14 +513,21 @@ func _build_hands() -> void:
 			_card_picture(ArenaCardPictures.picture_of(mark.trim_suffix("*"), ink),
 					Rect2(x + i * 36.0, y - 1.0, 32.0, 32.0), Palette.HYDE if ink else Palette.CHALK)
 		_say(row.label, Vector2(x, y + 33.0), NOTE_SIZE, Palette.CHALK)
+		var wraps := false
 		for stance: String in columns:
-			var at := Vector2(columns[stance], y + 3.0)
+			if String(row[stance]) != "":
+				var named: String = RulesConfig.HANDS[stance][row[stance]].name
+				wraps = wraps or _heavy.get_string_size(named, HORIZONTAL_ALIGNMENT_LEFT, -1.0, name_size).x > name_w
+		for stance: String in columns:
+			var at := Vector2(columns[stance], y + (-2.0 if wraps else 3.0))
 			if String(row[stance]) == "":
 				_say("none", at, NOTE_SIZE, Palette.CHALK_3)
 				continue
 			var hand: Dictionary = RulesConfig.HANDS[stance][row[stance]]
-			_say(hand.name, at, NOTE_SIZE, Palette.JEKYLL if stance == "jekyll" else Palette.HYDE, true)
-			_say("%d × %d" % [hand.chips, hand.mult], at + Vector2(0.0, 25.0), NOTE_SIZE, Palette.CHALK)
+			_say(hand.name, at, name_size, Palette.JEKYLL if stance == "jekyll" else Palette.HYDE, true,
+					HORIZONTAL_ALIGNMENT_LEFT, name_w)
+			_say("%d × %d" % [hand.chips, hand.mult], at + Vector2(0.0, 39.0 if wraps else 24.0), NOTE_SIZE,
+					Palette.CHALK)
 		y += pitch
 	_say("Each hand gives chips × mult.", Vector2(x, y + 2.0), NOTE_SIZE, Palette.CHALK_2)
 
