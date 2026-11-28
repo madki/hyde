@@ -46,6 +46,9 @@ const PAY_BEATS: Array[float] = [0.60, 0.35, 0.25]
 const PAY_MARK := 0.20 / 0.60
 const PAY_PULSE := 0.15 / 0.60
 const PAY_FLIGHT := 0.25 / 0.60
+## The pencil stroke of the Root's second hop, as its mark leaves for the gauge: its pitch.
+const PAY_TEMPER_PITCH := 1.15
+const PAY_HABIT_PITCH := 0.8
 ## The words of a gauge that pays fade this long once its mult has ticked.
 const PAY_FADE := 0.15
 
@@ -317,6 +320,8 @@ static func _pay(t: ArenaTable, step: Dictionary, card: ArenaCard, paid: Diction
 	var gauge := t.symbols.pay_place(sym, row)
 	ArenaPop.hop(t.beats, card)
 	if card:
+		# The hop is heard as the first was: a pencil stroke as the mark leaves, Habit's lower.
+		t.beats.sound("tally", (PAY_HABIT_PITCH if row == "habit" else PAY_TEMPER_PITCH) * Sfx.vary(0.04))
 		await ArenaPop.tally(t.beats, t.travel, _above(card), gauge, tint, row == "habit", beat * PAY_MARK)
 	var pulse := t.beats.tween()
 	pulse.tween_method(func(a: float) -> void: t.symbols.set_pay(sym, row, 1.0, sin(a * PI)), 0.0, 1.0,

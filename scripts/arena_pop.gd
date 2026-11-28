@@ -133,14 +133,15 @@ static func draw_bloom(c: CanvasItem, font: Font, at: Vector2, words: String, fo
 	c.draw_string(font, at, words, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, core)
 
 
-## A sovereign travels from `from` to `to` (points on the page) and is gone. Await it.
+## A sovereign travels from `from` to `to` (points on the page) and is gone. Await it. It
+## lands `step` semitones up: the coins of one pay climb.
 static func coin(beats: ArenaBeats, layer: Control, from: Vector2, to: Vector2,
-		time: float = 0.28) -> void:
+		time: float = 0.28, step: float = 0.0) -> void:
 	var mark := eye(layer, from)
 	mark._coin = true
 	mark.queue_redraw()
 	await mark.fly_to(beats, to, time)
-	beats.sound("coin", Sfx.vary(0.06))
+	beats.sound("coin", Sfx.semitones(step) * Sfx.vary(0.03))
 	mark.queue_free()
 
 
