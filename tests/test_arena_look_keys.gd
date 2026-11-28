@@ -138,6 +138,5 @@ func test_the_hand_s_notes_are_shut_while_a_look_key_is_held() -> void:
 	ok(hand._note_ok(), "Cmd+Shift is a shortcut and leaves the notes free")
 	# The note is built when the hand enters the tree, which this one never does.
 	hand._note.free()
-	hand._note_words.free()
 	hand.get_parent().free()
 	views.free()
