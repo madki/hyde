@@ -33,6 +33,10 @@ const FADE_RATE := 60.0
 ## The loop's low-pass at full danger: the melody darkens as the line nears.
 const DARKEST_HZ := 1400.0
 const BUS := "Music"
+## Where a loop begins, and begins again after its end, in seconds: Jekyll's piece opens on
+## ten seconds that can hardly be heard, which would leave the title and each first table
+## without music.
+const STARTS: Dictionary[String, float] = {"jekyll": 10.0}
 
 var _place := "none"
 var _dread: Dictionary[String, float] = {}
@@ -50,11 +54,13 @@ func _ready() -> void:
 			continue
 		var stream := load(path) as AudioStreamOggVorbis
 		stream.loop = true
+		stream.loop_offset = STARTS.get(loop, 0.0)
 		var player := AudioStreamPlayer.new()
 		player.stream = stream
 		player.bus = BUS
 		player.volume_db = SILENT_DB
 		add_child(player)
+		player.set_meta("start", STARTS.get(loop, 0.0))
 		_players[loop] = player
 		_level[loop] = SILENT_DB
 
@@ -116,7 +122,7 @@ func _apply(player: AudioStreamPlayer, db: float) -> void:
 		# Asked first: a paused player is not `playing`, and `play` would start it over.
 		player.stream_paused = false
 	elif not player.playing:
-		player.play()
+		player.play(player.get_meta("start", 0.0))
 
 
 func _make_bus() -> void:

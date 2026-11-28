@@ -39,6 +39,10 @@ static func add(t: ArenaTable, e: Dictionary, first: Dictionary = {}) -> void:
 		t.add_caption("He takes no card.")
 
 
+## The pay: how long a sovereign takes to reach the purse, and the most semitones the coins
+## of one pay climb, each landing one above the last.
+const COIN_TIME := 0.28
+const COIN_CLIMB := 9.0
 ## The size of "Round won.", the one caption written larger than the rest.
 const WON_SIZE := 27
 ## The run's four endings by their names. The rules name three ("myself", "double", "hyde");
@@ -222,13 +226,15 @@ static func _pay(t: ArenaTable, e: Dictionary) -> void:
 		t.beats.sound("round_won"))
 	for i in for_round:
 		t.beats.add(func() -> void:
-			await ArenaPop.coin(t.beats, t.travel, t.stage.slot(0, 1), t.numbers.sov_place())
+			await ArenaPop.coin(t.beats, t.travel, t.stage.slot(0, 1), t.numbers.sov_place(), COIN_TIME,
+					minf(i, COIN_CLIMB))
 			t.mark("sov", int(t.shown.value("sov", 0)) + 1))
 	for i in unused:
 		t.beats.add(func() -> void:
 			# The tally is only drawn down: the plays left are the engine's to the round's end.
 			t.follow(t.numbers.set_plays(unused - i - 1))
-			await ArenaPop.coin(t.beats, t.travel, t.numbers.plays_place(), t.numbers.sov_place())
+			await ArenaPop.coin(t.beats, t.travel, t.numbers.plays_place(), t.numbers.sov_place(), COIN_TIME,
+					minf(for_round + i, COIN_CLIMB))
 			t.mark("sov", int(t.shown.value("sov", 0)) + dials.unused_play_pay))
 	t.beats.add(func() -> void: await t.stage.clear_caption())
 

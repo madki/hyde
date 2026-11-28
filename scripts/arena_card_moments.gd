@@ -217,6 +217,9 @@ func change_side(before: Dictionary, after: Dictionary, where: String, caption: 
 	beats.add(func() -> void:
 		# It settles back: the rest of the change. From the sheet, at a card's pace.
 		var back := time * 0.19 if shown.is_empty() else ArenaPace.TRAVEL
+		if not shown.is_empty():
+			# Off the sheet and back to its place: a card's sound, lower and thicker in Ink.
+			beats.sound("draw_%d" % randi_range(1, 3), Sfx.vary() * (0.8 if after.get("ink", false) else 1.0), 0.6)
 		if where == "hand":
 			await travel.fly(held[0], place[0], place[1], place[2], ArenaTravel.KEEP, back)
 		else:
