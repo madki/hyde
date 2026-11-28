@@ -40,7 +40,7 @@ func _ready() -> void:
 			label.position = Vector2((LEFT if block == 0 else RIGHT) + c * PITCH, 16.0)
 			add_child(label)
 	_add_row(LEFT, TOP, accent, func(w: ShopWare) -> void:
-		w.show_card({"key": "lamp", "name": "Composure", "chips": 15}, 4)
+		w.show_card({"key": "lamp", "name": "Piety", "chips": 15}, 4)
 		w.set_price(3), "It costs 3 sovereigns: you hold 1.", "The deck is full.", "sold")
 	_add_row(LEFT, TOP + ShopWare.CARD_SLOT.y + 8.0, accent, func(w: ShopWare) -> void:
 		w.show_instrument("balance", "Balance", "Restraint holds 2 more.")
@@ -49,10 +49,10 @@ func _ready() -> void:
 		w.show_salt("A dose of salt", "One more dose for the nights ahead.")
 		w.set_price(3), "It costs 3 sovereigns: you hold 1.", "No more salt is sold this dawn.", "sold")
 	_add_row(RIGHT, TOP, accent, func(w: ShopWare) -> void:
-		w.show_card({"key": "heart", "ink": true, "name": "Appetite", "chips": 15}, 9)
+		w.show_card({"key": "heart", "ink": true, "name": "Madness", "chips": 15}, 9)
 		w.set_price(0), "", "One Habit a dawn.", "taken")
 	_add_row(RIGHT, TOP + ShopWare.CARD_SLOT.y + 8.0, accent, func(w: ShopWare) -> void:
-		w.show_instrument("hcane", "The Cane", "His Mania gains 2 mult.")
+		w.show_instrument("hcane", "The Cane", "His Spread Ruin gains 2 mult.")
 		w.set_price(0), "", "You hold three instruments already.", "taken")
 	_add_row(RIGHT, TOP + ShopWare.CARD_SLOT.y + ShopWare.SMALL_SLOT.y + 16.0, accent, func(w: ShopWare) -> void:
 		w.show_service("Strike a card", "Takes one card out of the deck for good.")

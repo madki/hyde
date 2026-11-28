@@ -7,13 +7,13 @@ class_name ArenaMomentAfter
 ## - `breed`: the rollover. The three pips join into a Habit tally, the sketch pulses, and
 ##   'Habit 2' stands beside the gauge under a caption that says why (`grown`); then a copy of that Ink Root rises from the sketch and joins the deck, before
 ##   the refill, because it can be drawn at once. The line gains a mark on his side.
-## - `turn`: a Sublimation turns an Ink Root. The symbol's Craving pips travel into Temper,
+## - `turn`: Tame the Other turns an Ink Root. The symbol's Craving pips travel into Temper,
 ##   'Temper 3' stands beside the gauge under a caption that says why, the Root changes side
 ##   where it lies in the centre, and the line moves a mark across.
 ## - `cheque`: the Cheque book glints and a sovereign flies from it into the purse.
 ##
 ## After a symbol's gauges change, the chips on every card of that symbol on the table count
-## to their new value (`recount`). The locks of Resolve and Cunning, which landed while the
+## to their new value (`recount`). The locks of Truth and Deceit, which landed while the
 ## play scored, open and fall away (`unlock`).
 
 
@@ -48,7 +48,7 @@ static func add_event(t: ArenaTable, e: Dictionary, order: Array = []) -> bool:
 	return true
 
 
-## The lock of Resolve (on the track) or of Cunning (on the sketches) opens and falls away.
+## The lock of Truth (on the track) or of Deceit (on the sketches) opens and falls away.
 static func unlock(t: ArenaTable, on_track: bool) -> void:
 	t.beats.add(func() -> void:
 		t.beats.sound("lock", 0.75, 0.8) # lower and slower than it landed: a small release
@@ -125,7 +125,7 @@ static func _breed(t: ArenaTable, e: Dictionary) -> void:
 		await t.play(t.symbols.line_gain.bind(true)))
 
 
-# A Sublimation turns an Ink Root that lies in the centre.
+# Tame the Other turns an Ink Root that lies in the centre.
 static func _turn(t: ArenaTable, e: Dictionary, order: Array) -> void:
 	var sym: String = e.sym
 	t.beats.add(func() -> void:

@@ -83,7 +83,7 @@ func test_plays() -> void:
 		kinds[str(names)] = true
 		ok(p.ev.ok and int(p.ev.score) <= last, "allowed, and best first")
 		last = p.ev.score
-	# 0 to 3 Lamps, 0 to 2 Hearts, 0 to 2 Cups, 0 or 1 Eye: 72 sets, less the empty one and
+	# 0 to 3 Cloaks, 0 to 2 Quills, 0 to 2 Chalices, 0 or 1 Hourglass: 72 sets, less the empty one and
 	# the 14 of six cards or more.
 	eq(plays.size(), 57, "every set of kinds of up to five cards")
 	var best := Rules.best(run)

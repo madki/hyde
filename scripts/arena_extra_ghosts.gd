@@ -5,8 +5,8 @@ class_name ArenaExtraGhosts
 ##
 ## - it adds restraint: the next step of the track is outlined; it would make him break
 ##   out: the outline is on the HYDE! end and the Play control says so; it adds none
-##   (Resolve): a small lock on the track;
-## - it adds Craving, rolls it over, adds none (Cunning), or turns an Ink Root: the marks of
+##   (Truth): a small lock on the track;
+## - it adds Craving, rolls it over, adds none (Deceit), or turns an Ink Root: the marks of
 ##   the three symbols (ArenaSymbols.show_preview);
 ## - it spends the stored restraint: the drops lean towards the mult;
 ## - it draws a card more: a card's outline by the draw pile;

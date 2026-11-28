@@ -8,7 +8,7 @@ extends Control
 ##
 ##   var ware := ShopWare.new()
 ##   ware.accent = Palette.JEKYLL
-##   ware.show_card({key = "lamp", name = "Composure", chips = 15})
+##   ware.show_card({key = "lamp", name = "Piety", chips = 15})
 ##   ware.set_price(3)
 ##   ware.set_state(ShopWare.State.TOO_DEAR, "It costs 3 sovereigns: you hold 1.")
 ##   ware.chosen.connect(_on_bought)

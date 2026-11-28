@@ -45,7 +45,7 @@ extends Control
 ## - `set_salt(salt)`: the paper unfolds or folds shut; `salt` is the table's {doses, ok, why}.
 ## - `set_instruments(keys)`: an instrument new to the list is laid in its place, one gone is
 ##   taken away.
-## - `hop(key)`: an instrument hops (The Cane, on his Mania). `glint(key)`: a light crosses it
+## - `hop(key)`: an instrument hops (The Cane, on his Spread Ruin). `glint(key)`: a light crosses it
 ##   (the Cheque book, when it pays). `spot(key)` is its middle, on the page: where what it
 ##   gives starts from.
 

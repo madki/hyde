@@ -84,7 +84,7 @@ func _what(which: String) -> Dictionary:
 			}
 		"jekyll":
 			return {
-				"title": "Resolve joins your deck",
+				"title": "Truth joins your deck",
 				"lines": ["It lies in your discards, and comes round with the next shuffle."],
 				"cards": [_factor("lock")],
 				"tone": "jekyll",
@@ -92,7 +92,7 @@ func _what(which: String) -> Dictionary:
 		"change":
 			return {
 				"title": "He stains a Root",
-				"lines": ["Kindness becomes Appetite: his to play, and no longer yours."],
+				"lines": ["Reason becomes Madness: his to play, and no longer yours."],
 				"cards": [_root("heart", false)],
 				"after": [_root("heart", true)],
 				"tone": "hyde",

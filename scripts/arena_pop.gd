@@ -3,7 +3,7 @@ extends Control
 ## The small things that rise from a card while a play scores: a number ("+15", "+2 mult")
 ## or a few words that lift off the card that gives them and fade, a card's hop as it
 ## scores, the tally mark that leaves a Root for its gauge as the gauge pays, and the eye mark
-## of Curiosity and Impulse, which flies to the draw pile and waits there for the card it draws.
+## of Patience and Impulse, which flies to the draw pile and waits there for the card it draws.
 ##
 ## Everything here plays through the beat queue, so it is hurried with the rest. Nothing is
 ## awaited: a pop is seen alongside the tick it belongs to.
